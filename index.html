@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OopisOS Version 2.4</title>
+  <script src="./marked.min.js"></script>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#34d399">
+</head>
+
+<body class="bg-neutral-900 text-green-500 m-0 p-5 flex flex-col items-center justify-center min-h-screen overflow-x-hidden">
+
+  <div id="terminal-bezel" class="bg-neutral-800 p-6 rounded-2xl terminal-bezel-shadow inline-block">
+    <div id="terminal" class="w-[90vw] max-w-[800px] h-[70vh] max-h-[600px] bg-neutral-950 border-2 border-neutral-900 rounded-lg p-5 overflow-x-hidden terminal-screen-glow flex flex-col" style="position: relative;">
+      <div id="output" class="flex-grow mb-2.5 overflow-x-hidden w-full min-w-0 overflow-y-auto"></div>
+      <div class="input-line-container flex items-start w-full">
+        <div class="prompt-container flex items-center leading-[1.2em] flex-shrink-0 whitespace-nowrap pt-[0.1em]">
+          <span id="prompt-user" class="prompt-user mr-0.5 text-sky-400"></span>
+          <span class="prompt-separator mr-0.5">@</span>
+          <span id="prompt-host" class="prompt-host mr-0.5">OopisOs</span>
+          <span class="prompt-separator mr-0.5">:</span>
+          <span id="prompt-path" class="prompt-path mr-1"></span>
+          <span id="prompt-char" class="prompt-char mr-2"></span>
+        </div>
+        <div id="editable-input-container" class="flex-grow min-w-0">
+          <div id="editable-input" contenteditable="true" spellcheck="false" autocapitalize="none" class="min-h-[1.2em] leading-[1.2em] whitespace-pre-wrap break-words outline-none text-green-500 w-full">
+          </div>
+        </div>
+      </div>
+
+      <div id="adventure-modal" class="hidden">
+        <div id="adventure-container">
+          <div id="adventure-header">
+            <span id="adventure-title">Text Adventure</span>
+            <button id="adventure-close-btn" class="btn-adventure">Exit Adventure</button>
+          </div>
+          <div id="adventure-output">
+
+          </div>
+          <div id="adventure-input-container">
+            <span>&gt;</span>
+            <label for="adventure-input"></label><input type="text" id="adventure-input" spellcheck="false" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h1 class="text-xl text-green-500 font-['VT323'] mt-4 mb-4">Copyright ©2025 | Edmark & Gemini | <a class="text-green-500" href="guide.html">OopisOS v2.4 User Guide</a> | <a class="text-green-500" href="LICENSE.txt">MIT License</a> </h1>
+
+
+  <script src="oopisos2_4.js"></script>
+  <script src="editor2_4.js"></script>
+  <script src="lexpar2_4.js"></script>
+  <script src="commexec2_4.js"></script>
+  <script src="adventure2_4.js"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('Service Worker registered with scope: ', registration.scope);
+        })
+        .catch(err => {
+          console.error('Service Worker registration failed: ', err);
+        });
+    });
+  }
+</script>
+</body>
+
+</html>

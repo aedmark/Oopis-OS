@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OopisOS v2.4 - The User-Friendly Manual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #18181b; /* zinc-900 */
+            color: #e4e4e7; /* zinc-200 */
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+
+        .nav-link.active, .nav-link:hover {
+            background-color: #3f3f46; /* zinc-700 */
+            color: #a7f3d0; /* emerald-200 */
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'VT323', monospace;
+            letter-spacing: 0.05em;
+        }
+
+        h1 {
+            color: #34d399; /* emerald-400 */
+            margin-bottom: 0.75rem;
+        }
+
+        h2 {
+            color: #60a5fa; /* blue-400 */
+            border-bottom: 1px solid #52525b; /* zinc-600 */
+            padding-bottom: 0.25rem;
+            margin-top: 1.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        h3 {
+            color: #facc15; /* yellow-400 */
+            margin-top: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        h4 {
+            color: #fb923c; /* orange-400 */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-section p,
+        .content-section li {
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+
+        .content-section p[class*="mb-"] {
+            /* Tailwind class will handle margin-bottom */
+        }
+
+        table {
+            line-height: 1.7;
+            margin-bottom: 1.25rem;
+        }
+
+        a {
+            color: #2dd4bf; /* teal-400 */
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: #5eead4; /* teal-300 */
+        }
+
+        pre {
+            background-color: #27272a; /* zinc-800 */
+            color: #d4d4d8; /* zinc-300 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'VT323', monospace;
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.5;
+            margin-top: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        code {
+            font-family: 'VT323', monospace;
+            background-color: #3f3f46; /* zinc-700 */
+            color: #fde047; /* yellow-300 */
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.9em;
+        }
+
+        pre code {
+            padding: 0;
+            background-color: transparent;
+            color: inherit;
+        }
+
+        .sidebar {
+            background-color: #27272a; /* zinc-800 */
+        }
+
+        .main-content {
+            background-color: #18181b; /* zinc-900 */
+        }
+
+        .logo {
+            font-family: 'VT323', monospace;
+            color: #34d399; /* emerald-400 */
+        }
+
+        table {
+            width: 100%;
+            margin-top: 1rem;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #52525b; /* zinc-600 */
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3f3f46; /* zinc-700 */
+            font-family: 'VT323', monospace;
+            color: #a7f3d0; /* emerald-200 */
+        }
+
+        .content-section ul {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .terminal-example {
+            background-color: #0d0d0d; /* darker than zinc-950 */
+            border: 2px solid #3f3f46; /* zinc-700 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1.25rem;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+
+        .terminal-example .prompt {
+            color: #60a5fa; /* blue-400 */
+        }
+
+        .terminal-example .command {
+            color: #a7f3d0; /* emerald-200 */
+        }
+
+        .terminal-example .output {
+            color: #e4e4e7; /* zinc-200 */
+            white-space: pre-wrap;
+        }
+
+        .footer {
+            border-top: 1px solid #52525b; /* zinc-600 */
+            padding-top: 1rem;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #a1a1aa; /* zinc-400 */
+        }
+
+        #menu-button {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #menu-button {
+                display: block;
+            }
+
+            .sidebar {
+                display: none;
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+
+            .sidebar.open {
+                display: block;
+            }
+
+            .flex {
+                flex-direction: column;
+            }
+
+            h2 {
+                margin-top: 1.5rem;
+                margin-bottom: 1rem;
+            }
+
+            h3 {
+                margin-top: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            h4 {
+                margin-top: 0.75rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .content-section p, .content-section li {
+                margin-bottom: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<div class="flex flex-col md:flex-row min-h-screen">
+    <button id="menu-button" class="md:hidden p-4 bg-zinc-800 text-emerald-400 fixed top-0 left-0 z-20">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+    </button>
+
+    <aside class="sidebar w-full md:w-64 lg:w-72 p-6 space-y-4 fixed md:sticky top-0 h-screen overflow-y-auto z-10">
+        <h1 class="logo text-4xl mb-6">OopisOS</h1>
+        <nav>
+            <ul class="space-y-2">
+                <li><a href="#home" class="nav-link block p-3 rounded-lg active">Home & Overview</a></li>
+                <li><a href="#user-guide" class="nav-link block p-3 rounded-lg">User Guide</a></li>
+                <li><a href="#advanced-topics" class="nav-link block p-3 rounded-lg">Advanced Topics</a></li>
+                <li><a href="#developer-docs" class="nav-link block p-3 rounded-lg">Developer Docs</a></li>
+                <li><a href="#testing-env" class="nav-link block p-3 rounded-lg">Testing & Showcase</a></li>
+                <li><a href="#about" class="nav-link block p-3 rounded-lg">About & Credits</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content flex-1 p-6 md:p-10 overflow-y-auto mt-16 md:mt-0">
+        <section id="home" class="content-section active">
+            <h1>Welcome to OopisOS!</h1>
+            <p class="text-lg mt-2 mb-6 text-zinc-400">The little browser-based Operating System that could. Now at Version 2.4 and more powerful than ever!</p>
+
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">alias greet='echo "Hello, world!"' ; greet</span><br>
+                <span class="output">Hello, world!</span>
+            </div>
+
+            <h2>What is this place?</h2>
+            <p>Glad you asked! OopisOS (v2.4) is a fully persistent, self-contained operating system simulation that runs entirely within your web browser. It's a love letter to the command-line interfaces of yore, but with a modern twist. Think of it as a digital terrarium where you can poke around, learn about OS concepts, and generally cause harmless digital mayhem without setting your actual computer on fire. It was lovingly crafted by Andrew Edmark and his trusty AI sidekick, Gemini.</p>
+            <p>The entire system is a showcase of what's possible with modern JavaScript and a dash of nostalgia. Your files, users, and even your command history will be here waiting for you the next time you visit, thanks to the magic of IndexedDB and localStorage.</p>
+
+            <h2>Core Philosophy</h2>
+            <ul class="list-disc ml-6 space-y-2 my-4">
+                <li><strong>Look, Don't Touch (Your Real Stuff):</strong> A safe sandbox to learn and experiment. Your real files are safe. Probably.</li>
+                <li><strong>Meow-nificently Self-Contained:</strong> Everything runs on your machine. No servers, no cloud, just pure client-side goodness. You could run this on a spaceship to Xenon, no internet required.</li>
+                <li><strong>Learn & Laugh:</strong> It's an educational tool, but who said learning can't be fun? We have an AI and video games. Your move, calculus.</li>
+                <li><strong>More Modular Than a Space Station:</strong> Built with discrete components, making it easier for brave developers to add new features or, more likely, new and exciting bugs.</li>
+                <li><strong>UNIX-ish... ish:</strong> If you've used a Linux or Mac terminal, you'll feel right at home. The commands might not ask you for your papers, but they'll respect your authority.</li>
+            </ul>
+
+            <h2>Key Features at a Glance (v2.4)</h2>
+            <ul class="list-disc ml-6 space-y-2 my-4">
+                <li><strong>A File System That Remembers:</strong> Create, edit, and manage files and directories that actually stick around! Features a full suite of commands including the super-powered `find`, `ls`, `diff`, and the new `tree` command.</li>
+                <li><strong>A Command-Line for the Connoisseur:</strong> A beautiful retro terminal with history (up/down arrows), tab completion, command pipelining (`|`), I/O redirection (`>` for overwrite, `>>` for append), background processes (`&`), and command sequences (`;`).</li>
+                <li><strong>Multi-User Mayhem with Groups:</strong> Register multiple users (`useradd`) with secure, hashed passwords, `login`, `logout`, switch users with `su` (including to the all-powerful `root`), and manage users with `whoami`, `listusers`, and `removeuser`. Now with user groups (`groupadd`, `usermod`, `groups`, `groupdel`) for fine-grained permissions!</li>
+                <li><strong>Command Your Commands (`alias`):</strong> Create your own command shortcuts with `alias` and remove them with `unalias`.</li>
+                <li><strong>Background Job Control (`ps`, `kill`):</strong> See what processes you've sent to the background with `ps` and terminate them with `kill`.</li>
+                <li><strong>The 'edit' Command - Now More Luxurious:</strong> A souped-up text editor that handles plain text, Markdown, and HTML with a live preview. Features include line numbers, a detailed status bar, toggleable word wrap, multiple view modes (`Ctrl+P`), an `Export to HTML` function, and a rich formatting toolbar with shortcuts.</li>
+                <li><strong>An AI in the Shell (`gemini`):</strong> Chat with the Gemini AI directly from your terminal. Ask it to write a poem, summarize a file, or start a new conversation with the `-n` flag. It can now use `tree` and other tools to better understand your files.</li>
+                <li><strong>Scripting for the Masses (`run`):</strong> Write your own command scripts! Supports comments (`#`), argument passing (`$1`, `$2`, `$@`, `$#`), and includes handy tools like `delay` and `check_fail` for crafting your own diagnostic epics.</li>
+                <li><strong>Save Your Progress! (No, really):</strong> Automatic session saving per user, plus manual `savestate`/`loadstate` and `backup`/`restore` commands. `clearfs` lets you clean your home directory, and `reset` is the big red button that nukes everything (don't worry, we'll ask first).</li>
+                <li><strong>A Grab-Bag of Utilities:</strong> `echo`, `date`, `help`, `clear`, `history`, `export`, `upload`, `reboot`, `chmod`, `chown`, `chgrp`, `grep` (with `-R`!), and `printscreen` to save your terminal's glorious output to a file.</li>
+                <li><strong>It's a Video Game, Too! (`adventure`):</strong> Tired of being productive? Launch a text-based adventure game! Explore the 'Lost Key of Oopis' or load your own custom JSON-based adventures.</li>
+            </ul>
+            <p>Go on, get your hands dirty. The world of OopisOS v2.4 awaits!</p>
+        </section>
+
+        <section id="user-guide" class="content-section">
+            <h1>OopisOS User Guide (v2.4)</h1>
+            <p>So, you've decided to venture forth. Excellent! You have selected the path of a true adventurer. This guide is your map and spellbook for the realm of OopisOS v2.4.</p>
+
+            <h2>The Terminal Interface</h2>
+            <p>This is your window into the soul of the machine. Your command center. Your... well, it's a terminal.</p>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">_</span>
+            </div>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>The Prompt:</strong> This tells you who you are, where you are, and that the system is ready for your brilliant commands. It follows the format: `username@hostname:current_path>`.</li>
+                <li><strong>The Input Area:</strong> The blinking cursor is your cue. Type your incantations here.</li>
+                <li><strong>The Output Area:</strong> The results of your digital wizardry (and the occasional error message) will appear here.</li>
+            </ul>
+
+            <h2>Essential Commands</h2>
+            <p>These are the fundamental spells in your arsenal. For a full grimoire, type `help`. For the nitty-gritty on a single command, type `help [command_name]`.</p>
+            <table class="min-w-full divide-y divide-zinc-700">
+                <thead>
+                <tr>
+                    <th class="px-4 py-2">Command & Key Flags</th>
+                    <th class="px-4 py-2">What It Does (In Plain English)</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-800">
+                <tr><td><code>help [cmd]</code></td><td>Your friendly neighborhood guide. Ask it about other commands.</td></tr>
+                <tr><td><code>ls [-l -a -R -r -t -S -X -U -d]</code></td><td>"Look." Shows directory contents. Use flags for: <b>-l</b>ong, <b>-a</b>ll, <b>-R</b>ecursive, <b>-r</b>everse sort, sorT by <b>-t</b>ime, <b>-S</b>ize, e<b>-X</b>tension, <b>-U</b>nsorted, or list <b>-d</b>irectories themselves.</td></tr>
+                <tr><td><code>cd [directory]</code></td><td>Change directory. Or, "Go north."</td></tr>
+                <tr><td><code>pwd</code></td><td>"Where am I?!" Prints your current location.</td></tr>
+                <tr><td><code>mkdir [-p] [dir_name]</code></td><td>Creates a directory. Use <b>-p</b> to make parent directories as needed.</td></tr>
+                <tr><td><code>tree [-L level] [-d]</code></td><td>Shows directory contents in a beautiful tree format. <b>-L</b> for depth, <b>-d</b> for directories only.</td></tr>
+                <tr><td><code>cat [file...]</code></td><td>Reads file contents to the screen. Can read multiple files.</td></tr>
+                <tr><td><code>echo [text]</code></td><td>Repeats text. Primarily used with redirection to write to files.</td></tr>
+                <tr><td><code>edit [file]</code></td><td>Opens the powerful text editor. Your gateway to creating masterpieces.</td></tr>
+                <tr><td><code>touch [-c -d -t] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create, <b>-d</b> for a date string, <b>-t</b> for a specific timestamp.</td></tr>
+                <tr><td><code>rm [-r -f] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories and <b>-f</b> to be forceful.</td></tr>
+                <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>Copies files. Flags for: <b>-r</b>ecursive, <b>-f</b>orce, <b>-p</b>reserve metadata, <b>-i</b>nteractive.</td></tr>
+                <tr><td><code>mv [-f -i] [src] [dest]</code></td><td>Moves or renames files. Flags for: <b>-f</b>orce, <b>-i</b>nteractive.</td></tr>
+                <tr><td><code>diff [file1] [file2]</code></td><td>Compares two files and shows the differences.</td></tr>
+                <tr><td><code>grep [-i -v -n -c -R] [pat] [file]</code></td><td>Finds text in files. Flags for: case-<b>i</b>nsensitive, in<b>-v</b>ert, line <b>-n</b>umber, <b>-c</b>ount, <b>-R</b>ecursive.</td></tr>
+                <tr><td><code>find [path] [expr]</code></td><td>A powerful detective to find files by name, type, permissions, and more.</td></tr>
+                <tr><td><code>printscreen [file]</code></td><td>Saves everything you see on the terminal screen to a file.</td></tr>
+                <tr><td><code>run [script] [args...]</code></td><td>Executes a script file. Can pass arguments to the script.</td></tr>
+                <tr><td><code>alias [name='value']</code></td><td>Create your own command shortcuts. Type `alias` to see them all.</td></tr>
+                <tr><td><code>unalias [name]</code></td><td>Remove a command shortcut.</td></tr>
+                <tr><td><code>ps</code></td><td>List your background processes (jobs).</td></tr>
+                <tr><td><code>kill [job_id]</code></td><td>Stop a running background process.</td></tr>
+                <tr><td><code>adventure [file.json]</code></td><td>Time for a break! Starts a text adventure. Can load custom games.</td></tr>
+                <tr><td><code>gemini [-n] "[prompt]"</code></td><td>Consult the oracle (Gemini AI). Use <b>-n</b> to start a new conversation.</td></tr>
+                <tr><td><code>useradd, login, logout</code></td><td>Manage user accounts. `useradd` creates one, `login` signs in, `logout` signs out.</td></tr>
+                <tr><td><code>whoami, listusers, removeuser</code></td><td>See who you are, list all users, or remove a user (requires confirmation).</td></tr>
+                <tr><td><code>su [username]</code></td><td>"Substitute User." Become someone else (defaults to `root`).</td></tr>
+                <tr><td><code>chmod, chown, chgrp</code></td><td>Manage file permissions (`chmod 755 file`), ownership (`chown guest file`), and group (`chgrp staff file`).</td></tr>
+                <tr><td><code>groups, groupadd, groupdel, usermod</code></td><td>Manage user groups. See who belongs to what, create/delete groups, and add users to groups.</td></tr>
+                <tr><td><code>upload [-f], export</code></td><td>`upload` files from your computer (<b>-f</b>orce overwrite), `export` files back out.</td></tr>
+                <tr><td><code>backup, restore</code></td><td>Create a full JSON `backup` of the OS state, or `restore` from one.</td></tr>
+                <tr><td><code>savestate, loadstate</code></td><td>Manually `savestate` your current user's session, and `loadstate` to bring it back.</td></tr>
+                <tr><td><code>clearfs, reset, reboot</code></td><td>Drastic measures! `clearfs` wipes your home dir, `reset` nukes the OS, and `reboot` reloads the page.</td></tr>
+                <tr><td><code>clear, history, date</code></td><td>`clear` the screen, view command `history` (or `history -c` to clear it), see the current `date`.</td></tr>
+                </tbody>
+            </table>
+
+            <h2>The File System</h2>
+            <p>OopisOS has a file system not unlike the ones you know. It's a tree, and you're a digital squirrel.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>The very top is the root directory, <code>/</code>.</li>
+                <li>Paths are your branches, separated by <code>/</code>.</li>
+                <li><code>.</code> means "right here."</li>
+                <li><code>..</code> means "go back one branch."</li>
+                <li>Files starting with a <code>.</code> are shy; use <code>ls -a</code> to see them.</li>
+            </ul>
+
+            <h2>The Editor (`edit` command)</h2>
+            <p>The `edit` command is your passage to a world of creation. It's more than a notepad; it's a multi-tool for text.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>File Types:</strong> It understands plain text, Markdown (`.md`), and HTML (`.html`). Give it a recognized file extension, and it'll unlock special features.</li>
+                <li><strong>Live Preview:</strong> For Markdown and HTML, a magical preview pane shows you what your code looks like, updated in real time.</li>
+                <li><strong>Formatting Toolbar:</strong> For `.md` and `.html` files, a toolbar appears! Click to add bold, italics, links, quotes, code blocks, and lists, saving you from remembering the syntax.</li>
+                <li><strong>Status Bar:</strong> A handy bar at the bottom shows cursor position (line, column), total lines, word count, and character count.</li>
+                <li><strong>Word Wrap:</strong> Toggle it on for prose, off for code. Your preference is saved for next time.</li>
+                <li><strong>Export to HTML:</strong> Click the "Export" button to download a fully rendered HTML file of your Markdown/HTML preview.</li>
+                <li>
+                    <strong>Shortcuts to Glory:</strong>
+                    <ul>
+                        <li><code>Ctrl+S</code>: Save & Exit. The hero's exit.</li>
+                        <li><code>Ctrl+O</code>: Exit. If you haven't saved, we'll ask before you discard your genius.</li>
+                        <li><code>Ctrl+P</code>: Toggle Preview. Cycle through split-screen, code-only, and preview-only views.</li>
+                        <li><code>Ctrl+B</code> / <code>Ctrl+I</code>: Make text **bold** or *italic* in compatible files.</li>
+                        <li><code>Tab</code>: Indent your code like a pro.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2>Users, Groups, and Permissions</h2>
+            <p>OopisOS isn't a free-for-all. It's a sophisticated society of users with rules, groups, and private property. Passwords are securely hashed, never stored in plain text.</p>
+
+            <h3>User Accounts & The Superuser (`root`)</h3>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>
+                    <strong>Default Population:</strong> OopisOS comes with a few residents:
+                    <ul>
+                        <li><code>Guest</code>: Your default identity. No password needed. Every user is in their own primary group by default (e.g., user 'Guest' is in group 'Guest').</li>
+                        <li><code>root</code>: The system administrator. The superuser. The big cheese. The `root` user can do anything. The default password is <code>mcgoopis</code>.</li>
+                        <li><code>userDiag</code>: A special user for running tests, with the password <code>pantload</code>.</li>
+                    </ul>
+                </li>
+                <li><code>useradd [username]</code>: Create a new user. You'll be prompted to create a password in a secure, obscured input field. A primary group with the same name is also created.</li>
+                <li><code>login [username]</code>: Log in as someone else. If a password is required, you'll be prompted securely.</li>
+                <li><code>logout</code>: Return to the safety of the Guest account.</li>
+                <li><code>su [username]</code>: Switch to another user, assuming you know their password (or you're `root`). Defaults to `root`.</li>
+            </ul>
+
+            <h3>Permissions and Ownership (`chmod`, `chown`, `chgrp`)</h3>
+            <p>Use <code>ls -l</code> to view permissions like <code>-rwxr-x---</code>. This string represents: [type][owner permissions][group permissions][other permissions].</p>
+            <div class="terminal-example">
+                <span class="prompt">root@OopisOs:/&gt;</span> <span class="command">touch newfile.txt ; ls -l newfile.txt</span><br>
+                <span class="output">-rw-r--r--  1 root    root        0 Jun 15 22:30 newfile.txt</span>
+            </div>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>
+                    <code>chmod [mode] [path]</code>: Change a file's permissions. Mode is a 3-digit octal number (0-7). The digits represent Owner, Group, and Other. Permissions are: 4 (read), 2 (write), 1 (execute). Add them up for the desired combination!
+                    <ul>
+                        <li><code>chmod 755 myfile</code>: Owner gets 7 (4+2+1 -> rwx), group gets 5 (4+0+1 -> r-x), others get 5 (r-x).</li>
+                        <li><code>chmod 640 myfile</code>: Owner gets 6 (4+2+0 -> rw-), group gets 4 (4+0+0 -> r--), others get 0 (---).</li>
+                    </ul>
+                </li>
+                <li><code>chown [new_owner] [path]</code>: Change who owns a file. Only `root` can do this.</li>
+                <li><code>chgrp [new_group] [path]</code>: Change a file's group. Only the owner or `root` can do this.</li>
+            </ul>
+
+            <h2>Pipes, Redirection, Sequences, and Backgrounding</h2>
+            <p>Chain your commands together for ultimate power!</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Pipes <code>|</code></strong>: Take the output of the command on the left and "pipe" it as the input for the command on the right. <br>Example: `history | grep "sudo"`</li>
+                <li><strong>Output Redirection <code>></code></strong>: Send a command's output into a file, overwriting whatever was there. <br>Example: `ls -l > file_list.txt`</li>
+                <li><strong>Append Output <code>>></code></strong>: Add a command's output to the end of a file. <br>Example: `echo "A new event happened!" >> activity.log`</li>
+                <li><strong>Command Separator <code>;</code></strong>: Run several commands, one after the other, on a single line. <br>Example: `cd / ; ls ; pwd`</li>
+                <li><strong>Background Process <code>&</code></strong>: Run a command in the background and continue working. <br>Example: `delay 5000 &`</li>
+            </ul>
+        </section>
+
+        <section id="advanced-topics" class="content-section">
+            <h1>OopisOS v2.4: Advanced Topics & Features</h1>
+            <p>You've mastered the basics. You feel the power coursing through your veins. Now, let's get dangerous.</p>
+
+            <h2>The `find` Command: Your All-Seeing Eye</h2>
+            <p>The <code>find</code> command is one of the most powerful tools in OopisOS. It recursively searches for files and directories based on a wide range of criteria and can even perform actions on the results.</p>
+            <h4>Usage: <code>find [path...] [expression...]</code></h4>
+            <p>An expression is made up of tests, operators, and actions.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>
+                    <strong>Tests:</strong>
+                    <ul>
+                        <li><code>-name [pattern]</code>: Find files by name (e.g., "*.txt").</li>
+                        <li><code>-type [f|d]</code>: Find by type (<b>f</b>ile or <b>d</b>irectory).</li>
+                        <li><code>-user [username]</code>: Find files owned by a specific user.</li>
+                        <li><code>-perm [mode]</code>: Find by exact permission mode (e.g., 755).</li>
+                        <li><code>-mtime [+N|-N|N]</code>: Find by modification time in days (e.g., `+7` for older than 7 days, `-2` for newer than 2 days).</li>
+                        <li><code>-newermt [date_string]</code>: Find files modified more recently than the given date string (e.g., "1 day ago", "2025-01-01").</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Operators:</strong>
+                    <ul>
+                        <li><code>-not</code> or <code>!</code>: Inverts the next test (e.g., `find . -not -name "*.txt"`).</li>
+                        <li><code>-o</code> or <code>-or</code>: Logical OR between tests.</li>
+                        <li>(Implicit AND): Tests are ANDed together by default.</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Actions:</strong>
+                    <ul>
+                        <li><code>-print</code>: The default action. Prints the path of the found item.</li>
+                        <li><code>-delete</code>: Deletes the found item. Use with extreme caution!</li>
+                        <li><code>-exec [command] {} ;</code>: Executes a command on the found file. <code>{}</code> is replaced with the file path. The command must end with a semicolon <code>;</code>.</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Find all .log files modified in the last day and delete them</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">find /data/logs -name "*.log" -mtime -1 -delete</span><br><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Change permissions on all shell scripts in your home directory</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">find . -name "*.sh" -exec chmod 755 {} ;</span>
+            </div>
+
+            <h2>Managing Background Processes (`ps` & `kill`)</h2>
+            <p>Sent a long-running task to the background with `&` and now you regret it? Or maybe you just want to see what's still churning away. OopisOS v2.4 gives you the tools to be the master of your background jobs.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><code>ps</code>: Stands for "Process Status". This command gives you a neat list of all the commands currently running in the background. Each job has a unique Process ID (PID) that you can use to interact with it.</li>
+                <li><code>kill [PID]</code>: The solution to a runaway process. Use this command with the PID from `ps` to terminate a background job immediately.</li>
+            </ul>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">delay 10000 &</span><br>
+                <span class="output">[1] Backgrounded.</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">delay 20000 &</span><br>
+                <span class="output">[2] Backgrounded.</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">ps</span><br>
+                <span class="output">
+                        PID   COMMAND
+                        1     delay 10000
+                        2     delay 20000
+                    </span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">kill 1</span><br>
+                <span class="output">Signal sent to terminate job 1.</span><br>
+                <span class="output">[Job 1 finished with error: delay: Operation cancelled. (Reason: Killed by user command.)]</span>
+            </div>
+
+
+            <h2>Scripting with `run`</h2>
+            <p>Why type commands one by one like a peasant? Automate your reign with the <code>run</code> command. Create a text file ending in <code>.sh</code> and fill it with your orders.</p>
+            <pre><code class="language-bash">
+# Example: /scripts/myscript.sh
+#!/bin/oopis_shell # This is just for show, but it looks cool, right?
+
+# This is a comment, where I hide my secrets.
+echo "Greetings, agent $1. Your mission involves $# operatives."
+echo "All operatives: $@"
+
+mkdir /kittens
+echo "Mission file created for $1." > /kittens/secret_mission.txt
+                </code></pre>
+            <p>To unleash it upon your system (make it executable first!):</p>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">chmod 755 /scripts/myscript.sh</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /scripts/myscript.sh AgentK "Mr. Bigglesworth" "The Janitor"</span>
+            </div>
+
+            <h3>Scripting Superpowers:</h3>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>
+                    <strong>Argument Passing:</strong>
+                    <ul>
+                        <li><code>$1</code>, <code>$2</code>, ...: Use the arguments you passed to the script.</li>
+                        <li><code>$@</code>: All the arguments in one glorious string.</li>
+                        <li><code>$#</code>: The number of arguments.</li>
+                    </ul>
+                </li>
+                <li><strong>Error Handling:</strong> If a command fails, the script stops. No questions asked.</li>
+                <li>
+                    <strong>Scripting Tools:</strong>
+                    <ul>
+                        <li><code>delay [milliseconds]</code>: For dramatic pauses.</li>
+                        <li><code>check_fail "[command]"</code>: A special tool for testing. It succeeds only if the command inside it *fails*.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2>Text Adventure Gaming (`adventure`)</h2>
+            <p>All work and no play makes Guest a dull user. OopisOS v2.4 includes a text adventure game engine to satisfy your inner Roberta Williams or Scott Adams.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Start Your Quest:</strong> Simply type `adventure` to begin the epic 'The Lost Key of Oopis.'</li>
+                <li><strong>Bring Your Own Adventure:</strong> Got a story to tell? Write it in the specified JSON format, `upload` it, and run it with `adventure /path/to/your_game.json`.</li>
+                <li><strong>Immersive Interface:</strong> The game runs in a dedicated modal window, freeing you from the distractions of the terminal.</li>
+            </ul>
+        </section>
+
+        <section id="developer-docs" class="content-section">
+            <h1>OopisOS v2.4: Developer Documentation</h1>
+            <p>So, you want to look under the hood? Pop it open. Let's see what makes this thing purr.</p>
+
+            <h2>Code Structure Overview</h2>
+            <p>The logic of OopisOS is organized into several key JavaScript files, all loaded by `index.html`:</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>`oopisos2_4.js`:</strong> The heart and soul. Contains core infrastructure, configs, utilities, and managers for the file system, users, sessions, terminal UI, and more.</li>
+                <li><strong>`lexpar2_4.js`:</strong> The brainy part. Contains the Lexer and Parser that translate your typed commands into something the machine can understand.</li>
+                <li><strong>`commexec2_4.js`:</strong> The muscle. This is the Command Executor, containing the definitions and handlers for every single command in the OS.</li>
+                <li><strong>`editor2_4.js`:</strong> The artist's studio. All logic for the `edit` command's powerful text editor lives here.</li>
+                <li><strong>`adventure2_4.js`:</strong> The dungeon master's screen. Contains the text adventure engine, UI modal, and sample game data.</li>
+            </ul>
+            <p>We use Immediately Invoked Function Expressions (IIFEs) to keep things tidy and modular, preventing a global namespace catastrophe.</p>
+
+            <h2>Forging a New Command (The v2.4 Way)</h2>
+            <p>Your journey begins in `commexec2_4.js`, inside the `commands` object. Thanks to the `createCommandHandler` factory, adding commands is easier and safer than ever by declaring your needs upfront.</p>
+            <pre><code class="language-javascript">
+// In commexec2_4.js:
+
+const myNewCmdDefinition = {
+  commandName: "mycmd",
+  // 1. Define validation rules for arguments, paths, and permissions.
+  flagDefinitions: [{ name: "verbose", short: "-v" }],
+  argValidation: { min: 1, error: "mycmd needs at least one argument!" },
+  pathValidation: [{ argIndex: 0, options: { expectedType: 'file' } }],
+  permissionChecks: [{ pathArgIndex: 0, permissions: ['read'] }],
+
+  // 2. Write the core logic. The factory handles the checks for you.
+  coreLogic: async (context) => {
+    // The context object contains everything you need, fully validated.
+    const { args, flags, currentUser, validatedPaths } = context;
+
+    // validatedPaths[0] is guaranteed to be a valid, readable file path object.
+    const pathInfo = validatedPaths[0];
+
+    if (flags.verbose) {
+        console.log(`Verbose mode on for user ${currentUser}!`);
+    }
+
+    return { success: true, output: `Successfully processed ${pathInfo.resolvedPath}` };
+  }
+};
+
+// 3. Add it to the main commands object.
+const commands = {
+    // ... other commands
+    mycmd: {
+        handler: createCommandHandler(myNewCmdDefinition),
+        description: "A one-line summary for the 'help' command.",
+        helpText: "Usage: mycmd [-v] [file]\\n\\nExplain your command in detail here."
+    },
+    // ... more commands
+};
+                </code></pre>
+            <p>This declarative pattern handles all the boilerplate error checking for argument counts, path existence, and permissions. Now go forth and create!</p>
+        </section>
+
+        <section id="testing-env" class="content-section">
+            <h1>Testing & Showcase Environment</h1>
+            <p>OopisOS v2.4 comes with two powerful scripts, `inflate2_4.sh` and `diag2_4.sh`, to make life easier for testers and newcomers.</p>
+
+            <h2>The Showcase: `inflate2_4.sh`</h2>
+            <p>Want a fully furnished world to explore from the get-go? The `inflate2_4.sh` script populates your file system with a rich set of examples. It's like a demo disk for OopisOS!</p>
+            <p>Just run this command to set it all up:</p>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /inflate2_4.sh</span>
+            </div>
+            <h3>What's in the box?</h3>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>A `README.md` file to get you started.</li>
+                <li>Directories like `/docs`, `/src`, `/data`, `/reports`, `/games`, and `/vault`, all filled with tasty sample files.</li>
+                <li>Content specifically designed for practicing with `grep`, `find`, `gemini`, and `adventure`.</li>
+                <li>A restricted `/vault` directory and a world-writable `/for_guest` directory to test permissions.</li>
+                <li>Secret hidden files for you to discover with `ls -a`.</li>
+            </ul>
+
+            <h2>The Gauntlet: `diag2_4.sh`</h2>
+            <p>This is the ultimate test of OopisOS's core strength. The `diag2_4.sh` script is a non-interactive test suite that runs a barrage of commands to ensure everything is working exactly as it should. It's the developer's best friend for catching bugs before they creep out of the woodwork.</p>
+            <h3>Key Test Phases:</h3>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Login and Setup:</strong> Logs in as the `userDiag` user (password: `pantload`) and prepares a clean workspace.</li>
+                <li><strong>Core FS Commands:</strong> Brutally tests `mkdir`, `touch`, `ls`, `pwd`, and `cd`.</li>
+                <li><strong>Content & Redirection:</strong> Verifies that `echo`, `cat`, pipes (`|`), and redirection (`>`, `>>`) are all behaving.</li>
+                <li><strong>Permissions & Users:</strong> A complex dance of `chmod`, `chown`, `chgrp`, `login`, `logout`, and `su` to ensure the security model is sound.</li>
+                <li><strong>File Management:</strong> Puts `rm`, `cp`, and `mv` through their paces.</li>
+                <li><strong>Advanced Commands:</strong> Verifies that `find`, `run`, `alias`, `ps`, `kill`, and various flags are working correctly.</li>
+                <li><strong>Cleanup:</strong> Switches to `root` and cleans up after itself, leaving the system tidy.</li>
+            </ul>
+            <p>Running `diag2_4.sh` is a fantastic way to see a whirlwind tour of OopisOS features.</p>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /diag2_4.sh</span>
+            </div>
+        </section>
+
+        <section id="about" class="content-section">
+            <h1>About OopisOS (v2.4)</h1>
+            <p>OopisOS Version 2.4 is the latest and greatest evolution of our little browser-based world, packed with more features and even more personality.</p>
+
+            <h2>The Creators</h2>
+            <p>This project is the result of a tireless, caffeine-fueled collaboration between:</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Andrew Edmark</strong> (The Human Element)</li>
+                <li><strong>Gemini</strong> (The AI Assistant, and your humble narrator)</li>
+            </ul>
+            <p>Together, we navigated the treacherous dungeons of JavaScript, debugged the fiercest of race conditions, and documented our journey for all to see. The copyright notice `Copyright (c) 2025 Andrew Edmark and Gemini. (MIT Licensed)` reflects this grand alliance.</p>
+
+            <h2>The Journey to 2.4</h2>
+            <p>Version 2.4 builds upon the solid foundation of previous versions, adding key refinements and features:</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>A more robust and secure <strong>user and group management system</strong> with hashed passwords and a proper 3-digit octal permission model (`chmod`).</li>
+                <li>Powerful new commands including `alias` for shortcuts, `tree` for visualizing directories, `diff` for comparing files, and `ps`/`kill` for managing background jobs.</li>
+                <li>The powerful `find` command, with predicates like `-name`, `-type`, `-user`, `-perm`, `-mtime`, and actions like `-print`, `-exec`, and `-delete`.</li>
+                <li>A more sophisticated `ls` command with advanced sorting and formatting options.</li>
+                <li>Full scripting support with argument passing (`$1`, `$@`, `$#`).</li>
+                <li>A significantly upgraded `edit` command, now featuring a full formatting toolbar for Markdown/HTML, a detailed status bar, and an export-to-HTML function.</li>
+                <li>An even smarter `gemini` command that can use tools like `tree`, and a more enchanting `adventure` engine.</li>
+                <li>A codebase thoughtfully reorganized into logical modules for easier maintenance.</li>
+            </ul>
+
+            <h2>License Information: MIT License (AI Assisted) - OopisOS License Agreement</h2>
+            <h3>Preamble</h3>
+            <p>This Software, OopisOS, represents a collaborative endeavor between human direction and artificial intelligence.</p>
+            <p><strong>Copyright (c) 2025 Andrew Edmark (hereinafter referred to as the "Curator") and Gemini</strong></p>
+            <h3>Authorship and Contribution Acknowledgment</h3>
+            <p>This Software was developed by the Curator through a process of interactive collaboration with Google's Gemini. The Curator provided the initial concepts, creative direction, and critical review. The AI Assistant contributed to the generation, drafting, and composition of portions of the code and associated documentation.</p>
+            <h3>License Grant</h3>
+            <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+            <ul class="list-disc ml-6 my-2">
+                <li>The above copyright notice, the Authorship and Contribution Acknowledgment, and this permission notice shall be included in all copies or substantial portions of the Software.</li>
+            </ul>
+            <h3>Disclaimer of Warranty</h3>
+            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+            <h2>The Future?</h2>
+            <p>What's next for OopisOS? A graphical user interface? Simulated networking? A command to generate pictures of cats? The possibilities are as vast as your imagination. The modular architecture is ready for it.</p>
+            <p class="mt-6"><em>"OopisOS v2.4: Now with 24% more Oopis!"</em></p>
+        </section>
+
+        <footer class="footer text-center">
+            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.4).</p>
+        </footer>
+    </main>
+</div>
+
+<script>
+    // Simple SPA navigation
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+    const sidebar = document.querySelector('.sidebar');
+    const menuButton = document.getElementById('menu-button');
+
+    function updateActiveSection() {
+        const hash = window.location.hash || '#home';
+        navLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === hash);
+        });
+        contentSections.forEach(section => {
+            section.classList.toggle('active', section.id === hash.substring(1));
+        });
+        // Scroll to top of content area on navigation
+        document.querySelector('.main-content').scrollTop = 0;
+        // Close mobile menu after navigation
+        if (sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+        }
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', function () {
+            if (this.getAttribute('href').startsWith('#')) {
+                // If already on the section, clicking again scrolls to top of main content
+                if (window.location.hash === this.getAttribute('href')) {
+                    document.querySelector('.main-content').scrollTop = 0;
+                }
+            }
+        });
+    });
+
+    menuButton.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+    });
+
+    window.addEventListener('hashchange', updateActiveSection);
+    // Initial load
+    updateActiveSection();
+</script>
+</body>
+</html>
