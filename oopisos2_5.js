@@ -3427,7 +3427,7 @@ function initializeTerminalEventListeners() {
   // This is the main keyboard event handler for the entire application.
   document.addEventListener("keydown", async (e) => {
     // If the editor is active, it has its own key handler, so we do nothing here.
-    if (EditorManager.isActive()) {
+    if (EditorManager.isActive() || TextAdventureModal.isActive()) {
       return;
     }
     // If a modal prompt (like a password input) is active, let the modal manager handle the key.
