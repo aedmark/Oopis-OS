@@ -4531,8 +4531,6 @@ const CommandExecutor = (() => {
   };
   const diffCommandDefinition = {
     commandName: "diff",
-    description: "Compares two files line by line.",
-    helpText: "Usage: diff <file1> <file2>\n\nCompares two files and displays the differences.",
     argValidation: {
       exact: 2,
       error: "Usage: diff <file1> <file2>",
@@ -4572,6 +4570,199 @@ const CommandExecutor = (() => {
         success: true,
         output: diffResult,
       };
+    },
+  };
+  const wgetCommandDefinition = {
+    flagDefinitions: [{
+      name: "outputFile",
+      short: "-O",
+      takesValue: true,
+    }, ],
+    argValidation: {
+      min: 1,
+      error: "Usage: wget [-O <file>] <URL>"
+    },
+    coreLogic: async (context) => {
+      const {
+        args,
+        flags,
+        currentUser
+      } = context;
+      const url = args[0];
+      let outputFileName = flags.outputFile;
+
+      if (!outputFileName) {
+        try {
+          const urlPath = new URL(url).pathname;
+          const segments = urlPath.split('/');
+          outputFileName = segments.pop() || "index.html";
+        } catch (e) {
+          return {
+            success: false,
+            error: `wget: Invalid URL '${url}'`
+          };
+        }
+      }
+
+      const pathValidation = FileSystemManager.validatePath("wget", outputFileName, {
+        allowMissing: true,
+        disallowRoot: true
+      });
+      if (pathValidation.error) return {
+        success: false,
+        error: pathValidation.error
+      };
+
+      await OutputManager.appendToOutput(`--OopisOS WGET--\nResolving ${url}...`);
+
+      try {
+        const response = await fetch(url);
+        await OutputManager.appendToOutput(`Connecting to ${new URL(url).hostname}... connected.`);
+        await OutputManager.appendToOutput(`HTTP request sent, awaiting response... ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: `wget: Server responded with status ${response.status} ${response.statusText}`
+          };
+        }
+
+        const contentLength = response.headers.get('content-length');
+        const sizeStr = contentLength ? Utils.formatBytes(parseInt(contentLength, 10)) : 'unknown size';
+        await OutputManager.appendToOutput(`Length: ${sizeStr}`);
+
+        const content = await response.text();
+        const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+        if (!primaryGroup) {
+          return {
+            success: false,
+            error: "wget: critical - could not determine primary group for user."
+          };
+        }
+
+        const saveResult = await FileSystemManager.createOrUpdateFile(
+            pathValidation.resolvedPath,
+            content, {
+              currentUser,
+              primaryGroup
+            }
+        );
+
+        if (!saveResult.success) {
+          return {
+            success: false,
+            error: `wget: ${saveResult.error}`
+          };
+        }
+
+        await OutputManager.appendToOutput(`Saving to: ‘${outputFileName}’`);
+        await FileSystemManager.save();
+        return {
+          success: true,
+          output: `‘${outputFileName}’ saved [${content.length} bytes]`,
+          messageType: Config.CSS_CLASSES.SUCCESS_MSG
+        };
+
+      } catch (e) {
+        let errorMsg = `wget: An error occurred. This is often due to a network issue or a CORS policy preventing access.`;
+        if (e instanceof TypeError && e.message.includes('Failed to fetch')) {
+          errorMsg = `wget: Network request failed. The server may be down, or a CORS policy is blocking the request from the browser.`;
+        }
+        return {
+          success: false,
+          error: errorMsg
+        };
+      }
+    },
+  };
+  const curlCommandDefinition = {
+    flagDefinitions: [{
+      name: "output",
+      short: "-o",
+      long: "--output",
+      takesValue: true
+    }, {
+      name: "include",
+      short: "-i",
+      long: "--include",
+    }, {
+      name: "location",
+      short: "-L",
+      long: "--location",
+    }, ],
+    argValidation: {
+      min: 1,
+      error: "Usage: curl [options] <URL>"
+    },
+    coreLogic: async (context) => {
+      const {
+        args,
+        flags,
+        currentUser
+      } = context;
+      const url = args[0];
+
+      try {
+        const response = await fetch(url);
+        const content = await response.text();
+        let outputString = "";
+
+        if (flags.include) {
+          outputString += `HTTP/1.1 ${response.status} ${response.statusText}\n`;
+          response.headers.forEach((value, name) => {
+            outputString += `${name}: ${value}\n`;
+          });
+          outputString += '\n';
+        }
+
+        outputString += content;
+
+        if (flags.output) {
+          const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+          if (!primaryGroup) {
+            return {
+              success: false,
+              error: "curl: critical - could not determine primary group for user."
+            };
+          }
+          const absPath = FileSystemManager.getAbsolutePath(flags.output, FileSystemManager.getCurrentPath());
+          const saveResult = await FileSystemManager.createOrUpdateFile(
+              absPath,
+              outputString, {
+                currentUser,
+                primaryGroup
+              }
+          );
+
+          if (!saveResult.success) {
+            return {
+              success: false,
+              error: `curl: ${saveResult.error}`
+            };
+          }
+          await FileSystemManager.save();
+          return {
+            success: true,
+            output: ""
+          }; // Success, no stdout
+        } else {
+          return {
+            success: true,
+            output: outputString
+          };
+        }
+      } catch (e) {
+        let errorMsg = `curl: (7) Failed to connect to host. This is often a network issue or a CORS policy preventing access.`;
+        if (e instanceof TypeError && e.message.includes('Failed to fetch')) {
+          errorMsg = `curl: (7) Couldn't connect to server. The server may be down, or a CORS policy is blocking the request from the browser.`
+        } else if (e instanceof URIError) {
+          errorMsg = `curl: (3) URL using bad/illegal format or missing URL`;
+        }
+        return {
+          success: false,
+          error: errorMsg
+        };
+      }
     },
   };
   const commands = {
@@ -4907,6 +5098,16 @@ const CommandExecutor = (() => {
       description: "Modifies a user account.",
       helpText:
         "Usage: usermod -aG <groupname> <username>\n\nAdds a user to a supplementary group. (root only)",
+    },
+    curl: {
+      handler: createCommandHandler(curlCommandDefinition),
+      description: "Transfers data from or to a server.",
+      helpText: "Usage: curl [-o <file>] [-i] <URL>\n\nTransfers data from a URL. By default, prints content to the terminal.\n  -o, --output <file>   Write output to <file> instead of stdout.\n  -i, --include         Include protocol response headers in the output.\n  -L, --location        Follow redirects (this is default behavior).",
+    },
+    wget: {
+      handler: createCommandHandler(wgetCommandDefinition),
+      description: "Downloads files from the network.",
+      helpText: "Usage: wget [-O <file>] <URL>\n\nDownloads a file from a URL.\n  -O <file>   Save the file with a specific name.",
     },
   };
   async function _executeCommandHandler(segment, execCtxOpts, stdinContent = null, signal) {

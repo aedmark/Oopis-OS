@@ -438,6 +438,7 @@ echo "--- Test: Basic alias creation, listing, and execution ---"
 alias l="ls"
 alias la="ls -a"
 echo "Listing all aliases:"
+alias
 echo "Executing alias 'la':"
 la
 delay 300
@@ -538,7 +539,7 @@ echo "--- find . -name \"fileA.txt\" -exec cat {} \; ---"; find . -name "fileA.t
 echo "--- find . -type f -delete ---"
 find . -type f -delete
 echo "After delete (files should be gone):"; find . -type f -print
-cd .. 
+cd ..
 delay 700
 echo "---------------------------------------------------------------------"
 
@@ -670,7 +671,50 @@ rm -f screen_capture.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Final Cleanup Phase ---
+# --- Phase 14: Network Utilities (wget, curl) ---
+echo ""
+echo "===== Testing: Network Utilities (wget, curl) ====="
+cd /home/userDiag/diag_workspace
+echo "Ensuring CWD is correct for networking tests: "; pwd
+
+echo "--- Test: 'wget' to download a file ---"
+wget https://raw.githubusercontent.com/aedmark/Oopis-OS/refs/heads/master/inflate2_4.sh
+ls -l inflate2_4.sh
+delay 400
+
+echo "--- Test: 'wget -O' to download to a specific file ---"
+wget -O inflater.sh https://raw.githubusercontent.com/aedmark/Oopis-OS/refs/heads/master/inflate2_4.sh
+ls -l inflater.sh
+delay 400
+
+rm -f inflater.sh
+delay 300
+
+echo "--- Test: 'curl' to stdout ---"
+curl https://api.github.com/zen
+delay 400
+
+echo "--- Test: 'curl -o' to save to a file ---"
+curl -o zen_quote.txt https://api.github.com/zen
+ls -l zen_quote.txt
+cat zen_quote.txt
+delay 400
+
+echo "--- Test: 'curl -i' to include headers ---"
+curl -i https://api.github.com/zen
+delay 400
+
+rm -f zen_quote.txt
+delay 300
+
+echo "--- Test: CORS failure handling ---"
+check_fail "wget https://google.com"
+check_fail "curl https://google.com"
+delay 700
+echo "---------------------------------------------------------------------"
+
+
+# --- Phase 15: Final Cleanup ---
 echo ""
 echo "--- Final Cleanup ---"
 cd /

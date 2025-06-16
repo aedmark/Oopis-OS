@@ -2076,6 +2076,39 @@ MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
       mtime: nowISO
     };
   }
+  async function createOrUpdateFile(absolutePath, content, context) {
+    const { currentUser, primaryGroup } = context;
+    const nowISO = new Date().toISOString();
+    const pathInfo = validatePath("internal", absolutePath, { allowMissing: true, disallowRoot: true });
+
+    if (pathInfo.error && !(pathInfo.optionsUsed.allowMissing && !pathInfo.node)) {
+      return { success: false, error: pathInfo.error };
+    }
+
+    if (pathInfo.node) { // File exists
+      if (pathInfo.node.type !== Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
+        return { success: false, error: `Cannot overwrite non-file '${absolutePath}'` };
+      }
+      if (!hasPermission(pathInfo.node, currentUser, "write")) {
+        return { success: false, error: `'${absolutePath}': Permission denied` };
+      }
+      pathInfo.node.content = content;
+      pathInfo.node.mtime = nowISO;
+    } else { // File does not exist, create it
+      const parentDirResult = createParentDirectoriesIfNeeded(absolutePath);
+      if (parentDirResult.error) {
+        return { success: false, error: parentDirResult.error };
+      }
+      const parentNode = parentDirResult.parentNode;
+      if (!hasPermission(parentNode, currentUser, "write")) {
+        return { success: false, error: `Cannot create file in parent directory: Permission denied` };
+      }
+      const fileName = absolutePath.substring(absolutePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
+      parentNode.children[fileName] = _createNewFileNode(fileName, content, currentUser, primaryGroup);
+    }
+    _updateNodeAndParentMtime(absolutePath, nowISO);
+    return { success: true };
+  }
   return {
     createUserHomeDirectory,
     save,
@@ -2096,6 +2129,7 @@ MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
     _createNewFileNode,
     _createNewDirectoryNode,
     deleteNodeRecursive,
+    createOrUpdateFile,
   };
 })();
 const HistoryManager = (() => {
