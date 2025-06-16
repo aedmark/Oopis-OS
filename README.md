@@ -145,8 +145,6 @@ Automate tasks by writing shell scripts.
 JavaScript
 
 ```
-// In commexec2_4.js:
-
 const myNewCmdDefinition = {
   commandName: "mycmd",
   // 1. Define validation rules
