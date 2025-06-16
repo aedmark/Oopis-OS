@@ -854,6 +854,8 @@ const EditorManager = (() => {
       const newContent = EditorUI.getTextareaContent();
       const existingNode = FileSystemManager.getNodeByPath(currentFilePath);
       let canWrite = false;
+
+      // Permission checks remain the same
       if(existingNode) {
         if(FileSystemManager.hasPermission(existingNode, currentUser, "write")) canWrite = true;
         else await OutputManager.appendToOutput(`Error saving '${currentFilePath}': Permission denied.`, {
@@ -867,43 +869,71 @@ const EditorManager = (() => {
           typeClass: Config.CSS_CLASSES.ERROR_MSG
         });
       }
+
       if(!canWrite) saveSuccess = false;
+
       if(saveSuccess) {
-        const parentDirResult = FileSystemManager.createParentDirectoriesIfNeeded(currentFilePath);
-        if(parentDirResult.error) {
-          await OutputManager.appendToOutput(`edit: ${parentDirResult.error}`, {
-            typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
-          });
-          saveSuccess = false;
-        } else {
-          const parentNode = parentDirResult.parentNode;
-          if(parentNode) {
-            const fileName = currentFilePath.substring(currentFilePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
-            parentNode.children[fileName] = {
-              type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-              content: newContent,
-              owner: existingNode ? existingNode.owner : currentUser,
-              mode: existingNode ? existingNode.mode : Config.FILESYSTEM.DEFAULT_FILE_MODE,
-              mtime: nowISO,
-            };
-            FileSystemManager._updateNodeAndParentMtime(currentFilePath, nowISO);
-            if(!(await FileSystemManager.save(currentUser))) {
-              await OutputManager.appendToOutput(`Error saving file '${currentFilePath}'. Changes might be lost.`, {
+        // ---- REFINEMENT START ----
+        // Get the primary group just ONCE here, since we only need it for new file creation.
+        const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+        if (!primaryGroup) {
+          await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+          saveSuccess = false; // This will prevent the rest of the block from running.
+        }
+        // ---- REFINEMENT END ----
+
+        // This check ensures we only proceed if we successfully got the primary group.
+        if (saveSuccess) {
+          const parentDirResult = FileSystemManager.createParentDirectoriesIfNeeded(currentFilePath);
+          if(parentDirResult.error) {
+            await OutputManager.appendToOutput(`edit: ${parentDirResult.error}`, {
+              typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
+            });
+            saveSuccess = false;
+          } else {
+            const parentNode = parentDirResult.parentNode;
+            if(parentNode) {
+              const fileName = currentFilePath.substring(currentFilePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
+
+              // This is the node creation logic you wrote, which is perfect.
+              // It now uses the 'primaryGroup' variable we defined above.
+              const fileNodeData = {
+                type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
+                content: newContent,
+                owner: currentUser, // Simplified, as existingNode is null in this branch
+                group: primaryGroup,
+                mode: Config.FILESYSTEM.DEFAULT_FILE_MODE,
+                mtime: nowISO,
+              };
+
+              // If we are updating an existing node, preserve its metadata
+              if (existingNode) {
+                fileNodeData.owner = existingNode.owner;
+                fileNodeData.group = existingNode.group || primaryGroup; // Also patch existing nodes if they are missing a group!
+                fileNodeData.mode = existingNode.mode;
+              }
+
+              parentNode.children[fileName] = fileNodeData;
+
+              FileSystemManager._updateNodeAndParentMtime(currentFilePath, nowISO);
+              if(!(await FileSystemManager.save())) { // Removed 'currentUser' from save(), it's not needed
+                await OutputManager.appendToOutput(`Error saving file '${currentFilePath}'. Changes might be lost.`, {
+                  typeClass: Config.CSS_CLASSES.ERROR_MSG
+                });
+                saveSuccess = false;
+              } else {
+                terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
+                terminalMessageClass = Config.CSS_CLASSES.SUCCESS_MSG;
+                originalContent = newContent;
+                isDirty = false;
+                EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
+              }
+            } else {
+              await OutputManager.appendToOutput(`Failed to save '${currentFilePath}'. Could not obtain parent directory.`, {
                 typeClass: Config.CSS_CLASSES.ERROR_MSG
               });
               saveSuccess = false;
-            } else {
-              terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
-              terminalMessageClass = Config.CSS_CLASSES.SUCCESS_MSG;
-              originalContent = newContent;
-              isDirty = false;
-              EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
             }
-          } else {
-            await OutputManager.appendToOutput(`Failed to save '${currentFilePath}'. Could not obtain parent directory.`, {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG
-            });
-            saveSuccess = false;
           }
         }
       }
