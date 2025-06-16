@@ -41,7 +41,7 @@ OopisOS is a sophisticated, fully client-side application that simulates a deskt
 **First Commands to Try:**
 
 ```bash
-# To get a feel for the system, populate the Guest home directory with a rich set of example files.
+# To get a feel for the system, populate the Guest home directory with a set of example files.
 run /inflate2_4.sh
 
 # Explore the newly created files and directories with the new 'tree' command
