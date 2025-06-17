@@ -228,6 +228,9 @@ const TextAdventureEngine = (() => {
 
     const currentUser = UserManager.getCurrentUser().name;
     const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
+    const pathInfo = FileSystemManager.validatePath("adventure load", savePath, {
+      expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE // Expecting a file
+    });
 
     if (pathInfo.error) {
       TextAdventureModal.appendOutput(`Could not find save game '${fileName}.sav'.`, 'error');

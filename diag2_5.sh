@@ -11,6 +11,8 @@ echo ""
 echo "--- Phase: Logging in as 'root' and Preparing Workspace ---"
 login root mcgoopis
 delay 400
+check_fail "removeuser -f root"
+delay 800
 mkdir /home/userDiag/diag_workspace/
 chown userDiag /home/userDiag/diag_workspace/
 cp /home/Guest/diag_assets.sh /home/userDiag/diag_workspace/diag_assets.sh

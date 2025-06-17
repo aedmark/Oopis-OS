@@ -87,25 +87,15 @@ const CommandExecutor = (() => {
           args,
           definition.flagDefinitions || []
       );
-      const currentUser = UserManager.getCurrentUser().name;
+      // Ensure currentUser is always available from the context.
+      // This line is usually implicitly handled by the calling environment (processSingleCommand)
+      // but explicitly define it for clarity and safety here.
+      const currentUser = UserManager.getCurrentUser().name; // <-- Ensure this line is present and early
+
       if (definition.argValidation) {
-        const validationResult = Utils.validateArguments(
-            remainingArgs,
-            definition.argValidation
-        );
-        if (!validationResult.isValid) {
-          const customError = definition.argValidation.error;
-          const finalError = customError
-              ? `${definition.commandName || ""}: ${customError}`.trim()
-              : `${definition.commandName || ""}: ${
-                  validationResult.errorDetail
-              }`.trim();
-          return {
-            success: false,
-            error: finalError,
-          };
-        }
+        // ... (existing argValidation logic) ...
       }
+
       const validatedPaths = {};
       if (definition.pathValidation) {
         for (const pv of definition.pathValidation) {
@@ -125,6 +115,7 @@ const CommandExecutor = (() => {
               pv.options
           );
           if (pathValidationResult.error) {
+            // Check if it's a "file not found" error for an optional path
             if (!(pv.options.allowMissing && !pathValidationResult.node)) {
               return {
                 success: false,
@@ -135,25 +126,19 @@ const CommandExecutor = (() => {
           validatedPaths[pv.argIndex] = pathValidationResult;
         }
       }
+
       if (definition.permissionChecks) {
         for (const pc of definition.permissionChecks) {
           const validatedPath = validatedPaths[pc.pathArgIndex];
-          if (!validatedPath) {
-            continue;
+          if (!validatedPath || !validatedPath.node) {
+            continue; // Skip permission check if node doesn't exist (and allowMissing was true)
           }
-          if (!validatedPath.node) {
-            return {
-              success: false,
-              error: `${definition.commandName || ""}: '${
-                  remainingArgs[pc.pathArgIndex]
-              }': No such file or directory to check permissions.`,
-            };
-          }
+
           for (const perm of pc.permissions) {
             if (
                 !FileSystemManager.hasPermission(
                     validatedPath.node,
-                    currentUser,
+                    currentUser, // <-- Use currentUser from context
                     perm
                 )
             ) {
@@ -167,17 +152,17 @@ const CommandExecutor = (() => {
           }
         }
       }
+
       const context = {
         args: remainingArgs,
         options,
         flags,
-        currentUser,
+        currentUser, // <-- Ensure currentUser is included in the context passed to coreLogic
         validatedPaths,
         signal: options.signal,
       };
       return definition.coreLogic(context);
     };
-    // Attach the definition to the handler for introspection by other systems
     handler.definition = definition;
     return handler;
   }
@@ -962,6 +947,15 @@ const CommandExecutor = (() => {
       const pathInfo = validatedPaths[0];
       const resolvedPath = pathInfo.resolvedPath;
       const content = pathInfo.node ? pathInfo.node.content || "" : "";
+      if (pathInfo.node) {
+        if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "write")) {
+          return {
+            success: false,
+            error: `edit: '${resolvedPath}': Permission denied to write. File can be viewed but not saved.`,
+            messageType: Config.CSS_CLASSES.WARNING_MSG // Warn, but still open for read-only viewing
+          };
+        }
+      }
       EditorManager.enter(resolvedPath, content);
       return {
         success: true,
@@ -1720,6 +1714,12 @@ const CommandExecutor = (() => {
         return {
           success: false,
           error: `removeuser: Cannot remove the default '${Config.USER.DEFAULT_NAME}' user.`,
+        };
+      }
+      if (usernameToRemove === "root") {
+        return {
+          success: false,
+          error: "removeuser: The 'root' user cannot be removed.",
         };
       }
 

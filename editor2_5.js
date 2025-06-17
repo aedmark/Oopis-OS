@@ -126,6 +126,10 @@ const EditorUI = (() => {
   elements.codeBlockButton = null;
   elements.ulButton = null;
   elements.olButton = null;
+  // START - ADDED NEW VARIABLES FOR UNDO/REDO BUTTONS
+  elements.undoButton = null;
+  elements.redoButton = null;
+  // END - ADDED NEW VARIABLES FOR UNDO/REDO BUTTONS
   let eventCallbacks = {};
   let previewDebounceTimer = null;
   const GUTTER_WRAP_HIDDEN_CLASS = "gutter-hidden-by-wrap";
@@ -172,8 +176,20 @@ const EditorUI = (() => {
       className: "py-1 px-2 flex items-center space-x-1",
       classList: [EditorAppConfig.CSS_CLASSES.HIDDEN]
     });
+
+    // START - REPLACED DUPLICATE DECLARATION AND ADDED UNDO/REDO BUTTONS
     const formatButtonDetails = [{
-      name: 'boldButton',
+      name: 'undoButton',
+      iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5,8C9.81,8 7.5,10.27 7.5,13C7.5,15.73 9.81,18 12.5,18C14.7,18 16.63,16.62 17.43,14.5H19.79C18.92,17.59 15.93,20 12.5,20C8.42,20 5,16.58 5,12.5C5,9.08 7.57,6.23 10.89,5.29L8,8H12.5M12.5,10L10,12.5L12.5,15L15,12.5L12.5,10M12.5,4L10,6.5L12.5,9L15,6.5L12.5,4M19,8L16.5,10.5L19,13L21.5,10.5L19,8Z"/></svg>', // Standard undo icon
+      title: 'Undo (Ctrl+Z)',
+      callbackName: 'onUndo'
+    }, {
+      name: 'redoButton',
+      iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8C14.19,8 16.5,10.27 16.5,13C16.5,15.73 14.19,18 11.5,18C9.3,18 7.37,16.62 6.57,14.5H4.21C5.08,17.59 8.07,20 11.5,20C15.58,20 19,16.58 19,12.5C19,9.08 16.43,6.23 13.11,5.29L16,8H11.5M11.5,10L14,12.5L11.5,15L9,12.5L11.5,10M11.5,4L14,6.5L11.5,9L9,6.5L11.5,4M5,8L7.5,10.5L5,13L2.5,10.5L5,8Z"/></svg>', // Standard redo icon
+      title: 'Redo (Ctrl+Y / Ctrl+Shift+Z)',
+      callbackName: 'onRedo'
+    }, {
+      name: 'boldButton', // Corrected: Removed extra '{'
       iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M15.68,11.39C16.78,10.68 17.5,9.53 17.5,8.25C17.5,5.9 15.61,4 13.25,4H6V18H13.75C16.04,18 17.93,16.19 17.93,13.91C17.93,12.59 17.11,11.51 15.68,11.39M9,6.5H13C14.11,6.5 15,7.39 15,8.5C15,9.61 14.11,10.5 13,10.5H9V6.5M13.5,15.5H9V12H13.5C14.61,12 15.5,12.89 15.5,14C15.5,15.11 14.61,15.5 13.5,15.5Z"/></svg>',
       title: 'Bold (Ctrl+B)',
       callbackName: 'onFormatBold'
@@ -213,6 +229,8 @@ const EditorUI = (() => {
       title: 'Ordered List',
       callbackName: 'onFormatOl'
     }];
+    // END - REPLACED DUPLICATE DECLARATION AND ADDED UNDO/REDO BUTTONS
+
     formatButtonDetails.forEach(detail => {
       if(typeof eventCallbacks[detail.callbackName] === 'function') {
         elements[detail.name] = Utils.createElement("button", {
@@ -228,13 +246,15 @@ const EditorUI = (() => {
         console.warn(`EditorUI: Callback ${detail.callbackName} not provided for button ${detail.name}`);
       }
     });
+
     const controlsRightGroup = Utils.createElement("div", {
       className: "flex"
     }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton); // <-- Add elements.exitButton here
     elements.controlsDiv = Utils.createElement("div", {
-      id: "editor-controls",
-      className: "py-1 flex justify-between items-center border-b border-neutral-700 mb-1",
-    }, elements.formattingToolbar, controlsRightGroup);
+          id: "editor-controls",
+          className: "py-1 flex justify-between items-center border-b border-neutral-700 mb-1",
+        },
+        elements.formattingToolbar, controlsRightGroup);
     elements.lineGutter = Utils.createElement("div", {
       id: "editor-line-gutter",
       style: {
@@ -306,7 +326,7 @@ const EditorUI = (() => {
     elements.instructionsFooter = Utils.createElement("div", {
       id: "editor-instructions-footer",
       className: "pt-2 pb-0.5 text-sm text-center text-neutral-400 flex-shrink-0 border-t border-neutral-700 mt-1",
-      textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview`,
+      textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview | Ctrl+Z: Undo | Ctrl+Y/Ctrl+Shift+Z: Redo`, // UPDATED
     });
     elements.editorContainer = Utils.createElement("div", {
       id: "editor-container",
@@ -335,7 +355,7 @@ const EditorUI = (() => {
     }
     if(previewDebounceTimer) clearTimeout(previewDebounceTimer);
     previewDebounceTimer = null;
-    const newElementsToClear = ['formattingToolbar', 'boldButton', 'italicButton', 'linkButton', 'quoteButton', 'codeButton', 'codeBlockButton', 'ulButton', 'olButton', 'exitButton']; // <-- Add 'exitButton' here
+    const newElementsToClear = ['formattingToolbar', 'boldButton', 'italicButton', 'linkButton', 'quoteButton', 'codeButton', 'codeBlockButton', 'ulButton', 'olButton', 'exitButton', 'undoButton', 'redoButton']; // ADDED undo/redo to clear list
     newElementsToClear.forEach(elName => {
       elements[elName] = null;
     });
@@ -534,7 +554,9 @@ const EditorUI = (() => {
     setViewMode,
     getPreviewPaneHTML,
     setGutterVisibility,
-    elements: elements
+    elements: { // Corrected: Using spread operator to expose all elements
+      ...elements
+    }
   };
 })();
 const EditorManager = (() => {
@@ -546,6 +568,13 @@ const EditorManager = (() => {
   let isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
   let originalContent = "";
   let isDirty = false;
+
+  // START - ADDED NEW VARIABLES FOR UNDO/REDO LOGIC
+  let undoStack = [];
+  let redoStack = [];
+  const MAX_UNDO_STATES = 100; // Max number of undoable actions
+  let saveUndoStateTimeout = null; // Debounce timer for saving undo states
+  // END - ADDED NEW VARIABLES FOR UNDO/REDO LOGIC
 
   function _loadWordWrapSetting() {
     const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
@@ -585,6 +614,17 @@ const EditorManager = (() => {
   function _handleEditorInput() {
     if(!isActiveState) return;
     const currentContent = EditorUI.getTextareaContent();
+
+    // START - ADDED DEBOUNCE LOGIC FOR UNDO STATE SAVING
+    if (saveUndoStateTimeout) {
+      clearTimeout(saveUndoStateTimeout);
+    }
+    saveUndoStateTimeout = setTimeout(() => {
+      _saveUndoState(currentContent);
+      saveUndoStateTimeout = null;
+    }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
+    // END - ADDED DEBOUNCE LOGIC FOR UNDO STATE SAVING
+
     isDirty = currentContent !== originalContent;
     _updateFullEditorUI();
   }
@@ -648,6 +688,53 @@ const EditorManager = (() => {
     }
   }
 
+  // START - ADDED NEW UNDO/REDO FUNCTIONS
+  function _saveUndoState(content) {
+    if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== content) {
+      undoStack.push(content);
+      if (undoStack.length > MAX_UNDO_STATES) {
+        undoStack.shift();
+      }
+      redoStack = [];
+      _updateUndoRedoButtonStates();
+    }
+  }
+
+  function _performUndo() {
+    if (undoStack.length > 1) {
+      const currentState = undoStack.pop();
+      redoStack.push(currentState);
+      const prevState = undoStack[undoStack.length - 1];
+
+      EditorUI.setTextareaContent(prevState);
+      EditorUI.setTextareaSelection(prevState.length, prevState.length);
+      _handleEditorInput();
+      _updateUndoRedoButtonStates();
+    }
+  }
+
+  function _performRedo() {
+    if (redoStack.length > 0) {
+      const nextState = redoStack.pop();
+      undoStack.push(nextState);
+
+      EditorUI.setTextareaContent(nextState);
+      EditorUI.setTextareaSelection(nextState.length, nextState.length);
+      _handleEditorInput();
+      _updateUndoRedoButtonStates();
+    }
+  }
+
+  function _updateUndoRedoButtonStates() {
+    if (EditorUI.elements.undoButton) {
+      EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
+    }
+    if (EditorUI.elements.redoButton) {
+      EditorUI.elements.redoButton.disabled = redoStack.length === 0;
+    }
+  }
+  // END - ADDED NEW UNDO/REDO FUNCTIONS
+
   function _applyTextManipulation(type) {
     if(!isActiveState) return;
     const selection = EditorUI.getTextareaSelection();
@@ -661,8 +748,8 @@ const EditorManager = (() => {
     const isMarkdown = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
     const isHTML = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     let prefix = "",
-      suffix = "",
-      placeholder = "";
+        suffix = "",
+        placeholder = "";
     let modifiedSegment = "";
     const applyToLines = (text, linePrefixTransform) => text.split('\n').map((line, index) => (typeof linePrefixTransform === 'function' ? linePrefixTransform(index) : linePrefixTransform) + line).join('\n');
     switch(type) {
@@ -770,6 +857,13 @@ const EditorManager = (() => {
     currentFileMode = EditorUtils.determineMode(filePath);
     originalContent = content;
     isDirty = false;
+
+    // START - INITIALIZE UNDO/REDO STACKS ON ENTRY
+    undoStack = [];
+    redoStack = [];
+    _saveUndoState(content); // Save initial state
+    // END - INITIALIZE UNDO/REDO STACKS ON ENTRY
+
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     document.addEventListener('keydown', handleKeyDown);
     EditorUI.buildLayout(DOM.terminalDiv, {
@@ -787,7 +881,11 @@ const EditorManager = (() => {
       onFormatCode: () => _applyTextManipulation('code'),
       onFormatCodeBlock: () => _applyTextManipulation('codeblock'),
       onFormatUl: () => _applyTextManipulation('ul'),
-      onFormatOl: () => _applyTextManipulation('ol')
+      onFormatOl: () => _applyTextManipulation('ol'),
+      // START - ADDED NEW CALLBACKS FOR UNDO/REDO BUTTONS
+      onUndo: _performUndo.bind(this),
+      onRedo: _performRedo.bind(this)
+      // END - ADDED NEW CALLBACKS
     });
     EditorUI.setGutterVisibility(!isWordWrapActive);
     currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY; // Set it here, once.
@@ -799,6 +897,9 @@ const EditorManager = (() => {
     _updateFormattingToolbarVisibility();
     _updateFullEditorUI();
     EditorUI.setEditorFocus();
+    // START - Call to update button states after building UI
+    _updateUndoRedoButtonStates();
+    // END - Call to update button states after building UI
   }
   async function _performExitActions() {
     document.removeEventListener('keydown', handleKeyDown);
@@ -808,6 +909,13 @@ const EditorManager = (() => {
     currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
     isDirty = false;
     originalContent = "";
+
+    // START - CLEAR STACKS ON EXIT
+    undoStack = [];
+    redoStack = [];
+    saveUndoStateTimeout = null; // Clear any pending debounced saves
+    // END - CLEAR STACKS ON EXIT
+
     if(DOM.outputDiv) DOM.outputDiv.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
     if(DOM.inputLineContainerDiv) DOM.inputLineContainerDiv.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
     TerminalUI.setInputState(true);
@@ -991,6 +1099,20 @@ const EditorManager = (() => {
           }
           // If Shift IS pressed, we do nothing, letting the browser handle it.
           break;
+          // START - ADDED NEW KEYBOARD SHORTCUTS FOR UNDO/REDO
+        case "z":
+          event.preventDefault();
+          if (event.shiftKey) { // Ctrl+Shift+Z for Redo
+            _performRedo();
+          } else { // Ctrl+Z for Undo
+            _performUndo();
+          }
+          break;
+        case "y": // Ctrl+Y for Redo
+          event.preventDefault();
+          _performRedo();
+          break;
+          // END - ADDED NEW KEYBOARD SHORTCUTS FOR UNDO/REDO
       }
     }
     setTimeout(_handleEditorSelectionChange, 0);
