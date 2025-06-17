@@ -563,13 +563,10 @@ const EditorManager = (() => {
   let isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
   let originalContent = "";
   let isDirty = false;
-
-  // START - ADDED NEW VARIABLES FOR UNDO/REDO LOGIC
   let undoStack = [];
   let redoStack = [];
   const MAX_UNDO_STATES = 100; // Max number of undoable actions
   let saveUndoStateTimeout = null; // Debounce timer for saving undo states
-  // END - ADDED NEW VARIABLES FOR UNDO/REDO LOGIC
 
   function _loadWordWrapSetting() {
     const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");

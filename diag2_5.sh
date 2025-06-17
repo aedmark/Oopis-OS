@@ -16,7 +16,6 @@ delay 800
 mkdir /home/userDiag/diag_workspace/
 chown userDiag /home/userDiag/diag_workspace/
 cp /home/Guest/diag_assets.sh /home/userDiag/diag_workspace/diag_assets.sh
-# ADD THESE TWO LINES
 chown userDiag /home/userDiag/diag_workspace/diag_assets.sh
 chmod 700 /home/userDiag/diag_workspace/diag_assets.sh
 delay 500

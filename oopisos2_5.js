@@ -1868,56 +1868,41 @@ MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
   }
 
   function hasPermission(node, username, permissionType) {
-    if (username === "root") {
+    if (username === 'root') {
       return true;
     }
-    if (
-        !node ||
-        typeof node.mode !== "number" ||
-        typeof node.owner !== "string" ||
-        typeof node.group !== "string"
-    ) {
-      console.warn("hasPermission: Invalid node or missing permissions info.", {
-        node,
-        username,
-        permissionType,
-      });
+
+    if (!node) {
       return false;
     }
 
-    const ownerPerms = (node.mode >> 6) & 7;
-    const groupPerms = (node.mode >> 3) & 7;
-    const otherPerms = (node.mode >> 0) & 7;
+    const permissionMap = {
+      'read': 4,
+      'write': 2,
+      'execute': 1
+    };
 
-    let permissionMask;
-    switch (permissionType) {
-      case "read":
-        permissionMask = Config.FILESYSTEM.PERMISSION_BIT_READ;
-        break;
-      case "write":
-        permissionMask = Config.FILESYSTEM.PERMISSION_BIT_WRITE;
-        break;
-      case "execute":
-        permissionMask = Config.FILESYSTEM.PERMISSION_BIT_EXECUTE;
-        break;
-      default:
-        console.warn(
-            "hasPermission: Unknown permission type requested:",
-            permissionType
-        );
-        return false;
+    const requiredPerm = permissionMap[permissionType];
+    if (!requiredPerm) {
+      console.error(`Unknown permissionType requested: ${permissionType}`);
+      return false;
     }
 
+    const mode = node.mode || 0;
+    const ownerPerms = (mode >> 6) & 7;
+    const groupPerms = (mode >> 3) & 7;
+    const otherPerms = mode & 7;
+
     if (node.owner === username) {
-      return (ownerPerms & permissionMask) === permissionMask;
+      return (ownerPerms & requiredPerm) === requiredPerm;
     }
 
     const userGroups = GroupManager.getGroupsForUser(username);
     if (userGroups.includes(node.group)) {
-      return (groupPerms & permissionMask) === permissionMask;
+      return (groupPerms & requiredPerm) === requiredPerm;
     }
 
-    return (otherPerms & permissionMask) === permissionMask;
+    return (otherPerms & requiredPerm) === requiredPerm;
   }
 
   function formatModeToString(node) {
@@ -1928,7 +1913,6 @@ MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
     const ownerPerms = (node.mode >> 6) & 7;
     const groupPerms = (node.mode >> 3) & 7;
     const otherPerms = (node.mode >> 0) & 7;
-
     const r = Config.FILESYSTEM.PERMISSION_BIT_READ;
     const w = Config.FILESYSTEM.PERMISSION_BIT_WRITE;
     const x = Config.FILESYSTEM.PERMISSION_BIT_EXECUTE;
