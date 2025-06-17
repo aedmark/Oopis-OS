@@ -89,18 +89,25 @@ const TextAdventureModal = (() => {
     appendOutput(promptText, 'system');
 
     if (currentScriptingContext && currentScriptingContext.isScripting) {
-      return new Promise(resolve => {
-        currentScriptingContext.waitingForInput = true;
-        // START REPLACEMENT
-        currentScriptingContext.inputCallback = (line) => {
-          appendOutput(`> ${line}`, 'system');
-          resolve(line);
-        };
-        currentScriptingContext.cancelCallback = () => {
-          resolve(null);
-        };
-        // END REPLACEMENT
-      });
+      // Find the next valid line of input from the script
+      let inputLine = null;
+      while (currentScriptingContext.currentLineIndex < currentScriptingContext.lines.length - 1) {
+        currentScriptingContext.currentLineIndex++;
+        const line = currentScriptingContext.lines[currentScriptingContext.currentLineIndex].trim();
+        if (line && !line.startsWith('#')) {
+          inputLine = line;
+          break;
+        }
+      }
+
+      // Echo the "typed" input for clarity in the diagnostic log and resolve immediately
+      if (inputLine !== null) {
+        appendOutput(`> ${inputLine}`, 'system');
+        return Promise.resolve(inputLine); // Resolve immediately with the script line
+      } else {
+        appendOutput("> [end of script]", 'system');
+        return Promise.resolve(null); // Resolve with null if script ends
+      }
     }
 
     return new Promise(resolve => {
@@ -151,7 +158,7 @@ const TextAdventureEngine = (() => {
     _displayCurrentRoom();
   }
 
-  function processCommand(command) {
+  async function processCommand(command) {
     TextAdventureModal.appendOutput(`> ${command}`, 'system');
     const parts = command.toLowerCase().trim().split(/\s+/);
     const action = parts[0];
@@ -196,7 +203,7 @@ const TextAdventureEngine = (() => {
 
     const currentUser = UserManager.getCurrentUser().name;
     const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-    const savePath = `/home/<span class="math-inline">\{currentUser\}/</span>{fileName}.sav`;
+    const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
 
     const saveResult = await FileSystemManager.createOrUpdateFile(
         savePath,
@@ -220,8 +227,7 @@ const TextAdventureEngine = (() => {
     }
 
     const currentUser = UserManager.getCurrentUser().name;
-    const savePath = `/home/<span class="math-inline">\{currentUser\}/</span>{fileName}.sav`;
-    const pathInfo = FileSystemManager.validatePath("load", savePath);
+    const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
 
     if (pathInfo.error) {
       TextAdventureModal.appendOutput(`Could not find save game '${fileName}.sav'.`, 'error');

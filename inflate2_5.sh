@@ -1,10 +1,10 @@
 #!/bin/oopis_shell
 
-# OopisOS Test Drive Population Script - Polished Showcase Edition (v2.5)
+# OopisOS Test Drive Population Script - Polished Showcase Edition (v2.5 Enhanced)
 # This script populates the Guest file system with a rich, witty, and
 # demonstrative set of data designed to showcase OopisOS capabilities.
 
-echo "Initializing OopisOS Showcase Environment (v2.5)..."
+echo "Initializing OopisOS Showcase Environment (v2.5 Enhanced)..."
 delay 500
 
 # --- Ensure we are in the correct location ---
@@ -14,12 +14,12 @@ delay 500
 
 # --- Clean up any previous run for a fresh start ---
 echo "Performing cleanup of any previous showcase environment..."
-rm -r -f docs src data reports games .secret_stuff
+rm -r -f docs src data reports games .secret_stuff net_practice
 delay 300
 
 # --- Create all directories first using 'mkdir -p' for efficiency ---
 echo "Creating directory structure..."
-mkdir -p docs/api src/core src/styles data/logs reports games .secret_stuff
+mkdir -p docs/api src/core src/styles data/logs reports games .secret_stuff net_practice
 delay 300
 
 # --- Populate /home/Guest ---
@@ -39,6 +39,7 @@ echo "- **/src**: A peek into the (simulated) world of OopisOS development." >> 
 echo "- **/data**: A treasure trove for \`grep\` enthusiasts, complete with logs and structured data." >> ./README.md
 echo "- **/reports**: Sample files ready for summarization with the 'gemini' command." >> ./README.md
 echo "- **/games**: Custom adventures to be launched with the 'adventure' command." >> ./README.md
+echo "- **/net_practice**: A sandbox for testing the 'wget' and 'curl' commands." >> ./README.md
 echo "- **/etc**: System-wide configuration files (Located at /etc)." >> ./README.md
 echo "- **/vault**: A system-wide restricted area. (Located at /vault)." >> ./README.md
 echo "- Hidden stuff! Use \`ls -a\` to find secrets." >> ./README.md
@@ -54,6 +55,13 @@ echo "Step 4: Profit." >> ./.secret_stuff/hidden_plan.txt
 echo "WARN: Failed login attempt for user 'admin' from unknown source." > ./.secret_stuff/failed_logins.log
 echo "WARN: Failed login attempt for user 'emperor' from unknown source." >> ./.secret_stuff/failed_logins.log
 echo "INFO: Successful login for user 'Guest'." >> ./.secret_stuff/failed_logins.log
+
+# Create some handy aliases for the user to discover
+echo "Creating some helpful command aliases for you..."
+alias ll='ls -l'
+alias la='ls -a'
+alias l.='ls -d .*'
+alias cleanup='rm -f *.tmp *.log'
 
 delay 300
 
@@ -89,21 +97,24 @@ echo "// scheduler.js - Decides which process gets to use the hamster wheel." > 
 echo "function getNextProcess() { return 'the_most_important_one'; }" >> ./src/core/scheduler.js
 echo "body { font-family: 'VT323', monospace; }" > ./src/styles/theme.css
 
-### NEW ###
 echo "Adding files for 'diff' and 'run' command showcases..."
 # Files for the 'diff' command
-echo -e "config_option_a=true
-config_option_b=123
-# A shared line
-config_option_d=hello" > src/config_v1.txt
-echo -e "config_option_a=false
-config_option_c=456
-# A shared line
-config_option_d=world" > src/config_v2.txt
+echo -e "config_option_a=true\nconfig_option_b=123\n# A shared line\nconfig_option_d=hello" > src/config_v1.txt
+echo -e "config_option_a=false\nconfig_option_c=456\n# A shared line\nconfig_option_d=world" > src/config_v2.txt
 
-# A simple script to demonstrate 'run' and 'chmod'
+# A simple script to demonstrate 'run'
 echo 'echo "Hello from an executed script! Congratulations!"' > src/hello.sh
-chmod 744 src/hello.sh # Make it non-executable by default
+chmod 744 src/hello.sh
+
+# A more advanced script with arguments
+echo "Creating a more advanced script for 'run' showcase..."
+echo '#!/bin/oopis_shell' > src/sys_check.sh
+echo 'echo "--- System Check Initialized by '$1' ---"' >> src/sys_check.sh
+echo 'echo "Checking system logs for critical errors..."' >> src/sys_check.sh
+echo 'grep "FATAL" /home/Guest/data/logs/system.log' >> src/sys_check.sh
+echo 'echo ""' >> src/sys_check.sh
+echo 'echo "System check complete. Have a nice day, '$1'!"' >> src/sys_check.sh
+chmod 755 src/sys_check.sh
 
 delay 300
 
@@ -121,6 +132,25 @@ echo "[2025-06-08T21:00:01Z] [INFO] System boot sequence initiated." > ./data/lo
 echo "[2025-06-08T21:05:15Z] [ERROR] Sad trombone failed to play: sad_trombone.wav not found." >> ./data/logs/system.log
 echo "[2025-06-08T21:05:16Z] [FATAL] Critical failure detected in motivation matrix." >> ./data/logs/system.log
 
+# Create temporary files for the 'cleanup' alias showcase
+touch ./data/old_data.tmp
+touch ./data/session.tmp
+
+delay 300
+
+# --- Networking Showcase ---
+echo "Populating content for the networking showcase..."
+echo "# Networking Practice" > ./net_practice/instructions.txt
+echo "" >> ./net_practice/instructions.txt
+echo "This directory is for testing OopisOS's networking commands!" >> ./net_practice/instructions.txt
+echo "" >> ./net_practice/instructions.txt
+echo "## wget" >> ./net_practice/instructions.txt
+echo "Try downloading the OopisOS license file directly from GitHub:" >> ./net_practice/instructions.txt
+echo "  \`wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt\`" >> ./net_practice/instructions.txt
+echo "" >> ./net_practice/instructions.txt
+echo "## curl" >> ./net_practice/instructions.txt
+echo "Try getting a random piece of wisdom from the GitHub Zen API:" >> ./net_practice/instructions.txt
+echo "  \`curl https://api.github.com/zen\`" >> ./net_practice/instructions.txt
 delay 300
 
 # --- Gemini AI Command Showcase ---
@@ -135,8 +165,7 @@ delay 300
 
 # --- Adventure Game Showcase ---
 echo "Installing custom adventure games..."
-echo '{ "title": "Quest for the Lost Semicolon", "startingRoomId": "dev_desk", "winCondition": { "type": "playerHasItem", "itemId": "semicolon" }, "winMessage": "
-*** You found the Lost Semicolon! The main_script.js can now be compiled! You are a hero! ***", "rooms": { "dev_desk": { "name": "A Developer Desk", "description": "You are at a cluttered developer desk. A cold mug of coffee sits next to a glowing monitor showing a syntax error. A path leads north to the kitchen.", "exits": { "north": "kitchen" } }, "kitchen": { "name": "The Office Kitchen", "description": "The coffee machine is empty. A suspicious-looking rubber duck sits on the counter. You can go south back to the desk.", "exits": { "south": "dev_desk" } } }, "items": { "coffee_mug": { "id": "coffee_mug", "name": "Cold Coffee Mug", "description": "It is cold, dark, and bitter. Like a Monday morning.", "location": "dev_desk", "canTake": true }, "rubber_duck": { "id": "rubber_duck", "name": "Suspicious Rubber Duck", "description": "It seems to be watching you. It squeaks ominously. Underneath, a tiny, shiny object is wedged.", "location": "kitchen", "canTake": false }, "semicolon": { "id": "semicolon", "name": "The Lost Semicolon", "description": "A perfect, gleaming semicolon. A beacon of hope for broken code.", "location": "kitchen", "canTake": true } } }' > ./games/quest.json
+echo '{ "title": "Quest for the Lost Semicolon", "startingRoomId": "dev_desk", "winCondition": { "type": "playerHasItem", "itemId": "semicolon" }, "winMessage": "\n*** You found the Lost Semicolon! The main_script.js can now be compiled! You are a hero! ***", "rooms": { "dev_desk": { "name": "A Developer Desk", "description": "You are at a cluttered developer desk. A cold mug of coffee sits next to a glowing monitor showing a syntax error. A path leads north to the kitchen.", "exits": { "north": "kitchen" } }, "kitchen": { "name": "The Office Kitchen", "description": "The coffee machine is empty. A suspicious-looking rubber duck sits on the counter. You can go south back to the desk.", "exits": { "south": "dev_desk" } } }, "items": { "coffee_mug": { "id": "coffee_mug", "name": "Cold Coffee Mug", "description": "It is cold, dark, and bitter. Like a Monday morning.", "location": "dev_desk", "canTake": true }, "rubber_duck": { "id": "rubber_duck", "name": "Suspicious Rubber Duck", "description": "It seems to be watching you. It squeaks ominously. Underneath, a tiny, shiny object is wedged.", "location": "kitchen", "canTake": false }, "semicolon": { "id": "semicolon", "name": "The Lost Semicolon", "description": "A perfect, gleaming semicolon. A beacon of hope for broken code.", "location": "kitchen", "canTake": true } } }' > ./games/quest.json
 
 delay 300
 
@@ -165,6 +194,8 @@ chmod 644 /etc/hosts
 logout
 delay 500
 
+# Leave a background process running for the user to find
+delay 99999 &
 
 # --- Finalization ---
 echo " "
@@ -175,25 +206,32 @@ echo "Your OopisOS drive is now ready for exploration."
 echo " "
 echo "Suggestions for immediate testing:"
 echo " "
-echo " # --- Explore the System ---"
+echo " # --- Explore the System & Use Aliases ---"
 echo " ls -R"
+echo " alias          # See the new aliases!"
+echo " ll             # Try out 'ls -l' alias"
+echo " la             # Try out 'ls -a' alias"
+echo " cleanup        # Remove the .tmp files we created"
 echo " cat /etc/motd"
 echo " cat /etc/oopis.conf"
 echo " "
-echo " # --- Search for Clues & Differences ---"
+echo " # --- Search, Diff, & Run Scripts ---"
 echo " grep -iR 'duck' ."
 echo " grep 'WARN' ./.secret_stuff/failed_logins.log"
-### NEW ###
 echo " diff src/config_v1.txt src/config_v2.txt"
-echo " "
-echo " # --- Test Permissions & Execution ---"
-echo " cat /vault/top_secret.txt # (Should fail!)"
-echo " ls -l /shared_for_guest"
-echo " echo 'A message from Guest!' >> /shared_for_guest/readme.txt # (Should succeed)"
-### NEW ###
 echo " run src/hello.sh"
+echo " run src/sys_check.sh 'Brave Tester' # Test the advanced script"
+echo " "
+echo " # --- Test Networking ---"
+echo " cat ./net_practice/instructions.txt"
+echo " wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt"
+echo " "
+echo " # --- Test Permissions & Job Control ---"
+echo " cat /vault/top_secret.txt # (Should fail!)"
+echo " ps                 # Notice the background 'delay' process?"
+echo " kill 1             # Terminate the background process"
 echo " "
 echo " # --- Test Gemini & Adventure ---"
-echo " gemini ./reports/financials_q2.txt "Summarize this report in one sentence.""
+echo " gemini ./reports/financials_q2.txt \"Summarize this report in one sentence.\""
 echo " adventure ./games/quest.json"
 echo " "

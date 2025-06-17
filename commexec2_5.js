@@ -1529,10 +1529,10 @@ const CommandExecutor = (() => {
         }
 
         if (!result || !result.success) {
-          const errorMsg = `Script '${scriptPathArg}' error on line: ${line}\nError: ${result.error || 'Unknown error.'}`;
+          const errorMsg = `Script '${scriptPathArg}' error on line: ${line}\nError: ${result.error || result.output || 'Unknown error.'}`;
           await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
           overallScriptSuccess = false;
-          break;
+          break; // Exit the script on the first error
         }
         scriptingContext.currentLineIndex++;
       }
@@ -2108,7 +2108,7 @@ const CommandExecutor = (() => {
         argIndex: 0,
         optional: true,
         options: {
-          allowMissing: true,
+          allowMissing: true, // Allow missing to handle default game
           expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
         },
       },
@@ -2116,32 +2116,11 @@ const CommandExecutor = (() => {
     coreLogic: async (context) => {
       const { args, currentUser, validatedPaths, options } = context;
 
-      if (
-          typeof TextAdventureModal === "undefined" ||
-          typeof TextAdventureModal.isActive !== "function"
-      ) {
-        return {
-          success: false,
-          error:
-              "Adventure UI (TextAdventureModal) is not available. Check console for JS errors.",
-        };
-      }
-      if (
-          typeof TextAdventureEngine === "undefined" ||
-          typeof TextAdventureEngine.startAdventure !== "function"
-      ) {
-        return {
-          success: false,
-          error:
-              "Adventure Engine (TextAdventureEngine) is not available. Check console for JS errors.",
-        };
+      if (typeof TextAdventureModal === "undefined" || typeof TextAdventureEngine === "undefined") {
+        return { success: false, error: "Adventure module is not properly loaded." };
       }
       if (TextAdventureModal.isActive()) {
-        return {
-          success: false,
-          error:
-              "An adventure is already in progress. Type 'quit' or 'exit' in the adventure window to leave the current game.",
-        };
+        return { success: false, error: "An adventure is already in progress." };
       }
 
       let adventureToLoad;
@@ -2150,73 +2129,60 @@ const CommandExecutor = (() => {
         const filePath = args[0];
         const pathInfo = validatedPaths[0];
 
-        if (pathInfo.error) {
-          return { success: false, error: pathInfo.error };
-        }
+        if (pathInfo.error) return { success: false, error: pathInfo.error };
 
-        const fileNode = pathInfo.node;
-        if (fileNode) {
-          if (!FileSystemManager.hasPermission(fileNode, currentUser, "read")) {
-            return {
-              success: false,
-              error: `adventure: Cannot read file '${filePath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-            };
+        if (!pathInfo.node) return { success: false, error: `adventure: File not found at '${filePath}'.` };
+
+        if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
+          return { success: false, error: `adventure: Cannot read file '${filePath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}` };
+        }
+        try {
+          adventureToLoad = JSON.parse(pathInfo.node.content);
+          if (!adventureToLoad.rooms || !adventureToLoad.startingRoomId) {
+            return { success: false, error: `adventure: Invalid adventure file format in '${filePath}'.` };
           }
-          try {
-            const parsedAdventure = JSON.parse(fileNode.content);
-            if (!parsedAdventure.rooms || !parsedAdventure.startingRoomId || !parsedAdventure.items) {
-              return {
-                success: false,
-                error: `adventure: Invalid adventure file format in '${filePath}'. Missing essential parts like rooms, items, or startingRoomId.`,
-              };
-            }
-            if (!parsedAdventure.title) parsedAdventure.title = filePath;
-            adventureToLoad = parsedAdventure;
-          } catch (e) {
-            return {
-              success: false,
-              error: `adventure: Error parsing adventure file '${filePath}': ${e.message}`,
-            };
-          }
-        } else {
-          return {
-            success: false,
-            error: `adventure: File not found at '${filePath}'.`,
-          };
+          if (!adventureToLoad.title) adventureToLoad.title = filePath;
+        } catch (e) {
+          return { success: false, error: `adventure: Error parsing adventure file '${filePath}': ${e.message}` };
         }
       } else {
-        if (typeof window.sampleAdventure !== "undefined") {
-          adventureToLoad = window.sampleAdventure;
-        } else {
-          console.warn(
-              "adventure command: No adventure file specified and window.sampleAdventure not found, using minimal fallback."
-          );
-          adventureToLoad = {
-            title: "Fallback Sample Adventure",
-            startingRoomId: "room1",
-            rooms: {
-              room1: {
-                id: "room1",
-                name: "A Plain Room",
-                description: "You are in a plain room. There are no exits.",
-                exits: {},
-              },
-            },
-            items: {},
-          };
+        if (typeof window.sampleAdventure === "undefined") {
+          return { success: false, error: "adventure: Default game data (window.sampleAdventure) not found." };
+        }
+        adventureToLoad = window.sampleAdventure;
+      }
+
+      // Launch the adventure UI and engine state. This is non-blocking.
+      TextAdventureEngine.startAdventure(adventureToLoad, options);
+
+      // If we are in a script, hijack the execution flow.
+      if (options.scriptingContext && options.scriptingContext.isScripting) {
+        const scriptContext = options.scriptingContext;
+
+        // Loop through the rest of the script, feeding lines to the adventure engine
+        while (scriptContext.currentLineIndex < scriptContext.lines.length - 1) {
+          scriptContext.currentLineIndex++; // Consume the next line
+          const command = scriptContext.lines[scriptContext.currentLineIndex].trim();
+
+          if (command && !command.startsWith('#')) {
+            // Have the engine process the command from the script
+            if (TextAdventureEngine && typeof TextAdventureEngine.processCommand === 'function') {
+              await TextAdventureEngine.processCommand(command);
+            }
+
+            // If the command was quit/exit, the modal will close. Break the loop.
+            const lowerCmd = command.toLowerCase();
+            if (lowerCmd === 'quit' || lowerCmd === 'exit') {
+              break;
+            }
+          }
         }
       }
 
-      // We need to pass the scripting context to the adventure engine
-      // This is a conceptual change; the adventure engine would need to be adapted
-      // to accept this context and use it for its own input prompts (save/load).
-      TextAdventureEngine.startAdventure(adventureToLoad, options);
-
+      // This return now happens AFTER the game session (interactive or scripted) is complete.
       return {
         success: true,
-        output: `Launching adventure: "${
-            adventureToLoad.title || "Untitled Adventure"
-        }"...\n(Game interaction now happens in the adventure modal.)`,
+        output: `Adventure session for "${adventureToLoad.title || "Untitled Adventure"}" has ended.`,
         messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
       };
     },
@@ -3079,6 +3045,11 @@ const CommandExecutor = (() => {
         short: "-f",
         long: "--force",
       },
+      {
+        name: "interactive",
+        short: "-i",
+        long: "--interactive",
+      },
     ],
     argValidation: {
       min: 1,
@@ -3089,16 +3060,20 @@ const CommandExecutor = (() => {
       let allSuccess = true;
       let anyChangeMade = false;
       const messages = [];
+
       for (const pathArg of args) {
         const pathValidation = FileSystemManager.validatePath("rm", pathArg, {
           disallowRoot: true,
         });
+
         if (flags.force && !pathValidation.node) continue;
+
         if (pathValidation.error) {
           messages.push(pathValidation.error);
           allSuccess = false;
           continue;
         }
+
         const node = pathValidation.node;
         if (
             node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
@@ -3110,8 +3085,14 @@ const CommandExecutor = (() => {
           allSuccess = false;
           continue;
         }
-        let confirmed = flags.force;
-        if (!confirmed && options.isInteractive) {
+
+        // --- NEW, SIMPLIFIED CONFIRMATION LOGIC ---
+        let confirmed = false;
+
+        if (flags.force) {
+          confirmed = true;
+        } else if (flags.interactive) {
+          // Explicit -i flag always forces a prompt
           const promptMsg =
               node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
                   ? `Recursively remove directory '${pathArg}'?`
@@ -3122,21 +3103,32 @@ const CommandExecutor = (() => {
               messageLines: [promptMsg],
               onConfirm: () => resolve(true),
               onCancel: () => resolve(false),
+              options, // Pass context for scripted prompts
+            });
+          });
+        } else if (options.isInteractive) {
+          // Interactive shell without -f or -i defaults to prompting
+          const promptMsg = `Remove ${node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? "directory" : "file"} '${pathArg}'?`;
+          confirmed = await new Promise((resolve) => {
+            ModalManager.request({
+              context: "terminal",
+              messageLines: [promptMsg],
+              onConfirm: () => resolve(true),
+              onCancel: () => resolve(false),
               options,
             });
           });
-        } else if (!confirmed && !options.isInteractive) {
-          messages.push(
-              `rm: removal of '${pathArg}' requires confirmation in non-interactive mode (use -f)`
-          );
-          allSuccess = false;
-          continue;
+        } else {
+          // Non-interactive (script) without -f or -i defaults to no prompt
+          confirmed = true;
         }
+
+
         if (confirmed) {
           const deleteResult = await FileSystemManager.deleteNodeRecursive(
               pathArg,
               {
-                force: true,
+                force: true, // Internal call is always forced after confirmation
                 currentUser,
               }
           );
@@ -3153,6 +3145,7 @@ const CommandExecutor = (() => {
         }
       }
       if (anyChangeMade) await FileSystemManager.save();
+
       const finalOutput = messages.filter((m) => m).join("\n");
       return {
         success: allSuccess,

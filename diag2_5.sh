@@ -338,7 +338,7 @@ echo "---------------------------------------------------------------------"
 # --- Phase 14: Network Utilities ---
 echo ""
 echo "===== Testing: Network Utilities (wget, curl) ====="
-wget https://raw.githubusercontent.com/aedmark/Oopis-OS/main/LICENSE.txt
+wget https://raw.githubusercontent.com/aedmark/Oopis-OS/refs/heads/master/LICENSE.txt
 ls LICENSE.txt
 rm LICENSE.txt
 curl https://api.github.com/zen
@@ -378,5 +378,24 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "===== OopisOS Core Test Suite Complete (v2.6) ======="
-echo "Congratulations, the new scripting engine and adventure module are solid!"
+echo "===== OopisOS Core Test Suite Complete (v2.4) ======="
+echo " "
+delay 500
+echo "  ======================================================"
+delay 150
+echo "  ==                                                  =="
+delay 150
+echo "  ==      OopisOS Core Diagnostics - v2.4             =="
+delay 150
+echo "  ==              CONGRATULATIONS,                    =="
+delay 150
+echo "  ==            ALL SYSTEMS ARE GO!                   =="
+delay 200
+echo "  ==                                                  =="
+echo "  ==   (As usual, you've been a real pantload!)       =="
+echo "  ==                                                  =="
+delay 150
+echo "  ======================================================"
+echo " "
+delay 500
+echo "...kthxbye"
