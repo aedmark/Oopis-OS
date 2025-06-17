@@ -278,6 +278,7 @@
                 <li><strong>Multi-User Mayhem with Groups:</strong> Register multiple users (`useradd`) with secure, hashed passwords, `login`, `logout`, switch users with `su` (including to the all-powerful `root`), and manage users with `whoami`, `listusers`, and `removeuser`. Now with user groups (`groupadd`, `usermod`, `groups`, `groupdel`) for fine-grained permissions!</li>
                 <li><strong>Command Your Commands (`alias`):</strong> Create your own command shortcuts with `alias` and remove them with `unalias`.</li>
                 <li><strong>Background Job Control (`ps`, `kill`):</strong> See what processes you've sent to the background with `ps` and terminate them with `kill`.</li>
+                <li><strong>Networking Utilities (`wget`, `curl`):</strong> Fetch content and download files from the web directly within the OS.</li>
                 <li><strong>The 'edit' Command - Now More Luxurious:</strong> A souped-up text editor that handles plain text, Markdown, and HTML with a live preview. Features include line numbers, a detailed status bar, toggleable word wrap, multiple view modes (`Ctrl+P`), an `Export to HTML` function, and a rich formatting toolbar with shortcuts.</li>
                 <li><strong>An AI in the Shell (`gemini`):</strong> Chat with the Gemini AI directly from your terminal. Ask it to write a poem, summarize a file, or start a new conversation with the `-n` flag. It can now use `tree` and other tools to better understand your files.</li>
                 <li><strong>Scripting for the Masses (`run`):</strong> Write your own command scripts! Supports comments (`#`), argument passing (`$1`, `$2`, `$@`, `$#`), and includes handy tools like `delay` and `check_fail` for crafting your own diagnostic epics.</li>
@@ -335,6 +336,8 @@
                 <tr><td><code>unalias [name]</code></td><td>Remove a command shortcut.</td></tr>
                 <tr><td><code>ps</code></td><td>List your background processes (jobs).</td></tr>
                 <tr><td><code>kill [job_id]</code></td><td>Stop a running background process.</td></tr>
+                <tr><td><code>wget [-O file] [url]</code></td><td>Downloads a file from a URL. Use <b>-O</b> to specify the output filename.</td></tr>
+                <tr><td><code>curl [-o file] [url]</code></td><td>Transfers data from a URL, printing to screen. Use <b>-o</b> to save to a file.</td></tr>
                 <tr><td><code>adventure [file.json]</code></td><td>Time for a break! Starts a text adventure. Can load custom games.</td></tr>
                 <tr><td><code>gemini [-n] "[prompt]"</code></td><td>Consult the oracle (Gemini AI). Use <b>-n</b> to start a new conversation.</td></tr>
                 <tr><td><code>useradd, login, logout</code></td><td>Manage user accounts. `useradd` creates one, `login` signs in, `logout` signs out.</td></tr>
@@ -495,7 +498,29 @@
                 <span class="output">[Job 1 finished with error: delay: Operation cancelled. (Reason: Killed by user command.)]</span>
             </div>
 
-
+            <h2>Connecting to the World: `wget` & `curl`</h2>
+            <p>OopisOS can now reach beyond its digital borders! The `wget` and `curl` commands allow you to interact with the real-world internet, downloading files and fetching data directly into your virtual environment. Please note that these commands are subject to the browser's Cross-Origin Resource Sharing (CORS) policies, so they may not work with all websites.</p>
+            <h4><code>wget [-O file] [url]</code></h4>
+            <p>The "web get" command. Its primary purpose is to download files. By default, it saves the file with its original name from the URL.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><code>-O [file]</code>: Use this flag to specify a different output filename.</li>
+            </ul>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Download the OopisOS license and save it locally as 'LICENSE.txt'</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt</span><br>
+                <span class="output">...</span><br>
+                <span class="output">'LICENSE.txt' saved [1132 bytes]</span>
+            </div>
+            <h4><code>curl [-o file] [url]</code></h4>
+            <p>A versatile data transfer tool. By default, `curl` fetches the content from a URL and prints it directly to your terminal screen. This is great for quickly viewing data from APIs or reading simple text files without saving them.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><code>-o [file]</code>: Use this flag to redirect the output to a file instead of the screen.</li>
+            </ul>
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Get a piece of wisdom from the GitHub Zen API</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">curl https://api.github.com/zen</span><br>
+                <span class="output">Mind your words, they are important.</span>
+            </div>
             <h2>Scripting with `run`</h2>
             <p>Why type commands one by one like a peasant? Automate your reign with the <code>run</code> command. Create a text file ending in <code>.sh</code> and fill it with your orders.</p>
             <pre><code class="language-bash">
