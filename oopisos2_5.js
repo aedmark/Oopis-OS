@@ -2034,23 +2034,20 @@ MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
     };
   }
   async function createOrUpdateFile(absolutePath, content, context) {
-    const { currentUser, primaryGroup } = context;
+    const { currentUser, primaryGroup, existingNode: providedExistingNode } = context;
     const nowISO = new Date().toISOString();
-    const pathInfo = validatePath("internal", absolutePath, { allowMissing: true, disallowRoot: true });
 
-    if (pathInfo.error && !(pathInfo.optionsUsed.allowMissing && !pathInfo.node)) {
-      return { success: false, error: pathInfo.error };
-    }
+    const existingNode = providedExistingNode !== undefined ? providedExistingNode : FileSystemManager.getNodeByPath(absolutePath);
 
-    if (pathInfo.node) {
-      if (pathInfo.node.type !== Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
+    if (existingNode) {
+      if (existingNode.type !== Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
         return { success: false, error: `Cannot overwrite non-file '${absolutePath}'` };
       }
-      if (!hasPermission(pathInfo.node, currentUser, "write")) {
+      if (!hasPermission(existingNode, currentUser, "write")) {
         return { success: false, error: `'${absolutePath}': Permission denied` };
       }
-      pathInfo.node.content = content;
-      pathInfo.node.mtime = nowISO;
+      existingNode.content = content;
+      existingNode.mtime = nowISO;
     } else {
       const parentDirResult = createParentDirectoriesIfNeeded(absolutePath);
       if (parentDirResult.error) {
@@ -2062,8 +2059,12 @@ MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
       }
       const fileName = absolutePath.substring(absolutePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
       parentNode.children[fileName] = _createNewFileNode(fileName, content, currentUser, primaryGroup);
+      parentNode.mtime = nowISO; // Also update parent mtime on creation
     }
-    _updateNodeAndParentMtime(absolutePath, nowISO);
+
+    // No longer needs to update parent mtime separately as it's handled above
+    // _updateNodeAndParentMtime(absolutePath, nowISO);
+
     return { success: true };
   }
   return {

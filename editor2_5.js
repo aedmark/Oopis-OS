@@ -177,19 +177,18 @@ const EditorUI = (() => {
       classList: [EditorAppConfig.CSS_CLASSES.HIDDEN]
     });
 
-    // START - REPLACED DUPLICATE DECLARATION AND ADDED UNDO/REDO BUTTONS
     const formatButtonDetails = [{
       name: 'undoButton',
-      iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5,8C9.81,8 7.5,10.27 7.5,13C7.5,15.73 9.81,18 12.5,18C14.7,18 16.63,16.62 17.43,14.5H19.79C18.92,17.59 15.93,20 12.5,20C8.42,20 5,16.58 5,12.5C5,9.08 7.57,6.23 10.89,5.29L8,8H12.5M12.5,10L10,12.5L12.5,15L15,12.5L12.5,10M12.5,4L10,6.5L12.5,9L15,6.5L12.5,4M19,8L16.5,10.5L19,13L21.5,10.5L19,8Z"/></svg>', // Standard undo icon
+      iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5,8C9.81,8 7.5,10.27 7.5,13C7.5,15.73 9.81,18 12.5,18C14.7,18 16.63,16.62 17.43,14.5H19.79C18.92,17.59 15.93,20 12.5,20C8.42,20 5,16.58 5,12.5C5,9.08 7.57,6.23 10.89,5.29L8,8H12.5M12.5,10L10,12.5L12.5,15L15,12.5L12.5,10M12.5,4L10,6.5L12.5,9L15,6.5L12.5,4M19,8L16.5,10.5L19,13L21.5,10.5L19,8Z"/></svg>',
       title: 'Undo (Ctrl+Z)',
       callbackName: 'onUndo'
     }, {
       name: 'redoButton',
-      iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8C14.19,8 16.5,10.27 16.5,13C16.5,15.73 14.19,18 11.5,18C9.3,18 7.37,16.62 6.57,14.5H4.21C5.08,17.59 8.07,20 11.5,20C15.58,20 19,16.58 19,12.5C19,9.08 16.43,6.23 13.11,5.29L16,8H11.5M11.5,10L14,12.5L11.5,15L9,12.5L11.5,10M11.5,4L14,6.5L11.5,9L9,6.5L11.5,4M5,8L7.5,10.5L5,13L2.5,10.5L5,8Z"/></svg>', // Standard redo icon
+      iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8C14.19,8 16.5,10.27 16.5,13C16.5,15.73 14.19,18 11.5,18C9.3,18 7.37,16.62 6.57,14.5H4.21C5.08,17.59 8.07,20 11.5,20C15.58,20 19,16.58 19,12.5C19,9.08 16.43,6.23 13.11,5.29L16,8H11.5M11.5,10L14,12.5L11.5,15L9,12.5L11.5,10M11.5,4L14,6.5L11.5,9L9,6.5L11.5,4M5,8L7.5,10.5L5,13L2.5,10.5L5,8Z"/></svg>',
       title: 'Redo (Ctrl+Y / Ctrl+Shift+Z)',
       callbackName: 'onRedo'
     }, {
-      name: 'boldButton', // Corrected: Removed extra '{'
+      name: 'boldButton',
       iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M15.68,11.39C16.78,10.68 17.5,9.53 17.5,8.25C17.5,5.9 15.61,4 13.25,4H6V18H13.75C16.04,18 17.93,16.19 17.93,13.91C17.93,12.59 17.11,11.51 15.68,11.39M9,6.5H13C14.11,6.5 15,7.39 15,8.5C15,9.61 14.11,10.5 13,10.5H9V6.5M13.5,15.5H9V12H13.5C14.61,12 15.5,12.89 15.5,14C15.5,15.11 14.61,15.5 13.5,15.5Z"/></svg>',
       title: 'Bold (Ctrl+B)',
       callbackName: 'onFormatBold'
@@ -229,10 +228,9 @@ const EditorUI = (() => {
       title: 'Ordered List',
       callbackName: 'onFormatOl'
     }];
-    // END - REPLACED DUPLICATE DECLARATION AND ADDED UNDO/REDO BUTTONS
 
     formatButtonDetails.forEach(detail => {
-      if(typeof eventCallbacks[detail.callbackName] === 'function') {
+      if (typeof eventCallbacks[detail.callbackName] === 'function') {
         elements[detail.name] = Utils.createElement("button", {
           className: "btn-editor btn-editor-format",
           innerHTML: detail.iconHTML,
@@ -249,12 +247,11 @@ const EditorUI = (() => {
 
     const controlsRightGroup = Utils.createElement("div", {
       className: "flex"
-    }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton); // <-- Add elements.exitButton here
+    }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
     elements.controlsDiv = Utils.createElement("div", {
-          id: "editor-controls",
-          className: "py-1 flex justify-between items-center border-b border-neutral-700 mb-1",
-        },
-        elements.formattingToolbar, controlsRightGroup);
+      id: "editor-controls",
+      className: "py-1 flex justify-between items-center border-b border-neutral-700 mb-1",
+    }, elements.formattingToolbar, controlsRightGroup);
     elements.lineGutter = Utils.createElement("div", {
       id: "editor-line-gutter",
       style: {
@@ -326,13 +323,13 @@ const EditorUI = (() => {
     elements.instructionsFooter = Utils.createElement("div", {
       id: "editor-instructions-footer",
       className: "pt-2 pb-0.5 text-sm text-center text-neutral-400 flex-shrink-0 border-t border-neutral-700 mt-1",
-      textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview | Ctrl+Z: Undo | Ctrl+Y/Ctrl+Shift+Z: Redo`, // UPDATED
+      textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview | Ctrl+Z: Undo | Ctrl+Y/Ctrl+Shift+Z: Redo`,
     });
     elements.editorContainer = Utils.createElement("div", {
       id: "editor-container",
       className: "flex-grow flex flex-col w-full h-full",
     }, elements.controlsDiv, elements.mainArea, elements.statusBar, elements.instructionsFooter);
-    if(containerElement && DOM.inputLineContainerDiv) {
+    if (containerElement && DOM.inputLineContainerDiv) {
       containerElement.insertBefore(elements.editorContainer, DOM.inputLineContainerDiv);
     } else {
       console.error("EditorUI.buildLayout: ContainerElement or DOM.inputLineContainerDiv not found in DOM when trying to insert editor.");
@@ -554,9 +551,7 @@ const EditorUI = (() => {
     setViewMode,
     getPreviewPaneHTML,
     setGutterVisibility,
-    elements: { // Corrected: Using spread operator to expose all elements
-      ...elements
-    }
+    elements: elements,
   };
 })();
 const EditorManager = (() => {
@@ -688,7 +683,6 @@ const EditorManager = (() => {
     }
   }
 
-  // START - ADDED NEW UNDO/REDO FUNCTIONS
   function _saveUndoState(content) {
     if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== content) {
       undoStack.push(content);
@@ -701,15 +695,18 @@ const EditorManager = (() => {
   }
 
   function _performUndo() {
-    if (undoStack.length > 1) {
+    if (undoStack.length > 1) { // We need more than the initial state to undo
       const currentState = undoStack.pop();
       redoStack.push(currentState);
       const prevState = undoStack[undoStack.length - 1];
 
+      // Manually update the UI without triggering a new undo state
       EditorUI.setTextareaContent(prevState);
-      EditorUI.setTextareaSelection(prevState.length, prevState.length);
-      _handleEditorInput();
+      isDirty = (prevState !== originalContent);
+      _updateFullEditorUI();
       _updateUndoRedoButtonStates();
+      EditorUI.setTextareaSelection(prevState.length, prevState.length);
+      EditorUI.setEditorFocus();
     }
   }
 
@@ -718,10 +715,13 @@ const EditorManager = (() => {
       const nextState = redoStack.pop();
       undoStack.push(nextState);
 
+      // Manually update the UI without triggering a new undo state
       EditorUI.setTextareaContent(nextState);
-      EditorUI.setTextareaSelection(nextState.length, nextState.length);
-      _handleEditorInput();
+      isDirty = (nextState !== originalContent);
+      _updateFullEditorUI();
       _updateUndoRedoButtonStates();
+      EditorUI.setTextareaSelection(nextState.length, nextState.length);
+      EditorUI.setEditorFocus();
     }
   }
 
@@ -930,7 +930,7 @@ const EditorManager = (() => {
     const nowISO = new Date().toISOString();
     let terminalMessage = null;
     let terminalMessageClass = null;
-    if(!saveChanges && isDirty) {
+    if (!saveChanges && isDirty) {
       const userConfirmedDiscard = await new Promise(resolve => {
         ModalManager.request({
           context: 'graphical',
@@ -941,7 +941,7 @@ const EditorManager = (() => {
           onCancel: () => resolve(false)
         });
       });
-      if(userConfirmedDiscard) {
+      if (userConfirmedDiscard) {
         terminalMessage = `Editor closed for '${currentFilePath || "Untitled"}' without saving. Changes discarded.`;
         terminalMessageClass = Config.CSS_CLASSES.WARNING_MSG;
       } else {
@@ -951,104 +951,52 @@ const EditorManager = (() => {
         EditorUI.setEditorFocus();
         proceedToExit = false;
       }
-    } else if(!saveChanges && !isDirty) {
+    } else if (!saveChanges && !isDirty) {
       terminalMessage = `Editor closed for '${currentFilePath || "Untitled"}'. No changes were made.`;
       terminalMessageClass = Config.CSS_CLASSES.CONSOLE_LOG_MSG;
     }
-    if(!proceedToExit) {
+    if (!proceedToExit) {
       return false;
     }
-    if(saveChanges && currentFilePath) {
+    if (saveChanges && currentFilePath) {
       const newContent = EditorUI.getTextareaContent();
       const existingNode = FileSystemManager.getNodeByPath(currentFilePath);
-      let canWrite = false;
+      const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
 
-      // Permission checks remain the same
-      if(existingNode) {
-        if(FileSystemManager.hasPermission(existingNode, currentUser, "write")) canWrite = true;
-        else await OutputManager.appendToOutput(`Error saving '${currentFilePath}': Permission denied.`, {
-          typeClass: Config.CSS_CLASSES.ERROR_MSG
-        });
+      if (!primaryGroup) {
+        await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+        saveSuccess = false;
       } else {
-        const parentPath = currentFilePath.substring(0, currentFilePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)) || Config.FILESYSTEM.ROOT_PATH;
-        const parentNodeCheck = FileSystemManager.getNodeByPath(parentPath);
-        if(parentNodeCheck && FileSystemManager.hasPermission(parentNodeCheck, currentUser, "write")) canWrite = true;
-        else await OutputManager.appendToOutput(`Error creating '${currentFilePath}': Permission denied in parent directory.`, {
-          typeClass: Config.CSS_CLASSES.ERROR_MSG
-        });
+        const saveResult = await FileSystemManager.createOrUpdateFile(
+            currentFilePath,
+            newContent,
+            { currentUser, primaryGroup, existingNode }
+        );
+
+        if (!saveResult.success) {
+          await OutputManager.appendToOutput(`Error saving '${currentFilePath}': ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+          saveSuccess = false;
+        }
       }
 
-      if(!canWrite) saveSuccess = false;
-
-      if(saveSuccess) {
-        // ---- REFINEMENT START ----
-        // Get the primary group just ONCE here, since we only need it for new file creation.
-        const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-        if (!primaryGroup) {
-          await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-          saveSuccess = false; // This will prevent the rest of the block from running.
-        }
-        // ---- REFINEMENT END ----
-
-        // This check ensures we only proceed if we successfully got the primary group.
-        if (saveSuccess) {
-          const parentDirResult = FileSystemManager.createParentDirectoriesIfNeeded(currentFilePath);
-          if(parentDirResult.error) {
-            await OutputManager.appendToOutput(`edit: ${parentDirResult.error}`, {
-              typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
-            });
-            saveSuccess = false;
-          } else {
-            const parentNode = parentDirResult.parentNode;
-            if(parentNode) {
-              const fileName = currentFilePath.substring(currentFilePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
-
-              // This is the node creation logic you wrote, which is perfect.
-              // It now uses the 'primaryGroup' variable we defined above.
-              const fileNodeData = {
-                type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-                content: newContent,
-                owner: currentUser, // Simplified, as existingNode is null in this branch
-                group: primaryGroup,
-                mode: Config.FILESYSTEM.DEFAULT_FILE_MODE,
-                mtime: nowISO,
-              };
-
-              // If we are updating an existing node, preserve its metadata
-              if (existingNode) {
-                fileNodeData.owner = existingNode.owner;
-                fileNodeData.group = existingNode.group || primaryGroup; // Also patch existing nodes if they are missing a group!
-                fileNodeData.mode = existingNode.mode;
-              }
-
-              parentNode.children[fileName] = fileNodeData;
-
-              FileSystemManager._updateNodeAndParentMtime(currentFilePath, nowISO);
-              if(!(await FileSystemManager.save())) { // Removed 'currentUser' from save(), it's not needed
-                await OutputManager.appendToOutput(`Error saving file '${currentFilePath}'. Changes might be lost.`, {
-                  typeClass: Config.CSS_CLASSES.ERROR_MSG
-                });
-                saveSuccess = false;
-              } else {
-                terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
-                terminalMessageClass = Config.CSS_CLASSES.SUCCESS_MSG;
-                originalContent = newContent;
-                isDirty = false;
-                EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
-              }
-            } else {
-              await OutputManager.appendToOutput(`Failed to save '${currentFilePath}'. Could not obtain parent directory.`, {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG
-              });
-              saveSuccess = false;
-            }
-          }
+      if (saveSuccess) {
+        if (!(await FileSystemManager.save())) {
+          await OutputManager.appendToOutput(`Error saving file system changes for '${currentFilePath}'. Changes might be lost.`, {
+            typeClass: Config.CSS_CLASSES.ERROR_MSG
+          });
+          saveSuccess = false;
+        } else {
+          terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
+          terminalMessageClass = Config.CSS_CLASSES.SUCCESS_MSG;
+          originalContent = newContent;
+          isDirty = false;
+          EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         }
       }
     }
-    if(proceedToExit && saveSuccess) {
+    if (proceedToExit && saveSuccess) {
       OutputManager.setEditorActive(false);
-      if(terminalMessage) {
+      if (terminalMessage) {
         await OutputManager.appendToOutput(terminalMessage, {
           typeClass: terminalMessageClass
         });

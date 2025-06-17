@@ -937,7 +937,7 @@ const CommandExecutor = (() => {
       },
     ],
     coreLogic: async (context) => {
-      const { options, validatedPaths } = context;
+      const { options, currentUser, validatedPaths } = context;
       if (!options.isInteractive) {
         return {
           success: false,
