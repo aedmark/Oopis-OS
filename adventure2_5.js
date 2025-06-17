@@ -1,11 +1,12 @@
-// adventure.js - OopisOS Adventure Engine and Editor v2.5 (Corrected)
+// adventure.js - OopisOS Adventure Engine and Editor v2.5 (Corrected & Finalized)
 
 const TextAdventureModal = (() => {
   "use strict";
-  let adventureModal, adventureContainer, adventureTitle, adventureOutput, adventureInput, adventureCloseBtn;
+  let adventureModal, adventureOutput, adventureInput, adventureCloseBtn, adventureTitle;
   let isActive = false;
-  let promptResolver = null; // Manages the promise for custom input prompts
+  let promptResolver = null;
   let currentEngineInstance = null;
+  let currentScriptingContext = null; // <-- FIX: Context is stored here
 
   function _initDOM() {
     adventureModal = document.getElementById('adventure-modal');
@@ -13,7 +14,6 @@ const TextAdventureModal = (() => {
     adventureInput = document.getElementById('adventure-input');
     adventureCloseBtn = document.getElementById('adventure-close-btn');
     adventureTitle = document.getElementById('adventure-title');
-    // Simplified the DOM check for clarity
     if (!adventureModal || !adventureOutput || !adventureInput || !adventureCloseBtn || !adventureTitle) {
       console.error("TextAdventureModal: Critical UI elements not found in DOM!");
       return false;
@@ -21,10 +21,12 @@ const TextAdventureModal = (() => {
     return true;
   }
 
-  function show(adventureData, engineInstance) {
+  // FIX: Accept the scriptingContext from the engine
+  function show(adventureData, engineInstance, scriptingContext) {
     if (!_initDOM()) return;
 
     currentEngineInstance = engineInstance;
+    currentScriptingContext = scriptingContext; // <-- FIX: Store the context
     isActive = true;
     adventureTitle.textContent = adventureData.title || "Text Adventure";
     adventureOutput.innerHTML = '';
@@ -44,11 +46,12 @@ const TextAdventureModal = (() => {
     if (!isActive) return;
     isActive = false;
 
-    // If there's a pending input prompt, cancel it
     if (promptResolver) {
-      promptResolver(null); // Resolve with null to signal cancellation
+      promptResolver(null);
       promptResolver = null;
     }
+
+    currentScriptingContext = null; // <-- FIX: Clear context on exit
 
     adventureModal.classList.add('hidden');
     if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(false);
@@ -70,23 +73,37 @@ const TextAdventureModal = (() => {
       const command = adventureInput.value.trim();
       adventureInput.value = '';
 
-      // If we are waiting for a special prompt (like a filename)
       if (promptResolver) {
         appendOutput(`> ${command}`, 'system');
         const resolver = promptResolver;
-        promptResolver = null; // Clear the resolver
-        resolver(command); // Fulfill the promise with the user's input
+        promptResolver = null;
+        resolver(command);
       }
-      // Otherwise, process it as a normal game command
       else if (command && currentEngineInstance) {
         currentEngineInstance.processCommand(command);
       }
     }
   }
 
-  // New function to request input and wait for it
   function requestInput(promptText) {
     appendOutput(promptText, 'system');
+
+    // FIX: Check the MODAL's stored context variable
+    if (currentScriptingContext && currentScriptingContext.isScripting) {
+      return new Promise(resolve => {
+        currentScriptingContext.waitingForInput = true;
+        currentScriptingContext.inputCallback = (line) => {
+          appendOutput(`> ${line}`, 'system');
+          currentScriptingContext.waitingForInput = false;
+          resolve(line);
+        };
+        currentScriptingContext.cancelCallback = () => {
+          currentScriptingContext.waitingForInput = false;
+          resolve(null);
+        };
+      });
+    }
+
     return new Promise(resolve => {
       promptResolver = resolve;
       adventureInput.focus();
@@ -102,7 +119,6 @@ const TextAdventureModal = (() => {
     adventureOutput.scrollTop = adventureOutput.scrollHeight;
   }
 
-  // NEW function to clear the output screen, fixing the ReferenceError
   function clearOutput() {
     if(adventureOutput) adventureOutput.innerHTML = '';
   }
@@ -111,8 +127,9 @@ const TextAdventureModal = (() => {
     show,
     hide,
     appendOutput,
-    clearOutput, // Expose the new function
-    requestInput, // Expose the new function
+    clearOutput,
+
+    requestInput,
     isActive: () => isActive,
   };
 })();
@@ -121,14 +138,17 @@ const TextAdventureEngine = (() => {
   "use strict";
   let adventure;
   let player;
+  let scriptingContext = null; // <-- FIX: Correct typo from 'nulll'
 
-  function startAdventure(adventureData) {
+  function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
+    scriptingContext = options.scriptingContext || null;
     player = {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
     };
-    TextAdventureModal.show(adventure, { processCommand });
+    // FIX: Pass the context to the modal
+    TextAdventureModal.show(adventure, { processCommand }, scriptingContext);
     _displayCurrentRoom();
   }
 
@@ -139,7 +159,6 @@ const TextAdventureEngine = (() => {
     const target = parts.slice(1).join(" ");
     if (!action) return;
 
-    // Command handling switch remains the same...
     switch(action) {
       case 'look': _handleLook(target); break;
       case 'go': case 'move': _handleGo(target); break;
@@ -178,7 +197,7 @@ const TextAdventureEngine = (() => {
 
     const currentUser = UserManager.getCurrentUser().name;
     const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-    const savePath = `/home/${currentUser}/${fileName}.sav`;
+    const savePath = `/home/<span class="math-inline">\{currentUser\}/</span>{fileName}.sav`;
 
     const saveResult = await FileSystemManager.createOrUpdateFile(
         savePath,
@@ -202,7 +221,7 @@ const TextAdventureEngine = (() => {
     }
 
     const currentUser = UserManager.getCurrentUser().name;
-    const savePath = `/home/${currentUser}/${fileName}.sav`;
+    const savePath = `/home/<span class="math-inline">\{currentUser\}/</span>{fileName}.sav`;
     const pathInfo = FileSystemManager.validatePath("load", savePath);
 
     if (pathInfo.error) {
@@ -222,7 +241,7 @@ const TextAdventureEngine = (() => {
         }
       }
 
-      TextAdventureModal.clearOutput(); // Use the new, safe function to clear the screen
+      TextAdventureModal.clearOutput();
       TextAdventureModal.appendOutput(`Game '${fileName}.sav' loaded successfully.`, 'info');
       _displayCurrentRoom();
 
@@ -232,8 +251,6 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  // All other helper functions (_displayCurrentRoom, _handleUse, etc.) remain the same.
-  // ... Paste the rest of your TextAdventureEngine helper functions here ...
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
     if(!room) {
@@ -356,7 +373,7 @@ const TextAdventureEngine = (() => {
           _lookInContainer(targetItem);
         }
       }
-    } else { // action is 'close'
+    } else {
       if (targetItem.state === 'closed') {
         TextAdventureModal.appendOutput(`The ${targetItem.name} is already closed.`, 'info');
       } else {

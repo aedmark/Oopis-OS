@@ -1,4 +1,4 @@
-// commexec.js - OopisOS Command Executor v2.5
+// commexec.js - OopisOS Command Executor v2.5 (Scripting Engine Upgrade)
 
 const CommandExecutor = (() => {
   "use strict";
@@ -15,67 +15,68 @@ const CommandExecutor = (() => {
 	- If the request is a general knowledge question not related to the user's files, answer it directly without using any tools.
 	- Do not make up file paths or content. Only use information returned from the tools.
 	- Be friendly and conversational in your final response.`;
-  async function _handleUserSwitch(commandName, targetUser, providedPassword) {
+  async function _handleUserSwitch(commandName, targetUser, providedPassword, options = {}) {
     return new Promise(async (resolve) => {
       const initialLoginAttempt = await UserManager.login(
-        targetUser,
-        providedPassword
+          targetUser,
+          providedPassword
       );
       if (initialLoginAttempt.requiresPasswordPrompt) {
         ModalInputManager.requestInput(
-          Config.MESSAGES.PASSWORD_PROMPT,
-          async (password) => {
-            const finalLoginResult = await UserManager.login(
-              targetUser,
-              password
-            );
-            if (finalLoginResult.success && !finalLoginResult.noAction) {
-              OutputManager.clearOutput();
-              const welcomeMsg =
-                commandName === "login"
-                  ? `${Config.MESSAGES.WELCOME_PREFIX} ${targetUser}${Config.MESSAGES.WELCOME_SUFFIX}`
-                  : `Switched to user: ${targetUser}`;
-              await OutputManager.appendToOutput(welcomeMsg);
-            }
-            resolve({
-              success: finalLoginResult.success,
-              output: finalLoginResult.message,
-              error: finalLoginResult.success
-                ? undefined
-                : finalLoginResult.error || "Login failed.",
-              messageType: finalLoginResult.success
-                ? Config.CSS_CLASSES.SUCCESS_MSG
-                : Config.CSS_CLASSES.ERROR_MSG,
-            });
-          },
-          () => {
-            // onCancel callback
-            resolve({
-              success: true,
-              output: Config.MESSAGES.OPERATION_CANCELLED,
-              messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-            });
-          },
-          true // <<< isObscured: true
+            Config.MESSAGES.PASSWORD_PROMPT,
+            async (password) => {
+              const finalLoginResult = await UserManager.login(
+                  targetUser,
+                  password
+              );
+              if (finalLoginResult.success && !finalLoginResult.noAction) {
+                OutputManager.clearOutput();
+                const welcomeMsg =
+                    commandName === "login"
+                        ? `${Config.MESSAGES.WELCOME_PREFIX} ${targetUser}${Config.MESSAGES.WELCOME_SUFFIX}`
+                        : `Switched to user: ${targetUser}`;
+                await OutputManager.appendToOutput(welcomeMsg);
+              }
+              resolve({
+                success: finalLoginResult.success,
+                output: finalLoginResult.message,
+                error: finalLoginResult.success
+                    ? undefined
+                    : finalLoginResult.error || "Login failed.",
+                messageType: finalLoginResult.success
+                    ? Config.CSS_CLASSES.SUCCESS_MSG
+                    : Config.CSS_CLASSES.ERROR_MSG,
+              });
+            },
+            () => {
+              // onCancel callback
+              resolve({
+                success: true,
+                output: Config.MESSAGES.OPERATION_CANCELLED,
+                messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+              });
+            },
+            true, // isObscured
+            options // Pass down the context for scripting
         );
       } else {
         if (initialLoginAttempt.success && !initialLoginAttempt.noAction) {
           OutputManager.clearOutput();
           const welcomeMsg =
-            commandName === "login"
-              ? `${Config.MESSAGES.WELCOME_PREFIX} ${targetUser}${Config.MESSAGES.WELCOME_SUFFIX}`
-              : `Switched to user: ${targetUser}`;
+              commandName === "login"
+                  ? `${Config.MESSAGES.WELCOME_PREFIX} ${targetUser}${Config.MESSAGES.WELCOME_SUFFIX}`
+                  : `Switched to user: ${targetUser}`;
           await OutputManager.appendToOutput(welcomeMsg);
         }
         resolve({
           success: initialLoginAttempt.success,
           output: initialLoginAttempt.message,
           error: initialLoginAttempt.success
-            ? undefined
-            : initialLoginAttempt.error || "Login failed.",
+              ? undefined
+              : initialLoginAttempt.error || "Login failed.",
           messageType: initialLoginAttempt.success
-            ? Config.CSS_CLASSES.SUCCESS_MSG
-            : Config.CSS_CLASSES.ERROR_MSG,
+              ? Config.CSS_CLASSES.SUCCESS_MSG
+              : Config.CSS_CLASSES.ERROR_MSG,
         });
       }
     });
@@ -83,21 +84,21 @@ const CommandExecutor = (() => {
   function createCommandHandler(definition) {
     const handler = async (args, options) => {
       const { flags, remainingArgs } = Utils.parseFlags(
-        args,
-        definition.flagDefinitions || []
+          args,
+          definition.flagDefinitions || []
       );
       const currentUser = UserManager.getCurrentUser().name;
       if (definition.argValidation) {
         const validationResult = Utils.validateArguments(
-          remainingArgs,
-          definition.argValidation
+            remainingArgs,
+            definition.argValidation
         );
         if (!validationResult.isValid) {
           const customError = definition.argValidation.error;
           const finalError = customError
-            ? `${definition.commandName || ""}: ${customError}`.trim()
-            : `${definition.commandName || ""}: ${
-                validationResult.errorDetail
+              ? `${definition.commandName || ""}: ${customError}`.trim()
+              : `${definition.commandName || ""}: ${
+                  validationResult.errorDetail
               }`.trim();
           return {
             success: false,
@@ -119,9 +120,9 @@ const CommandExecutor = (() => {
             };
           }
           const pathValidationResult = FileSystemManager.validatePath(
-            definition.commandName || "command",
-            pathArg,
-            pv.options
+              definition.commandName || "command",
+              pathArg,
+              pv.options
           );
           if (pathValidationResult.error) {
             if (!(pv.options.allowMissing && !pathValidationResult.node)) {
@@ -144,22 +145,22 @@ const CommandExecutor = (() => {
             return {
               success: false,
               error: `${definition.commandName || ""}: '${
-                remainingArgs[pc.pathArgIndex]
+                  remainingArgs[pc.pathArgIndex]
               }': No such file or directory to check permissions.`,
             };
           }
           for (const perm of pc.permissions) {
             if (
-              !FileSystemManager.hasPermission(
-                validatedPath.node,
-                currentUser,
-                perm
-              )
+                !FileSystemManager.hasPermission(
+                    validatedPath.node,
+                    currentUser,
+                    perm
+                )
             ) {
               return {
                 success: false,
                 error: `${definition.commandName || ""}: '${
-                  remainingArgs[pc.pathArgIndex]
+                    remainingArgs[pc.pathArgIndex]
                 }'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
               };
             }
@@ -199,8 +200,8 @@ const CommandExecutor = (() => {
       const _getApiKey = () => {
         return new Promise((resolve) => {
           let apiKey = StorageManager.loadItem(
-            Config.STORAGE_KEYS.GEMINI_API_KEY,
-            "Gemini API Key"
+              Config.STORAGE_KEYS.GEMINI_API_KEY,
+              "Gemini API Key"
           );
           if (apiKey) {
             resolve({ success: true, key: apiKey });
@@ -208,32 +209,33 @@ const CommandExecutor = (() => {
           }
           if (options.isInteractive) {
             ModalInputManager.requestInput(
-              "Please enter your Gemini API key. It will be saved locally for future use.",
-              (providedKey) => {
-                if (!providedKey) {
-                  resolve({
-                    success: false,
-                    error: "API key cannot be empty.",
-                  });
-                  return;
-                }
-                StorageManager.saveItem(
-                  Config.STORAGE_KEYS.GEMINI_API_KEY,
-                  providedKey,
-                  "Gemini API Key"
-                );
-                OutputManager.appendToOutput(
-                  "API Key saved to local storage.",
-                  {
-                    typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
+                "Please enter your Gemini API key. It will be saved locally for future use.",
+                (providedKey) => {
+                  if (!providedKey) {
+                    resolve({
+                      success: false,
+                      error: "API key cannot be empty.",
+                    });
+                    return;
                   }
-                );
-                resolve({ success: true, key: providedKey });
-              },
-              () => {
-                resolve({ success: false, error: "API key entry cancelled." });
-              },
-              false
+                  StorageManager.saveItem(
+                      Config.STORAGE_KEYS.GEMINI_API_KEY,
+                      providedKey,
+                      "Gemini API Key"
+                  );
+                  OutputManager.appendToOutput(
+                      "API Key saved to local storage.",
+                      {
+                        typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
+                      }
+                  );
+                  resolve({ success: true, key: providedKey });
+                },
+                () => {
+                  resolve({ success: false, error: "API key entry cancelled." });
+                },
+                false,
+                options // Pass context for scripting
             );
           } else {
             resolve({
@@ -258,7 +260,7 @@ const CommandExecutor = (() => {
                     path: {
                       type: "STRING",
                       description:
-                        "The path of the directory or file to list. Defaults to the current directory.",
+                          "The path of the directory or file to list. Defaults to the current directory.",
                     },
                   },
                 },
@@ -272,7 +274,7 @@ const CommandExecutor = (() => {
                     path: {
                       type: "STRING",
                       description:
-                        "The path to the file whose content should be displayed.",
+                          "The path to the file whose content should be displayed.",
                     },
                   },
                 },
@@ -295,7 +297,7 @@ const CommandExecutor = (() => {
                     expression: {
                       type: "STRING",
                       description:
-                        "The search expression (e.g., '-name \"*.txt\"').",
+                          "The search expression (e.g., '-name \"*.txt\"').",
                     },
                   },
                 },
@@ -313,7 +315,7 @@ const CommandExecutor = (() => {
                     path: {
                       type: "STRING",
                       description:
-                        "The path of the file or directory to search in.",
+                          "The path of the file or directory to search in.",
                     },
                   },
                 },
@@ -327,7 +329,7 @@ const CommandExecutor = (() => {
                     path: {
                       type: "STRING",
                       description:
-                        "The path of the directory to display as a tree. Defaults to the current directory.",
+                          "The path of the directory to display as a tree. Defaults to the current directory.",
                     },
                   },
                 },
@@ -361,15 +363,15 @@ const CommandExecutor = (() => {
               };
             }
             if (
-              response.status === 400 &&
-              errorBody?.error?.message.includes("API key not valid")
+                response.status === 400 &&
+                errorBody?.error?.message.includes("API key not valid")
             ) {
               return { success: false, error: "INVALID_API_KEY" };
             }
             return {
               success: false,
               error: `API request failed with status ${response.status}. ${
-                errorBody?.error?.message || response.statusText
+                  errorBody?.error?.message || response.statusText
               }`,
             };
           }
@@ -400,8 +402,8 @@ const CommandExecutor = (() => {
         geminiConversationHistory = [];
         if (options.isInteractive) {
           await OutputManager.appendToOutput(
-            "Starting a new conversation with Gemini.",
-            { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG }
+              "Starting a new conversation with Gemini.",
+              { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG }
           );
         }
       }
@@ -419,8 +421,8 @@ const CommandExecutor = (() => {
 
       while (true) {
         const apiResult = await _callGeminiApi(
-          apiKey,
-          geminiConversationHistory
+            apiKey,
+            geminiConversationHistory
         );
 
         if (!apiResult.success) {
@@ -430,7 +432,7 @@ const CommandExecutor = (() => {
             return {
               success: false,
               error:
-                "gemini: Your API key is invalid. It has been removed. Please run the command again to enter a new key.",
+                  "gemini: Your API key is invalid. It has been removed. Please run the command again to enter a new key.",
             };
           }
           return {
@@ -441,18 +443,18 @@ const CommandExecutor = (() => {
 
         const result = apiResult.data;
         const candidate =
-          result.candidates && result.candidates.length > 0
-            ? result.candidates[0]
-            : undefined;
+            result.candidates && result.candidates.length > 0
+                ? result.candidates[0]
+                : undefined;
 
         if (!candidate || !candidate.content || !candidate.content.parts) {
           geminiConversationHistory.pop(); // The user's prompt failed, so remove it.
 
           // Explicitly check for promptFeedback and its blockReason property
           const blockReason =
-            result.promptFeedback && result.promptFeedback.blockReason
-              ? result.promptFeedback.blockReason
-              : null;
+              result.promptFeedback && result.promptFeedback.blockReason
+                  ? result.promptFeedback.blockReason
+                  : null;
 
           if (blockReason) {
             return {
@@ -463,9 +465,9 @@ const CommandExecutor = (() => {
 
           // Explicitly check for an error message on the result object
           const errorMessage =
-            result.error && result.error.message
-              ? result.error.message
-              : "Received an invalid or empty response from the API.";
+              result.error && result.error.message
+                  ? result.error.message
+                  : "Received an invalid or empty response from the API.";
           return { success: false, error: `gemini: ${errorMessage}` };
         }
 
@@ -495,19 +497,19 @@ const CommandExecutor = (() => {
             const funcName = functionCall.name;
             const funcArgs = JSON.stringify(functionCall.args || {});
             await OutputManager.appendToOutput(
-              `Gemini is exploring with: ${funcName}(${funcArgs})`,
-              { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG }
+                `Gemini is exploring with: ${funcName}(${funcArgs})`,
+                { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG }
             );
           }
 
           const commandName = functionCall.name;
           const commandArgs = Object.values(functionCall.args || {})
-            .map((arg) => (typeof arg === "string" ? `"${arg}"` : arg))
-            .join(" ");
+              .map((arg) => (typeof arg === "string" ? `"${arg}"` : arg))
+              .join(" ");
           const fullCommandStr = `${commandName} ${commandArgs}`.trim();
           const execResult = await CommandExecutor.processSingleCommand(
-            fullCommandStr,
-            false
+              fullCommandStr,
+              false
           );
 
           geminiConversationHistory.push({
@@ -518,8 +520,8 @@ const CommandExecutor = (() => {
                   name: commandName,
                   response: {
                     content: execResult.success
-                      ? execResult.output || "(No output from command)"
-                      : `Error: ${execResult.error || "Command failed"}`,
+                        ? execResult.output || "(No output from command)"
+                        : `Error: ${execResult.error || "Command failed"}`,
                   },
                 },
               },
@@ -571,12 +573,12 @@ const CommandExecutor = (() => {
       if (args.length === 0) {
         output += "Available commands:\n";
         Object.keys(commands)
-          .sort()
-          .forEach((cmd) => {
-            output += `  ${cmd.padEnd(15)} ${
-              commands[cmd].description || ""
-            }\n`;
-          });
+            .sort()
+            .forEach((cmd) => {
+              output += `  ${cmd.padEnd(15)} ${
+                  commands[cmd].description || ""
+              }\n`;
+            });
         output += "\nType 'help [command]' for more information.";
       } else {
         const cmdName = args[0].toLowerCase();
@@ -584,7 +586,7 @@ const CommandExecutor = (() => {
           output = commands[cmdName].helpText;
         } else if (commands[cmdName]) {
           output = `No detailed help for '${cmdName}'.\nDesc: ${
-            commands[cmdName].description || "N/A"
+              commands[cmdName].description || "N/A"
           }`;
         } else {
           return {
@@ -614,10 +616,10 @@ const CommandExecutor = (() => {
     coreLogic: async () => {
       // <-- 'context' has been removed
       await OutputManager.appendToOutput(
-        "Rebooting OopisOS (reloading browser page and clearing cache)...",
-        {
-          typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-        }
+          "Rebooting OopisOS (reloading browser page and clearing cache)...",
+          {
+            typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
+          }
       );
       setTimeout(() => {
         window.location.reload();
@@ -727,17 +729,17 @@ const CommandExecutor = (() => {
       exact: 2,
     },
     coreLogic: async (context) => {
-      const { args, currentUser, flags } = context;
+      const { args, currentUser, flags, options } = context;
       const sourcePathArg = args[0];
       const destPathArg = args[1];
       const nowISO = new Date().toISOString();
       const isInteractiveEffective = flags.interactive && !flags.force;
       const sourceValidation = FileSystemManager.validatePath(
-        "mv (source)",
-        sourcePathArg,
-        {
-          disallowRoot: true,
-        }
+          "mv (source)",
+          sourcePathArg,
+          {
+            disallowRoot: true,
+          }
       );
       if (sourceValidation.error)
         return {
@@ -747,15 +749,15 @@ const CommandExecutor = (() => {
       const sourceNode = sourceValidation.node;
       const absSourcePath = sourceValidation.resolvedPath;
       const sourceParentPath =
-        absSourcePath.substring(
-          0,
-          absSourcePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
-        ) || Config.FILESYSTEM.ROOT_PATH;
+          absSourcePath.substring(
+              0,
+              absSourcePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
+          ) || Config.FILESYSTEM.ROOT_PATH;
       const sourceParentNode =
-        FileSystemManager.getNodeByPath(sourceParentPath);
+          FileSystemManager.getNodeByPath(sourceParentPath);
       if (
-        !sourceParentNode ||
-        !FileSystemManager.hasPermission(sourceParentNode, currentUser, "write")
+          !sourceParentNode ||
+          !FileSystemManager.hasPermission(sourceParentNode, currentUser, "write")
       ) {
         return {
           success: false,
@@ -763,15 +765,15 @@ const CommandExecutor = (() => {
         };
       }
       const destValidation = FileSystemManager.validatePath(
-        "mv (destination)",
-        destPathArg,
-        {
-          allowMissing: true,
-        }
+          "mv (destination)",
+          destPathArg,
+          {
+            allowMissing: true,
+          }
       );
       if (
-        destValidation.error &&
-        !(destValidation.optionsUsed.allowMissing && !destValidation.node)
+          destValidation.error &&
+          !(destValidation.optionsUsed.allowMissing && !destValidation.node)
       ) {
         return {
           success: false,
@@ -781,38 +783,38 @@ const CommandExecutor = (() => {
       let absDestPath = destValidation.resolvedPath;
       let destNode = destValidation.node;
       const sourceName = absSourcePath.substring(
-        absSourcePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+          absSourcePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
       );
       let finalDestName = sourceName;
       let targetContainerNode;
       let targetContainerAbsPath;
       if (
-        destNode &&
-        destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+          destNode &&
+          destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
       ) {
         targetContainerNode = destNode;
         targetContainerAbsPath = absDestPath;
         absDestPath = FileSystemManager.getAbsolutePath(
-          sourceName,
-          absDestPath
+            sourceName,
+            absDestPath
         );
         destNode = targetContainerNode.children[sourceName];
       } else {
         targetContainerAbsPath =
-          absDestPath.substring(
-            0,
-            absDestPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
-          ) || Config.FILESYSTEM.ROOT_PATH;
+            absDestPath.substring(
+                0,
+                absDestPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
+            ) || Config.FILESYSTEM.ROOT_PATH;
         targetContainerNode = FileSystemManager.getNodeByPath(
-          targetContainerAbsPath
+            targetContainerAbsPath
         );
         finalDestName = absDestPath.substring(
-          absDestPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+            absDestPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
         );
       }
       if (
-        !targetContainerNode ||
-        targetContainerNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+          !targetContainerNode ||
+          targetContainerNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
       ) {
         return {
           success: false,
@@ -820,11 +822,11 @@ const CommandExecutor = (() => {
         };
       }
       if (
-        !FileSystemManager.hasPermission(
-          targetContainerNode,
-          currentUser,
-          "write"
-        )
+          !FileSystemManager.hasPermission(
+              targetContainerNode,
+              currentUser,
+              "write"
+          )
       ) {
         return {
           success: false,
@@ -840,8 +842,8 @@ const CommandExecutor = (() => {
       }
       if (destNode) {
         if (
-          sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-          destNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+            sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+            destNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           return {
             success: false,
@@ -849,8 +851,8 @@ const CommandExecutor = (() => {
           };
         }
         if (
-          sourceNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-          destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+            sourceNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+            destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           return {
             success: false,
@@ -864,6 +866,7 @@ const CommandExecutor = (() => {
               messageLines: [`Overwrite '${absDestPath}'?`],
               onConfirm: () => resolve(true),
               onCancel: () => resolve(false),
+              options,
             });
           });
           if (!confirmed)
@@ -880,8 +883,8 @@ const CommandExecutor = (() => {
         }
       }
       if (
-        sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-        absDestPath.startsWith(absSourcePath + Config.FILESYSTEM.PATH_SEPARATOR)
+          sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+          absDestPath.startsWith(absSourcePath + Config.FILESYSTEM.PATH_SEPARATOR)
       ) {
         return {
           success: false,
@@ -893,16 +896,16 @@ const CommandExecutor = (() => {
       targetContainerNode.children[finalDestName] = movedNode;
       targetContainerNode.mtime = nowISO;
       if (
-        sourceParentNode &&
-        sourceParentNode.children &&
-        sourceParentNode.children[sourceName]
+          sourceParentNode &&
+          sourceParentNode.children &&
+          sourceParentNode.children[sourceName]
       ) {
         delete sourceParentNode.children[sourceName];
         sourceParentNode.mtime = nowISO;
       } else {
         delete targetContainerNode.children[finalDestName];
         console.error(
-          Config.INTERNAL_ERRORS.SOURCE_NOT_FOUND_IN_PARENT_PREFIX +
+            Config.INTERNAL_ERRORS.SOURCE_NOT_FOUND_IN_PARENT_PREFIX +
             sourceName +
             Config.INTERNAL_ERRORS.SOURCE_NOT_FOUND_IN_PARENT_MIDDLE +
             sourceParentPath +
@@ -974,12 +977,12 @@ const CommandExecutor = (() => {
       error: "expects exactly one argument (username)",
     },
     coreLogic: async (context) => {
-      const { args } = context;
+      const { args, options } = context;
       const username = args[0];
       const userCheck = StorageManager.loadItem(
-        Config.STORAGE_KEYS.USER_CREDENTIALS,
-        "User list",
-        {}
+          Config.STORAGE_KEYS.USER_CREDENTIALS,
+          "User list",
+          {}
       );
       if (userCheck[username]) {
         return {
@@ -990,26 +993,28 @@ const CommandExecutor = (() => {
       try {
         const firstPassword = await new Promise((resolve, reject) => {
           ModalInputManager.requestInput(
-            Config.MESSAGES.PASSWORD_PROMPT,
-            (pwd) => resolve(pwd),
-            () => reject(new Error(Config.MESSAGES.OPERATION_CANCELLED)),
-            true // <<< isObscured: true
+              Config.MESSAGES.PASSWORD_PROMPT,
+              (pwd) => resolve(pwd),
+              () => reject(new Error(Config.MESSAGES.OPERATION_CANCELLED)),
+              true, // isObscured
+              options // Pass context for scripting
           );
         });
         if (firstPassword.trim() === "") {
           await OutputManager.appendToOutput(
-            "Registering user with no password.",
-            {
-              typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-            }
+              "Registering user with no password.",
+              {
+                typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+              }
           );
         } else {
           const confirmedPassword = await new Promise((resolve, reject) => {
             ModalInputManager.requestInput(
-              Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
-              (pwd) => resolve(pwd),
-              () => reject(new Error(Config.MESSAGES.OPERATION_CANCELLED)),
-              true // <<< isObscured: true
+                Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
+                (pwd) => resolve(pwd),
+                () => reject(new Error(Config.MESSAGES.OPERATION_CANCELLED)),
+                true, // isObscured
+                options // Pass context for scripting
             );
           });
           if (firstPassword !== confirmedPassword) {
@@ -1020,8 +1025,8 @@ const CommandExecutor = (() => {
           }
         }
         const registerResult = await UserManager.register(
-          username,
-          firstPassword || null
+            username,
+            firstPassword || null
         );
         // Add the missing confirmation message on success
         if (registerResult.success) {
@@ -1063,10 +1068,10 @@ const CommandExecutor = (() => {
       error: "Usage: login <username> [password]",
     },
     coreLogic: async (context) => {
-      const { args } = context;
+      const { args, options } = context;
       const username = args[0];
       const providedPassword = args.length === 2 ? args[1] : null;
-      return _handleUserSwitch("login", username, providedPassword);
+      return _handleUserSwitch("login", username, providedPassword, options);
     },
   };
   const logoutCommandDefinition = {
@@ -1079,17 +1084,17 @@ const CommandExecutor = (() => {
       if (result.success && !result.noAction) {
         OutputManager.clearOutput();
         await OutputManager.appendToOutput(
-          `${Config.MESSAGES.WELCOME_PREFIX} ${
-            UserManager.getCurrentUser().name
-          }${Config.MESSAGES.WELCOME_SUFFIX}`
+            `${Config.MESSAGES.WELCOME_PREFIX} ${
+                UserManager.getCurrentUser().name
+            }${Config.MESSAGES.WELCOME_SUFFIX}`
         );
       }
       return {
         ...result,
         output: result.message,
         messageType: result.success
-          ? Config.CSS_CLASSES.SUCCESS_MSG
-          : Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+            ? Config.CSS_CLASSES.SUCCESS_MSG
+            : Config.CSS_CLASSES.CONSOLE_LOG_MSG,
       };
     },
   };
@@ -1129,7 +1134,7 @@ const CommandExecutor = (() => {
       const pathInfo = context.validatedPaths[0];
       const fileNode = pathInfo.node;
       const fileName = pathInfo.resolvedPath.substring(
-        pathInfo.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+          pathInfo.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
       );
       try {
         const blob = new Blob([fileNode.content || ""], {
@@ -1172,7 +1177,7 @@ const CommandExecutor = (() => {
         if (key.startsWith(Config.STORAGE_KEYS.USER_TERMINAL_STATE_PREFIX)) {
           automaticSessionStates[key] = StorageManager.loadItem(key);
         } else if (
-          key.startsWith(Config.STORAGE_KEYS.MANUAL_TERMINAL_STATE_PREFIX)
+            key.startsWith(Config.STORAGE_KEYS.MANUAL_TERMINAL_STATE_PREFIX)
         ) {
           manualSaveStates[key] = StorageManager.loadItem(key);
         }
@@ -1185,21 +1190,21 @@ const CommandExecutor = (() => {
         timestamp: new Date().toISOString(),
         fsDataSnapshot: Utils.deepCopyNode(FileSystemManager.getFsData()),
         userCredentials: StorageManager.loadItem(
-          Config.STORAGE_KEYS.USER_CREDENTIALS,
-          "User Credentials",
-          {}
+            Config.STORAGE_KEYS.USER_CREDENTIALS,
+            "User Credentials",
+            {}
         ),
         editorWordWrapEnabled: StorageManager.loadItem(
-          Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED,
-          "Editor Word Wrap",
-          false
+            Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED,
+            "Editor Word Wrap",
+            false
         ),
         automaticSessionStates: automaticSessionStates,
         manualSaveStates: manualSaveStates,
       };
       const fileName = `OopisOS_System_Backup_${currentUser.name}_${new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")}.json`;
+          .toISOString()
+          .replace(/[:.]/g, "-")}.json`;
       try {
         const blob = new Blob([JSON.stringify(backupData, null, 2)], {
           type: "application/json",
@@ -1254,7 +1259,7 @@ const CommandExecutor = (() => {
       max: 1,
     },
     coreLogic: async (context) => {
-      const { args, currentUser } = context;
+      const { args, currentUser, options } = context;
       const targetUser = args.length > 0 ? args[0] : "root";
       if (currentUser === targetUser) {
         return {
@@ -1263,7 +1268,7 @@ const CommandExecutor = (() => {
           messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
         };
       }
-      return _handleUserSwitch("su", targetUser, null);
+      return _handleUserSwitch("su", targetUser, null, options);
     },
   };
   const clearfsCommandDefinition = {
@@ -1282,16 +1287,17 @@ const CommandExecutor = (() => {
       const username = currentUser;
       const userHomePath = `/home/${username}`;
       const confirmed = await new Promise((resolve) =>
-        ModalManager.request({
-          context: "terminal",
-          messageLines: [
-            `WARNING: This will permanently erase ALL files and directories in your home directory (${userHomePath}).`,
-            "This action cannot be undone.",
-            "Are you sure you want to clear your home directory?",
-          ],
-          onConfirm: () => resolve(true),
-          onCancel: () => resolve(false),
-        })
+          ModalManager.request({
+            context: "terminal",
+            messageLines: [
+              `WARNING: This will permanently erase ALL files and directories in your home directory (${userHomePath}).`,
+              "This action cannot be undone.",
+              "Are you sure you want to clear your home directory?",
+            ],
+            onConfirm: () => resolve(true),
+            onCancel: () => resolve(false),
+            options,
+          })
       );
       if (!confirmed) {
         return {
@@ -1302,8 +1308,8 @@ const CommandExecutor = (() => {
       }
       const homeDirNode = FileSystemManager.getNodeByPath(userHomePath);
       if (
-        !homeDirNode ||
-        homeDirNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+          !homeDirNode ||
+          homeDirNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
       ) {
         return {
           success: false,
@@ -1316,7 +1322,7 @@ const CommandExecutor = (() => {
         return {
           success: false,
           error:
-            "clearfs: CRITICAL - Failed to save file system changes after clearing home directory.",
+              "clearfs: CRITICAL - Failed to save file system changes after clearing home directory.",
         };
       }
       const currentPath = FileSystemManager.getCurrentPath();
@@ -1368,11 +1374,11 @@ const CommandExecutor = (() => {
         success: result.success,
         output: result.message,
         error: result.success
-          ? undefined
-          : result.message || "Failed to load state.",
+            ? undefined
+            : result.message || "Failed to load state.",
         messageType: result.success
-          ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
-          : Config.CSS_CLASSES.ERROR_MSG,
+            ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
+            : Config.CSS_CLASSES.ERROR_MSG,
       };
     },
   };
@@ -1390,21 +1396,22 @@ const CommandExecutor = (() => {
         };
       }
       const confirmed = await new Promise((resolve) =>
-        ModalManager.request({
-          context: "terminal",
-          messageLines: [
-            "WARNING: This will erase ALL OopisOS data, including all users, file systems, and saved states. This action cannot be undone. Are you sure?",
-          ],
-          onConfirm: () => resolve(true),
-          onCancel: () => resolve(false),
-        })
+          ModalManager.request({
+            context: "terminal",
+            messageLines: [
+              "WARNING: This will erase ALL OopisOS data, including all users, file systems, and saved states. This action cannot be undone. Are you sure?",
+            ],
+            onConfirm: () => resolve(true),
+            onCancel: () => resolve(false),
+            options,
+          })
       );
       if (confirmed) {
         await SessionManager.performFullReset();
         return {
           success: true,
           output:
-            "OopisOS reset to initial state. Please refresh the page if UI issues persist.",
+              "OopisOS reset to initial state. Please refresh the page if UI issues persist.",
           messageType: Config.CSS_CLASSES.SUCCESS_MSG,
         };
       } else {
@@ -1436,139 +1443,95 @@ const CommandExecutor = (() => {
       },
     ],
     coreLogic: async (context) => {
-      const { args, options } = context;
+      const { args, options, signal } = context;
       const scriptPathArg = args[0];
       const scriptArgs = args.slice(1);
       const scriptNode = context.validatedPaths[0].node;
       const fileExtension = Utils.getFileExtension(scriptPathArg);
+
       if (fileExtension !== "sh") {
-        return {
-          success: false,
-          error: `run: '${scriptPathArg}' is not a shell script (.sh) file.`,
-        };
+        return { success: false, error: `run: '${scriptPathArg}' is not a shell script (.sh) file.` };
       }
       if (!scriptNode.content) {
-        return {
-          success: true,
-          output: `run: Script '${scriptPathArg}' is empty.`,
-        };
-      }
-      let scriptContent = scriptNode.content;
-      if (scriptContent.startsWith("#!")) {
-        const firstLine = scriptContent.split("\n", 1)[0];
-        scriptContent = scriptContent.substring(firstLine.length + 1);
-      }
-      const rawScriptLines = scriptContent.split("\n");
-      const commandsToRun = [];
-      for (const rawLine of rawScriptLines) {
-        let processedLine = rawLine;
-        let inSingleQuote = false;
-        let inDoubleQuote = false;
-        let commentStartIndex = -1;
-        for (let i = 0; i < processedLine.length; i++) {
-          const char = processedLine[i];
-          if (char === "'" && (i === 0 || processedLine[i - 1] !== "\\")) {
-            inSingleQuote = !inSingleQuote;
-          } else if (
-            char === '"' &&
-            (i === 0 || processedLine[i - 1] !== "\\")
-          ) {
-            inDoubleQuote = !inDoubleQuote;
-          } else if (char === "#" && !inSingleQuote && !inDoubleQuote) {
-            commentStartIndex = i;
-            break;
-          }
-        }
-        if (commentStartIndex !== -1) {
-          processedLine = processedLine.substring(0, commentStartIndex);
-        }
-        processedLine = processedLine.trim();
-        if (processedLine !== "") commandsToRun.push(processedLine);
+        return { success: true, output: `run: Script '${scriptPathArg}' is empty.` };
       }
       if (CommandExecutor.isScriptRunning() && options.isInteractive) {
-        return {
-          success: false,
-          error:
-            "run: Cannot execute a script while another is already running in interactive mode.",
-        };
+        return { success: false, error: "run: Cannot execute a script while another is already running in interactive mode." };
       }
-      let overallScriptSuccess = true;
+
+      const rawScriptLines = scriptNode.content.split('\n');
+
+      const scriptingContext = {
+        isScripting: true,
+        waitingForInput: false,
+        inputCallback: null,
+        cancelCallback: null,
+        lines: rawScriptLines,
+        currentLineIndex: 0,
+      };
+
       const previousScriptExecutionState = CommandExecutor.isScriptRunning();
       CommandExecutor.setScriptExecutionInProgress(true);
       if (options.isInteractive) TerminalUI.setInputState(false);
-      for (const commandLine of commandsToRun) {
-        let processedCommandLineWithArgs = commandLine;
-        for (let i = 0; i < scriptArgs.length; i++) {
-          const regex = new RegExp(`\\$${i + 1}`, "g");
-          processedCommandLineWithArgs = processedCommandLineWithArgs.replace(
-            regex,
-            scriptArgs[i]
-          );
-        }
-        const quotedArgs = scriptArgs.map((arg) =>
-          arg.includes(" ") ? `"${arg}"` : arg
-        );
-        processedCommandLineWithArgs = processedCommandLineWithArgs.replace(
-          /\$@/g,
-          quotedArgs.join(" ")
-        );
-        processedCommandLineWithArgs = processedCommandLineWithArgs.replace(
-          /\$#/g,
-          scriptArgs.length.toString()
-        );
-        if (processedCommandLineWithArgs.trim() === "") continue;
-        const result = await CommandExecutor.processSingleCommand(
-          processedCommandLineWithArgs,
-          false
-        );
-        if (!result) {
-          const undefErrorMsg = `Script '${scriptPathArg}' execution halted: A command returned an undefined result. Last command: ${commandLine}`;
-          await OutputManager.appendToOutput(undefErrorMsg, {
-            typeClass: Config.CSS_CLASSES.ERROR_MSG,
-          });
-          console.error(
-            "Critical Error: processSingleCommand returned undefined for command:",
-            commandLine
-          );
+
+      let overallScriptSuccess = true;
+
+      while (scriptingContext.currentLineIndex < scriptingContext.lines.length) {
+        if (signal?.aborted) {
           overallScriptSuccess = false;
+          await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+          if (scriptingContext.cancelCallback) scriptingContext.cancelCallback();
           break;
         }
-        if (!result.success) {
-          let scriptErrorMsg = `Script '${scriptPathArg}' error on line: ${commandLine}\nError: ${
-            result.error || "Unknown error in command."
-          }`;
-          if (
-            result.output &&
-            typeof result.output === "string" &&
-            result.output.trim() !== (result.error || "").trim()
-          ) {
-            scriptErrorMsg += `\nDetails: ${result.output}`;
+
+        let line = scriptingContext.lines[scriptingContext.currentLineIndex].trim();
+        const originalLineForError = scriptingContext.lines[scriptingContext.currentLineIndex];
+
+        if (line.startsWith('#') || line.startsWith('#!') || line === '') {
+          scriptingContext.currentLineIndex++;
+          continue;
+        }
+
+        if (scriptingContext.waitingForInput) {
+          if (scriptingContext.inputCallback) {
+            await scriptingContext.inputCallback(line);
           }
-          await OutputManager.appendToOutput(scriptErrorMsg, {
-            typeClass: Config.CSS_CLASSES.ERROR_MSG,
-          });
+          scriptingContext.currentLineIndex++;
+          continue;
+        }
+
+        let processedLine = originalLineForError;
+        for (let i = 0; i < scriptArgs.length; i++) {
+          processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
+        }
+        processedLine = processedLine.replace(/\$@/g, scriptArgs.map(arg => arg.includes(" ") ? `"${arg}"` : arg).join(" "));
+        processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
+
+        const result = await CommandExecutor.processSingleCommand(processedLine.trim(), false, scriptingContext);
+        scriptingContext.currentLineIndex++;
+
+        if (scriptingContext.waitingForInput) {
+          continue;
+        }
+
+        if (!result || !result.success) {
+          const errorMsg = `Script '${scriptPathArg}' error on line: ${originalLineForError}\nError: ${result.error || 'Unknown error.'}`;
+          await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
           overallScriptSuccess = false;
           break;
         }
       }
-      CommandExecutor.setScriptExecutionInProgress(
-        previousScriptExecutionState
-      );
+
+      CommandExecutor.setScriptExecutionInProgress(previousScriptExecutionState);
       if (options.isInteractive && !CommandExecutor.isScriptRunning()) {
         TerminalUI.setInputState(true);
       }
-      if (overallScriptSuccess) {
-        return {
-          success: true,
-          output: null,
-        };
-      } else {
-        return {
-          success: false,
-          error: `Script '${scriptPathArg}' failed.`,
-        };
-      }
-    },
+
+      return {
+        success: overallScriptSuccess,
+        error: overallScriptSuccess ? null : `Script '${scriptPathArg}' failed.`
+      };
+    }
   };
   const delayCommandDefinition = {
     commandName: "delay",
@@ -1596,39 +1559,33 @@ const CommandExecutor = (() => {
         await OutputManager.appendToOutput(`Delaying for ${ms}ms...`);
       }
 
-      // If the job was already cancelled before it even started.
       if (signal?.aborted) {
         return { success: false, error: `delay: Operation already cancelled.` };
       }
 
-      // A promise that resolves when the timer is up.
       const delayPromise = new Promise((resolve) => setTimeout(resolve, ms));
 
-      // A promise that rejects if the cancellation signal is received.
       const abortPromise = new Promise((_, reject) => {
-        if (!signal) return; // If no signal, this promise just hangs, which is fine.
+        if (!signal) return;
         signal.addEventListener(
-          "abort",
-          () => {
-            reject(
-              new Error(`Operation cancelled. (Reason: ${signal.reason})`)
-            );
-          },
-          { once: true }
+            "abort",
+            () => {
+              reject(
+                  new Error(`Operation cancelled. (Reason: ${signal.reason})`)
+              );
+            },
+            { once: true }
         );
       });
 
       try {
-        // Race the two promises. The first one to finish wins.
         await Promise.race([delayPromise, abortPromise]);
 
-        // If we get here, it means delayPromise won the race.
         if (options.isInteractive && !CommandExecutor.isScriptRunning()) {
           await OutputManager.appendToOutput(`Delay complete.`);
         }
         return { success: true, output: "" };
       } catch (e) {
-        // If we get here, it means abortPromise won, rejecting the race.
         return { success: false, error: `delay: ${e.message}` };
       }
     },
@@ -1679,8 +1636,8 @@ const CommandExecutor = (() => {
         output: result.message || "",
         error: result.error || null,
         messageType: result.success
-          ? Config.CSS_CLASSES.SUCCESS_MSG
-          : Config.CSS_CLASSES.ERROR_MSG,
+            ? Config.CSS_CLASSES.SUCCESS_MSG
+            : Config.CSS_CLASSES.ERROR_MSG,
       };
     },
   };
@@ -1700,8 +1657,8 @@ const CommandExecutor = (() => {
         };
       }
       const testResult = await CommandExecutor.processSingleCommand(
-        commandToTest,
-        false
+          commandToTest,
+          false
       );
       if (testResult.success) {
         const failureMessage = `CHECK_FAIL: FAILURE - Command <${commandToTest}> unexpectedly SUCCEEDED.`;
@@ -1711,7 +1668,7 @@ const CommandExecutor = (() => {
         };
       } else {
         const successMessage = `CHECK_FAIL: SUCCESS - Command <${commandToTest}> failed as expected. (Error: ${
-          testResult.error || "N/A"
+            testResult.error || "N/A"
         })`;
         return {
           success: true,
@@ -1723,7 +1680,6 @@ const CommandExecutor = (() => {
   const removeuserCommandDefinition = {
     commandName: "removeuser",
     completionType: "users",
-    // <<< NEW: Add flag definitions
     flagDefinitions: [
       {
         name: "force",
@@ -1736,7 +1692,6 @@ const CommandExecutor = (() => {
       error: "Usage: removeuser [-f] <username>",
     },
     coreLogic: async (context) => {
-      // <<< CHANGE: Add 'flags' and 'options' to destructuring
       const { args, currentUser, flags, options } = context;
       const usernameToRemove = args[0];
 
@@ -1754,9 +1709,9 @@ const CommandExecutor = (() => {
       }
 
       const users = StorageManager.loadItem(
-        Config.STORAGE_KEYS.USER_CREDENTIALS,
-        "User list",
-        {}
+          Config.STORAGE_KEYS.USER_CREDENTIALS,
+          "User list",
+          {}
       );
       if (!users.hasOwnProperty(usernameToRemove)) {
         return {
@@ -1766,7 +1721,6 @@ const CommandExecutor = (() => {
         };
       }
 
-      // <<< NEW: Logic to handle confirmation
       let confirmed = false;
       if (flags.force) {
         confirmed = true;
@@ -1779,10 +1733,10 @@ const CommandExecutor = (() => {
             ],
             onConfirm: () => resolve(true),
             onCancel: () => resolve(false),
+            options,
           });
         });
       } else {
-        // Is not interactive and force flag was not provided
         return {
           success: false,
           error: `removeuser: '${usernameToRemove}' requires confirmation. Use the -f flag in non-interactive scripts.`,
@@ -1797,7 +1751,6 @@ const CommandExecutor = (() => {
         };
       }
 
-      // If we get here, we are confirmed to proceed.
       let allDeletionsSuccessful = true;
       let errorMessages = [];
       let changesMade = false;
@@ -1805,11 +1758,11 @@ const CommandExecutor = (() => {
       const userHomePath = `/home/${usernameToRemove}`;
       if (FileSystemManager.getNodeByPath(userHomePath)) {
         const rmResult = await FileSystemManager.deleteNodeRecursive(
-          userHomePath,
-          {
-            force: true,
-            currentUser: currentUser,
-          }
+            userHomePath,
+            {
+              force: true,
+              currentUser: currentUser,
+            }
         );
         if (!rmResult.success) {
           allDeletionsSuccessful = false;
@@ -1824,7 +1777,7 @@ const CommandExecutor = (() => {
       if (!SessionManager.clearUserSessionStates(usernameToRemove)) {
         allDeletionsSuccessful = false;
         errorMessages.push(
-          "Failed to clear user session states and credentials."
+            "Failed to clear user session states and credentials."
         );
       }
 
@@ -1842,7 +1795,7 @@ const CommandExecutor = (() => {
         return {
           success: false,
           error: `removeuser: Failed to completely remove user '${usernameToRemove}'. Details: ${errorMessages.join(
-            "; "
+              "; "
           )}`,
         };
       }
@@ -1882,7 +1835,6 @@ const CommandExecutor = (() => {
             error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,
           };
         }
-        // An owner can only chmod if they have write permission, implementing the lock-out.
         if (!FileSystemManager.hasPermission(node, currentUser, "write")) {
           return {
             success: false,
@@ -1894,8 +1846,8 @@ const CommandExecutor = (() => {
       node.mode = newMode;
       node.mtime = nowISO;
       FileSystemManager._updateNodeAndParentMtime(
-        pathInfo.resolvedPath,
-        nowISO
+          pathInfo.resolvedPath,
+          nowISO
       );
 
       if (!(await FileSystemManager.save())) {
@@ -1906,7 +1858,6 @@ const CommandExecutor = (() => {
       }
       return {
         success: true,
-        // Return the original mode string for a consistent message
         output: `Permissions of '${pathArg}' changed to ${modeArg}`,
         messageType: Config.CSS_CLASSES.SUCCESS_MSG,
       };
@@ -1933,9 +1884,9 @@ const CommandExecutor = (() => {
       const node = pathInfo.node;
       const nowISO = new Date().toISOString();
       const users = StorageManager.loadItem(
-        Config.STORAGE_KEYS.USER_CREDENTIALS,
-        "User list",
-        {}
+          Config.STORAGE_KEYS.USER_CREDENTIALS,
+          "User list",
+          {}
       );
       if (!users[newOwnerArg] && newOwnerArg !== Config.USER.DEFAULT_NAME) {
         return {
@@ -1952,8 +1903,8 @@ const CommandExecutor = (() => {
       node.owner = newOwnerArg;
       node.mtime = nowISO;
       FileSystemManager._updateNodeAndParentMtime(
-        pathInfo.resolvedPath,
-        nowISO
+          pathInfo.resolvedPath,
+          nowISO
       );
       if (!(await FileSystemManager.save(currentUser))) {
         return {
@@ -1975,9 +1926,9 @@ const CommandExecutor = (() => {
     },
     coreLogic: async () => {
       const users = StorageManager.loadItem(
-        Config.STORAGE_KEYS.USER_CREDENTIALS,
-        "User list",
-        {}
+          Config.STORAGE_KEYS.USER_CREDENTIALS,
+          "User list",
+          {}
       );
       const userNames = Object.keys(users);
       if (!userNames.includes(Config.USER.DEFAULT_NAME)) {
@@ -1993,7 +1944,7 @@ const CommandExecutor = (() => {
       return {
         success: true,
         output:
-          "Registered users:\n" + userNames.map((u) => `  ${u}`).join("\n"),
+            "Registered users:\n" + userNames.map((u) => `  ${u}`).join("\n"),
       };
     },
   };
@@ -2055,7 +2006,7 @@ const CommandExecutor = (() => {
           };
         }
         if (
-          !FileSystemManager.hasPermission(existingNode, currentUser, "write")
+            !FileSystemManager.hasPermission(existingNode, currentUser, "write")
         ) {
           return {
             success: false,
@@ -2065,7 +2016,7 @@ const CommandExecutor = (() => {
         existingNode.content = outputContent;
       } else {
         const parentDirResult =
-          FileSystemManager.createParentDirectoriesIfNeeded(resolvedPath);
+            FileSystemManager.createParentDirectoriesIfNeeded(resolvedPath);
         if (parentDirResult.error) {
           return {
             success: false,
@@ -2074,11 +2025,11 @@ const CommandExecutor = (() => {
         }
         const parentNodeForCreation = parentDirResult.parentNode;
         const fileName = resolvedPath.substring(
-          resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+            resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
         );
         if (!parentNodeForCreation) {
           console.error(
-            "printscreen: parentNodeForCreation is null despite createParentDirectoriesIfNeeded success."
+              "printscreen: parentNodeForCreation is null despite createParentDirectoriesIfNeeded success."
           );
           return {
             success: false,
@@ -2086,17 +2037,17 @@ const CommandExecutor = (() => {
           };
         }
         if (
-          !FileSystemManager.hasPermission(
-            parentNodeForCreation,
-            currentUser,
-            "write"
-          )
+            !FileSystemManager.hasPermission(
+                parentNodeForCreation,
+                currentUser,
+                "write"
+            )
         ) {
           return {
             success: false,
             error: `printscreen: Cannot create file in '${FileSystemManager.getAbsolutePath(
-              fileName,
-              parentNodeForCreation.path
+                fileName,
+                parentNodeForCreation.path
             )}', permission denied in parent.`,
           };
         }
@@ -2105,14 +2056,14 @@ const CommandExecutor = (() => {
           return {
             success: false,
             error:
-              "printscreen: critical - could not determine primary group for user.",
+                "printscreen: critical - could not determine primary group for user.",
           };
         }
         parentNodeForCreation.children[fileName] = {
           type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
           content: outputContent,
           owner: currentUser,
-          group: primaryGroup, // <-- The crucial addition
+          group: primaryGroup,
           mode: Config.FILESYSTEM.DEFAULT_FILE_MODE,
           mtime: nowISO,
         };
@@ -2148,9 +2099,8 @@ const CommandExecutor = (() => {
       },
     ],
     coreLogic: async (context) => {
-      const { args, currentUser, validatedPaths } = context;
+      const { args, currentUser, validatedPaths, options } = context;
 
-      // These initial checks are still good.
       if (
           typeof TextAdventureModal === "undefined" ||
           typeof TextAdventureModal.isActive !== "function"
@@ -2181,8 +2131,6 @@ const CommandExecutor = (() => {
 
       let adventureToLoad;
 
-      // --- REFINED LOGIC ---
-      // 1. Check for a user-provided file FIRST.
       if (args.length > 0) {
         const filePath = args[0];
         const pathInfo = validatedPaths[0];
@@ -2222,11 +2170,9 @@ const CommandExecutor = (() => {
           };
         }
       } else {
-        // 2. ONLY if no file is provided, try to load the default sample.
         if (typeof window.sampleAdventure !== "undefined") {
           adventureToLoad = window.sampleAdventure;
         } else {
-          // 3. ONLY if the sample is also missing, show the warning and use the fallback.
           console.warn(
               "adventure command: No adventure file specified and window.sampleAdventure not found, using minimal fallback."
           );
@@ -2246,8 +2192,11 @@ const CommandExecutor = (() => {
         }
       }
 
-      // This part remains the same.
-      TextAdventureEngine.startAdventure(adventureToLoad);
+      // We need to pass the scripting context to the adventure engine
+      // This is a conceptual change; the adventure engine would need to be adapted
+      // to accept this context and use it for its own input prompts (save/load).
+      TextAdventureEngine.startAdventure(adventureToLoad, options);
+
       return {
         success: true,
         output: `Launching adventure: "${
@@ -2261,7 +2210,6 @@ const CommandExecutor = (() => {
     commandName: "alias",
     coreLogic: async (context) => {
       const { args } = context;
-      // Case 1: `alias` with no arguments (list all)
       if (args.length === 0) {
         const allAliases = AliasManager.getAllAliases();
         if (Object.keys(allAliases).length === 0) {
@@ -2282,7 +2230,6 @@ const CommandExecutor = (() => {
       }
       const combinedArg = args.join(" ");
       const eqIndex = combinedArg.indexOf("=");
-      // Case 2: `alias name=value` (set an alias)
       if (eqIndex !== -1) {
         const name = combinedArg.substring(0, eqIndex).trim();
         let value = combinedArg.substring(eqIndex + 1).trim();
@@ -2293,8 +2240,8 @@ const CommandExecutor = (() => {
           };
         }
         if (
-          (value.startsWith("'") && value.endsWith("'")) ||
-          (value.startsWith('"') && value.endsWith('"'))
+            (value.startsWith("'") && value.endsWith("'")) ||
+            (value.startsWith('"') && value.endsWith('"'))
         ) {
           value = value.substring(1, value.length - 1);
         }
@@ -2309,7 +2256,6 @@ const CommandExecutor = (() => {
           error: "alias: failed to set alias.",
         };
       }
-      // Case 3: `alias name1 name2 ...` (display specific aliases)
       else {
         const outputLines = [];
         const errorLines = [];
@@ -2415,6 +2361,7 @@ const CommandExecutor = (() => {
           node: itemNode,
           type: itemNode.type,
           owner: itemNode.owner || "unknown",
+          group: itemNode.group || "unknown",
           mode: itemNode.mode,
           mtime: itemNode.mtime ? new Date(itemNode.mtime) : new Date(0),
           size: FileSystemManager.calculateNodeSize(itemNode),
@@ -2426,7 +2373,7 @@ const CommandExecutor = (() => {
       function formatLongListItem(itemDetails) {
         const perms = FileSystemManager.formatModeToString(itemDetails.node);
         const owner = (itemDetails.node.owner || "unknown").padEnd(10);
-        const group = (itemDetails.node.group || "unknown").padEnd(10); // Added group
+        const group = (itemDetails.node.group || "unknown").padEnd(10);
         const size = Utils.formatBytes(itemDetails.size).padStart(8);
         let dateStr = "            ";
         if (itemDetails.mtime && itemDetails.mtime.getTime() !== 0) {
@@ -2446,22 +2393,21 @@ const CommandExecutor = (() => {
             "Dec",
           ];
           dateStr = `${months[d.getMonth()].padEnd(3)} ${d
-            .getDate()
-            .toString()
-            .padStart(2, " ")} ${d.getHours().toString().padStart(2, "0")}:${d
-            .getMinutes()
-            .toString()
-            .padStart(2, "0")}`;
+              .getDate()
+              .toString()
+              .padStart(2, " ")} ${d.getHours().toString().padStart(2, "0")}:${d
+              .getMinutes()
+              .toString()
+              .padStart(2, "0")}`;
         }
         const nameSuffix =
-          itemDetails.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-          !flags.dirsOnly
-            ? Config.FILESYSTEM.PATH_SEPARATOR
-            : "";
+            itemDetails.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+            !flags.dirsOnly
+                ? Config.FILESYSTEM.PATH_SEPARATOR
+                : "";
 
-        // Note the added 'group' variable in the template literal
         return `${perms}  ${String(itemDetails.linkCount).padStart(
-          2
+            2
         )} ${owner}${group}${size} ${dateStr} ${itemDetails.name}${nameSuffix}`;
       }
 
@@ -2470,11 +2416,11 @@ const CommandExecutor = (() => {
         if (currentFlags.noSort) {
         } else if (currentFlags.sortByTime) {
           sortedItems.sort(
-            (a, b) => b.mtime - a.mtime || a.name.localeCompare(b.name)
+              (a, b) => b.mtime - a.mtime || a.name.localeCompare(b.name)
           );
         } else if (currentFlags.sortBySize) {
           sortedItems.sort(
-            (a, b) => b.size - a.size || a.name.localeCompare(b.name)
+              (a, b) => b.size - a.size || a.name.localeCompare(b.name)
           );
         } else if (currentFlags.sortByExtension) {
           sortedItems.sort((a, b) => {
@@ -2491,13 +2437,13 @@ const CommandExecutor = (() => {
         return sortedItems;
       }
       const pathsToList =
-        args.length > 0 ? args : [FileSystemManager.getCurrentPath()];
+          args.length > 0 ? args : [FileSystemManager.getCurrentPath()];
       let outputBlocks = [];
       let overallSuccess = true;
       async function listSinglePathContents(targetPathArg, effectiveFlags) {
         const pathValidation = FileSystemManager.validatePath(
-          "ls",
-          targetPathArg
+            "ls",
+            targetPathArg
         );
         if (pathValidation.error)
           return {
@@ -2514,55 +2460,55 @@ const CommandExecutor = (() => {
         let itemDetailsList = [];
         let singleItemResultOutput = null;
         if (
-          effectiveFlags.dirsOnly &&
-          targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+            effectiveFlags.dirsOnly &&
+            targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           const details = getItemDetails(
-            targetPathArg,
-            targetNode,
-            pathValidation.resolvedPath
+              targetPathArg,
+              targetNode,
+              pathValidation.resolvedPath
           );
           if (details)
             singleItemResultOutput = effectiveFlags.long
-              ? formatLongListItem(details)
-              : details.name;
+                ? formatLongListItem(details)
+                : details.name;
           else
             return {
               success: false,
               output: `ls: cannot stat '${targetPathArg}': Error retrieving details`,
             };
         } else if (
-          targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+            targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           const childrenNames = Object.keys(targetNode.children);
           for (const name of childrenNames) {
             if (!effectiveFlags.all && name.startsWith(".")) continue;
             const details = getItemDetails(
-              name,
-              targetNode.children[name],
-              FileSystemManager.getAbsolutePath(
                 name,
-                pathValidation.resolvedPath
-              )
+                targetNode.children[name],
+                FileSystemManager.getAbsolutePath(
+                    name,
+                    pathValidation.resolvedPath
+                )
             );
             if (details) itemDetailsList.push(details);
           }
           itemDetailsList = sortItems(itemDetailsList, effectiveFlags);
         } else {
           const fileName = pathValidation.resolvedPath.substring(
-            pathValidation.resolvedPath.lastIndexOf(
-              Config.FILESYSTEM.PATH_SEPARATOR
-            ) + 1
+              pathValidation.resolvedPath.lastIndexOf(
+                  Config.FILESYSTEM.PATH_SEPARATOR
+              ) + 1
           );
           const details = getItemDetails(
-            fileName,
-            targetNode,
-            pathValidation.resolvedPath
+              fileName,
+              targetNode,
+              pathValidation.resolvedPath
           );
           if (details)
             singleItemResultOutput = effectiveFlags.long
-              ? formatLongListItem(details)
-              : details.name;
+                ? formatLongListItem(details)
+                : details.name;
           else
             return {
               success: false,
@@ -2573,20 +2519,20 @@ const CommandExecutor = (() => {
         if (singleItemResultOutput !== null) {
           currentPathOutputLines.push(singleItemResultOutput);
         } else if (
-          targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-          !effectiveFlags.dirsOnly
+            targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+            !effectiveFlags.dirsOnly
         ) {
           if (effectiveFlags.long && itemDetailsList.length > 0)
             currentPathOutputLines.push(`total ${itemDetailsList.length}`);
           itemDetailsList.forEach((item) => {
             const nameSuffix =
-              item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
-                ? Config.FILESYSTEM.PATH_SEPARATOR
-                : "";
+                item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+                    ? Config.FILESYSTEM.PATH_SEPARATOR
+                    : "";
             currentPathOutputLines.push(
-              effectiveFlags.long
-                ? formatLongListItem(item)
-                : `${item.name}${nameSuffix}`
+                effectiveFlags.long
+                    ? formatLongListItem(item)
+                    : `${item.name}${nameSuffix}`
             );
           });
         }
@@ -2602,8 +2548,8 @@ const CommandExecutor = (() => {
         if (depth > 0 || pathsToList.length > 1)
           blockOutputs.push(`${currentPath}:`);
         const listResult = await listSinglePathContents(
-          currentPath,
-          displayFlags
+            currentPath,
+            displayFlags
         );
         if (!listResult.success) {
           blockOutputs.push(listResult.output);
@@ -2615,22 +2561,22 @@ const CommandExecutor = (() => {
         }
         if (listResult.output) blockOutputs.push(listResult.output);
         if (
-          listResult.items &&
-          FileSystemManager.getNodeByPath(currentPath)?.type ===
+            listResult.items &&
+            FileSystemManager.getNodeByPath(currentPath)?.type ===
             Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           const subdirectories = listResult.items.filter(
-            (item) =>
-              item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-              item.name !== "." &&
-              item.name !== ".."
+              (item) =>
+                  item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+                  item.name !== "." &&
+                  item.name !== ".."
           );
           for (const dirItem of subdirectories) {
             if (blockOutputs.length > 0) blockOutputs.push("");
             const subDirResult = await displayRecursive(
-              dirItem.path,
-              displayFlags,
-              depth + 1
+                dirItem.path,
+                displayFlags,
+                depth + 1
             );
             blockOutputs = blockOutputs.concat(subDirResult.outputs);
             if (subDirResult.encounteredError)
@@ -2697,20 +2643,20 @@ const CommandExecutor = (() => {
 
       for (const pathArg of args) {
         const resolvedPath = FileSystemManager.getAbsolutePath(
-          pathArg,
-          FileSystemManager.getCurrentPath()
+            pathArg,
+            FileSystemManager.getCurrentPath()
         );
         const dirName = resolvedPath.substring(
-          resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+            resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
         );
         if (
-          resolvedPath === Config.FILESYSTEM.ROOT_PATH ||
-          dirName === "" ||
-          dirName === "." ||
-          dirName === ".."
+            resolvedPath === Config.FILESYSTEM.ROOT_PATH ||
+            dirName === "" ||
+            dirName === "." ||
+            dirName === ".."
         ) {
           messages.push(
-            `mkdir: cannot create directory '${pathArg}': Invalid path or name`
+              `mkdir: cannot create directory '${pathArg}': Invalid path or name`
           );
           allSuccess = false;
           continue;
@@ -2718,7 +2664,7 @@ const CommandExecutor = (() => {
         let parentNodeToCreateIn;
         if (flags.parents) {
           const parentDirResult =
-            FileSystemManager.createParentDirectoriesIfNeeded(resolvedPath);
+              FileSystemManager.createParentDirectoriesIfNeeded(resolvedPath);
           if (parentDirResult.error) {
             messages.push(`mkdir: ${parentDirResult.error}`);
             allSuccess = false;
@@ -2727,59 +2673,59 @@ const CommandExecutor = (() => {
           parentNodeToCreateIn = parentDirResult.parentNode;
         } else {
           const parentPathForTarget =
-            resolvedPath.substring(
-              0,
-              resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
-            ) || Config.FILESYSTEM.ROOT_PATH;
+              resolvedPath.substring(
+                  0,
+                  resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
+              ) || Config.FILESYSTEM.ROOT_PATH;
           parentNodeToCreateIn =
-            FileSystemManager.getNodeByPath(parentPathForTarget);
+              FileSystemManager.getNodeByPath(parentPathForTarget);
           if (!parentNodeToCreateIn) {
             messages.push(
-              `mkdir: cannot create directory '${pathArg}': Parent directory '${parentPathForTarget}' does not exist`
+                `mkdir: cannot create directory '${pathArg}': Parent directory '${parentPathForTarget}' does not exist`
             );
             allSuccess = false;
             continue;
           }
           if (
-            parentNodeToCreateIn.type !==
-            Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+              parentNodeToCreateIn.type !==
+              Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
           ) {
             messages.push(
-              `mkdir: cannot create directory '${pathArg}': Path component '${parentPathForTarget}' is not a directory`
+                `mkdir: cannot create directory '${pathArg}': Path component '${parentPathForTarget}' is not a directory`
             );
             allSuccess = false;
             continue;
           }
           if (
-            !FileSystemManager.hasPermission(
-              parentNodeToCreateIn,
-              currentUser,
-              "write"
-            )
+              !FileSystemManager.hasPermission(
+                  parentNodeToCreateIn,
+                  currentUser,
+                  "write"
+              )
           ) {
             messages.push(
-              `mkdir: cannot create directory '${pathArg}' in '${parentPathForTarget}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
+                `mkdir: cannot create directory '${pathArg}' in '${parentPathForTarget}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
             );
             allSuccess = false;
             continue;
           }
         }
         if (
-          parentNodeToCreateIn.children &&
-          parentNodeToCreateIn.children[dirName]
+            parentNodeToCreateIn.children &&
+            parentNodeToCreateIn.children[dirName]
         ) {
           const existingItem = parentNodeToCreateIn.children[dirName];
           if (existingItem.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
             messages.push(
-              `mkdir: cannot create directory '${pathArg}': File exists`
+                `mkdir: cannot create directory '${pathArg}': File exists`
             );
             allSuccess = false;
           } else if (
-            existingItem.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-            !flags.parents
+              existingItem.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+              !flags.parents
           ) {
             messages.push(
-              `mkdir: cannot create directory '${pathArg}': Directory already exists.`
+                `mkdir: cannot create directory '${pathArg}': Directory already exists.`
             );
             allSuccess = false;
           }
@@ -2788,13 +2734,12 @@ const CommandExecutor = (() => {
               currentUser,
               primaryGroup
           );
-          parentNodeToCreateIn.mtime = nowISO; // Still need to update parent mtime
+          parentNodeToCreateIn.mtime = nowISO;
           messages.push(`created directory '${pathArg}'`);
           changesMade = true;
         }
       }
       if (changesMade && !(await FileSystemManager.save())) {
-        // Removed currentUser from save()
         allSuccess = false;
         messages.unshift("mkdir: Failed to save file system changes.");
       }
@@ -2833,17 +2778,17 @@ const CommandExecutor = (() => {
       const { args, flags, currentUser } = context;
       const pathArg = args.length > 0 ? args[0] : ".";
       const maxDepth = flags.level
-        ? Utils.parseNumericArg(flags.level, {
+          ? Utils.parseNumericArg(flags.level, {
             min: 0,
           })
-        : {
+          : {
             value: Infinity,
           };
       if (flags.level && (maxDepth.error || maxDepth.value === null))
         return {
           success: false,
           error: `tree: invalid level value for -L: '${flags.level}' ${
-            maxDepth.error || ""
+              maxDepth.error || ""
           }`,
         };
       const pathValidation = FileSystemManager.validatePath("tree", pathArg, {
@@ -2855,11 +2800,11 @@ const CommandExecutor = (() => {
           error: pathValidation.error,
         };
       if (
-        !FileSystemManager.hasPermission(
-          pathValidation.node,
-          currentUser,
-          "read"
-        )
+          !FileSystemManager.hasPermission(
+              pathValidation.node,
+              currentUser,
+              "read"
+          )
       )
         return {
           success: false,
@@ -2875,8 +2820,8 @@ const CommandExecutor = (() => {
         if (!node || node.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE)
           return;
         if (
-          currentDepth > 1 &&
-          !FileSystemManager.hasPermission(node, currentUser, "read")
+            currentDepth > 1 &&
+            !FileSystemManager.hasPermission(node, currentUser, "read")
         ) {
           outputLines.push(indentPrefix + "└── [Permission Denied]");
           return;
@@ -2887,22 +2832,22 @@ const CommandExecutor = (() => {
           if (childNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
             dirCount++;
             outputLines.push(
-              indentPrefix +
+                indentPrefix +
                 (index === childrenNames.length - 1 ? "└── " : "├── ") +
                 childName +
                 Config.FILESYSTEM.PATH_SEPARATOR
             );
             if (currentDepth < maxDepth.value)
               buildTreeRecursive(
-                FileSystemManager.getAbsolutePath(childName, currentDirPath),
-                currentDepth + 1,
-                indentPrefix +
+                  FileSystemManager.getAbsolutePath(childName, currentDirPath),
+                  currentDepth + 1,
+                  indentPrefix +
                   (index === childrenNames.length - 1 ? "    " : "│   ")
               );
           } else if (!flags.dirsOnly) {
             fileCount++;
             outputLines.push(
-              indentPrefix +
+                indentPrefix +
                 (index === childrenNames.length - 1 ? "└── " : "├── ") +
                 childName
             );
@@ -2933,8 +2878,8 @@ const CommandExecutor = (() => {
       const { args, flags, currentUser } = context;
 
       const timestampResult = TimestampParser.resolveTimestampFromCommandFlags(
-        flags,
-        "touch"
+          flags,
+          "touch"
       );
       if (timestampResult.error)
         return { success: false, error: timestampResult.error };
@@ -2945,26 +2890,25 @@ const CommandExecutor = (() => {
       const messages = [];
       let changesMade = false;
 
-      // <<< Get the user's primary group once, before the loop >>>
       const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
 
       for (const pathArg of args) {
         const pathValidation = FileSystemManager.validatePath(
-          "touch",
-          pathArg,
-          { allowMissing: true, disallowRoot: true }
+            "touch",
+            pathArg,
+            { allowMissing: true, disallowRoot: true }
         );
 
         if (pathValidation.node) {
           if (
-            !FileSystemManager.hasPermission(
-              pathValidation.node,
-              currentUser,
-              "write"
-            )
+              !FileSystemManager.hasPermission(
+                  pathValidation.node,
+                  currentUser,
+                  "write"
+              )
           ) {
             messages.push(
-              `touch: cannot update timestamp of '${pathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
+                `touch: cannot update timestamp of '${pathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
             );
             allSuccess = false;
             continue;
@@ -2975,51 +2919,49 @@ const CommandExecutor = (() => {
           messages.push(pathValidation.error);
           allSuccess = false;
         } else {
-          // Node does not exist and no error
           if (flags.noCreate) continue;
 
           if (pathArg.trim().endsWith(Config.FILESYSTEM.PATH_SEPARATOR)) {
             messages.push(
-              `touch: cannot touch '${pathArg}': No such file or directory`
+                `touch: cannot touch '${pathArg}': No such file or directory`
             );
             allSuccess = false;
             continue;
           }
 
           const parentPath =
-            pathValidation.resolvedPath.substring(
-              0,
-              pathValidation.resolvedPath.lastIndexOf(
-                Config.FILESYSTEM.PATH_SEPARATOR
-              )
-            ) || Config.FILESYSTEM.ROOT_PATH;
+              pathValidation.resolvedPath.substring(
+                  0,
+                  pathValidation.resolvedPath.lastIndexOf(
+                      Config.FILESYSTEM.PATH_SEPARATOR
+                  )
+              ) || Config.FILESYSTEM.ROOT_PATH;
           const parentNode = FileSystemManager.getNodeByPath(parentPath);
 
           if (
-            !parentNode ||
-            parentNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+              !parentNode ||
+              parentNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
           ) {
             messages.push(
-              `touch: cannot create '${pathArg}': Parent directory not found or is not a directory.`
+                `touch: cannot create '${pathArg}': Parent directory not found or is not a directory.`
             );
             allSuccess = false;
             continue;
           }
 
           if (
-            !FileSystemManager.hasPermission(parentNode, currentUser, "write")
+              !FileSystemManager.hasPermission(parentNode, currentUser, "write")
           ) {
             messages.push(
-              `touch: cannot create '${pathArg}': Permission denied in parent directory.`
+                `touch: cannot create '${pathArg}': Permission denied in parent directory.`
             );
             allSuccess = false;
             continue;
           }
 
-          // <<< Safety check for the primary group before using it >>>
           if (!primaryGroup) {
             messages.push(
-              `touch: could not determine primary group for user '${currentUser}'`
+                `touch: could not determine primary group for user '${currentUser}'`
             );
             allSuccess = false;
             continue;
@@ -3031,13 +2973,11 @@ const CommandExecutor = (() => {
               ) + 1
           );
 
-          // Create the new file node directly in the parent's children object.
           parentNode.children[fileName] = FileSystemManager._createNewFileNode(
               fileName,
-              "", // content
+              "",
               currentUser,
               primaryGroup
-              // We can omit the 'mode' argument to use the default.
           );
 
           parentNode.mtime = nowActualISO;
@@ -3065,8 +3005,8 @@ const CommandExecutor = (() => {
     coreLogic: async (context) => {
       const { args, options, currentUser } = context;
       if (
-        args.length === 0 &&
-        (options.stdinContent === null || options.stdinContent === undefined)
+          args.length === 0 &&
+          (options.stdinContent === null || options.stdinContent === undefined)
       ) {
         return {
           success: true,
@@ -3089,11 +3029,11 @@ const CommandExecutor = (() => {
             error: pathValidation.error,
           };
         if (
-          !FileSystemManager.hasPermission(
-            pathValidation.node,
-            currentUser,
-            "read"
-          )
+            !FileSystemManager.hasPermission(
+                pathValidation.node,
+                currentUser,
+                "read"
+            )
         )
           return {
             success: false,
@@ -3146,11 +3086,11 @@ const CommandExecutor = (() => {
         }
         const node = pathValidation.node;
         if (
-          node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-          !flags.recursive
+            node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
+            !flags.recursive
         ) {
           messages.push(
-            `rm: cannot remove '${pathArg}': Is a directory (use -r or -R)`
+              `rm: cannot remove '${pathArg}': Is a directory (use -r or -R)`
           );
           allSuccess = false;
           continue;
@@ -3158,32 +3098,32 @@ const CommandExecutor = (() => {
         let confirmed = flags.force;
         if (!confirmed && options.isInteractive) {
           const promptMsg =
-            node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
-              ? `Recursively remove directory '${pathArg}'?`
-              : `Remove file '${pathArg}'?`;
+              node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+                  ? `Recursively remove directory '${pathArg}'?`
+                  : `Remove file '${pathArg}'?`;
           confirmed = await new Promise((resolve) => {
             ModalManager.request({
               context: "terminal",
               messageLines: [promptMsg],
               onConfirm: () => resolve(true),
               onCancel: () => resolve(false),
+              options,
             });
           });
         } else if (!confirmed && !options.isInteractive) {
-          // Non-interactive without -f implies no confirmation
           messages.push(
-            `rm: removal of '${pathArg}' requires confirmation in non-interactive mode (use -f)`
+              `rm: removal of '${pathArg}' requires confirmation in non-interactive mode (use -f)`
           );
           allSuccess = false;
           continue;
         }
         if (confirmed) {
           const deleteResult = await FileSystemManager.deleteNodeRecursive(
-            pathArg,
-            {
-              force: true,
-              currentUser,
-            }
+              pathArg,
+              {
+                force: true,
+                currentUser,
+              }
           );
           if (deleteResult.success) {
             if (deleteResult.anyChangeMade) anyChangeMade = true;
@@ -3193,7 +3133,7 @@ const CommandExecutor = (() => {
           }
         } else {
           messages.push(
-            `${Config.MESSAGES.REMOVAL_CANCELLED_PREFIX}'${pathArg}'${Config.MESSAGES.REMOVAL_CANCELLED_SUFFIX}`
+              `${Config.MESSAGES.REMOVAL_CANCELLED_PREFIX}'${pathArg}'${Config.MESSAGES.REMOVAL_CANCELLED_SUFFIX}`
           );
         }
       }
@@ -3203,8 +3143,8 @@ const CommandExecutor = (() => {
         success: allSuccess,
         output: finalOutput,
         error: allSuccess
-          ? null
-          : finalOutput || "Unknown error during rm operation.",
+            ? null
+            : finalOutput || "Unknown error during rm operation.",
       };
     },
   };
@@ -3218,7 +3158,7 @@ const CommandExecutor = (() => {
     ],
     argValidation: { min: 2 },
     coreLogic: async (context) => {
-      const { args, flags, currentUser } = context;
+      const { args, flags, currentUser, options } = context;
       const nowISO = new Date().toISOString();
       flags.isInteractiveEffective = flags.interactive && !flags.force;
 
@@ -3228,34 +3168,33 @@ const CommandExecutor = (() => {
       let overallSuccess = true;
       let anyChangesMadeGlobal = false;
 
-      // <<< Define primaryGroup once here for efficiency >>>
       const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
       if (!primaryGroup) {
         return {
           success: false,
           error:
-            "cp: critical - could not determine primary group for current user.",
+              "cp: critical - could not determine primary group for current user.",
         };
       }
 
       async function _executeCopyInternal(
-        sourceNode,
-        sourcePathForMsg,
-        targetContainerAbsPath,
-        targetEntryName,
-        currentCommandFlags,
-        userPrimaryGroup
+          sourceNode,
+          sourcePathForMsg,
+          targetContainerAbsPath,
+          targetEntryName,
+          currentCommandFlags,
+          userPrimaryGroup
       ) {
         let currentOpMessages = [];
         let currentOpSuccess = true;
         let madeChangeInThisCall = false;
 
         const targetContainerNode = FileSystemManager.getNodeByPath(
-          targetContainerAbsPath
+            targetContainerAbsPath
         );
         if (
-          !targetContainerNode ||
-          targetContainerNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+            !targetContainerNode ||
+            targetContainerNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           return {
             success: false,
@@ -3267,11 +3206,11 @@ const CommandExecutor = (() => {
         }
 
         if (
-          !FileSystemManager.hasPermission(
-            targetContainerNode,
-            currentUser,
-            "write"
-          )
+            !FileSystemManager.hasPermission(
+                targetContainerNode,
+                currentUser,
+                "write"
+            )
         ) {
           return {
             success: false,
@@ -3283,8 +3222,8 @@ const CommandExecutor = (() => {
         }
 
         const fullFinalDestPath = FileSystemManager.getAbsolutePath(
-          targetEntryName,
-          targetContainerAbsPath
+            targetEntryName,
+            targetContainerAbsPath
         );
         let existingNodeAtDest = targetContainerNode.children[targetEntryName];
 
@@ -3300,12 +3239,13 @@ const CommandExecutor = (() => {
           }
           if (currentCommandFlags.isInteractiveEffective) {
             const confirmed = await new Promise((r) =>
-              ModalManager.request({
-                context: "terminal",
-                messageLines: [`Overwrite '${fullFinalDestPath}'?`],
-                onConfirm: () => r(true),
-                onCancel: () => r(false),
-              })
+                ModalManager.request({
+                  context: "terminal",
+                  messageLines: [`Overwrite '${fullFinalDestPath}'?`],
+                  onConfirm: () => r(true),
+                  onCancel: () => r(false),
+                  options,
+                })
             );
             if (!confirmed)
               return {
@@ -3331,19 +3271,19 @@ const CommandExecutor = (() => {
             type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
             content: sourceNode.content,
             owner: currentCommandFlags.preserve
-              ? sourceNode.owner
-              : currentUser,
+                ? sourceNode.owner
+                : currentUser,
             group: currentCommandFlags.preserve
-              ? sourceNode.group
-              : userPrimaryGroup, // <<< Correctly placed logic
+                ? sourceNode.group
+                : userPrimaryGroup,
             mode: currentCommandFlags.preserve
-              ? sourceNode.mode
-              : Config.FILESYSTEM.DEFAULT_FILE_MODE,
+                ? sourceNode.mode
+                : Config.FILESYSTEM.DEFAULT_FILE_MODE,
             mtime: currentCommandFlags.preserve ? sourceNode.mtime : nowISO,
           };
           madeChangeInThisCall = true;
         } else if (
-          sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+            sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
         ) {
           if (!currentCommandFlags.recursive) {
             return {
@@ -3371,12 +3311,12 @@ const CommandExecutor = (() => {
           }
           for (const childName in sourceNode.children) {
             const childCopyResult = await _executeCopyInternal(
-              sourceNode.children[childName],
-              FileSystemManager.getAbsolutePath(childName, sourcePathForMsg),
-              fullFinalDestPath,
-              childName,
-              currentCommandFlags,
-              userPrimaryGroup
+                sourceNode.children[childName],
+                FileSystemManager.getAbsolutePath(childName, sourcePathForMsg),
+                fullFinalDestPath,
+                childName,
+                currentCommandFlags,
+                userPrimaryGroup
             );
             currentOpMessages.push(...childCopyResult.messages);
             if (!childCopyResult.success) currentOpSuccess = false;
@@ -3396,20 +3336,20 @@ const CommandExecutor = (() => {
       }
 
       const destValidation = FileSystemManager.validatePath(
-        "cp (dest)",
-        rawDestPathArg,
-        { allowMissing: true }
+          "cp (dest)",
+          rawDestPathArg,
+          { allowMissing: true }
       );
       if (
-        destValidation.error &&
-        !(destValidation.optionsUsed.allowMissing && !destValidation.node)
+          destValidation.error &&
+          !(destValidation.optionsUsed.allowMissing && !destValidation.node)
       ) {
         return { success: false, error: destValidation.error };
       }
 
       const isDestADirectory =
-        destValidation.node &&
-        destValidation.node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
+          destValidation.node &&
+          destValidation.node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
       if (sourcePathArgs.length > 1 && !isDestADirectory) {
         return {
           success: false,
@@ -3419,8 +3359,8 @@ const CommandExecutor = (() => {
 
       for (const sourcePathArg of sourcePathArgs) {
         const sourceValidation = FileSystemManager.validatePath(
-          "cp (source)",
-          sourcePathArg
+            "cp (source)",
+            sourcePathArg
         );
         if (sourceValidation.error) {
           operationMessages.push(sourceValidation.error);
@@ -3428,14 +3368,14 @@ const CommandExecutor = (() => {
           continue;
         }
         if (
-          !FileSystemManager.hasPermission(
-            sourceValidation.node,
-            currentUser,
-            "read"
-          )
+            !FileSystemManager.hasPermission(
+                sourceValidation.node,
+                currentUser,
+                "read"
+            )
         ) {
           operationMessages.push(
-            `cp: cannot read '${sourcePathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
+              `cp: cannot read '${sourcePathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
           );
           overallSuccess = false;
           continue;
@@ -3444,33 +3384,32 @@ const CommandExecutor = (() => {
         if (isDestADirectory) {
           targetContainerAbsPath = destValidation.resolvedPath;
           targetEntryName = sourceValidation.resolvedPath.substring(
-            sourceValidation.resolvedPath.lastIndexOf(
-              Config.FILESYSTEM.PATH_SEPARATOR
-            ) + 1
+              sourceValidation.resolvedPath.lastIndexOf(
+                  Config.FILESYSTEM.PATH_SEPARATOR
+              ) + 1
           );
         } else {
           targetContainerAbsPath =
-            destValidation.resolvedPath.substring(
-              0,
-              destValidation.resolvedPath.lastIndexOf(
-                Config.FILESYSTEM.PATH_SEPARATOR
-              )
-            ) || Config.FILESYSTEM.ROOT_PATH;
+              destValidation.resolvedPath.substring(
+                  0,
+                  destValidation.resolvedPath.lastIndexOf(
+                      Config.FILESYSTEM.PATH_SEPARATOR
+                  )
+              ) || Config.FILESYSTEM.ROOT_PATH;
           targetEntryName = destValidation.resolvedPath.substring(
-            destValidation.resolvedPath.lastIndexOf(
-              Config.FILESYSTEM.PATH_SEPARATOR
-            ) + 1
+              destValidation.resolvedPath.lastIndexOf(
+                  Config.FILESYSTEM.PATH_SEPARATOR
+              ) + 1
           );
         }
 
-        // <<< Pass the primaryGroup down to the helper function >>>
         const copyResult = await _executeCopyInternal(
-          sourceValidation.node,
-          sourcePathArg,
-          targetContainerAbsPath,
-          targetEntryName,
-          flags,
-          primaryGroup
+            sourceValidation.node,
+            sourcePathArg,
+            targetContainerAbsPath,
+            targetEntryName,
+            flags,
+            primaryGroup
         );
 
         operationMessages.push(...copyResult.messages);
@@ -3480,7 +3419,7 @@ const CommandExecutor = (() => {
 
       if (anyChangesMadeGlobal && !(await FileSystemManager.save())) {
         operationMessages.push(
-          "cp: CRITICAL - Failed to save file system changes."
+            "cp: CRITICAL - Failed to save file system changes."
         );
         overallSuccess = false;
       }
@@ -3490,8 +3429,8 @@ const CommandExecutor = (() => {
         success: overallSuccess,
         output: finalMessages,
         error: overallSuccess
-          ? null
-          : finalMessages || "An unknown error occurred.",
+            ? null
+            : finalMessages || "An unknown error occurred.",
       };
     },
   };
@@ -3522,8 +3461,8 @@ const CommandExecutor = (() => {
       return {
         success: true,
         output: history
-          .map((cmd, i) => `  ${String(i + 1).padStart(3)}  ${cmd}`)
-          .join("\n"),
+            .map((cmd, i) => `  ${String(i + 1).padStart(3)}  ${cmd}`)
+            .join("\n"),
       };
     },
   };
@@ -3581,9 +3520,9 @@ const CommandExecutor = (() => {
         let currentFileLines = [];
         lines.forEach((line, index) => {
           if (
-            index === lines.length - 1 &&
-            line === "" &&
-            content.endsWith("\n")
+              index === lines.length - 1 &&
+              line === "" &&
+              content.endsWith("\n")
           )
             return;
           const isMatch = regex.test(line);
@@ -3610,8 +3549,8 @@ const CommandExecutor = (() => {
       };
       async function searchRecursively(currentPath, displayPathArg) {
         const pathValidation = FileSystemManager.validatePath(
-          "grep",
-          currentPath
+            "grep",
+            currentPath
         );
         if (pathValidation.error) {
           await OutputManager.appendToOutput(pathValidation.error, {
@@ -3623,10 +3562,10 @@ const CommandExecutor = (() => {
         const node = pathValidation.node;
         if (!FileSystemManager.hasPermission(node, currentUser, "read")) {
           await OutputManager.appendToOutput(
-            `grep: ${displayPathArg}${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `grep: ${displayPathArg}${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
           overallSuccess = false;
           return;
@@ -3636,18 +3575,18 @@ const CommandExecutor = (() => {
         } else if (node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
           if (!flags.recursive) {
             await OutputManager.appendToOutput(
-              `grep: ${displayPathArg}: Is a directory`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
+                `grep: ${displayPathArg}: Is a directory`,
+                {
+                  typeClass: Config.CSS_CLASSES.ERROR_MSG,
+                }
             );
             overallSuccess = false;
             return;
           }
           for (const childName of Object.keys(node.children || {})) {
             await searchRecursively(
-              FileSystemManager.getAbsolutePath(childName, currentPath),
-              FileSystemManager.getAbsolutePath(childName, currentPath)
+                FileSystemManager.getAbsolutePath(childName, currentPath),
+                FileSystemManager.getAbsolutePath(childName, currentPath)
             );
           }
         }
@@ -3656,19 +3595,19 @@ const CommandExecutor = (() => {
         for (const pathArg of filePathsArgs) {
           if (flags.recursive) {
             await searchRecursively(
-              FileSystemManager.getAbsolutePath(
-                pathArg,
-                FileSystemManager.getCurrentPath()
-              ),
-              pathArg
+                FileSystemManager.getAbsolutePath(
+                    pathArg,
+                    FileSystemManager.getCurrentPath()
+                ),
+                pathArg
             );
           } else {
             const pathValidation = FileSystemManager.validatePath(
-              "grep",
-              pathArg,
-              {
-                expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-              }
+                "grep",
+                pathArg,
+                {
+                  expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
+                }
             );
             if (pathValidation.error) {
               await OutputManager.appendToOutput(pathValidation.error, {
@@ -3678,17 +3617,17 @@ const CommandExecutor = (() => {
               continue;
             }
             if (
-              !FileSystemManager.hasPermission(
-                pathValidation.node,
-                currentUser,
-                "read"
-              )
+                !FileSystemManager.hasPermission(
+                    pathValidation.node,
+                    currentUser,
+                    "read"
+                )
             ) {
               await OutputManager.appendToOutput(
-                `grep: ${pathArg}${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-                {
-                  typeClass: Config.CSS_CLASSES.ERROR_MSG,
-                }
+                  `grep: ${pathArg}${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
+                  {
+                    typeClass: Config.CSS_CLASSES.ERROR_MSG,
+                  }
               );
               overallSuccess = false;
               continue;
@@ -3736,11 +3675,11 @@ const CommandExecutor = (() => {
       let anyFileProcessed = false;
       if (args.length === 1) {
         const destPathValidation = FileSystemManager.validatePath(
-          "upload (destination)",
-          args[0],
-          {
-            expectedType: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-          }
+            "upload (destination)",
+            args[0],
+            {
+              expectedType: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+            }
         );
         if (destPathValidation.error)
           return {
@@ -3751,8 +3690,8 @@ const CommandExecutor = (() => {
       }
       const targetDirNode = FileSystemManager.getNodeByPath(targetDirPath);
       if (
-        !targetDirNode ||
-        !FileSystemManager.hasPermission(targetDirNode, currentUser, "write")
+          !targetDirNode ||
+          !FileSystemManager.hasPermission(targetDirNode, currentUser, "write")
       )
         return {
           success: false,
@@ -3808,32 +3747,33 @@ const CommandExecutor = (() => {
         for (const file of Array.from(filesToUpload)) {
           try {
             const explicitMode = file.name.endsWith(".sh")
-              ? Config.FILESYSTEM.DEFAULT_SH_MODE
-              : null;
+                ? Config.FILESYSTEM.DEFAULT_SH_MODE
+                : null;
             const content = await file.text();
             const existingFileNode = targetDirNode.children[file.name];
             if (existingFileNode) {
               if (
-                !FileSystemManager.hasPermission(
-                  existingFileNode,
-                  currentUser,
-                  "write"
-                )
+                  !FileSystemManager.hasPermission(
+                      existingFileNode,
+                      currentUser,
+                      "write"
+                  )
               ) {
                 operationMessages.push(
-                  `Error uploading '${file.name}': cannot overwrite '${file.name}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
+                    `Error uploading '${file.name}': cannot overwrite '${file.name}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
                 );
                 allFilesSuccess = false;
                 continue;
               }
               if (!flags.force) {
                 const confirmed = await new Promise((r) =>
-                  ModalManager.request({
-                    context: "terminal",
-                    messageLines: [`'${file.name}' already exists. Overwrite?`],
-                    onConfirm: () => r(true),
-                    onCancel: () => r(false),
-                  })
+                    ModalManager.request({
+                      context: "terminal",
+                      messageLines: [`'${file.name}' already exists. Overwrite?`],
+                      onConfirm: () => r(true),
+                      onCancel: () => r(false),
+                      options,
+                    })
                 );
                 if (!confirmed) {
                   operationMessages.push(`Skipped '${file.name}'.`);
@@ -3842,42 +3782,40 @@ const CommandExecutor = (() => {
               }
             }
             const primaryGroup =
-              UserManager.getPrimaryGroupForUser(currentUser);
+                UserManager.getPrimaryGroupForUser(currentUser);
             if (!primaryGroup) {
               operationMessages.push(
-                `Error uploading '${file.name}': Could not determine primary group.`
+                  `Error uploading '${file.name}': Could not determine primary group.`
               );
               allFilesSuccess = false;
               continue;
             }
             targetDirNode.children[file.name] =
-              FileSystemManager._createNewFileNode(
-                file.name,
-                content,
-                currentUser,
-                primaryGroup,
-                explicitMode
-              );
+                FileSystemManager._createNewFileNode(
+                    file.name,
+                    content,
+                    currentUser,
+                    primaryGroup,
+                    explicitMode
+                );
             targetDirNode.mtime = nowISO;
             operationMessages.push(
-              `'${file.name}' uploaded to '${targetDirPath}'.`
+                `'${file.name}' uploaded to '${targetDirPath}'.`
             );
           } catch (fileError) {
             operationMessages.push(
-              `Error uploading '${file.name}': ${fileError.message}`
+                `Error uploading '${file.name}': ${fileError.message}`
             );
             allFilesSuccess = false;
           }
         }
-        // <<< FIX: Call save() without arguments and check for failure >>>
         if (anyFileProcessed && !(await FileSystemManager.save())) {
           operationMessages.push(
-            "Critical: Failed to save file system changes after uploads."
+              "Critical: Failed to save file system changes after uploads."
           );
           allFilesSuccess = false;
         }
 
-        // <<< FIX: Improved return logic for proper error reporting >>>
         if (allFilesSuccess) {
           return {
             success: true,
@@ -3906,7 +3844,8 @@ const CommandExecutor = (() => {
       exact: 0,
     },
     coreLogic: async (context) => {
-      if (!context.options.isInteractive)
+      const { options } = context;
+      if (!options.isInteractive)
         return {
           success: false,
           error: "restore: Can only be run in interactive mode.",
@@ -3954,11 +3893,10 @@ const CommandExecutor = (() => {
         }
         const file = fileResult.file;
         const backupData = JSON.parse(await file.text());
-        // Validate the backup file format
         if (
-          !backupData ||
-          !backupData.dataType ||
-          !backupData.dataType.startsWith("OopisOS_System_State_Backup")
+            !backupData ||
+            !backupData.dataType ||
+            !backupData.dataType.startsWith("OopisOS_System_State_Backup")
         ) {
           return {
             success: false,
@@ -3971,12 +3909,13 @@ const CommandExecutor = (() => {
           "This action cannot be undone. Are you sure you want to restore?",
         ];
         const confirmed = await new Promise((conf) =>
-          ModalManager.request({
-            context: "terminal",
-            messageLines,
-            onConfirm: () => conf(true),
-            onCancel: () => conf(false),
-          })
+            ModalManager.request({
+              context: "terminal",
+              messageLines,
+              onConfirm: () => conf(true),
+              onCancel: () => conf(false),
+              options,
+            })
         );
         if (!confirmed) {
           return {
@@ -3985,7 +3924,6 @@ const CommandExecutor = (() => {
             messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
           };
         }
-        // --- The Restore Process Begins ---
         const allKeys = StorageManager.getAllLocalStorageKeys();
         allKeys.forEach((key) => {
           if (key !== Config.STORAGE_KEYS.GEMINI_API_KEY) {
@@ -3994,19 +3932,19 @@ const CommandExecutor = (() => {
         });
         if (backupData.userCredentials)
           StorageManager.saveItem(
-            Config.STORAGE_KEYS.USER_CREDENTIALS,
-            backupData.userCredentials
+              Config.STORAGE_KEYS.USER_CREDENTIALS,
+              backupData.userCredentials
           );
         if (backupData.editorWordWrapEnabled !== undefined)
           StorageManager.saveItem(
-            Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED,
-            backupData.editorWordWrapEnabled
+              Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED,
+              backupData.editorWordWrapEnabled
           );
         if (backupData.automaticSessionStates) {
           for (const key in backupData.automaticSessionStates)
             StorageManager.saveItem(
-              key,
-              backupData.automaticSessionStates[key]
+                key,
+                backupData.automaticSessionStates[key]
             );
         }
         if (backupData.manualSaveStates) {
@@ -4014,24 +3952,22 @@ const CommandExecutor = (() => {
             StorageManager.saveItem(key, backupData.manualSaveStates[key]);
         }
         FileSystemManager.setFsData(
-          Utils.deepCopyNode(backupData.fsDataSnapshot)
+            Utils.deepCopyNode(backupData.fsDataSnapshot)
         );
 
-        // --- REFINED LOGIC ---
-        // Directly return an error object on save failure.
         if (!(await FileSystemManager.save())) {
           return {
             success: false,
             error:
-              "restore: Critical failure: Could not save the restored file system to the database.",
+                "restore: Critical failure: Could not save the restored file system to the database.",
           };
         }
 
         await OutputManager.appendToOutput(
-          "System state restored successfully. Rebooting OopisOS to apply changes...",
-          {
-            typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-          }
+            "System state restored successfully. Rebooting OopisOS to apply changes...",
+            {
+              typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
+            }
         );
         setTimeout(() => {
           window.location.reload(true);
@@ -4062,25 +3998,25 @@ const CommandExecutor = (() => {
       const expressionArgs = args.slice(1);
       let outputLines = [];
       let overallSuccess = true,
-        filesProcessedSuccessfully = true,
-        anyChangeMadeDuringFind = false;
+          filesProcessedSuccessfully = true,
+          anyChangeMadeDuringFind = false;
       const predicates = {
         "-name": (node, path, pattern) => {
           const regex = Utils.globToRegex(pattern);
           if (!regex) {
             OutputManager.appendToOutput(
-              `find: invalid pattern for -name: ${pattern}`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
+                `find: invalid pattern for -name: ${pattern}`,
+                {
+                  typeClass: Config.CSS_CLASSES.ERROR_MSG,
+                }
             );
             overallSuccess = false;
             return false;
           }
           return regex.test(
-            path.substring(
-              path.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
-            )
+              path.substring(
+                  path.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+              )
           );
         },
         "-type": (node, path, typeChar) => {
@@ -4089,10 +4025,10 @@ const CommandExecutor = (() => {
           if (typeChar === "d")
             return node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
           OutputManager.appendToOutput(
-            `find: unknown type '${typeChar}' for -type`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `find: unknown type '${typeChar}' for -type`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
           overallSuccess = false;
           return false;
@@ -4100,12 +4036,11 @@ const CommandExecutor = (() => {
         "-user": (node, path, username) => node.owner === username,
         "-perm": (node, path, modeStr) => {
           if (!/^[0-7]{3,4}$/.test(modeStr)) {
-            // <-- FIXED REGEX
             OutputManager.appendToOutput(
-              `find: invalid mode '${modeStr}' for -perm`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
+                `find: invalid mode '${modeStr}' for -perm`,
+                {
+                  typeClass: Config.CSS_CLASSES.ERROR_MSG,
+                }
             );
             overallSuccess = false;
             return false;
@@ -4133,10 +4068,10 @@ const CommandExecutor = (() => {
           const targetDate = TimestampParser.parseDateString(dateStr);
           if (!targetDate) {
             OutputManager.appendToOutput(
-              `find: invalid date string for -newermt: ${dateStr}`,
-              { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+                `find: invalid date string for -newermt: ${dateStr}`,
+                { typeClass: Config.CSS_CLASSES.ERROR_MSG }
             );
-            overallSuccess = false; // Use a flag from the outer scope
+            overallSuccess = false;
             return false;
           }
           return new Date(node.mtime) > targetDate;
@@ -4146,10 +4081,10 @@ const CommandExecutor = (() => {
           const targetDate = TimestampParser.parseDateString(dateStr);
           if (!targetDate) {
             OutputManager.appendToOutput(
-              `find: invalid date string for -oldermt: ${dateStr}`,
-              { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+                `find: invalid date string for -oldermt: ${dateStr}`,
+                { typeClass: Config.CSS_CLASSES.ERROR_MSG }
             );
-            overallSuccess = false; // Use a flag from the outer scope
+            overallSuccess = false;
             return false;
           }
           return new Date(node.mtime) < targetDate;
@@ -4162,18 +4097,18 @@ const CommandExecutor = (() => {
         },
         "-exec": async (node, path, commandParts) => {
           const cmdStr = commandParts
-            .map((part) => (part === "{}" ? path : part))
-            .join(" ");
+              .map((part) => (part === "{}" ? path : part))
+              .join(" ");
           const result = await CommandExecutor.processSingleCommand(
-            cmdStr,
-            false
+              cmdStr,
+              false
           );
           if (!result.success) {
             await OutputManager.appendToOutput(
-              `find: -exec: command '${cmdStr}' failed: ${result.error}`,
-              {
-                typeClass: Config.CSS_CLASSES.WARNING_MSG,
-              }
+                `find: -exec: command '${cmdStr}' failed: ${result.error}`,
+                {
+                  typeClass: Config.CSS_CLASSES.WARNING_MSG,
+                }
             );
             filesProcessedSuccessfully = false;
             return false;
@@ -4187,15 +4122,15 @@ const CommandExecutor = (() => {
           });
           if (!result.success) {
             await OutputManager.appendToOutput(
-              `find: -delete: ${
-                result.messages.join(";") ||
-                `
+                `find: -delete: ${
+                    result.messages.join(";") ||
+                    `
 								failed to delete '${path}'
 								`
-              }`,
-              {
-                typeClass: Config.CSS_CLASSES.WARNING_MSG,
-              }
+                }`,
+                {
+                  typeClass: Config.CSS_CLASSES.WARNING_MSG,
+                }
             );
             filesProcessedSuccessfully = false;
             return false;
@@ -4205,10 +4140,10 @@ const CommandExecutor = (() => {
         },
       };
       let parsedExpression = [],
-        currentTermGroup = [],
-        nextTermNegated = false,
-        hasExplicitAction = false,
-        i = 0;
+          currentTermGroup = [],
+          nextTermNegated = false,
+          hasExplicitAction = false,
+          i = 0;
       while (i < expressionArgs.length) {
         const token = expressionArgs[i];
         if (token === "-not" || token === "!") {
@@ -4276,8 +4211,8 @@ const CommandExecutor = (() => {
         });
       if (!hasExplicitAction) {
         if (
-          parsedExpression.length === 0 ||
-          parsedExpression[parsedExpression.length - 1].type === "OR"
+            parsedExpression.length === 0 ||
+            parsedExpression[parsedExpression.length - 1].type === "OR"
         )
           parsedExpression.push({
             type: "AND_GROUP",
@@ -4291,34 +4226,28 @@ const CommandExecutor = (() => {
         });
       }
       async function evaluateExpressionForNode(node, path) {
-        // Correctly evaluates expressions like (A AND B) OR (C AND D)
         let overallResult = false;
         let currentAndGroupResult = true;
 
         for (const groupOrOperator of parsedExpression) {
           if (groupOrOperator.type === "AND_GROUP") {
-            // This is the start of a new AND group (or the only one).
-            // Evaluate all its terms.
-            currentAndGroupResult = true; // Reset for this group.
+            currentAndGroupResult = true;
             for (const term of groupOrOperator.terms.filter(
-              (t) => t.type === "TEST"
+                (t) => t.type === "TEST"
             )) {
               const result = await term.eval(node, path, term.arg);
               const effectiveResult = term.negated ? !result : result;
               if (!effectiveResult) {
                 currentAndGroupResult = false;
-                break; // This AND group has failed.
+                break;
               }
             }
           } else if (groupOrOperator.type === "OR") {
-            // We've finished an AND group. OR its result with the final result.
             overallResult = overallResult || currentAndGroupResult;
-            // Reset for the next AND group which will start on the next iteration.
             currentAndGroupResult = true;
           }
         }
 
-        // After the loop, account for the last AND group's result.
         overallResult = overallResult || currentAndGroupResult;
         return overallResult;
       }
@@ -4326,20 +4255,20 @@ const CommandExecutor = (() => {
         const node = FileSystemManager.getNodeByPath(currentResolvedPath);
         if (!node) {
           await OutputManager.appendToOutput(
-            `find: ‘${currentResolvedPath}’: No such file or directory`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `find: ‘${currentResolvedPath}’: No such file or directory`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
           filesProcessedSuccessfully = false;
           return;
         }
         if (!FileSystemManager.hasPermission(node, currentUser, "read")) {
           await OutputManager.appendToOutput(
-            `find: ‘${currentResolvedPath}’: Permission denied`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `find: ‘${currentResolvedPath}’: Permission denied`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
           filesProcessedSuccessfully = false;
           return;
@@ -4349,12 +4278,12 @@ const CommandExecutor = (() => {
             for (const groupOrOperator of parsedExpression) {
               if (groupOrOperator.type === "AND_GROUP") {
                 for (const term of groupOrOperator.terms.filter(
-                  (t) => t.type === "ACTION"
+                    (t) => t.type === "ACTION"
                 ))
                   await term.perform(
-                    node,
-                    currentResolvedPath,
-                    term.commandParts
+                      node,
+                      currentResolvedPath,
+                      term.commandParts
                   );
               }
             }
@@ -4364,16 +4293,16 @@ const CommandExecutor = (() => {
         if (node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
           for (const childName of Object.keys(node.children || {})) {
             await recurseFind(
-              FileSystemManager.getAbsolutePath(childName, currentResolvedPath),
-              isDepthFirst
+                FileSystemManager.getAbsolutePath(childName, currentResolvedPath),
+                isDepthFirst
             );
           }
         }
         if (isDepthFirst) await processNode();
       }
       const startPathValidation = FileSystemManager.validatePath(
-        "find",
-        startPathArg
+          "find",
+          startPathArg
       );
       if (startPathValidation.error)
         return {
@@ -4381,8 +4310,8 @@ const CommandExecutor = (() => {
           error: startPathValidation.error,
         };
       const impliesDepth = parsedExpression.some(
-        (g) =>
-          g.type === "AND_GROUP" && g.terms.some((t) => t.name === "-delete")
+          (g) =>
+              g.type === "AND_GROUP" && g.terms.some((t) => t.name === "-delete")
       );
       await recurseFind(startPathValidation.resolvedPath, impliesDepth);
       if (anyChangeMadeDuringFind) await FileSystemManager.save();
@@ -4400,9 +4329,9 @@ const CommandExecutor = (() => {
       const targetUser = args.length > 0 ? args[0] : currentUser;
 
       const users = StorageManager.loadItem(
-        Config.STORAGE_KEYS.USER_CREDENTIALS,
-        "User list",
-        {}
+          Config.STORAGE_KEYS.USER_CREDENTIALS,
+          "User list",
+          {}
       );
       if (!users[targetUser] && targetUser !== Config.USER.DEFAULT_NAME) {
         return {
@@ -4474,9 +4403,9 @@ const CommandExecutor = (() => {
         };
       }
       const users = StorageManager.loadItem(
-        Config.STORAGE_KEYS.USER_CREDENTIALS,
-        "User list",
-        {}
+          Config.STORAGE_KEYS.USER_CREDENTIALS,
+          "User list",
+          {}
       );
       if (!users[username] && username !== Config.USER.DEFAULT_NAME) {
         return {
@@ -4565,7 +4494,6 @@ const CommandExecutor = (() => {
       const file1Node = validatedPaths[0].node;
       const file2Node = validatedPaths[1].node;
 
-      // The magic happens here! All the complexity is now hidden in DiffUtils.
       const diffResult = DiffUtils.compare(
           file1Node.content || "",
           file2Node.content || ""
@@ -4749,7 +4677,7 @@ const CommandExecutor = (() => {
           return {
             success: true,
             output: ""
-          }; // Success, no stdout
+          };
         } else {
           return {
             success: true,
@@ -4780,7 +4708,7 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(diffCommandDefinition),
       description: "Compares two files line by line.",
       helpText:
-        "Usage: diff <file1> <file2>\n\nCompares two files and displays the differences.",
+          "Usage: diff <file1> <file2>\n\nCompares two files and displays the differences.",
     },
     unalias: {
       handler: createCommandHandler(unaliasCommandDefinition),
@@ -4820,25 +4748,25 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(helpCommandDefinition),
       description: "Displays help information.",
       helpText:
-        "Usage: help [command]\n\nDisplays a list of commands or help for a specific [command].",
+          "Usage: help [command]\n\nDisplays a list of commands or help for a specific [command].",
     },
     echo: {
       handler: createCommandHandler(echoCommandDefinition),
       description: "Displays a line of text.",
       helpText:
-        "Usage: echo [text...]\n\nPrints the specified [text] to the terminal.",
+          "Usage: echo [text...]\n\nPrints the specified [text] to the terminal.",
     },
     reboot: {
       handler: createCommandHandler(rebootCommandDefinition),
       description:
-        "Reboots OopisOS by reloading the browser page and clearing its cache, preserving user data.",
+          "Reboots OopisOS by reloading the browser page and clearing its cache, preserving user data.",
       helpText: "Usage: reboot",
     },
     clear: {
       handler: createCommandHandler(clearCommandDefinition),
       description: "Clears the terminal screen.",
       helpText:
-        "Usage: clear\n\nClears all previous output from the terminal screen.",
+          "Usage: clear\n\nClears all previous output from the terminal screen.",
     },
     date: {
       handler: createCommandHandler(dateCommandDefinition),
@@ -4849,7 +4777,7 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(pwdCommandDefinition),
       description: "Prints the current working directory.",
       helpText:
-        "Usage: pwd\n\nDisplays the full path of the current directory.",
+          "Usage: pwd\n\nDisplays the full path of the current directory.",
     },
     ls: {
       handler: createCommandHandler(lsCommandDefinition),
@@ -4860,19 +4788,19 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(cdCommandDefinition),
       description: "Changes the current directory.",
       helpText:
-        "Usage: cd <directory_path>\n\nChanges the current working directory to the specified <directory_path>.",
+          "Usage: cd <directory_path>\n\nChanges the current working directory to the specified <directory_path>.",
     },
     mkdir: {
       handler: createCommandHandler(mkdirCommandDefinition),
       description: "Creates new directories.",
       helpText:
-        "Usage: mkdir [-p] <directory_name>...\n\nCreates one or more new directories with the specified names.\n  -p, --parents   No error if existing, make parent directories as needed.",
+          "Usage: mkdir [-p] <directory_name>...\n\nCreates one or more new directories with the specified names.\n  -p, --parents   No error if existing, make parent directories as needed.",
     },
     tree: {
       handler: createCommandHandler(treeCommandDefinition),
       description: "Lists contents of directories in a tree-like format.",
       helpText:
-        "Usage: tree [-L level] [-d] [path]\n\nLists the contents of directories in a tree-like format.\n  -L level  Descend only level directories deep.\n  -d        List directories only.",
+          "Usage: tree [-L level] [-d] [path]\n\nLists the contents of directories in a tree-like format.\n  -L level  Descend only level directories deep.\n  -d        List directories only.",
     },
     touch: {
       handler: createCommandHandler(touchCommandDefinition),
@@ -4883,7 +4811,7 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(catCommandDefinition),
       description: "Concatenates and displays files.",
       helpText:
-        "Usage: cat [file...]\n\nConcatenates and displays the content of one or more specified files. If no files are given, it reads from standard input (e.g., from a pipe).",
+          "Usage: cat [file...]\n\nConcatenates and displays the content of one or more specified files. If no files are given, it reads from standard input (e.g., from a pipe).",
     },
     rm: {
       handler: createCommandHandler(rmCommandDefinition),
@@ -4904,113 +4832,113 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(historyCommandDefinition),
       description: "Displays command history.",
       helpText:
-        "Usage: history [-c]\n\nDisplays the command history. Use '-c' or '--clear' to clear the history.",
+          "Usage: history [-c]\n\nDisplays the command history. Use '-c' or '--clear' to clear the history.",
     },
     edit: {
       handler: createCommandHandler(editCommandDefinition),
       description: "Opens a file in the text editor.",
       helpText:
-        "Usage: edit <file_path>\n\nOpens the specified <file_path> in the built-in text editor. If the file does not exist, it will be created upon saving.",
+          "Usage: edit <file_path>\n\nOpens the specified <file_path> in the built-in text editor. If the file does not exist, it will be created upon saving.",
     },
     grep: {
       handler: createCommandHandler(grepCommandDefinition),
       description: "Searches for patterns in files or input.",
       helpText:
-        "Usage: grep [OPTIONS] PATTERN [FILE...]\n\nSearch for PATTERN in each FILE or standard input.\n\nOptions:\n  -i, --ignore-case   Ignore case distinctions.\n  -v, --invert-match  Select non-matching lines.\n  -n, --line-number   Print line number with output lines.\n  -c, --count         Print only a count of matching lines per FILE.\n  -R, --recursive     Read all files under each directory, recursively.",
+          "Usage: grep [OPTIONS] PATTERN [FILE...]\n\nSearch for PATTERN in each FILE or standard input.\n\nOptions:\n  -i, --ignore-case   Ignore case distinctions.\n  -v, --invert-match  Select non-matching lines.\n  -n, --line-number   Print line number with output lines.\n  -c, --count         Print only a count of matching lines per FILE.\n  -R, --recursive     Read all files under each directory, recursively.",
     },
     useradd: {
       handler: createCommandHandler(useraddCommandDefinition),
       description: "Creates a new user account.",
       helpText:
-        "Usage: useradd <username>\n\nCreates a new user account with the specified username. Will prompt for a password.",
+          "Usage: useradd <username>\n\nCreates a new user account with the specified username. Will prompt for a password.",
     },
     login: {
       handler: createCommandHandler(loginCommandDefinition),
       description: "Logs in as a specified user.",
       helpText:
-        "Usage: login <username> [password]\n\nLogs in as the specified user. If a password is not provided and one is required, you will be prompted.",
+          "Usage: login <username> [password]\n\nLogs in as the specified user. If a password is not provided and one is required, you will be prompted.",
     },
     logout: {
       handler: createCommandHandler(logoutCommandDefinition),
       description: "Logs out the current user.",
       helpText:
-        "Usage: logout\n\nLogs out the current user and returns to the Guest session.",
+          "Usage: logout\n\nLogs out the current user and returns to the Guest session.",
     },
     whoami: {
       handler: createCommandHandler(whoamiCommandDefinition),
       description: "Displays the current username.",
       helpText:
-        "Usage: whoami\n\nPrints the username of the currently logged-in user.",
+          "Usage: whoami\n\nPrints the username of the currently logged-in user.",
     },
     export: {
       handler: createCommandHandler(exportCommandDefinition),
       description: "Exports a file from the virtual FS to the user's computer.",
       helpText:
-        "Usage: export <file_path>\n\nDownloads the specified file from OopisOS's virtual file system.",
+          "Usage: export <file_path>\n\nDownloads the specified file from OopisOS's virtual file system.",
     },
     upload: {
       handler: createCommandHandler(uploadCommandDefinition),
       description:
-        "Uploads one or more files from the user's computer to the virtual FS.",
+          "Uploads one or more files from the user's computer to the virtual FS.",
       helpText:
-        "Usage: upload [-f] [destination_directory]\n\nPrompts to select files to upload to the current or specified directory.\n  -f, --force   Overwrite existing files without prompting.",
+          "Usage: upload [-f] [destination_directory]\n\nPrompts to select files to upload to the current or specified directory.\n  -f, --force   Overwrite existing files without prompting.",
     },
     backup: {
       handler: createCommandHandler(backupCommandDefinition),
       description: "Creates a JSON backup of the current user's file system.",
       helpText:
-        "Usage: backup\n\nCreates a JSON file containing a snapshot of the current user's entire file system.",
+          "Usage: backup\n\nCreates a JSON file containing a snapshot of the current user's entire file system.",
     },
     restore: {
       handler: createCommandHandler(restoreCommandDefinition),
       description: "Restores the file system from a JSON backup file.",
       helpText:
-        "Usage: restore\n\nPrompts to select an OopisOS JSON backup file to restore the file system. Requires confirmation.",
+          "Usage: restore\n\nPrompts to select an OopisOS JSON backup file to restore the file system. Requires confirmation.",
     },
     savefs: {
       handler: createCommandHandler(savefsCommandDefinition),
       description: "Manually saves the current user's file system state.",
       helpText:
-        "Usage: savefs\n\nManually triggers a save of the current user's file system to persistent storage.",
+          "Usage: savefs\n\nManually triggers a save of the current user's file system to persistent storage.",
     },
     su: {
       handler: createCommandHandler(suCommandDefinition),
       description: "Substitute user identity.",
       helpText:
-        "Usage: su [username]\n\nSwitches the current user to [username] (defaults to 'root'). Will prompt for password if required.",
+          "Usage: su [username]\n\nSwitches the current user to [username] (defaults to 'root'). Will prompt for password if required.",
     },
     clearfs: {
       handler: createCommandHandler(clearfsCommandDefinition),
       description:
-        "Clears the current user's home directory to a default empty state.",
+          "Clears the current user's home directory to a default empty state.",
       helpText: `Usage: clearfs\n\nWARNING: This command will permanently erase all files and directories in your home directory. This action requires confirmation.`,
     },
     savestate: {
       handler: createCommandHandler(savestateCommandDefinition),
       description: "Saves the current terminal session (FS, output, history).",
       helpText:
-        "Usage: savestate\n\nManually saves the entire current terminal session for the current user.",
+          "Usage: savestate\n\nManually saves the entire current terminal session for the current user.",
     },
     loadstate: {
       handler: createCommandHandler(loadstateCommandDefinition),
       description: "Loads a previously saved terminal session.",
       helpText:
-        "Usage: loadstate\n\nAttempts to load a manually saved terminal session for the current user. Requires confirmation.",
+          "Usage: loadstate\n\nAttempts to load a manually saved terminal session for the current user. Requires confirmation.",
     },
     reset: {
       handler: createCommandHandler(resetCommandDefinition),
       description:
-        "Resets all OopisOS data (users, FS, states) to factory defaults.",
+          "Resets all OopisOS data (users, FS, states) to factory defaults.",
       helpText:
-        "Usage: reset\n\nWARNING: Resets all OopisOS data to its initial factory state. This operation is irreversible and requires confirmation.",
+          "Usage: reset\n\nWARNING: Resets all OopisOS data to its initial factory state. This operation is irreversible and requires confirmation.",
     },
     run: {
       handler: createCommandHandler(runCommandDefinition),
       description: "Executes a script file containing OopisOS commands.",
       helpText:
-        "Usage: run <script_path> [arg1 arg2 ...]\n\nExecutes the commands listed in the specified .sh script file.\nSupports argument passing: $1, $2, ..., $@, $#.",
+          "Usage: run <script_path> [arg1 arg2 ...]\n\nExecutes the commands listed in the specified .sh script file.\nSupports argument passing: $1, $2, ..., $@, $#.",
     },
-    groupdel: { // <<< ADD THIS ENTIRE BLOCK
+    groupdel: {
       handler: createCommandHandler(groupdelCommandDefinition),
       description: "Deletes a user group.",
       helpText: "Usage: groupdel <groupname>\n\nDeletes an existing user group. (root only)",
@@ -5018,27 +4946,27 @@ const CommandExecutor = (() => {
     find: {
       handler: createCommandHandler(findCommandDefinition),
       description:
-        "Searches for files in a directory hierarchy based on expressions.",
-      helpText: `Usage: find [path] [expression]\n\nSearches for files. Default path is '.' Default action is '-print'.\nTests: -name, -type, -user, -perm, -mtime\nOperators: -not, -o, -a\nActions: -print, -exec, -delete`,
+          "Searches for files in a directory hierarchy based on expressions.",
+      helpText: `Usage: find [path] [expression]\n\nSearches for files. Default path is '.' Default action is '-print'.\nTests: -name, -type, -user, -perm, -mtime, -newermt, -oldermt\nOperators: -not, -o, -a\nActions: -print, -exec, -delete`,
     },
     delay: {
       handler: createCommandHandler(delayCommandDefinition),
       description: "Pauses execution for a specified time.",
       helpText:
-        "Usage: delay <milliseconds>\n\nPauses command execution for the specified number of milliseconds.",
+          "Usage: delay <milliseconds>\n\nPauses command execution for the specified number of milliseconds.",
     },
     check_fail: {
       handler: createCommandHandler(check_failCommandDefinition),
       description:
-        "Tests if a given command string fails, for use in test scripts.",
+          "Tests if a given command string fails, for use in test scripts.",
       helpText:
-        'Usage: check_fail "<command_string>"\n\nSucceeds if the command fails, and fails if the command succeeds.',
+          'Usage: check_fail "<command_string>"\n\nSucceeds if the command fails, and fails if the command succeeds.',
     },
     removeuser: {
       handler: createCommandHandler(removeuserCommandDefinition),
       description: "Removes a user account and all their data.",
       helpText:
-        "Usage: removeuser <username>\n\nPermanently removes the specified user and all their data. Requires confirmation.",
+          "Usage: removeuser [-f] <username>\n\nPermanently removes the specified user and all their data.\n  -f, --force    Do not prompt for confirmation.",
     },
     chmod: {
       handler: createCommandHandler(chmodCommandDefinition),
@@ -5049,13 +4977,13 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(chownCommandDefinition),
       description: "Changes file owner.",
       helpText:
-        "Usage: chown <new_owner> <path>\n\nChanges the owner of <path>. Only the current owner or root can do this.",
+          "Usage: chown <new_owner> <path>\n\nChanges the owner of <path>. Only root can do this.",
     },
     listusers: {
       handler: createCommandHandler(listusersCommandDefinition),
       description: "Lists all registered user accounts.",
       helpText:
-        "Usage: listusers\n\nDisplays a list of all user accounts registered in OopisOS.",
+          "Usage: listusers\n\nDisplays a list of all user accounts registered in OopisOS.",
     },
     printscreen: {
       handler: createCommandHandler(printscreenCommandDefinition),
@@ -5066,48 +4994,48 @@ const CommandExecutor = (() => {
       handler: createCommandHandler(adventureCommandDefinition),
       description: "Starts a text-based adventure game.",
       helpText:
-        "Usage: adventure [path_to_adventure_file.json]\n\nStarts a text adventure. Loads from file if specified, otherwise starts a sample game.",
+          "Usage: adventure [path_to_adventure_file.json]\n\nStarts a text adventure. Loads from file if specified, otherwise starts a sample game.",
     },
     ps: {
       handler: createCommandHandler(psCommandDefinition),
       description: "Lists active background jobs.",
       helpText:
-        "Usage: ps\n\nDisplays a list of processes running in the background, showing their Process ID (PID) and the command that started them.",
+          "Usage: ps\n\nDisplays a list of processes running in the background, showing their Process ID (PID) and the command that started them.",
     },
     kill: {
       handler: createCommandHandler(killCommandDefinition),
       description: "Terminates a background job.",
       helpText:
-        "Usage: kill <job_id>\n\nTerminates the background job specified by its process ID (PID).",
+          "Usage: kill <job_id>\n\nTerminates the background job specified by its process ID (PID).",
     },
     chgrp: {
       handler: createCommandHandler(chgrpCommandDefinition),
       description: "Changes file group ownership.",
       helpText:
-        "Usage: chgrp <group> <path>\n\nChanges the group of a file or directory.",
+          "Usage: chgrp <group> <path>\n\nChanges the group of a file or directory. Only the owner or root can do this.",
     },
     groupadd: {
       handler: createCommandHandler(groupaddCommandDefinition),
       description: "Creates a new user group.",
       helpText:
-        "Usage: groupadd <groupname>\n\nCreates a new user group. (root only)",
+          "Usage: groupadd <groupname>\n\nCreates a new user group. (root only)",
     },
     groups: {
       handler: createCommandHandler(groupsCommandDefinition),
       description: "Prints the groups a user is in.",
       helpText:
-        "Usage: groups [username]\n\nDisplays group membership for the specified or current user.",
+          "Usage: groups [username]\n\nDisplays group membership for the specified or current user.",
     },
     usermod: {
       handler: createCommandHandler(usermodCommandDefinition),
       description: "Modifies a user account.",
       helpText:
-        "Usage: usermod -aG <groupname> <username>\n\nAdds a user to a supplementary group. (root only)",
+          "Usage: usermod -aG <groupname> <username>\n\nAdds a user to a supplementary group. (root only)",
     },
     curl: {
       handler: createCommandHandler(curlCommandDefinition),
       description: "Transfers data from or to a server.",
-      helpText: "Usage: curl [-o <file>] [-i] <URL>\n\nTransfers data from a URL. By default, prints content to the terminal.\n  -o, --output <file>   Write output to <file> instead of stdout.\n  -i, --include         Include protocol response headers in the output.\n  -L, --location        Follow redirects (this is default behavior).",
+      helpText: "Usage: curl [options] <URL>\n\nTransfers data from a URL. By default, prints content to the terminal.\n  -o, --output <file>   Write output to <file> instead of stdout.\n  -i, --include         Include protocol response headers in the output.\n  -L, --location        Follow redirects (this is default behavior).",
     },
     wget: {
       handler: createCommandHandler(wgetCommandDefinition),
@@ -5116,13 +5044,11 @@ const CommandExecutor = (() => {
     },
   };
   async function _executeCommandHandler(segment, execCtxOpts, stdinContent = null, signal) {
-    // Use optional chaining to prevent a TypeError if segment.command is null/undefined
     const commandName = segment.command?.toLowerCase();
     const cmdData = commandName ? commands[commandName] : undefined;
-  
+
     if (cmdData?.handler) {
       try {
-        // Add the signal to the options object passed to the handler
         return await cmdData.handler(segment.args, {
           ...execCtxOpts,
           stdinContent,
@@ -5133,7 +5059,7 @@ const CommandExecutor = (() => {
         return {
           success: false,
           error: `Command '${segment.command}' failed: ${
-            e.message || "Unknown error"
+              e.message || "Unknown error"
           }`,
         };
       }
@@ -5148,18 +5074,18 @@ const CommandExecutor = (() => {
       output: "",
     };
   }
-  async function _executePipeline(pipeline, isInteractive, signal) {
+  async function _executePipeline(pipeline, isInteractive, signal, scriptingContext) {
     let currentStdin = null;
     let lastResult = {
       success: true,
       output: "",
     };
     if (
-      typeof UserManager === "undefined" ||
-      typeof UserManager.getCurrentUser !== "function"
+        typeof UserManager === "undefined" ||
+        typeof UserManager.getCurrentUser !== "function"
     ) {
       const errorMsg =
-        "FATAL: State corruption detected (UserManager is unavailable). Please refresh the page.";
+          "FATAL: State corruption detected (UserManager is unavailable). Please refresh the page.";
       console.error(errorMsg);
       await OutputManager.appendToOutput(errorMsg, {
         typeClass: Config.CSS_CLASSES.ERROR_MSG,
@@ -5174,12 +5100,13 @@ const CommandExecutor = (() => {
     for (let i = 0; i < pipeline.segments.length; i++) {
       const segment = pipeline.segments[i];
       lastResult = await _executeCommandHandler(
-        segment,
-        {
-          isInteractive,
-        },
-        currentStdin,
-        signal
+          segment,
+          {
+            isInteractive,
+            scriptingContext
+          },
+          currentStdin,
+          signal
       );
       if (!lastResult) {
         const err = `Critical: Command handler for '${segment.command}' returned an undefined result.`;
@@ -5189,9 +5116,16 @@ const CommandExecutor = (() => {
           error: err,
         };
       }
+
+      // If the command we just ran has now set the 'waitingForInput' flag, we must exit this loop
+      // and let the main 'run' loop take over feeding input.
+      if (scriptingContext?.waitingForInput) {
+        return { success: true, output: null }; // Signal to run loop to switch modes
+      }
+
       if (!lastResult.success) {
         const err = `${Config.MESSAGES.PIPELINE_ERROR_PREFIX}'${
-          segment.command
+            segment.command
         }': ${lastResult.error || "Unknown"}`;
         if (!pipeline.isBackground) {
           await OutputManager.appendToOutput(err, {
@@ -5208,17 +5142,17 @@ const CommandExecutor = (() => {
       const { type: redirType, file: redirFile } = pipeline.redirection;
       const outputToRedir = lastResult.output || "";
       const redirVal = FileSystemManager.validatePath(
-        "redirection",
-        redirFile,
-        {
-          allowMissing: true,
-          disallowRoot: true,
-          defaultToCurrentIfEmpty: false,
-        }
+          "redirection",
+          redirFile,
+          {
+            allowMissing: true,
+            disallowRoot: true,
+            defaultToCurrentIfEmpty: false,
+          }
       );
       if (
-        redirVal.error &&
-        !(redirVal.optionsUsed.allowMissing && !redirVal.node)
+          redirVal.error &&
+          !(redirVal.optionsUsed.allowMissing && !redirVal.node)
       ) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(redirVal.error, {
@@ -5232,7 +5166,7 @@ const CommandExecutor = (() => {
       const absRedirPath = redirVal.resolvedPath;
       let targetNode = redirVal.node;
       const pDirRes =
-        FileSystemManager.createParentDirectoriesIfNeeded(absRedirPath);
+          FileSystemManager.createParentDirectoriesIfNeeded(absRedirPath);
       if (pDirRes.error) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(`Redir err: ${pDirRes.error}`, {
@@ -5244,19 +5178,19 @@ const CommandExecutor = (() => {
         };
       }
       const finalParentDirPath =
-        absRedirPath.substring(
-          0,
-          absRedirPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
-        ) || Config.FILESYSTEM.ROOT_PATH;
+          absRedirPath.substring(
+              0,
+              absRedirPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
+          ) || Config.FILESYSTEM.ROOT_PATH;
       const finalParentNodeForFile =
-        FileSystemManager.getNodeByPath(finalParentDirPath);
+          FileSystemManager.getNodeByPath(finalParentDirPath);
       if (!finalParentNodeForFile) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(
-            `Redir err: critical internal error, parent dir '${finalParentDirPath}' for file write not found.`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `Redir err: critical internal error, parent dir '${finalParentDirPath}' for file write not found.`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
         return {
           success: false,
@@ -5265,15 +5199,15 @@ const CommandExecutor = (() => {
       }
       targetNode = FileSystemManager.getNodeByPath(absRedirPath);
       if (
-        targetNode &&
-        targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+          targetNode &&
+          targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
       ) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(
-            `Redir err: '${redirFile}' is dir.`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `Redir err: '${redirFile}' is dir.`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
         return {
           success: false,
@@ -5281,15 +5215,15 @@ const CommandExecutor = (() => {
         };
       }
       if (
-        targetNode &&
-        !FileSystemManager.hasPermission(targetNode, user, "write")
+          targetNode &&
+          !FileSystemManager.hasPermission(targetNode, user, "write")
       ) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(
-            `Redir err: no write to '${redirFile}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `Redir err: no write to '${redirFile}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
         return {
           success: false,
@@ -5297,15 +5231,15 @@ const CommandExecutor = (() => {
         };
       }
       if (
-        !targetNode &&
-        !FileSystemManager.hasPermission(finalParentNodeForFile, user, "write")
+          !targetNode &&
+          !FileSystemManager.hasPermission(finalParentNodeForFile, user, "write")
       ) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(
-            `Redir err: no create in '${finalParentDirPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `Redir err: no create in '${finalParentDirPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
         return {
           success: false,
@@ -5313,12 +5247,12 @@ const CommandExecutor = (() => {
         };
       }
       const fName = absRedirPath.substring(
-        absRedirPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+          absRedirPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
       );
       let exContent = "";
       if (
-        redirType === "append" &&
-        finalParentNodeForFile.children[fName]?.type ===
+          redirType === "append" &&
+          finalParentNodeForFile.children[fName]?.type ===
           Config.FILESYSTEM.DEFAULT_FILE_TYPE
       ) {
         exContent = finalParentNodeForFile.children[fName].content || "";
@@ -5332,8 +5266,8 @@ const CommandExecutor = (() => {
         if (!primaryGroup) {
           if (!pipeline.isBackground)
             await OutputManager.appendToOutput(
-              `Redirection error: could not determine primary group for user '${user}'.`,
-              { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+                `Redirection error: could not determine primary group for user '${user}'.`,
+                { typeClass: Config.CSS_CLASSES.ERROR_MSG }
             );
           return {
             success: false,
@@ -5341,21 +5275,21 @@ const CommandExecutor = (() => {
           };
         }
         finalParentNodeForFile.children[fName] =
-          FileSystemManager._createNewFileNode(
-            fName,
-            exContent + outputToRedir,
-            user,
-            primaryGroup
-          );
+            FileSystemManager._createNewFileNode(
+                fName,
+                exContent + outputToRedir,
+                user,
+                primaryGroup
+            );
       }
       FileSystemManager._updateNodeAndParentMtime(absRedirPath, nowISO);
       if (!(await FileSystemManager.save())) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(
-            `Failed to save redir to '${redirFile}'.`,
-            {
-              typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            }
+              `Failed to save redir to '${redirFile}'.`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
           );
         return {
           success: false,
@@ -5365,10 +5299,10 @@ const CommandExecutor = (() => {
       lastResult.output = null;
     }
     if (
-      !pipeline.redirection &&
-      lastResult.success &&
-      lastResult.output !== null &&
-      lastResult.output !== undefined
+        !pipeline.redirection &&
+        lastResult.success &&
+        lastResult.output !== null &&
+        lastResult.output !== undefined
     ) {
       if (!pipeline.isBackground) {
         if (lastResult.output) {
@@ -5378,11 +5312,11 @@ const CommandExecutor = (() => {
         }
       } else if (lastResult.output && pipeline.isBackground) {
         await OutputManager.appendToOutput(
-          `${Config.MESSAGES.BACKGROUND_PROCESS_OUTPUT_SUPPRESSED} (Job ${pipeline.jobId})`,
-          {
-            typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-            isBackground: true,
-          }
+            `${Config.MESSAGES.BACKGROUND_PROCESS_OUTPUT_SUPPRESSED} (Job ${pipeline.jobId})`,
+            {
+              typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+              isBackground: true,
+            }
         );
       }
     }
@@ -5405,22 +5339,22 @@ const CommandExecutor = (() => {
     }
     TerminalUI.setIsNavigatingHistory(false);
   }
-  async function processSingleCommand(rawCommandText, isInteractive = true) {
+  async function processSingleCommand(rawCommandText, isInteractive = true, scriptingContext = null) {
     let overallResult = {
       success: true,
       output: null,
       error: null,
     };
     if (
-      scriptExecutionInProgress &&
-      isInteractive &&
-      !ModalManager.isAwaiting()
+        scriptExecutionInProgress &&
+        isInteractive &&
+        !ModalManager.isAwaiting()
     ) {
       await OutputManager.appendToOutput(
-        "Script execution in progress. Input suspended.",
-        {
-          typeClass: Config.CSS_CLASSES.WARNING_MSG,
-        }
+          "Script execution in progress. Input suspended.",
+          {
+            typeClass: Config.CSS_CLASSES.WARNING_MSG,
+          }
       );
       return {
         success: false,
@@ -5433,7 +5367,7 @@ const CommandExecutor = (() => {
       return overallResult;
     }
     if (EditorManager.isActive()) return overallResult;
-    // Resolve alias before any other processing
+
     const aliasResult = AliasManager.resolveAlias(rawCommandText.trim());
     if (aliasResult.error) {
       await OutputManager.appendToOutput(aliasResult.error, {
@@ -5445,7 +5379,7 @@ const CommandExecutor = (() => {
         error: aliasResult.error,
       };
     }
-    // <<< FIX: Use the resolved command for execution, not the original raw text.
+
     const commandToProcess = aliasResult.newCommand;
     const cmdToEcho = rawCommandText.trim();
     if (isInteractive) {
@@ -5462,16 +5396,15 @@ const CommandExecutor = (() => {
       HistoryManager.resetIndex();
     let parsedPipelines;
     try {
-      // <<< FIX: Parse the resolved command.
       parsedPipelines = new Parser(
-        new Lexer(commandToProcess).tokenize()
+          new Lexer(commandToProcess).tokenize()
       ).parse();
       if (
-        parsedPipelines.length === 0 ||
-        (parsedPipelines.length === 1 &&
-          parsedPipelines[0].segments.length === 0 &&
-          !parsedPipelines[0].redirection &&
-          !parsedPipelines[0].isBackground)
+          parsedPipelines.length === 0 ||
+          (parsedPipelines.length === 1 &&
+              parsedPipelines[0].segments.length === 0 &&
+              !parsedPipelines[0].redirection &&
+              !parsedPipelines[0].isBackground)
       ) {
         if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
         return {
@@ -5491,9 +5424,9 @@ const CommandExecutor = (() => {
     }
     for (const pipeline of parsedPipelines) {
       if (
-        pipeline.segments.length === 0 &&
-        !pipeline.redirection &&
-        !pipeline.isBackground
+          pipeline.segments.length === 0 &&
+          !pipeline.redirection &&
+          !pipeline.isBackground
       ) {
         continue;
       }
@@ -5507,10 +5440,10 @@ const CommandExecutor = (() => {
           abortController: abortController,
         };
         await OutputManager.appendToOutput(
-          `${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${pipeline.jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`,
-          {
-            typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-          }
+            `${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${pipeline.jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`,
+            {
+              typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+            }
         );
         overallResult = {
           success: true,
@@ -5518,39 +5451,33 @@ const CommandExecutor = (() => {
         };
         setTimeout(async () => {
           try {
-            const bgResult = await _executePipeline(
-              pipeline,
-              false,
-              abortController.signal
-            );
+            const bgResult = await _executePipeline(pipeline, false, abortController.signal, scriptingContext);
             const statusMsg = `[Job ${jobId} ${
-              bgResult.success ? "finished" : "finished with error"
+                bgResult.success ? "finished" : "finished with error"
             }${
-              bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`
+                bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`
             }]`;
             await OutputManager.appendToOutput(statusMsg, {
               typeClass: bgResult.success
-                ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
-                : Config.CSS_CLASSES.WARNING_MSG,
+                  ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
+                  : Config.CSS_CLASSES.WARNING_MSG,
               isBackground: true,
             });
             if (!bgResult.success)
               console.log(
-                `Background job ${jobId} error details: ${
-                  bgResult.error || "No specific error message."
-                }`
+                  `Background job ${jobId} error details: ${
+                      bgResult.error || "No specific error message."
+                  }`
               );
           } finally {
-            // CRUCIAL: Always remove the job from the active list when it's done.
             delete activeJobs[jobId];
           }
         }, 0);
       } else {
-        // This is the original 'else' block
-        overallResult = await _executePipeline(pipeline, isInteractive, null); // Pass null signal for foreground
+        overallResult = await _executePipeline(pipeline, isInteractive, null, scriptingContext);
         if (!overallResult) {
           const err =
-            "Critical: Pipeline execution returned an undefined result.";
+              "Critical: Pipeline execution returned an undefined result.";
           console.error(err, "Pipeline:", pipeline);
           overallResult = {
             success: false,
@@ -5564,10 +5491,10 @@ const CommandExecutor = (() => {
       await _finalizeInteractiveModeUI(rawCommandText);
     }
     return (
-      overallResult || {
-        success: false,
-        error: "Fell through processSingleCommand logic.",
-      }
+        overallResult || {
+          success: false,
+          error: "Fell through processSingleCommand logic.",
+        }
     );
   }
   function getCommands() {
