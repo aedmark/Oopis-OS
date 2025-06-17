@@ -718,25 +718,45 @@ const ModalManager = (() => {
     }
   }
   function request(options) {
-    if (options.scriptingContext && options.scriptingContext.isScripting) {
-      const scriptContext = options.scriptingContext;
-      let nextLine = '';
-      while(scriptContext.currentLineIndex < scriptContext.lines.length) {
-        nextLine = scriptContext.lines[scriptContext.currentLineIndex].trim();
-        if (nextLine && !nextLine.startsWith('#')) {
+    // This is the key part - the scripting options are nested.
+    if (options.options && options.options.scriptingContext && options.options.scriptingContext.isScripting) {
+      const scriptContext = options.options.scriptingContext;
+
+      // Safely find the next valid line of input
+      let inputLine = null;
+      let nextLineIndex = scriptContext.currentLineIndex + 1;
+      while (nextLineIndex < scriptContext.lines.length) {
+        const line = scriptContext.lines[nextLineIndex].trim();
+        if (line && !line.startsWith('#')) {
+          inputLine = line;
+          // Update the master index only when we've successfully consumed a line
+          scriptContext.currentLineIndex = nextLineIndex;
           break;
         }
-        scriptContext.currentLineIndex++;
+        nextLineIndex++;
       }
 
-      if (nextLine.toUpperCase() === 'YES') {
-        if (options.onConfirm) options.onConfirm(options.data);
+      if (inputLine !== null) {
+        // Echo what's happening for better diagnostics
+        options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: Config.CSS_CLASSES.WARNING_MSG }));
+        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+        const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
+        void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
+
+        // Perform the confirmation logic based on the script's input
+        if (inputLine.toUpperCase() === 'YES') {
+          if (options.onConfirm) options.onConfirm(options.data);
+        } else {
+          if (options.onCancel) options.onCancel(options.data);
+        }
       } else {
+        // No more lines in the script to answer the prompt
         if (options.onCancel) options.onCancel(options.data);
       }
-      scriptContext.currentLineIndex++;
-      return;
+      return; // Synchronously return, no deadlock
     }
+
+    // Original interactive logic for a real user
     if (options.context === "graphical") {
       _renderGraphicalModal(options);
     } else {
@@ -2392,26 +2412,39 @@ const ModalInputManager = (() => {
   function requestInput(promptMessage, onInputReceivedCallback, onCancelledCallback, isObscured = false, options = {}) {
     if (options.scriptingContext && options.scriptingContext.isScripting) {
       const scriptContext = options.scriptingContext;
-      scriptContext.waitingForInput = true;
 
-      // Wrap the original callback to reset the state flag *before* proceeding.
-      scriptContext.inputCallback = (line) => {
-        scriptContext.waitingForInput = false; // The crucial fix!
-        onInputReceivedCallback(line);
-      };
+      let inputLine = null;
+      // Find the next non-comment, non-empty line in the script
+      while (scriptContext.currentLineIndex < scriptContext.lines.length - 1) {
+        scriptContext.currentLineIndex++;
+        const line = scriptContext.lines[scriptContext.currentLineIndex].trim();
+        if (line && !line.startsWith('#')) {
+          inputLine = line;
+          break;
+        }
+      }
 
-      // Also wrap the cancel callback for robustness.
-      scriptContext.cancelCallback = () => {
-        scriptContext.waitingForInput = false; // The crucial fix!
+      if (inputLine !== null) {
+        // For diagnostics, let's echo the prompt and the "typed" input to the terminal
+        void OutputManager.appendToOutput(promptMessage, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+        const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
+        const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
+        void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
+
+        // Synchronously call the callback with the scripted input
+        onInputReceivedCallback(inputLine);
+      } else {
+        // End of script reached while waiting for input
+        void OutputManager.appendToOutput("Script ended while awaiting input.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
         if (onCancelledCallback) onCancelledCallback();
-      };
-      return;
+      }
+      return; // Important: no promise, no await, no deadlock!
     }
 
+    // This is the original logic for true interactive mode, which remains unchanged
     if (_isAwaitingInput) {
       void OutputManager.appendToOutput(
-          "Another modal input prompt is already pending.",
-          {
+          "Another modal input prompt is already pending.", {
             typeClass: Config.CSS_CLASSES.WARNING_MSG,
           }
       );

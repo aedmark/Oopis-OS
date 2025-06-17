@@ -177,38 +177,53 @@ echo "---------------------------------------------------------------------"
 echo ""
 echo "===== Testing: Group Permissions (chgrp, usermod, groupadd) ====="
 delay 400
+
+# --- 1. SETUP AS ROOT ---
 login root mcgoopis
 groupadd testgroup
 useradd testuser
-testpass      # This is the new password
-testpass      # This is the confirmation
+testpass
+testpass
 usermod -aG testgroup testuser
-logout
-login userDiag pantload
+
+# Now, set up the test file and ALL permissions at once
 cd /home/userDiag/diag_workspace
-echo "Initial content by owner" > group_test_file.txt
-logout
-login root mcgoopis
-cd /home/userDiag/diag_workspace
+echo "Initial content" > group_test_file.txt
+chown userDiag group_test_file.txt
 chgrp testgroup group_test_file.txt
 chmod 664 group_test_file.txt
+
+# And set the required directory permissions
+chmod 755 /home/userDiag
+chgrp testgroup /home/userDiag/diag_workspace
+chmod 775 /home/userDiag/diag_workspace
 logout
+
+# --- 2. TEST AS TESTUSER ---
+# Use the interactive prompt feature we just fixed!
 login testuser
+testpass
 cd /home/userDiag/diag_workspace
 echo "Append by group member" >> group_test_file.txt
 cat group_test_file.txt
 logout
+
+# --- 3. TEST AS GUEST (should fail to write) ---
 login Guest
 cd /home/userDiag/diag_workspace
 check_fail "echo 'Append by other user' >> group_test_file.txt"
 logout
+
+# --- 4. CLEANUP AS ROOT ---
 login root mcgoopis
 removeuser -f testuser
 groupdel testgroup
+rm -f /home/userDiag/diag_workspace/group_test_file.txt
 logout
+
+# --- 5. Return to userDiag for the next phase ---
 login userDiag pantload
 cd /home/userDiag/diag_workspace
-rm -f group_test_file.txt
 delay 700
 echo "---------------------------------------------------------------------"
 

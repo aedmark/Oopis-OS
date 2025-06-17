@@ -88,19 +88,18 @@ const TextAdventureModal = (() => {
   function requestInput(promptText) {
     appendOutput(promptText, 'system');
 
-    // FIX: Check the MODAL's stored context variable
     if (currentScriptingContext && currentScriptingContext.isScripting) {
       return new Promise(resolve => {
         currentScriptingContext.waitingForInput = true;
+        // START REPLACEMENT
         currentScriptingContext.inputCallback = (line) => {
           appendOutput(`> ${line}`, 'system');
-          currentScriptingContext.waitingForInput = false;
           resolve(line);
         };
         currentScriptingContext.cancelCallback = () => {
-          currentScriptingContext.waitingForInput = false;
           resolve(null);
         };
+        // END REPLACEMENT
       });
     }
 

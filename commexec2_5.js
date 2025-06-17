@@ -981,8 +981,7 @@ const CommandExecutor = (() => {
       const username = args[0];
       const userCheck = StorageManager.loadItem(
           Config.STORAGE_KEYS.USER_CREDENTIALS,
-          "User list",
-          {}
+          "User list", {}
       );
       if (userCheck[username]) {
         return {
@@ -991,32 +990,30 @@ const CommandExecutor = (() => {
         };
       }
       try {
-        const firstPassword = await new Promise((resolve, reject) => {
-          ModalInputManager.requestInput(
-              Config.MESSAGES.PASSWORD_PROMPT,
-              (pwd) => resolve(pwd),
-              () => reject(new Error(Config.MESSAGES.OPERATION_CANCELLED)),
-              true, // isObscured
-              options // Pass context for scripting
-          );
-        });
+        let firstPassword;
+        ModalInputManager.requestInput(
+            Config.MESSAGES.PASSWORD_PROMPT,
+            (pwd) => { firstPassword = pwd; },
+            () => { throw new Error(Config.MESSAGES.OPERATION_CANCELLED); },
+            true, // isObscured
+            options // Pass context for scripting
+        );
+
         if (firstPassword.trim() === "") {
           await OutputManager.appendToOutput(
-              "Registering user with no password.",
-              {
+              "Registering user with no password.", {
                 typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
               }
           );
         } else {
-          const confirmedPassword = await new Promise((resolve, reject) => {
-            ModalInputManager.requestInput(
-                Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
-                (pwd) => resolve(pwd),
-                () => reject(new Error(Config.MESSAGES.OPERATION_CANCELLED)),
-                true, // isObscured
-                options // Pass context for scripting
-            );
-          });
+          let confirmedPassword;
+          ModalInputManager.requestInput(
+              Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
+              (pwd) => { confirmedPassword = pwd; },
+              () => { throw new Error(Config.MESSAGES.OPERATION_CANCELLED); },
+              true, // isObscured
+              options // Pass context for scripting
+          );
           if (firstPassword !== confirmedPassword) {
             return {
               success: false,
@@ -1028,7 +1025,6 @@ const CommandExecutor = (() => {
             username,
             firstPassword || null
         );
-        // Add the missing confirmation message on success
         if (registerResult.success) {
           await OutputManager.appendToOutput(registerResult.message, {
             typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
@@ -1037,7 +1033,6 @@ const CommandExecutor = (() => {
             success: true,
             output: "",
           };
-          // Return empty output as message is already printed
         } else {
           return {
             success: false,
@@ -1484,23 +1479,28 @@ const CommandExecutor = (() => {
           break;
         }
 
-        let line = scriptingContext.lines[scriptingContext.currentLineIndex].trim();
-        const originalLineForError = scriptingContext.lines[scriptingContext.currentLineIndex];
-
-        if (line.startsWith('#') || line.startsWith('#!') || line === '') {
-          scriptingContext.currentLineIndex++;
-          continue;
-        }
+        let line = scriptingContext.lines[scriptingContext.currentLineIndex]; // Keep original for input
+        const trimmedLine = line.trim();
 
         if (scriptingContext.waitingForInput) {
-          if (scriptingContext.inputCallback) {
-            await scriptingContext.inputCallback(line);
+          // New, more robust state management
+          const cb = scriptingContext.inputCallback;
+          scriptingContext.inputCallback = null;
+          scriptingContext.waitingForInput = false;
+
+          if (cb) {
+            await cb(line); // Pass the raw line, not trimmed
           }
           scriptingContext.currentLineIndex++;
           continue;
         }
 
-        let processedLine = originalLineForError;
+        if (trimmedLine.startsWith('#') || trimmedLine.startsWith('#!') || trimmedLine === '') {
+          scriptingContext.currentLineIndex++;
+          continue;
+        }
+
+        let processedLine = line; // Use original line for processing
         for (let i = 0; i < scriptArgs.length; i++) {
           processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
         }
@@ -1508,18 +1508,33 @@ const CommandExecutor = (() => {
         processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
 
         const result = await CommandExecutor.processSingleCommand(processedLine.trim(), false, scriptingContext);
-        scriptingContext.currentLineIndex++;
 
         if (scriptingContext.waitingForInput) {
+          let lineForInput = line;
+          const commentIndex = lineForInput.indexOf('#');
+          if (commentIndex !== -1) {
+            lineForInput = lineForInput.substring(0, commentIndex);
+          }
+          lineForInput = lineForInput.trim();
+
+          const cb = scriptingContext.inputCallback;
+          scriptingContext.inputCallback = null;
+          scriptingContext.waitingForInput = false;
+
+          if (cb) {
+            await cb(lineForInput); // Use the cleaned line
+          }
+          scriptingContext.currentLineIndex++;
           continue;
         }
 
         if (!result || !result.success) {
-          const errorMsg = `Script '${scriptPathArg}' error on line: ${originalLineForError}\nError: ${result.error || 'Unknown error.'}`;
+          const errorMsg = `Script '${scriptPathArg}' error on line: ${line}\nError: ${result.error || 'Unknown error.'}`;
           await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
           overallScriptSuccess = false;
           break;
         }
+        scriptingContext.currentLineIndex++;
       }
 
       CommandExecutor.setScriptExecutionInProgress(previousScriptExecutionState);
