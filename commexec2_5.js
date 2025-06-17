@@ -2149,62 +2149,48 @@ const CommandExecutor = (() => {
     ],
     coreLogic: async (context) => {
       const { args, currentUser, validatedPaths } = context;
+
+      // These initial checks are still good.
       if (
-        typeof TextAdventureModal === "undefined" ||
-        typeof TextAdventureModal.isActive !== "function"
+          typeof TextAdventureModal === "undefined" ||
+          typeof TextAdventureModal.isActive !== "function"
       ) {
         return {
           success: false,
           error:
-            "Adventure UI (TextAdventureModal) is not available. Check console for JS errors.",
+              "Adventure UI (TextAdventureModal) is not available. Check console for JS errors.",
         };
       }
       if (
-        typeof TextAdventureEngine === "undefined" ||
-        typeof TextAdventureEngine.startAdventure !== "function"
+          typeof TextAdventureEngine === "undefined" ||
+          typeof TextAdventureEngine.startAdventure !== "function"
       ) {
         return {
           success: false,
           error:
-            "Adventure Engine (TextAdventureEngine) is not available. Check console for JS errors.",
+              "Adventure Engine (TextAdventureEngine) is not available. Check console for JS errors.",
         };
       }
       if (TextAdventureModal.isActive()) {
         return {
           success: false,
           error:
-            "An adventure is already in progress. Type 'quit' or 'exit' in the adventure window to leave the current game.",
+              "An adventure is already in progress. Type 'quit' or 'exit' in the adventure window to leave the current game.",
         };
       }
+
       let adventureToLoad;
-      if (typeof window.sampleAdventure !== "undefined") {
-        adventureToLoad = window.sampleAdventure;
-      } else {
-        console.warn(
-          "adventure command: window.sampleAdventure not found, using minimal fallback. Ensure adventure.js loads and defines it globally."
-        );
-        adventureToLoad = {
-          title: "Fallback Sample Adventure",
-          startingRoomId: "room1",
-          rooms: {
-            room1: {
-              id: "room1",
-              name: "A Plain Room",
-              description: "You are in a plain room. There are no exits.",
-              exits: {},
-            },
-          },
-          items: {},
-        };
-      }
+
+      // --- REFINED LOGIC ---
+      // 1. Check for a user-provided file FIRST.
       if (args.length > 0) {
         const filePath = args[0];
         const pathInfo = validatedPaths[0];
-        if (pathInfo.error)
-          return {
-            success: false,
-            error: pathInfo.error,
-          };
+
+        if (pathInfo.error) {
+          return { success: false, error: pathInfo.error };
+        }
+
         const fileNode = pathInfo.node;
         if (fileNode) {
           if (!FileSystemManager.hasPermission(fileNode, currentUser, "read")) {
@@ -2215,13 +2201,7 @@ const CommandExecutor = (() => {
           }
           try {
             const parsedAdventure = JSON.parse(fileNode.content);
-            // --- REFINED LOGIC ---
-            // Directly return the error object instead of throwing.
-            if (
-              !parsedAdventure.rooms ||
-              !parsedAdventure.startingRoomId ||
-              !parsedAdventure.items
-            ) {
+            if (!parsedAdventure.rooms || !parsedAdventure.startingRoomId || !parsedAdventure.items) {
               return {
                 success: false,
                 error: `adventure: Invalid adventure file format in '${filePath}'. Missing essential parts like rooms, items, or startingRoomId.`,
@@ -2230,7 +2210,6 @@ const CommandExecutor = (() => {
             if (!parsedAdventure.title) parsedAdventure.title = filePath;
             adventureToLoad = parsedAdventure;
           } catch (e) {
-            // The catch block now only handles actual JSON.parse errors.
             return {
               success: false,
               error: `adventure: Error parsing adventure file '${filePath}': ${e.message}`,
@@ -2242,12 +2221,37 @@ const CommandExecutor = (() => {
             error: `adventure: File not found at '${filePath}'.`,
           };
         }
+      } else {
+        // 2. ONLY if no file is provided, try to load the default sample.
+        if (typeof window.sampleAdventure !== "undefined") {
+          adventureToLoad = window.sampleAdventure;
+        } else {
+          // 3. ONLY if the sample is also missing, show the warning and use the fallback.
+          console.warn(
+              "adventure command: No adventure file specified and window.sampleAdventure not found, using minimal fallback."
+          );
+          adventureToLoad = {
+            title: "Fallback Sample Adventure",
+            startingRoomId: "room1",
+            rooms: {
+              room1: {
+                id: "room1",
+                name: "A Plain Room",
+                description: "You are in a plain room. There are no exits.",
+                exits: {},
+              },
+            },
+            items: {},
+          };
+        }
       }
+
+      // This part remains the same.
       TextAdventureEngine.startAdventure(adventureToLoad);
       return {
         success: true,
         output: `Launching adventure: "${
-          adventureToLoad.title || "Untitled Adventure"
+            adventureToLoad.title || "Untitled Adventure"
         }"...\n(Game interaction now happens in the adventure modal.)`,
         messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
       };
