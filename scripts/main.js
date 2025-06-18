@@ -23,10 +23,8 @@ function initializeTerminalEventListeners() {
     }
   });
   document.addEventListener("keydown", async (e) => {
-    if (EditorManager.isActive() || TextAdventureModal.isActive() || PaintManager.isActive()) {
-      return;
-    }
-
+    // --- START REORDERED LOGIC ---
+    // HIGHEST PRIORITY: Check if a modal input is actively waiting for an Enter key.
     if (ModalInputManager.isAwaiting()) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -38,10 +36,15 @@ function initializeTerminalEventListeners() {
             e.key.length === 1 ? e.key : null
         );
       }
-      // Note: For non-obscured input, we allow default key actions (typing)
-      // for all keys except Enter, so no 'else' block is needed.
+      // If a modal is active, we stop further key processing here.
       return;
     }
+
+    // SECOND PRIORITY: If a full-screen app is running, let it handle its own keys.
+    if (EditorManager.isActive() || TextAdventureModal.isActive() || PaintManager.isActive()) {
+      return;
+    }
+    // --- END REORDERED LOGIC ---
 
     if (e.target !== DOM.editableInputDiv) {
       return;

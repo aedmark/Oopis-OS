@@ -394,19 +394,23 @@ const PaintManager = (() => {
         drawChar = PaintAppConfig.DEFAULT_CHAR;
         fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
 
-        try {
-            if (fileContent) {
-                const parsed = JSON.parse(fileContent);
-                if (parsed.cells && parsed.width && parsed.height) {
-                    canvasData = parsed.cells;
-                } else {
-                    throw new Error("Invalid .oopic file format.");
-                }
+        if (fileContent) {
+            let parsedData = null;
+            let parseError = null;
+            try {
+                parsedData = JSON.parse(fileContent);
+            } catch (e) {
+                parseError = e;
+            }
+
+            if (!parseError && parsedData && parsedData.cells && parsedData.width && parsedData.height) {
+                canvasData = parsedData.cells;
             } else {
+                const errorMessage = parseError ? parseError.message : "Invalid .oopic file format.";
+                OutputManager.appendToOutput(`Error loading paint file: ${errorMessage}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                 canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
             }
-        } catch (e) {
-            OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+        } else {
             canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
         }
 
@@ -425,7 +429,7 @@ const PaintManager = (() => {
     async function exit(save = false) {
         if (!isActiveState) return;
 
-        // THE FIX: Remove the keydown listener immediately so it doesn't interfere with modal inputs.
+        // Immediately remove the app-specific key listener to prevent interference with modals.
         document.removeEventListener('keydown', handleKeyDown);
 
         // 1. Handle discard confirmation
