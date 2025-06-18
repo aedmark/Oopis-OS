@@ -187,6 +187,19 @@ const PaintManager = (() => {
     let fgColor = PaintAppConfig.DEFAULT_FG_COLOR, lastCoords = { x: -1, y: -1 };
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
 
+    const paintEventCallbacks = {
+        onMouseDown: _handleMouseDown,
+        onMouseMove: _handleMouseMove,
+        onMouseUp: _handleMouseUp,
+        onMouseLeave: _handleMouseLeave,
+        onToolChange: _setTool,
+        onColorChange: _setColor,
+        onSaveAndExit: () => exit(true),
+        onExit: () => exit(false),
+        onUndo: _performUndo,
+        onRedo: _performRedo
+    };
+
     function _createBlankCanvas(w, h) {
         let data = [];
         for (let y = 0; y < h; y++) {
@@ -358,6 +371,19 @@ const PaintManager = (() => {
         }
     }
 
+    function _reenterPaint(logMessage) {
+        if (logMessage) {
+            OutputManager.appendToOutput(logMessage, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+        }
+        // Re-show the UI and re-attach listeners.
+        PaintUI.show(paintEventCallbacks);
+        PaintUI.renderCanvas(canvasData);
+        _updateUndoRedoButtonStates();
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        document.addEventListener('keydown', handleKeyDown);
+        TerminalUI.setInputState(false);
+    }
+
     function enter(filePath, fileContent) {
         if (isActiveState) return;
         isActiveState = true;
@@ -387,18 +413,7 @@ const PaintManager = (() => {
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
         redoStack = [];
 
-        PaintUI.show({
-            onMouseDown: _handleMouseDown,
-            onMouseMove: _handleMouseMove,
-            onMouseUp: _handleMouseUp,
-            onMouseLeave: _handleMouseLeave,
-            onToolChange: _setTool,
-            onColorChange: _setColor,
-            onSaveAndExit: () => exit(true),
-            onExit: () => exit(false),
-            onUndo: _performUndo,
-            onRedo: _performRedo
-        });
+        PaintUI.show(paintEventCallbacks);
 
         PaintUI.renderCanvas(canvasData);
         _updateUndoRedoButtonStates();
@@ -410,7 +425,10 @@ const PaintManager = (() => {
     async function exit(save = false) {
         if (!isActiveState) return;
 
-        // Handle confirmation for discarding unsaved changes
+        // THE FIX: Remove the keydown listener immediately so it doesn't interfere with modal inputs.
+        document.removeEventListener('keydown', handleKeyDown);
+
+        // 1. Handle discard confirmation
         if (isDirty && !save) {
             const confirmed = await new Promise(resolve => {
                 ModalManager.request({
@@ -422,51 +440,83 @@ const PaintManager = (() => {
                     onCancel: () => resolve(false),
                 });
             });
-            if (!confirmed) return; // User cancelled, so stay in paint mode
+            if (!confirmed) {
+                _reenterPaint(); // User cancelled, so re-enter paint.
+                return;
+            }
         }
 
-        // Handle the save action if requested
+        // 2. Handle save logic if needed
         if (save && isDirty) {
             let savePath = currentFilePath;
+            let wasSaveSuccessful = false;
 
-            if (!savePath) {
-                // Prompt for filename if one doesn't exist
-                let newFilename = window.prompt("Enter filename to save as:", "my_art.oopic");
+            if (savePath) {
+                // Case A: File already has a name, just save.
+                wasSaveSuccessful = await _performSave(savePath);
+            } else {
+                // Case B: New file, need to prompt for a name.
+                PaintUI.hide(); // Hide paint UI to reveal terminal prompt.
 
-                if (!newFilename || newFilename.trim() === "") {
-                    await OutputManager.appendToOutput("Save cancelled. No filename provided.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
-                    return; // Stay in paint mode
-                }
+                const prospectivePath = await new Promise(resolve => {
+                    ModalInputManager.requestInput(
+                        "Enter filename to save as (.oopic extension will be added if missing):",
+                        (filename) => { // onConfirm callback
+                            if (!filename || filename.trim() === "") {
+                                resolve({ path: null, reason: "Save cancelled. No filename provided." });
+                            } else {
+                                if (!filename.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
+                                    filename += `.${PaintAppConfig.FILE_EXTENSION}`;
+                                }
+                                resolve({ path: FileSystemManager.getAbsolutePath(filename, FileSystemManager.getCurrentPath()), reason: null });
+                            }
+                        },
+                        () => { // onCancel callback
+                            resolve({ path: null, reason: "Save cancelled." });
+                        },
+                        false // isObscured
+                    );
+                });
 
-                if (!newFilename.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
-                    newFilename += `.${PaintAppConfig.FILE_EXTENSION}`;
-                }
-                savePath = FileSystemManager.getAbsolutePath(newFilename, FileSystemManager.getCurrentPath());
+                if (prospectivePath.path) {
+                    let proceedWithSave = true;
+                    const pathInfo = FileSystemManager.validatePath("paint save", prospectivePath.path, { allowMissing: true });
 
-                // Check for overwrite
-                const pathInfo = FileSystemManager.validatePath("paint save", savePath, { allowMissing: true });
-                if (pathInfo.node) {
-                    const confirmedOverwrite = await new Promise(resolve => {
-                        ModalManager.request({
-                            context: 'graphical',
-                            messageLines: [`File '${newFilename}' already exists. Overwrite?`],
-                            onConfirm: () => resolve(true),
-                            onCancel: () => resolve(false)
+                    if (pathInfo.node) { // File exists, confirm overwrite
+                        const confirmedOverwrite = await new Promise(resolve => {
+                            ModalManager.request({
+                                context: 'graphical',
+                                messageLines: [`File '${prospectivePath.path.split('/').pop()}' already exists. Overwrite?`],
+                                onConfirm: () => resolve(true),
+                                onCancel: () => resolve(false)
+                            });
                         });
-                    });
-                    if (!confirmedOverwrite) {
-                        await OutputManager.appendToOutput("Save cancelled. File not overwritten.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
-                        return; // Stay in paint mode
+                        if (!confirmedOverwrite) {
+                            proceedWithSave = false;
+                            await OutputManager.appendToOutput("Save cancelled. File not overwritten.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                        }
                     }
+
+                    if (proceedWithSave) {
+                        wasSaveSuccessful = await _performSave(prospectivePath.path);
+                        if(wasSaveSuccessful) {
+                            currentFilePath = prospectivePath.path;
+                        }
+                    }
+                } else {
+                    // User cancelled the filename prompt
+                    await OutputManager.appendToOutput(prospectivePath.reason, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                 }
             }
 
-            const success = await _performSave(savePath);
-            if (!success) return; // Save failed, stay in paint mode to not lose work
+            // If the save process was attempted but failed or was cancelled, we must re-enter paint mode.
+            if (!wasSaveSuccessful) {
+                _reenterPaint("Returning to paint editor.");
+                return; // Abort the exit process.
+            }
         }
 
-        // If we got here, it's safe to exit
-        document.removeEventListener('keydown', handleKeyDown);
+        // 3. If we got here, it's safe to exit.
         PaintUI.hide();
         PaintUI.reset();
         _resetState();
@@ -502,7 +552,7 @@ const PaintManager = (() => {
             else {
                 const colorIndex = parseInt(key, 10) - 1;
                 if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
-                    _setColor(PaintAppConfig.PALETTE[colorIndex]);
+                    _setColor(PaintAppConfig.PALETTE[colorIndex].class);
                 }
             }
         } else if (isCharKey) {

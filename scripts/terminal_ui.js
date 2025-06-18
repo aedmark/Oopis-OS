@@ -432,7 +432,7 @@ const ModalInputManager = (() => {
     }
     async function handleInput() {
         if (!_isAwaitingInput || !_inputContext) return false;
-        const finalInput = _isAwaitingInput
+        const finalInput = _inputContext.isObscured
             ? _inputContext.currentInput
             : TerminalUI.getCurrentInputValue();
         const callback = _inputContext.onInputReceived;

@@ -26,25 +26,23 @@ function initializeTerminalEventListeners() {
     if (EditorManager.isActive() || TextAdventureModal.isActive() || PaintManager.isActive()) {
       return;
     }
+
     if (ModalInputManager.isAwaiting()) {
-      if (ModalInputManager.isObscured()) {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        if (e.key === "Enter") {
-          await ModalInputManager.handleInput();
-        } else {
-          ModalInputManager.updateInput(
-              e.key,
-              e.key.length === 1 ? e.key : null
-          );
-        }
-      } else {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          await ModalInputManager.handleInput();
-        }
+        await ModalInputManager.handleInput();
+      } else if (ModalInputManager.isObscured()) {
+        e.preventDefault();
+        ModalInputManager.updateInput(
+            e.key,
+            e.key.length === 1 ? e.key : null
+        );
       }
+      // Note: For non-obscured input, we allow default key actions (typing)
+      // for all keys except Enter, so no 'else' block is needed.
       return;
     }
+
     if (e.target !== DOM.editableInputDiv) {
       return;
     }
