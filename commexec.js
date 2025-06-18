@@ -1552,25 +1552,15 @@ const CommandExecutor = (() => {
         return { success: true, output: output };
       }
 
-      let allSuccess = true;
-      const messages = [];
+      const varName = args[0];
+      const value = args.slice(1).join(' ');
 
-      for (const arg of args) {
-        const parts = arg.split('=');
-        if (parts.length >= 2) { // Allow for '=' in the value
-          const varName = parts[0];
-          const value = parts.slice(1).join('=');
-          const result = EnvironmentManager.set(varName, value);
-          if (!result.success) {
-            allSuccess = false;
-            messages.push(result.error);
-          }
-        } else {
-          messages.push(`set: invalid format: '${arg}'. Use 'VAR=value'`);
-          allSuccess = false;
-        }
+      const result = EnvironmentManager.set(varName, value);
+      if (!result.success) {
+        return { success: false, error: `set: ${result.error}` };
       }
-      return { success: allSuccess, output: messages.join('\n'), error: allSuccess ? null : messages.join('\n') };
+
+      return { success: true };
     }
   };
 
@@ -4989,7 +4979,7 @@ const CommandExecutor = (() => {
     set: {
       handler: createCommandHandler(setCommandDefinition),
       description: "Sets or displays environment variables.",
-      helpText: "Usage: set [name=value]...\n\nSets environment variables. If no arguments are given, it displays all variables."
+      helpText: "Usage: set [NAME] [VALUE]...\n\nSets an environment variable. The first argument is the variable NAME, and all subsequent arguments are joined to form the VALUE.\nIf a value contains spaces, it should be enclosed in quotes.\nIf no arguments are given, 'set' displays all current environment variables."
     },
     unset: {
       handler: createCommandHandler(unsetCommandDefinition),

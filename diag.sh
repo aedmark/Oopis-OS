@@ -293,6 +293,69 @@ unalias la
 delay 700
 echo "---------------------------------------------------------------------"
 
+# --- Phase 9.5: Environment Variables ---
+echo ""
+echo "===== Testing: Environment Variables (set, unset, expansion) ====="
+delay 400
+
+echo "--- Test: 'set' to display default variables ---"
+set
+delay 300
+
+echo "--- Test: Setting and overwriting variables ---"
+set TEST_VAR "Hello OopisOS"
+set EMPTY_VAR
+set OVERWRITE_ME "Initial Value"
+echo "Initial set:"
+set
+delay 300
+set OVERWRITE_ME "New Value"
+echo "After overwrite:"
+set
+delay 300
+
+echo "--- Test: Invalid variable name ---"
+check_fail "set 123_BAD_VAR oops"
+delay 300
+
+echo "--- Test: Variable expansion ---"
+echo "Simple expansion: $TEST_VAR"
+echo "Expansion in double quotes: The value is \"$TEST_VAR\""
+echo 'Expansion in single quotes (should not happen): The value is "$TEST_VAR"'
+echo "Testing non-existent var: PRE$NON_EXISTENT_VAR"POST
+echo "Testing brace syntax: ${OVERWRITE_ME}"
+delay 300
+
+echo "--- Test: Using expanded variables in commands ---"
+set TARGET_FILE "env_test_file.txt"
+echo "Writing to $TARGET_FILE" > $TARGET_FILE
+cat $TARGET_FILE
+delay 300
+
+echo "--- Test: 'unset' command ---"
+unset TEST_VAR
+unset OVERWRITE_ME EMPTY_VAR
+echo "After unsetting:"
+set
+echo "Should be empty: $TEST_VAR"
+delay 300
+
+echo "--- Test: Environment changes on login/logout ---"
+login root mcgoopis
+echo "Current user should be root: $USER"
+echo "Current home should be for root: $HOME"
+set
+logout
+echo "Current user should be userDiag: $USER"
+echo "Current home should be for userDiag: $HOME"
+set
+delay 700
+
+# Cleanup the file we created
+rm -f $TARGET_FILE
+
+echo "---------------------------------------------------------------------"
+
 # --- Phase 10: 'find' command ---
 echo ""
 echo "===== Testing: 'find' Command ====="
@@ -346,9 +409,10 @@ curl https://api.github.com/zen
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 15: NEW - Adventure Game Engine ---
+# --- Phase 15: Adventure Game Engine ---
 echo ""
 echo "===== Testing: Adventure Game Engine (Scripted) ====="
+cd /home/userDiag/diag_workspace # <<< ADD THIS DEFENSIVE CD COMMAND
 delay 400
 echo "--- Test 1: Launch and immediately quit custom game ---"
 run ./adv_test1.sh
@@ -364,7 +428,6 @@ delay 300
 echo "--- Test 4: Loading game state and verifying ---"
 run ./adv_test4.sh
 delay 700
-echo "---------------------------------------------------------------------"
 
 # --- Phase 16: Final Cleanup ---
 echo ""
@@ -379,14 +442,14 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "===== OopisOS Core Test Suite Complete (v2.4) ======="
+echo "===== OopisOS Core Test Suite Complete (v2.5) ======="
 echo " "
 delay 500
 echo "  ======================================================"
 delay 150
 echo "  ==                                                  =="
 delay 150
-echo "  ==      OopisOS Core Diagnostics - v2.4             =="
+echo "  ==      OopisOS Core Diagnostics - v2.5             =="
 delay 150
 echo "  ==              CONGRATULATIONS,                    =="
 delay 150
@@ -400,3 +463,4 @@ echo "  ======================================================"
 echo " "
 delay 500
 echo "...kthxbye"
+delay 200
