@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OopisOS v2.5 - The User-Friendly Manual</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link href="[https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -229,7 +229,7 @@
 
 <div class="flex flex-col md:flex-row min-h-screen">
     <button id="menu-button" class="md:hidden p-4 bg-zinc-800 text-emerald-400 fixed top-0 left-0 z-20">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+        <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
     </button>
@@ -280,6 +280,7 @@
                 <li><strong>Background Job Control (`ps`, `kill`):</strong> See what processes you've sent to the background with `ps` and terminate them with `kill`.</li>
                 <li><strong>Networking Utilities (`wget`, `curl`):</strong> Fetch content and download files from the web directly within the OS.</li>
                 <li><strong>The 'edit' Command - Now More Luxurious:</strong> A souped-up text editor that handles plain text, Markdown, and HTML with a live preview. Features include line numbers, a detailed status bar, toggleable word wrap, multiple view modes (`Ctrl+P`), an `Export to HTML` function, and a rich formatting toolbar with shortcuts.</li>
+                <li><strong>The 'paint' Command - An Artist's Studio:</strong> Unleash your inner artist with a character-based paint program. Supports multiple colors, undo/redo, and saves to a custom `.oopic` file format.</li>
                 <li><strong>An AI in the Shell (`gemini`):</strong> Chat with the Gemini AI directly from your terminal. Ask it to write a poem, summarize a file, or start a new conversation with the `-n` flag. It can now use `tree` and other tools to better understand your files.</li>
                 <li><strong>Scripting for the Masses (`run`):</strong> Write your own command scripts! Supports comments (`#`), argument passing (`$1`, `$2`, `$@`, `$#`), and includes handy tools like `delay` and `check_fail` for crafting your own diagnostic epics.</li>
                 <li><strong>Save Your Progress! (No, really):</strong> Automatic session saving per user, plus manual `savestate`/`loadstate` and `backup`/`restore` commands. `clearfs` lets you clean your home directory, and `reset` is the big red button that nukes everything (don't worry, we'll ask first).</li>
@@ -323,6 +324,7 @@
                 <tr><td><code>cat [file...]</code></td><td>Reads file contents to the screen. Can read multiple files.</td></tr>
                 <tr><td><code>echo [text]</code></td><td>Repeats text. Primarily used with redirection to write to files.</td></tr>
                 <tr><td><code>edit [file]</code></td><td>Opens the powerful text editor. Your gateway to creating masterpieces.</td></tr>
+                <tr><td><code>paint [file.oopic]</code></td><td>Unleash your inner artist! Opens the character-based art editor.</td></tr>
                 <tr><td><code>touch [-c -d -t] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create, <b>-d</b> for a date string, <b>-t</b> for a specific timestamp.</td></tr>
                 <tr><td><code>rm [-r -f] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories and <b>-f</b> to be forceful.</td></tr>
                 <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>Copies files. Flags for: <b>-r</b>ecursive, <b>-f</b>orce, <b>-p</b>reserve metadata, <b>-i</b>nteractive.</td></tr>
@@ -380,6 +382,25 @@
                         <li><code>Ctrl+P</code>: Toggle Preview. Cycle through split-screen, code-only, and preview-only views.</li>
                         <li><code>Ctrl+B</code> / <code>Ctrl+I</code>: Make text **bold** or *italic* in compatible files.</li>
                         <li><code>Tab</code>: Indent your code like a pro.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2>The ASCII Art Studio (`paint` command)</h2>
+            <p>For when text is not enough, OopisOS includes a surprisingly powerful character-based art editor. The <code>paint</code> command opens a dedicated, full-screen canvas where you can create ASCII and ANSI art.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Canvas & Tools:</strong> The editor features an 80x24 character canvas. Use the Pencil tool to draw with a selected character and color, or the Eraser tool to clear cells.</li>
+                <li><strong>Color Palette:</strong> Add a splash of color to your creations with a 6-color ANSI palette (green, red, sky, amber, lime, neutral).</li>
+                <li><strong>File Format:</strong> Your masterpieces are saved to a custom <code>.oopic</code> file format, which stores character, color, and canvas dimension data in a JSON structure.</li>
+                <li>
+                    <strong>Keyboard-First Workflow:</strong>
+                    <ul>
+                        <li><code>P</code> / <code>E</code>: Switch between Pencil and Eraser tools.</li>
+                        <li><code>1-6</code>: Select a color from the palette.</li>
+                        <li>Any other character key: Sets the character to be used by the pencil.</li>
+                        <li><code>Ctrl+S</code>: Save & Exit.</li>
+                        <li><code>Ctrl+O</code>: Exit without saving (will prompt if there are unsaved changes).</li>
+                        <li><code>Ctrl+Z</code> / <code>Ctrl+Y</code>: Undo and Redo your strokes.</li>
                     </ul>
                 </li>
             </ul>
@@ -507,7 +528,7 @@
             </ul>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Download the OopisOS license and save it locally as 'LICENSE.txt'</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">wget [https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt](https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt)</span><br>
                 <span class="output">...</span><br>
                 <span class="output">'LICENSE.txt' saved [1132 bytes]</span>
             </div>
@@ -518,7 +539,7 @@
             </ul>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Get a piece of wisdom from the GitHub Zen API</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">curl https://api.github.com/zen</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">curl [https://api.github.com/zen](https://api.github.com/zen)</span><br>
                 <span class="output">Mind your words, they are important.</span>
             </div>
             <h2>Scripting with `run`</h2>
@@ -545,19 +566,19 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
                 <li>
                     <strong>Argument Passing:</strong>
                     <ul>
-                        <li><code>$1</code>, <code>$2</code>, ...: Use the arguments you passed to the script.</li>
-                        <li><code>$@</code>: All the arguments in one glorious string.</li>
-                        <li><code>$#</code>: The number of arguments.</li>
-                    </ul>
-                </li>
-                <li><strong>Error Handling:</strong> If a command fails, the script stops. No questions asked.</li>
-                <li>
-                    <strong>Scripting Tools:</strong>
-                    <ul>
-                        <li><code>delay [milliseconds]</code>: For dramatic pauses.</li>
-                        <li><code>check_fail "[command]"</code>: A special tool for testing. It succeeds only if the command inside it *fails*.</li>
-                    </ul>
-                </li>
+                        <li><code>$1</code>, <code><span class="math-inline">2</code\>, \.\.\.\: Use the arguments you passed to the script\.</li\>
+                        <li\><code\></span>@</code>: All the arguments in one glorious string.</li>
+                <li><code>$#</code>: The number of arguments.</li>
+            </ul>
+            </li>
+            <li><strong>Error Handling:</strong> If a command fails, the script stops. No questions asked.</li>
+            <li>
+                <strong>Scripting Tools:</strong>
+                <ul>
+                    <li><code>delay [milliseconds]</code>: For dramatic pauses.</li>
+                    <li><code>check_fail "[command]"</code>: A special tool for testing. It succeeds only if the command inside it *fails*.</li>
+                </ul>
+            </li>
             </ul>
 
             <h2>Text Adventure Gaming (`adventure`)</h2>
@@ -580,6 +601,7 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
                 <li><strong>`lexpar.js`:</strong> The brainy part. Contains the Lexer and Parser that translate your typed commands into something the machine can understand.</li>
                 <li><strong>`commexec.js`:</strong> The muscle. This is the Command Executor, containing the definitions and handlers for every single command in the OS.</li>
                 <li><strong>`editor.js`:</strong> The artist's studio. All logic for the `edit` command's powerful text editor lives here.</li>
+                <li><strong>`paint.js`:</strong> The other artist's studio. All logic for the `paint` command's ASCII/ANSI art editor.</li>
                 <li><strong>`adventure.js`:</strong> The dungeon master's screen. Contains the text adventure engine, UI modal, and sample game data.</li>
             </ul>
             <p>We use Immediately Invoked Function Expressions (IIFEs) to keep things tidy and modular, preventing a global namespace catastrophe.</p>
