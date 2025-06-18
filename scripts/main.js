@@ -23,7 +23,7 @@ function initializeTerminalEventListeners() {
     }
   });
   document.addEventListener("keydown", async (e) => {
-    if (EditorManager.isActive() || TextAdventureModal.isActive()) {
+    if (EditorManager.isActive() || TextAdventureModal.isActive() || PaintManager.isActive()) {
       return;
     }
     if (ModalInputManager.isAwaiting()) {
