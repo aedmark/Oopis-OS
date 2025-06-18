@@ -4923,7 +4923,7 @@ const CommandExecutor = (() => {
     paint: {
       handler: createCommandHandler(paintCommandDefinition),
       description: "Opens the ASCII/ANSI art editor.",
-      helpText: "Usage: paint [filename.oopic]\n\nOpens a file in the character-based paint program. If the file does not exist, a new canvas is created."
+      helpText: "Usage: paint [filename.oopic]\n\nOpens a file in the character-based paint program.\nIf the file does not exist, a new canvas is created.\nShortcuts: [P]encil, [E]raser, [1-6] Colors, [S]ave/Exit, Ctrl+Z/Y Undo/Redo"
     },
     grep: {
       handler: createCommandHandler(grepCommandDefinition),

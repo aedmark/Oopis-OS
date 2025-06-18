@@ -1,4 +1,4 @@
-// paint.js - OopisOS ASCII/ANSI Art Editor v1.3
+// paint.js - OopisOS ASCII/ANSI Art Editor v1.4
 
 const PaintAppConfig = {
     CANVAS: {
@@ -18,7 +18,11 @@ const PaintAppConfig = {
     PALETTE: [
         'text-green-500', 'text-red-500', 'text-sky-400', 'text-amber-400',
         'text-lime-400', 'text-neutral-300'
-    ]
+    ],
+    EDITOR: {
+        DEBOUNCE_DELAY_MS: 300,
+        MAX_UNDO_STATES: 50,
+    }
 };
 
 const PaintUI = (() => {
@@ -44,6 +48,9 @@ const PaintUI = (() => {
 
         elements.toolbar.innerHTML = '';
 
+        // --- Toolbar Buttons ---
+        elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5 8C9.81 8 7.5 10.27 7.5 13S9.81 18 12.5 18c2.04 0 3.84-1.18 4.63-2.92l1.48 1.48C17.34 18.23 15.06 20 12.5 20 8.91 20 6 16.91 6 13.5S8.91 7 12.5 7c1.78 0 3.4.71 4.59 1.86L19 7v6h-6l1.92-1.92C14.04 9.82 13.3 9 12.5 9c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5c.83 0 1.55-.4 2-1h1.53c-.64 1.9-2.51 3.25-4.53 3.25-2.76 0-5-2.24-5-5s2.24-5 5-5c1.38 0 2.64.56 3.54 1.46L18.5 6H12.5z"/></svg>', title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
+        elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-2.76 0-5 2.24-5 5s2.24 5 5 5c2.65 0 4.85-2 5.8-4.59l-1.5-1.53C15.05 13.6 13.38 15 11.5 15c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5c.82 0 1.55.39 2 1h-1.5v1.5l2.42-.01.08-.08.01-.01 2-2H18.4z"/></svg>', title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
         elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '[P]encil', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
         elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '[E]raser', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
 
@@ -61,12 +68,10 @@ const PaintUI = (() => {
 
         elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: '[S]ave & Exit', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
 
-        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.pencilBtn, elements.eraserBtn);
+        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, elements.eraserBtn);
         const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveExitBtn);
 
-        elements.toolbar.appendChild(leftGroup);
-        elements.toolbar.appendChild(colorPaletteContainer);
-        elements.toolbar.appendChild(rightGroup);
+        elements.toolbar.append(leftGroup, colorPaletteContainer, rightGroup);
 
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
@@ -85,24 +90,16 @@ const PaintUI = (() => {
     }
 
     function getGridCoordinates(pixelX, pixelY) {
-        if (!elements.canvas || !cellDimensions.width || !cellDimensions.height) {
-            return null;
-        }
-
+        if (!elements.canvas || !cellDimensions.width || !cellDimensions.height) return null;
         const rect = elements.canvas.getBoundingClientRect();
         const x = pixelX - rect.left;
         const y = pixelY - rect.top;
 
-        if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
-            return null; // Outside the canvas
-        }
-
+        if (x < 0 || x > rect.width || y < 0 || y > rect.height) return null;
         const gridX = Math.floor(x / cellDimensions.width);
         const gridY = Math.floor(y / cellDimensions.height);
-
         return { x: gridX, y: gridY };
     }
-
 
     function updateStatusBar(status) {
         if (!elements.statusBar) return;
@@ -110,10 +107,12 @@ const PaintUI = (() => {
         elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Coords: ${status.coords.x},${status.coords.y}`;
     }
 
-    function updateToolbar(activeTool, activeColor) {
+    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible) {
         if (!isInitialized) return;
         elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
         elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
+        elements.undoBtn.disabled = !undoPossible;
+        elements.redoBtn.disabled = !redoPossible;
 
         elements.colorButtons.forEach((btn, index) => {
             const colorClass = PaintAppConfig.PALETTE[index];
@@ -125,7 +124,6 @@ const PaintUI = (() => {
         if (!isInitialized) {
             _initDOM(callbacks);
         }
-
         if (elements.modal) {
             elements.modal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
         } else {
@@ -169,33 +167,61 @@ const PaintUI = (() => {
     return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar };
 })();
 
-
 const PaintManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
     let fgColor = PaintAppConfig.DEFAULT_FG_COLOR, lastCoords = { x: -1, y: -1 };
+    let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
 
     function _createBlankCanvas(w, h) {
         let data = [];
         for (let y = 0; y < h; y++) {
-            let row = [];
-            for (let x = 0; x < w; x++) {
-                row.push({
-                    char: ' ',
-                    fg: PaintAppConfig.DEFAULT_FG_COLOR,
-                    bg: PaintAppConfig.ERASER_BG_COLOR
-                });
-            }
-            data.push(row);
+            data.push(Array.from({ length: w }, () => ({
+                char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR
+            })));
         }
         return data;
     }
 
-    function _drawOnCanvas(x, y) {
-        if (y < 0 || y >= canvasData.length || x < 0 || x >= canvasData[0].length) {
-            return;
+    function _updateUndoRedoButtonStates() {
+        PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0);
+    }
+
+    function _saveUndoState() {
+        redoStack = []; // Any new action clears the redo stack
+        undoStack.push(JSON.parse(JSON.stringify(canvasData))); // Deep copy
+        if (undoStack.length > PaintAppConfig.EDITOR.MAX_UNDO_STATES) {
+            undoStack.shift();
         }
+        _updateUndoRedoButtonStates();
+    }
+
+    function _triggerSaveUndoState() {
+        if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
+        saveUndoStateTimeout = setTimeout(_saveUndoState, PaintAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
+    }
+
+    function _performUndo() {
+        if (undoStack.length <= 1) return;
+        const currentState = undoStack.pop();
+        redoStack.push(currentState);
+        canvasData = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
+        PaintUI.renderCanvas(canvasData);
+        _updateUndoRedoButtonStates();
+    }
+
+    function _performRedo() {
+        if (redoStack.length === 0) return;
+        const nextState = redoStack.pop();
+        undoStack.push(nextState);
+        canvasData = JSON.parse(JSON.stringify(nextState));
+        PaintUI.renderCanvas(canvasData);
+        _updateUndoRedoButtonStates();
+    }
+
+    function _drawOnCanvas(x, y) {
+        if (y < 0 || y >= canvasData.length || x < 0 || x >= canvasData[0].length) return;
         isDirty = true;
         const cell = canvasData[y][x];
         if (currentTool === 'pencil') {
@@ -207,7 +233,7 @@ const PaintManager = (() => {
             cell.fg = PaintAppConfig.DEFAULT_FG_COLOR;
             cell.bg = PaintAppConfig.ERASER_BG_COLOR;
         }
-        PaintUI.renderCanvas(canvasData);
+        PaintUI.renderCanvas(canvasData); // Re-render the whole canvas for simplicity
     }
 
     function _handleMouseDown(e) {
@@ -222,39 +248,40 @@ const PaintManager = (() => {
 
     function _handleMouseMove(e) {
         const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
-        if(coords) {
+        if (coords) {
             PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords });
         }
-        if (!isDrawing || !coords) return;
+        if (!isDrawing || !coords || (coords.x === lastCoords.x && coords.y === lastCoords.y)) return;
 
-        if (coords.x !== lastCoords.x || coords.y !== lastCoords.y) {
-            // Simple line drawing logic (Bresenham's is overkill for this)
-            // This just draws point by point as the mouse moves
-            _drawOnCanvas(coords.x, coords.y);
-            lastCoords = coords;
-        }
+        // Simple point-by-point drawing for now
+        _drawOnCanvas(coords.x, coords.y);
+        lastCoords = coords;
     }
 
     function _handleMouseUp(e) {
+        if (isDrawing) {
+            _triggerSaveUndoState();
+        }
         isDrawing = false;
         lastCoords = { x: -1, y: -1 };
     }
 
     function _handleMouseLeave(e) {
+        if (isDrawing) {
+            _triggerSaveUndoState();
+        }
         isDrawing = false;
         lastCoords = { x: -1, y: -1 };
     }
 
     function _setTool(toolName) {
         currentTool = toolName;
-        PaintUI.updateToolbar(currentTool, fgColor);
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        _updateUndoRedoButtonStates();
     }
 
     function _setColor(colorClass) {
         fgColor = colorClass;
-        PaintUI.updateToolbar(currentTool, fgColor);
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        _updateUndoRedoButtonStates();
     }
 
     function enter(filePath, fileContent) {
@@ -270,11 +297,8 @@ const PaintManager = (() => {
         try {
             if (fileContent) {
                 const parsed = JSON.parse(fileContent);
-                if (parsed.cells && parsed.width && parsed.height) {
-                    canvasData = parsed.cells;
-                } else {
-                    throw new Error("Invalid .oopic file format.");
-                }
+                if (parsed.cells && parsed.width && parsed.height) canvasData = parsed.cells;
+                else throw new Error("Invalid .oopic file format.");
             } else {
                 canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
             }
@@ -283,6 +307,9 @@ const PaintManager = (() => {
             canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
         }
 
+        undoStack = [JSON.parse(JSON.stringify(canvasData))];
+        redoStack = [];
+
         PaintUI.show({
             onMouseDown: _handleMouseDown,
             onMouseMove: _handleMouseMove,
@@ -290,11 +317,13 @@ const PaintManager = (() => {
             onMouseLeave: _handleMouseLeave,
             onToolChange: _setTool,
             onColorChange: _setColor,
-            onSaveAndExit: () => exit(true)
+            onSaveAndExit: () => exit(true),
+            onUndo: _performUndo,
+            onRedo: _performRedo
         });
 
         PaintUI.renderCanvas(canvasData);
-        PaintUI.updateToolbar(currentTool, fgColor);
+        _updateUndoRedoButtonStates();
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1} });
 
         document.addEventListener('keydown', handleKeyDown);
@@ -303,20 +332,12 @@ const PaintManager = (() => {
     async function exit(save = false) {
         if (save && isDirty && currentFilePath) {
             const fileData = {
-                version: "1.1",
-                width: canvasData[0].length,
-                height: canvasData.length,
-                cells: canvasData
+                version: "1.1", width: canvasData[0].length, height: canvasData.length, cells: canvasData
             };
             const jsonContent = JSON.stringify(fileData);
-
             const currentUser = UserManager.getCurrentUser().name;
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-
-            const saveResult = await FileSystemManager.createOrUpdateFile(
-                currentFilePath, jsonContent, { currentUser, primaryGroup }
-            );
-
+            const saveResult = await FileSystemManager.createOrUpdateFile(currentFilePath, jsonContent, { currentUser, primaryGroup });
             if (saveResult.success) {
                 await FileSystemManager.save();
                 await OutputManager.appendToOutput(`Art saved to '${currentFilePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
@@ -330,26 +351,37 @@ const PaintManager = (() => {
         document.removeEventListener('keydown', handleKeyDown);
         PaintUI.hide();
         PaintUI.reset();
-
         isActiveState = false; isDrawing = false;
+        undoStack = []; redoStack = [];
+        if(saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         TerminalUI.setInputState(true);
         TerminalUI.focusInput();
     }
 
     function handleKeyDown(event) {
         if (!isActiveState) return;
+
+        if (event.ctrlKey || event.metaKey) {
+            const key = event.key.toLowerCase();
+            if (key === 'z') {
+                event.preventDefault();
+                _performUndo();
+            } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+                event.preventDefault();
+                _performRedo();
+            } else if (key === 's') {
+                event.preventDefault();
+                exit(true);
+            }
+            return;
+        }
+
         const key = event.key.toLowerCase();
-
-        // Let browser handle developer tools, etc.
-        if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-        const isAppKey = ['s', 'p', 'e', '1', '2', '3', '4', '5', '6'].includes(key);
-        const isCharKey = key.length === 1;
+        const isAppKey = ['p', 'e', '1', '2', '3', '4', '5', '6'].includes(key);
+        const isCharKey = event.key.length === 1;
 
         if (isAppKey || isCharKey) {
             event.preventDefault();
-
-            if (key === 's') { exit(true); return; }
             if (key === 'p') { _setTool('pencil'); return; }
             if (key === 'e') { _setTool('eraser'); return; }
 
@@ -362,7 +394,6 @@ const PaintManager = (() => {
             if (isCharKey) {
                 drawChar = event.key;
             }
-
             PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
         }
     }
