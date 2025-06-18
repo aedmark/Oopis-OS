@@ -412,6 +412,7 @@ echo "---------------------------------------------------------------------"
 # --- Phase 15: Adventure Game Engine ---
 echo ""
 echo "===== Testing: Adventure Game Engine (Scripted) ====="
+login userDiag pantload
 cd /home/userDiag/diag_workspace # <<< ADD THIS DEFENSIVE CD COMMAND
 delay 400
 echo "--- Test 1: Launch and immediately quit custom game ---"
