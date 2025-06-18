@@ -484,4 +484,59 @@ font-size: 1.125rem;
 .hidden {
 display: none !important;
 }
+/* --- OopisOS Paint Styles --- */
+#paint-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.85);
+  z-index: 998; /* Same as adventure modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+}
 
+#paint-container {
+  width: 95%;
+  max-width: 100%;
+  height: 95%;
+  max-height: 100%;
+  background-color: #0A0A0A;
+  border: 2px solid #60a5fa; /* Blue to differentiate from adventure */
+  border-radius: 0.75rem;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.3), inset 0 0 10px rgba(96, 165, 250, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  font-family: 'VT323', monospace;
+  color: #a3a3a3; /* neutral-400 */
+}
+
+#paint-toolbar, #paint-statusbar {
+  flex-shrink: 0;
+  padding: 0.25rem 0.75rem;
+  background-color: #1f1f22;
+  border-bottom: 1px solid #3a3a3d;
+  font-size: 1.1em;
+  color: #cbd5e1;
+}
+
+#paint-statusbar {
+  border-top: 1px solid #3a3a3d;
+  border-bottom: none;
+}
+
+#paint-canvas {
+  flex-grow: 1;
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1;
+  white-space: pre;
+  cursor: crosshair;
+  padding: 0.5rem;
+  background-color: #000;
+}

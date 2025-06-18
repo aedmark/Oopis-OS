@@ -166,6 +166,28 @@ const CommandExecutor = (() => {
     handler.definition = definition;
     return handler;
   }
+  function getActiveJobs() {
+    return activeJobs;
+  }
+  function killJob(jobId) {
+    const job = activeJobs[jobId];
+    if (job && job.abortController) {
+      job.abortController.abort("Killed by user command.");
+
+      // Immediately remove the job from the list for a responsive feel.
+      // The job's own 'finally' block will also try this later, which is safe.
+      delete activeJobs[jobId];
+
+      return {
+        success: true,
+        message: `Signal sent to terminate job ${jobId}.`,
+      };
+    }
+    return {
+      success: false,
+      error: `Job ${jobId} not found or cannot be killed.`,
+    };
+  }
   const geminiCommandDefinition = {
     commandName: "gemini",
     flagDefinitions: [
@@ -525,28 +547,6 @@ const CommandExecutor = (() => {
       }
     },
   };
-  function getActiveJobs() {
-    return activeJobs;
-  }
-  function killJob(jobId) {
-    const job = activeJobs[jobId];
-    if (job && job.abortController) {
-      job.abortController.abort("Killed by user command.");
-
-      // Immediately remove the job from the list for a responsive feel.
-      // The job's own 'finally' block will also try this later, which is safe.
-      delete activeJobs[jobId];
-
-      return {
-        success: true,
-        message: `Signal sent to terminate job ${jobId}.`,
-      };
-    }
-    return {
-      success: false,
-      error: `Job ${jobId} not found or cannot be killed.`,
-    };
-  }
   const helpCommandDefinition = {
     commandName: "help",
     argValidation: {
@@ -963,6 +963,49 @@ const CommandExecutor = (() => {
         messageType: Config.CSS_CLASSES.EDITOR_MSG,
       };
     },
+  };
+  const paintCommandDefinition = {
+    commandName: "paint",
+    argValidation: { max: 1 },
+    pathValidation: [{
+      argIndex: 0,
+      optional: true,
+      options: {
+        allowMissing: true,
+        expectedType: 'file'
+      }
+    }],
+    coreLogic: async (context) => {
+      const { args, options, currentUser, validatedPaths } = context;
+
+      if (!options.isInteractive) {
+        return { success: false, error: "paint: Can only be run in interactive mode." };
+      }
+
+      const pathInfo = validatedPaths[0];
+      const filePath = pathInfo ? pathInfo.resolvedPath : (args[0] || null);
+      let fileContent = "";
+
+      if (pathInfo && pathInfo.node) {
+        if (Utils.getFileExtension(filePath) !== 'oopic') {
+          return { success: false, error: `paint: can only edit .oopic files.` };
+        }
+        if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
+          return { success: false, error: `paint: '${filePath}': Permission denied` };
+        }
+        fileContent = pathInfo.node.content || "";
+      } else if (filePath && Utils.getFileExtension(filePath) !== 'oopic') {
+        return { success: false, error: `paint: new file must have .oopic extension.` };
+      }
+
+      PaintManager.enter(filePath, fileContent);
+
+      return {
+        success: true,
+        output: `Opening paint for '${filePath || "new file"}'...`,
+        messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG
+      };
+    }
   };
   const useraddCommandDefinition = {
     commandName: "useradd",
@@ -1563,7 +1606,6 @@ const CommandExecutor = (() => {
       return { success: true };
     }
   };
-
   const unsetCommandDefinition = {
     commandName: "unset",
     argValidation: { min: 1, error: "Usage: unset <variable_name>..." },
@@ -4878,6 +4920,11 @@ const CommandExecutor = (() => {
       helpText:
           "Usage: edit <file_path>\n\nOpens the specified <file_path> in the built-in text editor. If the file does not exist, it will be created upon saving.",
     },
+    paint: {
+      handler: createCommandHandler(paintCommandDefinition),
+      description: "Opens the ASCII/ANSI art editor.",
+      helpText: "Usage: paint [filename.oopic]\n\nOpens a file in the character-based paint program. If the file does not exist, a new canvas is created."
+    },
     grep: {
       handler: createCommandHandler(grepCommandDefinition),
       description: "Searches for patterns in files or input.",
@@ -5387,7 +5434,6 @@ const CommandExecutor = (() => {
     }
     TerminalUI.setIsNavigatingHistory(false);
   }
-
   async function processSingleCommand(rawCommandText, isInteractive = true, scriptingContext = null) {
     let overallResult = {
       success: true,

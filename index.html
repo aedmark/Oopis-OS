@@ -34,15 +34,19 @@
         <div id="adventure-container">
           <div id="adventure-header">
             <span id="adventure-title">Text Adventure</span>
-            <button id="adventure-close-btn" class="btn-adventure">Exit Adventure</button>
-          </div>
-          <div id="adventure-output">
-
-          </div>
+            <button id="adventure-close-btn" class="btn-adventure">Exit Adventure</button></div>
+          <div id="adventure-output"></div>
           <div id="adventure-input-container">
             <span>&gt;</span>
             <label for="adventure-input"></label><input type="text" id="adventure-input" spellcheck="false" autocomplete="off" />
           </div>
+        </div>
+      </div>
+      <div id="paint-modal" class="hidden">
+        <div id="paint-container">
+          <div id="paint-toolbar">[P]encil [E]raser | Colors: [1]Green [2]Red [3]Blue | [S]ave & Exit</div>
+          <div id="paint-canvas"></div>
+          <div id="paint-statusbar">Tool: Pencil | Char: # | Coords: 0,0</div>
         </div>
       </div>
     </div>
@@ -58,6 +62,7 @@
   <script src="./scripts/session_manager.js"></script>
   <script src="./scripts/terminal_ui.js"></script>
   <script src="./scripts/editor.js"></script>
+  <script src="./scripts/paint.js"></script>
   <script src="./scripts/lexpar.js"></script>
   <script src="./scripts/commexec.js"></script>
   <script src="./scripts/adventure.js"></script>
