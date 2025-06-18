@@ -484,71 +484,63 @@ font-size: 1.125rem;
 .hidden {
 display: none !important;
 }
-/* --- OopisOS Paint Toolbar Styles --- */
-#paint-toolbar {
+/* --- OopisOS Paint Modal Styles --- */
+#paint-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.85);
+  z-index: 998;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background-color: #1f1f22;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+#paint-container {
+  width: 95%;
+  max-width: 100%;
+  height: 95%;
+  max-height: 100%;
+  background-color: #0A0A0A;
+  border: 2px solid #60a5fa; /* Blue to distinguish from adventure */
+  border-radius: 0.75rem;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  font-family: 'VT323', monospace;
+  color: #a3a3a3; /* Neutral color for status bar */
+}
+
+#paint-canvas {
+  flex-grow: 1;
+  overflow: hidden; /* Canvas should not scroll */
+  display: grid;
+  grid-template-columns: repeat(80, 1fr); /* Default, will be updated by JS if needed */
+  grid-template-rows: repeat(24, 1fr);
+  background-color: #101010;
+  cursor: crosshair;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+#paint-canvas span {
+  display: inline-block;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+#paint-statusbar {
+  flex-shrink: 0;
   padding: 0.25rem 0.5rem;
-  border-bottom: 1px solid #3a3a3d;
-}
-
-.paint-toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.paint-tool {
-  background-color: #3f3f46;
-  color: #a3a3a3;
-  border: 1px solid #52525b;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-family: 'VT323', monospace; /* Be explicit */
-  font-size: 1em; /* Be explicit */
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.paint-tool.paint-exit-btn {
-  color: #fca5a5; /* Red-300 for exit */
-  border-color: #7f1d1d; /* Red-900 */
-}
-
-.paint-tool:hover {
-  background-color: #52525b;
-  color: #e5e5e5;
-}
-
-.paint-tool.paint-tool-active {
-  background-color: #60a5fa; /* Active tool is blue */
-  color: #1e293b; /* Dark blue text */
-  border-color: #93c5fd;
-}
-
-.paint-palette {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.paint-color-swatch {
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid #52525b;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: transform 0.1s, border-color 0.2s;
-}
-
-.paint-color-swatch:hover {
-  border-color: #a3a3a3;
-  transform: scale(1.1);
-}
-
-.paint-color-swatch.paint-tool-active {
-  border-color: #fde047; /* Active color is yellow-300 */
-  box-shadow: 0 0 5px #fde047;
-  transform: scale(1.1);
+  border-top: 1px solid #3a3a3d;
+  font-size: 1rem;
+  text-align: center;
+  background-color: #1f1f22;
 }

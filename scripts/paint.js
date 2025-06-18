@@ -1,4 +1,4 @@
-// paint.js - OopisOS ASCII/ANSI Art Editor v1.3 (UI, Save/Load, and Bugfixes)
+// paint.js - OopisOS ASCII/ANSI Art Editor v1.3
 
 const PaintAppConfig = {
     CANVAS: {
@@ -13,7 +13,7 @@ const PaintAppConfig = {
     FILE_EXTENSION: 'oopic',
     CSS_CLASSES: {
         MODAL_HIDDEN: 'hidden',
-        ACTIVE_TOOL: 'paint-tool-active', // NEW
+        ACTIVE_TOOL: 'paint-tool-active',
     },
     PALETTE: [
         'text-green-500', 'text-red-500', 'text-sky-400', 'text-amber-400',
@@ -28,7 +28,6 @@ const PaintUI = (() => {
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
 
-    // UPDATED: Now builds an interactive toolbar
     function _initDOM(callbacks) {
         if (isInitialized) return true;
         eventCallbacks = callbacks;
@@ -43,14 +42,11 @@ const PaintUI = (() => {
             return false;
         }
 
-        // --- NEW: Interactive Toolbar Creation ---
-        elements.toolbar.innerHTML = ''; // Clear static text
+        elements.toolbar.innerHTML = '';
 
-        // Tool Buttons
         elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '[P]encil', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
         elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '[E]raser', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
 
-        // Color Palette
         elements.colorButtons = [];
         const colorPaletteContainer = Utils.createElement('div', { className: 'paint-palette' });
         PaintAppConfig.PALETTE.forEach((colorClass, index) => {
@@ -63,7 +59,6 @@ const PaintUI = (() => {
             colorPaletteContainer.appendChild(colorBtn);
         });
 
-        // Exit Button
         elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: '[S]ave & Exit', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
 
         const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.pencilBtn, elements.eraserBtn);
@@ -72,7 +67,6 @@ const PaintUI = (() => {
         elements.toolbar.appendChild(leftGroup);
         elements.toolbar.appendChild(colorPaletteContainer);
         elements.toolbar.appendChild(rightGroup);
-        // --- END: Toolbar Creation ---
 
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
@@ -84,15 +78,31 @@ const PaintUI = (() => {
     }
 
     function _calculateCellSize() {
-        if (!elements.canvas) return;
-        const testSpan = Utils.createElement('span', { textContent: 'W' });
-        elements.canvas.appendChild(testSpan);
-        cellDimensions.width = testSpan.offsetWidth;
-        cellDimensions.height = testSpan.offsetHeight;
-        elements.canvas.removeChild(testSpan);
+        if (!elements.canvas || !elements.canvas.firstChild) return;
+        const testCell = elements.canvas.firstChild;
+        cellDimensions.width = testCell.offsetWidth;
+        cellDimensions.height = testCell.offsetHeight;
     }
 
-    function getGridCoordinates(pixelX, pixelY) { /* ... (no changes here) ... */ return null; }
+    function getGridCoordinates(pixelX, pixelY) {
+        if (!elements.canvas || !cellDimensions.width || !cellDimensions.height) {
+            return null;
+        }
+
+        const rect = elements.canvas.getBoundingClientRect();
+        const x = pixelX - rect.left;
+        const y = pixelY - rect.top;
+
+        if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+            return null; // Outside the canvas
+        }
+
+        const gridX = Math.floor(x / cellDimensions.width);
+        const gridY = Math.floor(y / cellDimensions.height);
+
+        return { x: gridX, y: gridY };
+    }
+
 
     function updateStatusBar(status) {
         if (!elements.statusBar) return;
@@ -100,7 +110,6 @@ const PaintUI = (() => {
         elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Coords: ${status.coords.x},${status.coords.y}`;
     }
 
-    // NEW: Function to update the visual state of the toolbar
     function updateToolbar(activeTool, activeColor) {
         if (!isInitialized) return;
         elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
@@ -113,19 +122,49 @@ const PaintUI = (() => {
     }
 
     function show(callbacks) {
-        // THE FIX: Call _initDOM *after* removing the hidden class
-        if (!elements.modal) _initDOM(callbacks); // Initial call to get the modal element
-        elements.modal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        if (!isInitialized) {
+            _initDOM(callbacks);
+        }
 
-        // Initialize or re-initialize DOM references and event listeners
-        if(!isInitialized) _initDOM(callbacks);
-        // Now that it's visible, calculate cell size
+        if (elements.modal) {
+            elements.modal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        } else {
+            console.error("PaintUI: Modal element not found, cannot show.");
+            return;
+        }
+    }
+
+    function hide() {
+        if (elements.modal) {
+            elements.modal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
+        isInitialized = false;
+    }
+
+    function renderCanvas(canvasData) {
+        if (!elements.canvas) return;
+        elements.canvas.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        for (let y = 0; y < canvasData.length; y++) {
+            for (let x = 0; x < canvasData[y].length; x++) {
+                const cell = canvasData[y][x];
+                const span = Utils.createElement('span', {
+                    textContent: cell.char,
+                    className: `${cell.fg} ${cell.bg}`
+                });
+                fragment.appendChild(span);
+            }
+        }
+        elements.canvas.appendChild(fragment);
         _calculateCellSize();
     }
 
-    function hide() { /* ... (no changes here) ... */ }
-    function renderCanvas(canvasData) { /* ... (no changes here) ... */ }
-    function reset() { /* ... (no changes here) ... */ }
+    function reset() {
+        if (elements.canvas) elements.canvas.innerHTML = '';
+        if (elements.statusBar) elements.statusBar.textContent = '';
+        if (elements.toolbar) elements.toolbar.innerHTML = '';
+        isInitialized = false;
+    }
 
     return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar };
 })();
@@ -137,14 +176,75 @@ const PaintManager = (() => {
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
     let fgColor = PaintAppConfig.DEFAULT_FG_COLOR, lastCoords = { x: -1, y: -1 };
 
-    function _createBlankCanvas(w, h) { /* ... (no changes here) ... */ }
-    function _drawOnCanvas(x, y) { /* ... (no changes here) ... */ }
-    function _handleMouseDown(e) { /* ... (no changes here) ... */ }
-    function _handleMouseMove(e) { /* ... (no changes here) ... */ }
-    function _handleMouseUp(e) { /* ... (no changes here) ... */ }
-    function _handleMouseLeave(e) { /* ... (no changes here) ... */ }
+    function _createBlankCanvas(w, h) {
+        let data = [];
+        for (let y = 0; y < h; y++) {
+            let row = [];
+            for (let x = 0; x < w; x++) {
+                row.push({
+                    char: ' ',
+                    fg: PaintAppConfig.DEFAULT_FG_COLOR,
+                    bg: PaintAppConfig.ERASER_BG_COLOR
+                });
+            }
+            data.push(row);
+        }
+        return data;
+    }
 
-    // --- NEW: Handlers for UI interaction ---
+    function _drawOnCanvas(x, y) {
+        if (y < 0 || y >= canvasData.length || x < 0 || x >= canvasData[0].length) {
+            return;
+        }
+        isDirty = true;
+        const cell = canvasData[y][x];
+        if (currentTool === 'pencil') {
+            cell.char = drawChar;
+            cell.fg = fgColor;
+            cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
+        } else if (currentTool === 'eraser') {
+            cell.char = PaintAppConfig.ERASER_CHAR;
+            cell.fg = PaintAppConfig.DEFAULT_FG_COLOR;
+            cell.bg = PaintAppConfig.ERASER_BG_COLOR;
+        }
+        PaintUI.renderCanvas(canvasData);
+    }
+
+    function _handleMouseDown(e) {
+        isDrawing = true;
+        const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
+        if (coords) {
+            lastCoords = coords;
+            _drawOnCanvas(coords.x, coords.y);
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords });
+        }
+    }
+
+    function _handleMouseMove(e) {
+        const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
+        if(coords) {
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords });
+        }
+        if (!isDrawing || !coords) return;
+
+        if (coords.x !== lastCoords.x || coords.y !== lastCoords.y) {
+            // Simple line drawing logic (Bresenham's is overkill for this)
+            // This just draws point by point as the mouse moves
+            _drawOnCanvas(coords.x, coords.y);
+            lastCoords = coords;
+        }
+    }
+
+    function _handleMouseUp(e) {
+        isDrawing = false;
+        lastCoords = { x: -1, y: -1 };
+    }
+
+    function _handleMouseLeave(e) {
+        isDrawing = false;
+        lastCoords = { x: -1, y: -1 };
+    }
+
     function _setTool(toolName) {
         currentTool = toolName;
         PaintUI.updateToolbar(currentTool, fgColor);
@@ -162,11 +262,27 @@ const PaintManager = (() => {
         isActiveState = true;
         TerminalUI.setInputState(false);
         currentFilePath = filePath;
+        isDirty = false;
+        currentTool = 'pencil';
+        drawChar = PaintAppConfig.DEFAULT_CHAR;
+        fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
 
-        if (fileContent) { /* ... (load logic) ... */ }
-        else { canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT); }
+        try {
+            if (fileContent) {
+                const parsed = JSON.parse(fileContent);
+                if (parsed.cells && parsed.width && parsed.height) {
+                    canvasData = parsed.cells;
+                } else {
+                    throw new Error("Invalid .oopic file format.");
+                }
+            } else {
+                canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
+            }
+        } catch (e) {
+            OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
+        }
 
-        // UPDATED: Pass the new UI callbacks
         PaintUI.show({
             onMouseDown: _handleMouseDown,
             onMouseMove: _handleMouseMove,
@@ -178,22 +294,21 @@ const PaintManager = (() => {
         });
 
         PaintUI.renderCanvas(canvasData);
-        PaintUI.updateToolbar(currentTool, fgColor); // Set initial toolbar state
+        PaintUI.updateToolbar(currentTool, fgColor);
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1} });
 
         document.addEventListener('keydown', handleKeyDown);
     }
 
-    // UPDATED: Full save logic
     async function exit(save = false) {
         if (save && isDirty && currentFilePath) {
             const fileData = {
-                version: "1.0",
-                width: PaintAppConfig.CANVAS.DEFAULT_WIDTH,
-                height: PaintAppConfig.CANVAS.DEFAULT_HEIGHT,
+                version: "1.1",
+                width: canvasData[0].length,
+                height: canvasData.length,
                 cells: canvasData
             };
-            const jsonContent = JSON.stringify(fileData, null, 2);
+            const jsonContent = JSON.stringify(fileData);
 
             const currentUser = UserManager.getCurrentUser().name;
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
@@ -224,11 +339,14 @@ const PaintManager = (() => {
     function handleKeyDown(event) {
         if (!isActiveState) return;
         const key = event.key.toLowerCase();
-        const isAppKey = ['s', 'p', 'e', '1', '2', '3', '4', '5', '6'].includes(key);
-        const isCharKey = key.length === 1 && !event.ctrlKey && !event.metaKey;
 
-        if (isAppKey || (isCharKey && !['s','p','e'].includes(key))) {
-            // THE FIX: Only prevent default for keys our app is actively handling.
+        // Let browser handle developer tools, etc.
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+        const isAppKey = ['s', 'p', 'e', '1', '2', '3', '4', '5', '6'].includes(key);
+        const isCharKey = key.length === 1;
+
+        if (isAppKey || isCharKey) {
             event.preventDefault();
 
             if (key === 's') { exit(true); return; }
@@ -247,8 +365,6 @@ const PaintManager = (() => {
 
             PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
         }
-        // If the key is not one of ours (e.g., Ctrl+Shift+I, F12), we do nothing,
-        // allowing the browser to handle it normally.
     }
 
     return { enter, exit, isActive: () => isActiveState };
