@@ -1,7 +1,4 @@
-# OopisOS Non-Interactive Core Functionality Test Script
-# Script Version 2.5 (Interactive Scripting & Adventure Test Phase Added)
-
-echo "===== OopisOS Core Test Suite Initializing (v2.5) ====="
+echo "===== OopisOS Core Test Suite Initializing ====="
 echo "This script tests non-interactive core functionality, including"
 echo "scripted interactive prompts and the adventure game engine."
 echo "---------------------------------------------------------------------"
@@ -443,25 +440,21 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "===== OopisOS Core Test Suite Complete (v2.5) ======="
+echo "      ===== OopisOS Core Test Suite Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"
 delay 150
 echo "  ==                                                  =="
 delay 150
-echo "  ==      OopisOS Core Diagnostics - v2.5             =="
+echo "  ==           OopisOS Core Diagnostics               =="
 delay 150
-echo "  ==              CONGRATULATIONS,                    =="
-delay 150
-echo "  ==            ALL SYSTEMS ARE GO!                   =="
+echo "  ==            ALL SYSTEMS OPERATIONAL               =="
 delay 200
 echo "  ==                                                  =="
-echo "  ==   (As usual, you've been a real pantload!)       =="
-echo "  ==                                                  =="
 delay 150
 echo "  ======================================================"
 echo " "
 delay 500
-echo "...kthxbye"
+echo "(As usual, you've been a real pantload!)"
 delay 200

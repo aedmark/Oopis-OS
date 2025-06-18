@@ -1,4 +1,4 @@
-// editor.js - OopisOS Live Markdown Text Editor v2.5
+// editor.js - OopisOS Live Markdown Text Editor
 
 const EditorAppConfig = {
   EDITOR: {

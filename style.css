@@ -1,13 +1,5 @@
 /*
- * OopisOS Unified Stylesheet v2.4
- * --------------------------------
- * This file contains three parts:
- * 1. Local Font Definitions: @font-face rule now points to a single local
- * .ttf font file, completing the removal of all external dependencies.
- * 2. Generated Tailwind CSS: A static compilation of all Tailwind utility
- * classes used across the OopisOS HTML and JavaScript files.
- * 3. Original terminal.css: Your custom styles for the terminal, editor,
- * and adventure modal.
+ * OopisOS Unified Stylesheet
  */
 
 /* 1. Local Font Definition for VT323.ttf */
@@ -16,7 +8,6 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  /* This now points to your local .ttf file */
   src: url(./fonts/vt323.ttf) format('truetype');
 }
 

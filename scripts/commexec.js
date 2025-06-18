@@ -1,4 +1,4 @@
-// commexec.js - OopisOS Command Executor v2.5 (Scripting Engine Upgrade)
+// commexec.js - OopisOS Command Executor
 
 const CommandExecutor = (() => {
   "use strict";

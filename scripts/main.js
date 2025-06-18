@@ -1,4 +1,4 @@
-// oopisos.js - OopisOS Core Logic v2.5
+// oopisos.js - OopisOS Core
 
 let DOM = {};
 function initializeTerminalEventListeners() {

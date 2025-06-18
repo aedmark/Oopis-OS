@@ -1,10 +1,9 @@
 #!/bin/oopis_shell
 
-# OopisOS Test Drive Population Script - Polished Showcase Edition (v2.5 Enhanced)
 # This script populates the Guest file system with a rich, witty, and
 # demonstrative set of data designed to showcase OopisOS capabilities.
 
-echo "Initializing OopisOS Showcase Environment (v2.5 Enhanced)..."
+echo "Inflating OopisOS Showcase Environment..."
 delay 500
 
 # --- Ensure we are in the correct location ---

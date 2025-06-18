@@ -1,4 +1,4 @@
-// adventure.js - OopisOS Adventure Engine and Editor v2.5 (Corrected & Finalized)
+// adventure.js - OopisOS Adventure Engine and Editor
 
 const TextAdventureModal = (() => {
   "use strict";
