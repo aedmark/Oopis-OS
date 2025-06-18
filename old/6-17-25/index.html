@@ -7,6 +7,7 @@
   <title>OopisOS Version 2.5</title>
   <script src="./marked.min.js"></script>
   <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#34d399">
 </head>
 
@@ -50,21 +51,24 @@
   <h1 class="text-xl text-green-500 font-['VT323'] mt-4 mb-4">Copyright ©2025 | Edmark & Gemini | <a class="text-green-500" href="guide.html">OopisOS v2.5 User Guide</a> | <a class="text-green-500" href="LICENSE.txt">MIT License</a> </h1>
 
 
-
-  <script src="utils.js"></script>
-  <script src="config.js"></script>
-  <script src="storage.js"></script>
-  <script src="output_manager.js"></script>
-  <script src="user_manager.js"></script>
-  <script src="fs_manager.js"></script>
-  <script src="session_manager.js"></script>
-  <script src="terminal_ui.js"></script>
-  <script src="editor.js"></script>
-  <script src="lexpar.js"></script>
-  <script src="commexec.js"></script>
-  <script src="adventure.js"></script>
-  <script src="main.js"></script>
-
+  <script src="oopisos2_5.js"></script>
+  <script src="editor2_5.js"></script>
+  <script src="lexpar2_5.js"></script>
+  <script src="commexec2_5.js"></script>
+  <script src="adventure2_5.js"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('Service Worker registered with scope: ', registration.scope);
+        })
+        .catch(err => {
+          console.error('Service Worker registration failed: ', err);
+        });
+    });
+  }
+</script>
 </body>
 
 </html>
