@@ -58,14 +58,14 @@ It features a retro-style terminal, a persistent hierarchical file system with a
 
 ```bash
 # To get a feel for the system, populate the Guest home directory with a set of example files.
-run /inflate2_5.sh
+run /inflate.sh
 
 # Explore the newly created files and directories with the 'tree' command
 tree /home/Guest
 
 # Test the networking capabilities by following the instructions
 cat /home/Guest/net_practice/instructions.txt
-wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt
+wget [https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt](https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt)
 
 # Create your own command shortcut
 alias ll="ls -la"
@@ -140,22 +140,30 @@ Automate tasks by writing shell scripts.
 
 ## Utility Scripts: `inflate` & `diag`
 
-* **`inflate2_5.sh`:** Run this script (`run /inflate2_5.sh`) to populate the `/home/Guest` directory with a diverse set of example files and directories. This is perfect for creating a "showcase" environment to explore.
-* **`diag2_5.sh`:** This is a comprehensive, non-interactive diagnostic test suite (`run /diag2_5.sh`) that verifies the core functionality of most commands, their flags, error handling, and interaction with the permission and group systems.
+* **`inflate.sh`:** Run this script (`run /inflate.sh`) to populate the `/home/Guest` directory with a diverse set of example files and directories. This is perfect for creating a "showcase" environment to explore.
+* **`diag.sh`:** This is a comprehensive, non-interactive diagnostic test suite (`run /diag.sh`) that verifies the core functionality of most commands, their flags, error handling, and interaction with the permission and group systems.
 
 ## Developer Guide
 
 ### Project Structure
 
-* `oopisos2_5.js`: Core OS framework, managers (File System, User, Session), and utilities.
-* `lexpar2_5.js`: Lexer and Parser for command-line input.
-* `commexec2_5.js`: Command Executor and definitions for all built-in commands.
-* `editor2_5.js`: All logic for the text editor.
-* `adventure2_5.js`: All logic for the text adventure game engine.
+* `main.js`: Main entry point, event listeners.
+* `config.js`: Central configuration for the entire OS.
+* `utils.js`: Helper and utility functions.
+* `storage.js`: Manages LocalStorage and IndexedDB interactions.
+* `fs_manager.js`: Core logic for the virtual file system.
+* `user_manager.js`: Handles users, groups, and authentication.
+* `session_manager.js`: Manages saving and loading of user sessions.
+* `output_manager.js`: Controls all output to the terminal screen.
+* `terminal_ui.js`: Manages terminal UI state and interactions (prompt, input, etc.).
+* `lexpar.js`: Lexer and Parser for command-line input.
+* `commexec.js`: Command Executor and definitions for all built-in commands.
+* `editor.js`: All logic for the text editor.
+* `adventure.js`: All logic for the text adventure game engine.
 
 ### Adding a New Command (The v2.5 Way)
 
-1.  Open `commexec2_5.js`.
+1.  Open `commexec.js`.
 2.  Define your command's logic and validation rules using the declarative `createCommandHandler` pattern.
 3.  Add the new command definition to the `commands` object.
 
@@ -166,21 +174,21 @@ const myNewCmdDefinition = {
   argValidation: { min: 1, error: "mycmd needs at least one argument!" },
   pathValidation: [{ argIndex: 0, options: { expectedType: 'file' } }],
   permissionChecks: [{ pathArgIndex: 0, permissions: ['read'] }],
-  
+
   // 2. Write the core logic, knowing the inputs are already vetted!
   coreLogic: async (context) => {
     const { args, options, currentUser, validatedPaths } = context;
     const pathInfo = validatedPaths[0]; // Guaranteed to be a valid, readable file.
-    
+
     return { success: true, output: `Successfully processed ${pathInfo.resolvedPath}` };
   }
 };
 
 // 3. Add it to the main commands object
 commands.mycmd = {
-    handler: createCommandHandler(myNewCmdDefinition),
-    description: "A one-line summary for the 'help' command.",
-    helpText: "Usage: mycmd [file]\n\nExplain your command in detail here."
+  handler: createCommandHandler(myNewCmdDefinition),
+  description: "A one-line summary for the 'help' command.",
+  helpText: "Usage: mycmd [file]\n\nExplain your command in detail here."
 };
 ```
 

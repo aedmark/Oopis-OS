@@ -272,7 +272,7 @@
             </ul>
 
             <h2>Key Features at a Glance (v2.5)</h2>
-            <ul class="list-disc ml-6 space-y-2 my-4">
+            <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>A File System That Remembers:</strong> Create, edit, and manage files and directories that actually stick around! Features a full suite of commands including the super-powered `find`, `ls`, `diff`, and the new `tree` command.</li>
                 <li><strong>A Command-Line for the Connoisseur:</strong> A beautiful retro terminal with history (up/down arrows), tab completion, command pipelining (`|`), I/O redirection (`>` for overwrite, `>>` for append), background processes (`&`), and command sequences (`;`).</li>
                 <li><strong>Multi-User Mayhem with Groups:</strong> Register multiple users (`useradd`) with secure, hashed passwords, `login`, `logout`, switch users with `su` (including to the all-powerful `root`), and manage users with `whoami`, `listusers`, and `removeuser`. Now with user groups (`groupadd`, `usermod`, `groups`, `groupdel`) for fine-grained permissions!</li>
@@ -576,18 +576,18 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
             <h2>Code Structure Overview</h2>
             <p>The logic of OopisOS is organized into several key JavaScript files, all loaded by `index.html`:</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>`oopisos2_5.js`:</strong> The heart and soul. Contains core infrastructure, configs, utilities, and managers for the file system, users, sessions, terminal UI, and more.</li>
-                <li><strong>`lexpar2_5.js`:</strong> The brainy part. Contains the Lexer and Parser that translate your typed commands into something the machine can understand.</li>
-                <li><strong>`commexec2_5.js`:</strong> The muscle. This is the Command Executor, containing the definitions and handlers for every single command in the OS.</li>
-                <li><strong>`editor2_5.js`:</strong> The artist's studio. All logic for the `edit` command's powerful text editor lives here.</li>
-                <li><strong>`adventure2_5.js`:</strong> The dungeon master's screen. Contains the text adventure engine, UI modal, and sample game data.</li>
+                <li><strong>`main.js` & `config.js` & `utils.js`:</strong> The heart and soul. Contains core infrastructure, configs, utilities, and managers for the file system, users, sessions, terminal UI, and more.</li>
+                <li><strong>`lexpar.js`:</strong> The brainy part. Contains the Lexer and Parser that translate your typed commands into something the machine can understand.</li>
+                <li><strong>`commexec.js`:</strong> The muscle. This is the Command Executor, containing the definitions and handlers for every single command in the OS.</li>
+                <li><strong>`editor.js`:</strong> The artist's studio. All logic for the `edit` command's powerful text editor lives here.</li>
+                <li><strong>`adventure.js`:</strong> The dungeon master's screen. Contains the text adventure engine, UI modal, and sample game data.</li>
             </ul>
             <p>We use Immediately Invoked Function Expressions (IIFEs) to keep things tidy and modular, preventing a global namespace catastrophe.</p>
 
             <h2>Forging a New Command (The v2.5 Way)</h2>
-            <p>Your journey begins in `commexec2_5.js`, inside the `commands` object. Thanks to the `createCommandHandler` factory, adding commands is easier and safer than ever by declaring your needs upfront.</p>
+            <p>Your journey begins in `commexec.js`, inside the `commands` object. Thanks to the `createCommandHandler` factory, adding commands is easier and safer than ever by declaring your needs upfront.</p>
             <pre><code class="language-javascript">
-// In commexec2_5.js:
+// In commexec.js:
 
 const myNewCmdDefinition = {
   commandName: "mycmd",
@@ -629,25 +629,25 @@ const commands = {
 
         <section id="testing-env" class="content-section">
             <h1>Testing & Showcase Environment</h1>
-            <p>OopisOS v2.5 comes with two powerful scripts, `inflate2_5.sh` and `diag2_5.sh`, to make life easier for testers and newcomers.</p>
+            <p>OopisOS v2.5 comes with two powerful scripts, `inflate.sh` and `diag.sh`, to make life easier for testers and newcomers.</p>
 
-            <h2>The Showcase: `inflate2_5.sh`</h2>
-            <p>Want a fully furnished world to explore from the get-go? The `inflate2_5.sh` script populates your file system with a rich set of examples. It's like a demo disk for OopisOS!</p>
+            <h2>The Showcase: `inflate.sh`</h2>
+            <p>Want a fully furnished world to explore from the get-go? The `inflate.sh` script populates your file system with a rich set of examples. It's like a demo disk for OopisOS!</p>
             <p>Just run this command to set it all up:</p>
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /inflate2_5.sh</span>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /inflate.sh</span>
             </div>
             <h3>What's in the box?</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li>A `README.md` file to get you started.</li>
                 <li>Directories like `/docs`, `/src`, `/data`, `/reports`, `/games`, and `/vault`, all filled with tasty sample files.</li>
                 <li>Content specifically designed for practicing with `grep`, `find`, `gemini`, and `adventure`.</li>
-                <li>A restricted `/vault` directory and a world-writable `/for_guest` directory to test permissions.</li>
+                <li>A restricted `/vault` directory and a world-writable `/shared_for_guest` directory to test permissions.</li>
                 <li>Secret hidden files for you to discover with `ls -a`.</li>
             </ul>
 
-            <h2>The Gauntlet: `diag2_5.sh`</h2>
-            <p>This is the ultimate test of OopisOS's core strength. The `diag2_5.sh` script is a non-interactive test suite that runs a barrage of commands to ensure everything is working exactly as it should. It's the developer's best friend for catching bugs before they creep out of the woodwork.</p>
+            <h2>The Gauntlet: `diag.sh`</h2>
+            <p>This is the ultimate test of OopisOS's core strength. The `diag.sh` script is a non-interactive test suite that runs a barrage of commands to ensure everything is working exactly as it should. It's the developer's best friend for catching bugs before they creep out of the woodwork.</p>
             <h3>Key Test Phases:</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>Login and Setup:</strong> Logs in as the `userDiag` user (password: `pantload`) and prepares a clean workspace.</li>
@@ -658,9 +658,9 @@ const commands = {
                 <li><strong>Advanced Commands:</strong> Verifies that `find`, `run`, `alias`, `ps`, `kill`, and various flags are working correctly.</li>
                 <li><strong>Cleanup:</strong> Switches to `root` and cleans up after itself, leaving the system tidy.</li>
             </ul>
-            <p>Running `diag2_5.sh` is a fantastic way to see a whirlwind tour of OopisOS features.</p>
+            <p>Running `diag.sh` is a fantastic way to see a whirlwind tour of OopisOS features.</p>
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /diag2_5.sh</span>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /diag.sh</span>
             </div>
         </section>
 
@@ -674,7 +674,7 @@ const commands = {
                 <li><strong>Andrew Edmark</strong> (The Human Element)</li>
                 <li><strong>Gemini</strong> (The AI Assistant, and your humble narrator)</li>
             </ul>
-            <p>Together, we navigated the treacherous dungeons of JavaScript, debugged the fiercest of race conditions, and documented our journey for all to see. The copyright notice `Copyright (c) 2025 Andrew Edmark and Gemini. (MIT Licensed)` reflects this grand alliance.</p>
+            <p>Together, we navigated the treacherous dungeons of JavaScript, debugged the fiercest of race conditions, and documented our journey for all to see. The copyright notice `Copyright (c) 2025 Andrew Edmark` reflects this grand alliance.</p>
 
             <h2>The Journey to 2.5</h2>
             <p>Version 2.5 builds upon the solid foundation of previous versions, adding key refinements and features:</p>
@@ -692,20 +692,20 @@ const commands = {
             <h2>License Information: MIT License (AI Assisted) - OopisOS License Agreement</h2>
             <h3>Preamble</h3>
             <p>This Software, OopisOS, represents a collaborative endeavor between human direction and artificial intelligence.</p>
-            <p><strong>Copyright (c) 2025 Andrew Edmark (hereinafter referred to as the "Curator") and Gemini</strong></p>
+            <p><strong>Copyright (c) 2025 Andrew Edmark (hereinafter referred to as the "Curator")</strong></p>
             <h3>Authorship and Contribution Acknowledgment</h3>
-            <p>This Software was developed by the Curator through a process of interactive collaboration with Google's Gemini. The Curator provided the initial concepts, creative direction, and critical review. The AI Assistant contributed to the generation, drafting, and composition of portions of the code and associated documentation.</p>
+            <p>This Software was developed by the Curator through a process of interactive collaboration with Google's Gemini, an artificial intelligence language model (hereinafter referred to as the "AI Assistant"). The Curator provided the initial concepts, creative direction, iterative prompts, critical review, testing, and the selection of the final form of the Software. The AI Assistant, under the explicit direction and oversight of the Curator, contributed to the generation, drafting, and composition of portions of the code and associated documentation.</p>
             <h3>License Grant</h3>
             <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
             <ul class="list-disc ml-6 my-2">
                 <li>The above copyright notice, the Authorship and Contribution Acknowledgment, and this permission notice shall be included in all copies or substantial portions of the Software.</li>
             </ul>
             <h3>Disclaimer of Warranty</h3>
-            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS (INCLUDING THE CURATOR) OR COPYRIGHT HOLDERS (TO THE EXTENT APPLICABLE UNDER LAW REGARDING AI-ASSISTED WORKS) BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
             <h2>The Future?</h2>
             <p>What's next for OopisOS? A graphical user interface? Simulated networking? A command to generate pictures of cats? The possibilities are as vast as your imagination. The modular architecture is ready for it.</p>
-            <p class="mt-6"><em>"OopisOS v2.5: Now with 24% more Oopis!"</em></p>
+            <p class="mt-6"><em>"OopisOS v2.5: Now with 25% more Oopis!"</em></p>
         </section>
 
         <footer class="footer text-center">
