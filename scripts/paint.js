@@ -56,7 +56,7 @@ const PaintUI = (() => {
         const pencilSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" /></svg>';
         const eraserSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M16.24,3.56L21.19,8.5C21.58,8.89 21.58,9.5 21.19,9.9L12.1,19L3,19L3,9.9L7.94,5M17.31,2.5L6.81,13L4,13L4,18L9,18L19.5,7.5M15.12,5.12L18.87,8.87" /></svg>';
         const undoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5,8C9.81,8,7.5,10.27,7.5,13S9.81,18,12.5,18c2.04,0,3.84-1.18,4.63-2.92l1.48,1.48C17.34,18.23,15.06,20,12.5,20C8.91,20,6,16.91,6,13.5S8.91,7,12.5,7c1.78,0,3.4,.71,4.59,1.86L19,7v6h-6l1.92-1.92C14.04,9.82,13.3,9,12.5,9c-1.38,0-2.5,1.12-2.5,2.5s1.12,2.5,2.5,2.5c.83,0,1.55-.4,2-1h1.53c-.64,1.9-2.51,3.25-4.53,3.25-2.76,0-5-2.24-5-5s2.24-5,5-5c1.38,0,2.64,.56,3.54,1.46L18.5,6H12.5V8Z"/></svg>';
-        const redoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8c2.76,0,5,2.24,5,5s-2.24,5-5,5c-1.38,0-2.64-.56-3.54-1.46L5.5,18H11.5v-2c.83,0,1.55-.39,2-1h-1.53c.64-1.9,2.51-3.25,4.53-3.25,1.38,0,2.5,1.12,2.5,2.5s-1.12,2.5-2.5,2.5c-.82,0-1.55-.39-2-1H5.41l1.46-1.46C8.16,11.23,9.78,10,11.5,10c2.76,0,5,2.24,5,5s-2.24,5-5,5-5-2.24-5-5c0-.17.01-.34.04-.5L4,14.08C4,14.54,4,15,4,15.5c0,3.59,3.09,6.5,6.5,6.5s6.5-2.91,6.5-6.5S14.91,9,11.5,9c-1.78,0-3.4,.71-4.59,1.86L5,9V3h6l-1.92,1.92C10.96,6.18,11.7,7,11.5,7Z" /></svg>';
+        const redoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8c2.76,0,5,2.24,5,5s-2.24,5-5,5c-1.38,0-2.64-.56-3.54-1.46L5.5,18H11.5v-2c.83,0,1.55-.39,2-1h-1.53c.64-1.9,2.51,3.25,4.53-3.25,1.38,0,2.5,1.12,2.5,2.5s-1.12,2.5-2.5,2.5c-.82,0-1.55-.39-2-1H5.41l1.46-1.46C8.16,11.23,9.78,10,11.5,10c2.76,0,5,2.24,5,5s-2.24,5-5,5-5-2.24-5-5c0-.17.01-.34.04-.5L4,14.08C4,14.54,4,15,4,15.5c0,3.59,3.09,6.5,6.5,6.5s6.5-2.91,6.5-6.5S14.91,9,11.5,9c-1.78,0-3.4,.71-4.59,1.86L5,9V3h6l-1.92,1.92C10.96,6.18,11.7,7,11.5,7Z" /></svg>';
 
         elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
         elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
@@ -308,6 +308,56 @@ const PaintManager = (() => {
         _updateUndoRedoButtonStates();
     }
 
+    function _resetState() {
+        isActiveState = false;
+        currentFilePath = null;
+        canvasData = [];
+        isDirty = false;
+        isDrawing = false;
+        currentTool = 'pencil';
+        drawChar = PaintAppConfig.DEFAULT_CHAR;
+        fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
+        lastCoords = { x: -1, y: -1 };
+        undoStack = [];
+        redoStack = [];
+        if (saveUndoStateTimeout) {
+            clearTimeout(saveUndoStateTimeout);
+            saveUndoStateTimeout = null;
+        }
+    }
+
+    async function _performSave(filePath) {
+        if (!filePath) {
+            await OutputManager.appendToOutput(`Cannot save. No filename specified.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            return false;
+        }
+
+        const fileData = {
+            version: "1.1",
+            width: canvasData[0].length,
+            height: canvasData.length,
+            cells: canvasData
+        };
+        const jsonContent = JSON.stringify(fileData, null, 2);
+        const currentUser = UserManager.getCurrentUser().name;
+        const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+        const saveResult = await FileSystemManager.createOrUpdateFile(filePath, jsonContent, { currentUser, primaryGroup });
+
+        if (saveResult.success) {
+            if (await FileSystemManager.save()) {
+                await OutputManager.appendToOutput(`Art saved to '${filePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                isDirty = false; // Mark as clean after successful save
+                return true;
+            } else {
+                await OutputManager.appendToOutput(`Error saving file system after art save.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                return false;
+            }
+        } else {
+            await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            return false;
+        }
+    }
+
     function enter(filePath, fileContent) {
         if (isActiveState) return;
         isActiveState = true;
@@ -360,10 +410,9 @@ const PaintManager = (() => {
     async function exit(save = false) {
         if (!isActiveState) return;
 
-        let proceedToExit = true;
-
+        // Handle confirmation for discarding unsaved changes
         if (isDirty && !save) {
-            proceedToExit = await new Promise(resolve => {
+            const confirmed = await new Promise(resolve => {
                 ModalManager.request({
                     context: 'graphical',
                     messageLines: ["You have unsaved changes. Are you sure you want to exit and discard them?"],
@@ -373,37 +422,54 @@ const PaintManager = (() => {
                     onCancel: () => resolve(false),
                 });
             });
+            if (!confirmed) return; // User cancelled, so stay in paint mode
         }
 
-        if (!proceedToExit) return;
+        // Handle the save action if requested
+        if (save && isDirty) {
+            let savePath = currentFilePath;
 
-        if (save && isDirty && currentFilePath) {
-            const fileData = {
-                version: "1.1", width: canvasData[0].length, height: canvasData.length, cells: canvasData
-            };
-            const jsonContent = JSON.stringify(fileData, null, 2);
-            const currentUser = UserManager.getCurrentUser().name;
-            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-            const saveResult = await FileSystemManager.createOrUpdateFile(currentFilePath, jsonContent, { currentUser, primaryGroup });
-            if (saveResult.success) {
-                if(await FileSystemManager.save()) {
-                    await OutputManager.appendToOutput(`Art saved to '${currentFilePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
-                } else {
-                    await OutputManager.appendToOutput(`Error saving file system after art save.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            if (!savePath) {
+                // Prompt for filename if one doesn't exist
+                let newFilename = window.prompt("Enter filename to save as:", "my_art.oopic");
+
+                if (!newFilename || newFilename.trim() === "") {
+                    await OutputManager.appendToOutput("Save cancelled. No filename provided.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                    return; // Stay in paint mode
                 }
-            } else {
-                await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+
+                if (!newFilename.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
+                    newFilename += `.${PaintAppConfig.FILE_EXTENSION}`;
+                }
+                savePath = FileSystemManager.getAbsolutePath(newFilename, FileSystemManager.getCurrentPath());
+
+                // Check for overwrite
+                const pathInfo = FileSystemManager.validatePath("paint save", savePath, { allowMissing: true });
+                if (pathInfo.node) {
+                    const confirmedOverwrite = await new Promise(resolve => {
+                        ModalManager.request({
+                            context: 'graphical',
+                            messageLines: [`File '${newFilename}' already exists. Overwrite?`],
+                            onConfirm: () => resolve(true),
+                            onCancel: () => resolve(false)
+                        });
+                    });
+                    if (!confirmedOverwrite) {
+                        await OutputManager.appendToOutput("Save cancelled. File not overwritten.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                        return; // Stay in paint mode
+                    }
+                }
             }
-        } else if (save && !currentFilePath) {
-            await OutputManager.appendToOutput(`Cannot save. Please provide a filename when launching paint.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+
+            const success = await _performSave(savePath);
+            if (!success) return; // Save failed, stay in paint mode to not lose work
         }
 
+        // If we got here, it's safe to exit
         document.removeEventListener('keydown', handleKeyDown);
         PaintUI.hide();
         PaintUI.reset();
-        isActiveState = false; isDrawing = false;
-        undoStack = []; redoStack = [];
-        if(saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
+        _resetState();
         TerminalUI.setInputState(true);
         TerminalUI.focusInput();
     }
