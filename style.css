@@ -138,88 +138,88 @@
 /* 3. Original terminal.css content */
 
 html {
-  box-sizing: border-box;
+box-sizing: border-box;
 }
 *,
 *::before,
 *::after {
-  box-sizing: inherit;
+box-sizing: inherit;
 }
 
 body {
-  font-family: "VT323", monospace;
+font-family: "VT323", monospace;
 }
 
 .terminal-bezel-shadow {
-  box-shadow:
-          inset 0 0 10px rgba(0, 0, 0, 0.5),
-          0 5px 15px rgba(0, 0, 0, 0.3),
-          0 0 3px 1px #111;
+box-shadow:
+inset 0 0 10px rgba(0, 0, 0, 0.5),
+0 5px 15px rgba(0, 0, 0, 0.3),
+0 0 3px 1px #111;
 }
 
 .terminal-screen-glow {
-  box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.15);
+box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.15);
 }
 
 #terminal {
-  position: relative;
-  scrollbar-width: thin;
-  scrollbar-color: #00ff00 #0d0d0d;
+position: relative;
+scrollbar-width: thin;
+scrollbar-color: #00ff00 #0d0d0d;
 }
 
 #terminal,
 .editor-pane,
 #adventure-output {
-  scrollbar-width: thin;
-  scrollbar-color: #00ff00 #0d0d0d;
+scrollbar-width: thin;
+scrollbar-color: #00ff00 #0d0d0d;
 }
 #terminal::-webkit-scrollbar,
 .editor-pane::-webkit-scrollbar,
 #adventure-output::-webkit-scrollbar {
-  width: 10px;
+width: 10px;
 }
 #terminal::-webkit-scrollbar-track,
 .editor-pane::-webkit-scrollbar-track,
 #adventure-output::-webkit-scrollbar-track {
-  background: #0d0d0d;
-  border-radius: 8px;
+background: #0d0d0d;
+border-radius: 8px;
 }
 #terminal::-webkit-scrollbar-thumb,
 .editor-pane::-webkit-scrollbar-thumb,
 #adventure-output::-webkit-scrollbar-thumb {
-  background-color: #00ff00;
-  border-radius: 10px;
-  border: 2px solid #0d0d0d;
+background-color: #00ff00;
+border-radius: 10px;
+border: 2px solid #0d0d0d;
 }
 #terminal::-webkit-scrollbar-thumb:hover,
 .editor-pane::-webkit-scrollbar-thumb:hover,
 #adventure-output::-webkit-scrollbar-thumb:hover {
-  background-color: #00cc00;
+background-color: #00cc00;
 }
 
 #editable-input,
 #editor-textarea,
 #adventure-input {
-  caret-color: #00ff00;
+caret-color: #00ff00;
 }
 
 .btn-editor, .btn-adventure {
-  background-color: #3f3f46;
-  color: #22c55e;
-  border: 1px solid #52525b;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  font-family: "VT323", monospace;
-  font-size: 1rem;
-  margin-left: 0.25rem;
-  cursor: pointer;
+background-color: #3f3f46;
+color: #22c55e;
+border: 1px solid #52525b;
+padding: 0.25rem 0.5rem;
+border-radius: 0.375rem;
+font-family: "VT323", monospace;
+font-size: 1rem;
+margin-left: 0.25rem;
+cursor: pointer;
 }
 .btn-editor:hover, .btn-adventure:hover {
-  background-color: #52525b;
+background-color: #52525b;
 }
 .btn-editor:focus, .btn-adventure:focus {
-  outline: solid;
-  box-shadow: 0 0 0 1px #22c55e;
+outline: solid;
+box-shadow: 0 0 0 1px #22c55e;
 }
 
 #editor-line-gutter {
@@ -237,60 +237,60 @@ body {
 }
 
 .gutter-hidden-by-wrap {
-  display: none !important;
+display: none !important;
 }
 .markdown-preview h1,
 .markdown-preview h2,
 .markdown-preview h3 {
-  color: #7dd3fc;
-  border-bottom: 1px solid #52525b;
-  margin-top: 1em;
-  margin-bottom: 0.5em;
+color: #7dd3fc;
+border-bottom: 1px solid #52525b;
+margin-top: 1em;
+margin-bottom: 0.5em;
 }
 .markdown-preview p {
-  margin-bottom: 0.5em;
-  line-height: 1.5;
+margin-bottom: 0.5em;
+line-height: 1.5;
 }
 .markdown-preview code {
-  background-color: #262626;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: monospace;
-  color: #d4d4d4;
+background-color: #262626;
+padding: 2px 4px;
+border-radius: 3px;
+font-family: monospace;
+color: #d4d4d4;
 }
 .markdown-preview pre {
-  background-color: #262626;
-  padding: 10px;
-  overflow-x: auto;
-  border-radius: 3px;
+background-color: #262626;
+padding: 10px;
+overflow-x: auto;
+border-radius: 3px;
 }
 .markdown-preview pre > code {
-  display: block;
-  padding: 0;
+display: block;
+padding: 0;
 }
 .markdown-preview ul,
 .markdown-preview ol {
-  margin-left: 20px;
-  margin-bottom: 0.5em;
+margin-left: 20px;
+margin-bottom: 0.5em;
 }
 .markdown-preview blockquote {
-  border-left: 3px solid #52525b;
-  padding-left: 10px;
-  margin-left: 0;
-  color: #a3a3a3;
+border-left: 3px solid #52525b;
+padding-left: 10px;
+margin-left: 0;
+color: #a3a3a3;
 }
 .markdown-preview a {
-  color: #2dd4bf;
-  text-decoration: underline;
+color: #2dd4bf;
+text-decoration: underline;
 }
 .markdown-preview.word-wrap-enabled pre {
-  white-space: pre-wrap;
-  word-break: break-all;
+white-space: pre-wrap;
+word-break: break-all;
 }
 
 #editor-textarea.no-wrap {
-  white-space: pre !important;
-  overflow-x: auto !important;
+white-space: pre !important;
+overflow-x: auto !important;
 }
 
 /* --- START EDITOR PADDING CHANGES --- */
@@ -299,7 +299,317 @@ body {
 #editor-textarea {
   /* Inherit/keep existing styles like font-family, font-size, line-height, etc. */
   padding: 1rem; /* This is the new uniform padding on all sides */
-  box-sizing: border-box; /* Ensure padding is included in element's total width/height */  /* Remove any conflicting padding-left/right if set by Tailwind/HTML directly on textarea */}/* Apply consistent padding to the preview content area */#editor-preview-content {  padding: 1rem; /* Match textarea for visual consistency */  box-sizing: border-box;}/* Ensure the wrapper for the textarea doesn't add its own conflicting padding.
+  box-sizing: border-box; /* Ensure padding is included in element's total width/height */
+  /* Remove any conflicting padding-left/right if set by Tailwind/HTML directly on textarea */
+}
+
+/* Apply consistent padding to the preview content area */
+#editor-preview-content {
+  padding: 1rem; /* Match textarea for visual consistency */
+  box-sizing: border-box;
+}
+
+/* Ensure the wrapper for the textarea doesn't add its own conflicting padding.
    The `pl-0` in the HTML for `editor-textarea-wrapper` is redundant
    if `#editor-textarea` has its own `padding-left`.
-   We'll explicitly set it to 0 here to be safe and clear. */#editor-textarea-wrapper {  padding-left: 0; /* Override any unwanted default/inherited padding-left */}/* --- END EDITOR PADDING CHANGES --- */#editor-modal-dialog {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);background-color: #000000;color: #D1D5DB;padding: 20px 25px;border-radius: 6px;z-index: 1000;min-width: 300px;max-width: 420px;box-shadow: 0 6px 18px rgba(0,0,0,0.6);border: 1px solid #64d000;font-family: 'VT323', monospace;text-align: center;}#editor-modal-dialog p {margin-top: 0;margin-bottom: 20px;font-size: 1.05em;line-height: 1.5;color: #18c901;}.editor-modal-buttons {display: flex;justify-content: flex-start;gap: 12px;}.btn-editor-modal {padding: 7px 16px;border: 1px solid #4B5563;border-radius: 4px;cursor: pointer;font-family: 'VT323', monospace;font-weight: normal;font-size: 1em;transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease, transform 0.1s ease;color: #F3F4F6;box-shadow: 0 1px 2px rgba(0,0,0,0.2);}.btn-editor-modal:hover {transform: translateY(-1px);box-shadow: 0 2px 4px rgba(0,0,0,0.3);}.btn-editor-modal:active {transform: translateY(0px);box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);}#editor-modal-dialog .btn-confirm {background-color: #000000;border-color: #12a41a;color: #05b525;}#editor-modal-dialog .btn-confirm:hover {background-color: #165202;border-color: #12a41a;}#editor-modal-dialog .btn-confirm:focus {outline: 1px solid #197005;outline-offset: 1px;}#editor-modal-dialog .btn-cancel {background-color: #1f0a0a;border-color: #DC2626;color: #df0808;}#editor-modal-dialog .btn-cancel:hover {background-color: #241414;border-color: #B91C1C;}#editor-modal-dialog .btn-cancel:focus {outline: 1px solid #b50a0a;outline-offset: 1px;}#adventure-modal {position: absolute;top: 0;left: 0;width: 100%;height: 100%;background-color: rgba(0,0,0,0.85);z-index: 998;display: flex;align-items: center;justify-content: center;padding: 10px;box-sizing: border-box;}#adventure-container {width: 95%;max-width: 100%;height: 95%;max-height: 100%;background-color: #0A0A0A;border: 2px solid #00FF00;border-radius: 0.75rem;box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0,255,0,0.1);display: flex;flex-direction: column;padding: 1rem;font-family: 'VT323', monospace;color: #00FF00;}#adventure-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 0.5rem;padding-bottom: 0.5rem;border-bottom: 1px solid #008000;}#adventure-title {font-size: 1.5rem;color: #32CD32;}#adventure-output {flex-grow: 1;overflow-y: auto;margin-bottom: 0.75rem;white-space: pre-wrap;word-break: break-word;line-height: 1.4;font-size: 1.125rem;}#adventure-output .room-name { color: #FFFF00; font-weight: bold; }#adventure-output .room-desc { color: #00FF00; }#adventure-output .exits { color: #00BFFF; }#adventure-output .items { color: #FFD700; }#adventure-output .error { color: #FF4500; }#adventure-output .info { color: #98FB98; }#adventure-output .system { color: #8A2BE2; }#adventure-input-container {display: flex;align-items: center;border-top: 1px solid #008000;padding-top: 0.75rem;}#adventure-input-container span {margin-right: 0.5rem;font-size: 1.125rem;}#adventure-input {flex-grow: 1;background-color: transparent;border: none;outline: none;color: #00FF00;font-family: 'VT323', monospace;font-size: 1.125rem;}.hidden {display: none !important;}/* --- OopisOS Paint Modal Styles --- */#paint-modal {  position: absolute;  top: 0;  left: 0;  width: 100%;  height: 100%;  background-color: rgba(0,0,0,0.85);  z-index: 998;  display: flex;  align-items: center;  justify-content: center;  padding: 10px;  box-sizing: border-box;}#paint-container {  width: 95%;  max-width: 100%;  height: 95%;  max-height: 100%;  background-color: #0A0A0A;  border: 2px solid #60a5fa; /* Blue to distinguish from adventure */  border-radius: 0.75rem;  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);  display: flex;  flex-direction: column;  padding: 0.5rem;  font-family: 'VT323', monospace;  color: #a3a3a3; /* Neutral color for status bar */}#paint-canvas {  flex-grow: 1;  overflow: hidden; /* Canvas should not scroll */  display: grid;  grid-template-columns: repeat(80, 1fr); /* Default, will be updated by JS if needed */  grid-template-rows: repeat(24, 1fr);  background-color: #101010;  cursor: crosshair;  font-size: 1rem;  line-height: 1;}#paint-canvas span {  display: inline-block;  text-align: center;  width: 100%;  height: 100%;  user-select: none;}#paint-statusbar {  flex-shrink: 0;  padding: 0.25rem 0.5rem;  border-top: 1px solid #3a3a3d;  font-size: 1rem;  text-align: center;  background-color: #1f1f22;}/* --- NEW Paint Toolbar Styles --- */#paint-toolbar {    display: flex;    justify-content: space-between;    align-items: center;    padding: 0.25rem 0.5rem;    background-color: #1f1f22;    border-bottom: 1px solid #3a3a3d;    flex-shrink: 0;}.paint-toolbar-group {    display: flex;    align-items: center;    gap: 0.5rem;}.paint-palette {    display: flex;    align-items: center;    gap: 0.25rem;}.paint-tool {    background-color: #27272a;    color: #a1a1aa;    border: 1px solid #52525b;    border-radius: 4px;    padding: 0.25rem 0.75rem;    cursor: pointer;    transition: background-color 0.2s, color 0.2s;}.paint-tool:hover {    background-color: #3f3f46;    color: #e4e4e7;}.paint-tool:disabled {    opacity: 0.4;    cursor: not-allowed;}.paint-tool.paint-tool-active {    background-color: #60a5fa;    color: #1e293b;    border-color: #93c5fd;}.paint-tool svg {    width: 1.25em;    height: 1.25em;    vertical-align: middle;}.paint-color-swatch {    width: 1.5rem;    height: 1.5rem;    border: 2px solid #52525b;    border-radius: 4px;    cursor: pointer;    transition: transform 0.1s;}.paint-color-swatch:hover {    transform: scale(1.1);}.paint-color-swatch.paint-tool-active {    border-color: #fafafa;    transform: scale(1.1);    box-shadow: 0 0 5px #fafafa;}.paint-exit-btn {    background-color: #3f1212;    color: #fca5a5;    border-color: #ef4444;}.paint-exit-btn:hover {    background-color: #5b2121;    color: #fecaca;}
+   We'll explicitly set it to 0 here to be safe and clear. */
+#editor-textarea-wrapper {
+  padding-left: 0; /* Override any unwanted default/inherited padding-left */
+}
+
+/* --- END EDITOR PADDING CHANGES --- */
+
+
+#editor-modal-dialog {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: #000000;
+color: #D1D5DB;
+padding: 20px 25px;
+border-radius: 6px;
+z-index: 1000;
+min-width: 300px;
+max-width: 420px;
+box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+border: 1px solid #64d000;
+font-family: 'VT323', monospace;
+text-align: center;
+}
+
+#editor-modal-dialog p {
+margin-top: 0;
+margin-bottom: 20px;
+font-size: 1.05em;
+line-height: 1.5;
+color: #18c901;
+}
+
+.editor-modal-buttons {
+display: flex;
+justify-content: flex-start;
+gap: 12px;
+}
+
+.btn-editor-modal {
+padding: 7px 16px;
+border: 1px solid #4B5563;
+border-radius: 4px;
+cursor: pointer;
+font-family: 'VT323', monospace;
+font-weight: normal;
+font-size: 1em;
+transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease, transform 0.1s ease;
+color: #F3F4F6;
+box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.btn-editor-modal:hover {
+transform: translateY(-1px);
+box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.btn-editor-modal:active {
+transform: translateY(0px);
+box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+}
+
+#editor-modal-dialog .btn-confirm {
+background-color: #000000;
+border-color: #12a41a;
+color: #05b525;
+}
+#editor-modal-dialog .btn-confirm:hover {
+background-color: #165202;
+border-color: #12a41a;
+}
+#editor-modal-dialog .btn-confirm:focus {
+outline: 1px solid #197005;
+outline-offset: 1px;
+}
+
+#editor-modal-dialog .btn-cancel {
+background-color: #1f0a0a;
+border-color: #DC2626;
+color: #df0808;
+}
+#editor-modal-dialog .btn-cancel:hover {
+background-color: #241414;
+border-color: #B91C1C;
+}
+#editor-modal-dialog .btn-cancel:focus {
+outline: 1px solid #b50a0a;
+outline-offset: 1px;
+}
+
+#adventure-modal {
+
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0,0,0,0.85);
+z-index: 998;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 10px;
+box-sizing: border-box;
+}
+#adventure-container {
+
+width: 95%;
+max-width: 100%;
+height: 95%;
+max-height: 100%;
+background-color: #0A0A0A;
+border: 2px solid #00FF00;
+border-radius: 0.75rem;
+box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0,255,0,0.1);
+display: flex;
+flex-direction: column;
+padding: 1rem;
+font-family: 'VT323', monospace;
+color: #00FF00;
+}
+#adventure-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 0.5rem;
+padding-bottom: 0.5rem;
+border-bottom: 1px solid #008000;
+}
+#adventure-title {
+font-size: 1.5rem;
+color: #32CD32;
+}
+#adventure-output {
+flex-grow: 1;
+overflow-y: auto;
+margin-bottom: 0.75rem;
+white-space: pre-wrap;
+word-break: break-word;
+line-height: 1.4;
+font-size: 1.125rem;
+}
+#adventure-output .room-name { color: #FFFF00; font-weight: bold; }
+#adventure-output .room-desc { color: #00FF00; }
+#adventure-output .exits { color: #00BFFF; }
+#adventure-output .items { color: #FFD700; }
+#adventure-output .error { color: #FF4500; }
+#adventure-output .info { color: #98FB98; }
+#adventure-output .system { color: #8A2BE2; }
+
+#adventure-input-container {
+display: flex;
+align-items: center;
+border-top: 1px solid #008000;
+padding-top: 0.75rem;
+}
+#adventure-input-container span {
+margin-right: 0.5rem;
+font-size: 1.125rem;
+}
+#adventure-input {
+flex-grow: 1;
+background-color: transparent;
+border: none;
+outline: none;
+color: #00FF00;
+font-family: 'VT323', monospace;
+font-size: 1.125rem;
+}
+.hidden {
+display: none !important;
+}
+/* --- OopisOS Paint Modal Styles --- */
+#paint-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.85);
+  z-index: 998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+}
+#paint-container {
+  width: 95%;
+  max-width: 100%;
+  height: 95%;
+  max-height: 100%;
+  background-color: #0A0A0A;
+  border: 2px solid #60a5fa; /* Blue to distinguish from adventure */
+  border-radius: 0.75rem;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  font-family: 'VT323', monospace;
+  color: #a3a3a3; /* Neutral color for status bar */
+}
+#paint-canvas {
+  flex-grow: 1;
+  overflow: hidden; /* Canvas should not scroll */
+  display: grid;
+  grid-template-columns: repeat(80, 1fr); /* Default, will be updated by JS if needed */
+  grid-template-rows: repeat(24, 1fr);
+  background-color: #101010;
+  cursor: crosshair;
+  font-size: 1rem;
+  line-height: 1;
+}
+#paint-canvas span {
+  display: inline-block;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+#paint-statusbar {
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  border-top: 1px solid #3a3a3d;
+  font-size: 1rem;
+  text-align: center;
+  background-color: #1f1f22;
+}
+
+/* --- NEW Paint Toolbar Styles --- */
+#paint-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background-color: #1f1f22;
+  border-bottom: 1px solid #3a3a3d;
+  flex-shrink: 0;
+}
+.paint-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.paint-palette {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.paint-tool {
+  background-color: #27272a;
+  color: #a1a1aa;
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.paint-tool:hover {
+  background-color: #3f3f46;
+  color: #e4e4e7;
+}
+.paint-tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.paint-tool.paint-tool-active {
+  background-color: #60a5fa;
+  color: #1e293b;
+  border-color: #93c5fd;
+}
+.paint-tool svg {
+  width: 1.25em;
+  height: 1.25em;
+  vertical-align: middle;
+}
+.paint-color-swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #52525b;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.paint-color-swatch:hover {
+  transform: scale(1.1);
+}
+.paint-color-swatch.paint-tool-active {
+  border-color: #fafafa;
+  transform: scale(1.1);
+  box-shadow: 0 0 5px #fafafa;
+}
+.paint-exit-btn {
+  background-color: #3f1212;
+  color: #fca5a5;
+  border-color: #ef4444;
+}
+.paint-exit-btn:hover {
+  background-color: #5b2121;
+  color: #fecaca;
+}

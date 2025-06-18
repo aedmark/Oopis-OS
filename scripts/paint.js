@@ -1,4 +1,4 @@
-// paint.js - OopisOS ASCII/ANSI Art Editor v1.4
+// paint.js - OopisOS ASCII/ANSI Art Editor v1.5
 
 const PaintAppConfig = {
     CANVAS: {
@@ -16,8 +16,12 @@ const PaintAppConfig = {
         ACTIVE_TOOL: 'paint-tool-active',
     },
     PALETTE: [
-        'text-green-500', 'text-red-500', 'text-sky-400', 'text-amber-400',
-        'text-lime-400', 'text-neutral-300'
+        { name: 'green',   class: 'text-green-500',   value: 'rgb(34, 197, 94)' },
+        { name: 'red',     class: 'text-red-500',     value: 'rgb(239, 68, 68)' },
+        { name: 'sky',     class: 'text-sky-400',     value: 'rgb(56, 189, 248)' },
+        { name: 'amber',   class: 'text-amber-400',   value: 'rgb(251, 191, 36)' },
+        { name: 'lime',    class: 'text-lime-400',    value: 'rgb(163, 230, 53)' },
+        { name: 'neutral', class: 'text-neutral-300', value: 'rgb(212, 212, 212)' }
     ],
     EDITOR: {
         DEBOUNCE_DELAY_MS: 300,
@@ -49,27 +53,34 @@ const PaintUI = (() => {
         elements.toolbar.innerHTML = '';
 
         // --- Toolbar Buttons ---
-        elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5 8C9.81 8 7.5 10.27 7.5 13S9.81 18 12.5 18c2.04 0 3.84-1.18 4.63-2.92l1.48 1.48C17.34 18.23 15.06 20 12.5 20 8.91 20 6 16.91 6 13.5S8.91 7 12.5 7c1.78 0 3.4.71 4.59 1.86L19 7v6h-6l1.92-1.92C14.04 9.82 13.3 9 12.5 9c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5c.83 0 1.55-.4 2-1h1.53c-.64 1.9-2.51 3.25-4.53 3.25-2.76 0-5-2.24-5-5s2.24-5 5-5c1.38 0 2.64.56 3.54 1.46L18.5 6H12.5z"/></svg>', title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
-        elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-2.76 0-5 2.24-5 5s2.24 5 5 5c2.65 0 4.85-2 5.8-4.59l-1.5-1.53C15.05 13.6 13.38 15 11.5 15c-1.38 0-2.5-1.12-2.5-2.5s1.12 2.5 2.5 2.5c.82 0 1.55.39 2 1h-1.5v1.5l2.42-.01.08-.08.01-.01 2-2H18.4z"/></svg>', title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
-        elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '[P]encil', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
-        elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '[E]raser', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
+        const pencilSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" /></svg>';
+        const eraserSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M16.24,3.56L21.19,8.5C21.58,8.89 21.58,9.5 21.19,9.9L12.1,19L3,19L3,9.9L7.94,5M17.31,2.5L6.81,13L4,13L4,18L9,18L19.5,7.5M15.12,5.12L18.87,8.87" /></svg>';
+        const undoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5,8C9.81,8,7.5,10.27,7.5,13S9.81,18,12.5,18c2.04,0,3.84-1.18,4.63-2.92l1.48,1.48C17.34,18.23,15.06,20,12.5,20C8.91,20,6,16.91,6,13.5S8.91,7,12.5,7c1.78,0,3.4,.71,4.59,1.86L19,7v6h-6l1.92-1.92C14.04,9.82,13.3,9,12.5,9c-1.38,0-2.5,1.12-2.5,2.5s1.12,2.5,2.5,2.5c.83,0,1.55-.4,2-1h1.53c-.64,1.9-2.51,3.25-4.53,3.25-2.76,0-5-2.24-5-5s2.24-5,5-5c1.38,0,2.64,.56,3.54,1.46L18.5,6H12.5V8Z"/></svg>';
+        const redoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8c2.76,0,5,2.24,5,5s-2.24,5-5,5c-1.38,0-2.64-.56-3.54-1.46L5.5,18H11.5v-2c.83,0,1.55-.39,2-1h-1.53c.64-1.9,2.51-3.25,4.53-3.25,1.38,0,2.5,1.12,2.5,2.5s-1.12,2.5-2.5,2.5c-.82,0-1.55-.39-2-1H5.41l1.46-1.46C8.16,11.23,9.78,10,11.5,10c2.76,0,5,2.24,5,5s-2.24,5-5,5-5-2.24-5-5c0-.17.01-.34.04-.5L4,14.08C4,14.54,4,15,4,15.5c0,3.59,3.09,6.5,6.5,6.5s6.5-2.91,6.5-6.5S14.91,9,11.5,9c-1.78,0-3.4,.71-4.59,1.86L5,9V3h6l-1.92,1.92C10.96,6.18,11.7,7,11.5,7Z" /></svg>';
+
+        elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
+        elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
+        elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
+        elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
 
         elements.colorButtons = [];
         const colorPaletteContainer = Utils.createElement('div', { className: 'paint-palette' });
-        PaintAppConfig.PALETTE.forEach((colorClass, index) => {
+        PaintAppConfig.PALETTE.forEach((color, index) => {
             const colorBtn = Utils.createElement('button', {
-                className: `paint-color-swatch ${colorClass.replace('text-', 'bg-')}`,
-                title: `[${index + 1}]`,
-                eventListeners: { click: () => eventCallbacks.onColorChange(colorClass) }
+                className: `paint-color-swatch`,
+                style: { backgroundColor: color.value },
+                title: `Color ${index + 1} (${color.name}) (${index + 1})`,
+                eventListeners: { click: () => eventCallbacks.onColorChange(color.class) }
             });
             elements.colorButtons.push(colorBtn);
             colorPaletteContainer.appendChild(colorBtn);
         });
 
-        elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: '[S]ave & Exit', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
+        elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save & Exit', title: 'Save & Exit (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
+        elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit without Saving (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
         const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, elements.eraserBtn);
-        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveExitBtn);
+        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveExitBtn, elements.exitBtn);
 
         elements.toolbar.append(leftGroup, colorPaletteContainer, rightGroup);
 
@@ -115,37 +126,39 @@ const PaintUI = (() => {
         elements.redoBtn.disabled = !redoPossible;
 
         elements.colorButtons.forEach((btn, index) => {
-            const colorClass = PaintAppConfig.PALETTE[index];
+            const colorClass = PaintAppConfig.PALETTE[index].class;
             btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, colorClass === activeColor);
         });
     }
 
     function show(callbacks) {
         if (!isInitialized) {
-            _initDOM(callbacks);
+            if (!_initDOM(callbacks)) return;
         }
-        if (elements.modal) {
-            elements.modal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
-        } else {
-            console.error("PaintUI: Modal element not found, cannot show.");
-            return;
-        }
+        elements.modal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        OutputManager.setEditorActive(true);
     }
 
     function hide() {
         if (elements.modal) {
             elements.modal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
         }
-        isInitialized = false;
+        OutputManager.setEditorActive(false);
     }
 
     function renderCanvas(canvasData) {
         if (!elements.canvas) return;
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
-        for (let y = 0; y < canvasData.length; y++) {
-            for (let x = 0; x < canvasData[y].length; x++) {
-                const cell = canvasData[y][x];
+        const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
+
+        for (let y = 0; y < gridHeight; y++) {
+            for (let x = 0; x < gridWidth; x++) {
+                const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
                 const span = Utils.createElement('span', {
                     textContent: cell.char,
                     className: `${cell.fg} ${cell.bg}`
@@ -222,18 +235,30 @@ const PaintManager = (() => {
 
     function _drawOnCanvas(x, y) {
         if (y < 0 || y >= canvasData.length || x < 0 || x >= canvasData[0].length) return;
-        isDirty = true;
+
         const cell = canvasData[y][x];
+        let changed = false;
+
         if (currentTool === 'pencil') {
-            cell.char = drawChar;
-            cell.fg = fgColor;
-            cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
+            if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== PaintAppConfig.DEFAULT_BG_COLOR) {
+                cell.char = drawChar;
+                cell.fg = fgColor;
+                cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
+                changed = true;
+            }
         } else if (currentTool === 'eraser') {
-            cell.char = PaintAppConfig.ERASER_CHAR;
-            cell.fg = PaintAppConfig.DEFAULT_FG_COLOR;
-            cell.bg = PaintAppConfig.ERASER_BG_COLOR;
+            if (cell.char !== PaintAppConfig.ERASER_CHAR || cell.bg !== PaintAppConfig.ERASER_BG_COLOR) {
+                cell.char = PaintAppConfig.ERASER_CHAR;
+                cell.fg = PaintAppConfig.DEFAULT_FG_COLOR;
+                cell.bg = PaintAppConfig.ERASER_BG_COLOR;
+                changed = true;
+            }
         }
-        PaintUI.renderCanvas(canvasData); // Re-render the whole canvas for simplicity
+
+        if (changed) {
+            isDirty = true;
+            PaintUI.renderCanvas(canvasData);
+        }
     }
 
     function _handleMouseDown(e) {
@@ -253,13 +278,12 @@ const PaintManager = (() => {
         }
         if (!isDrawing || !coords || (coords.x === lastCoords.x && coords.y === lastCoords.y)) return;
 
-        // Simple point-by-point drawing for now
         _drawOnCanvas(coords.x, coords.y);
         lastCoords = coords;
     }
 
     function _handleMouseUp(e) {
-        if (isDrawing) {
+        if (isDrawing && isDirty) {
             _triggerSaveUndoState();
         }
         isDrawing = false;
@@ -267,7 +291,7 @@ const PaintManager = (() => {
     }
 
     function _handleMouseLeave(e) {
-        if (isDrawing) {
+        if (isDrawing && isDirty) {
             _triggerSaveUndoState();
         }
         isDrawing = false;
@@ -297,8 +321,11 @@ const PaintManager = (() => {
         try {
             if (fileContent) {
                 const parsed = JSON.parse(fileContent);
-                if (parsed.cells && parsed.width && parsed.height) canvasData = parsed.cells;
-                else throw new Error("Invalid .oopic file format.");
+                if (parsed.cells && parsed.width && parsed.height) {
+                    canvasData = parsed.cells;
+                } else {
+                    throw new Error("Invalid .oopic file format.");
+                }
             } else {
                 canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
             }
@@ -318,6 +345,7 @@ const PaintManager = (() => {
             onToolChange: _setTool,
             onColorChange: _setColor,
             onSaveAndExit: () => exit(true),
+            onExit: () => exit(false),
             onUndo: _performUndo,
             onRedo: _performRedo
         });
@@ -330,17 +358,39 @@ const PaintManager = (() => {
     }
 
     async function exit(save = false) {
+        if (!isActiveState) return;
+
+        let proceedToExit = true;
+
+        if (isDirty && !save) {
+            proceedToExit = await new Promise(resolve => {
+                ModalManager.request({
+                    context: 'graphical',
+                    messageLines: ["You have unsaved changes. Are you sure you want to exit and discard them?"],
+                    confirmText: "Discard Changes",
+                    cancelText: "Keep Painting",
+                    onConfirm: () => resolve(true),
+                    onCancel: () => resolve(false),
+                });
+            });
+        }
+
+        if (!proceedToExit) return;
+
         if (save && isDirty && currentFilePath) {
             const fileData = {
                 version: "1.1", width: canvasData[0].length, height: canvasData.length, cells: canvasData
             };
-            const jsonContent = JSON.stringify(fileData);
+            const jsonContent = JSON.stringify(fileData, null, 2);
             const currentUser = UserManager.getCurrentUser().name;
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
             const saveResult = await FileSystemManager.createOrUpdateFile(currentFilePath, jsonContent, { currentUser, primaryGroup });
             if (saveResult.success) {
-                await FileSystemManager.save();
-                await OutputManager.appendToOutput(`Art saved to '${currentFilePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                if(await FileSystemManager.save()) {
+                    await OutputManager.appendToOutput(`Art saved to '${currentFilePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                } else {
+                    await OutputManager.appendToOutput(`Error saving file system after art save.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                }
             } else {
                 await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
             }
@@ -364,38 +414,37 @@ const PaintManager = (() => {
         if (event.ctrlKey || event.metaKey) {
             const key = event.key.toLowerCase();
             if (key === 'z') {
-                event.preventDefault();
-                _performUndo();
+                event.preventDefault(); _performUndo();
             } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
-                event.preventDefault();
-                _performRedo();
+                event.preventDefault(); _performRedo();
             } else if (key === 's') {
-                event.preventDefault();
-                exit(true);
+                event.preventDefault(); exit(true);
+            } else if (key === 'o') {
+                event.preventDefault(); exit(false);
             }
             return;
         }
 
         const key = event.key.toLowerCase();
         const isAppKey = ['p', 'e', '1', '2', '3', '4', '5', '6'].includes(key);
-        const isCharKey = event.key.length === 1;
+        const isCharKey = event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey;
 
-        if (isAppKey || isCharKey) {
+        if (isAppKey) {
             event.preventDefault();
-            if (key === 'p') { _setTool('pencil'); return; }
-            if (key === 'e') { _setTool('eraser'); return; }
-
-            const colorIndex = parseInt(key, 10) - 1;
-            if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
-                _setColor(PaintAppConfig.PALETTE[colorIndex]);
-                return;
+            if (key === 'p') { _setTool('pencil'); }
+            else if (key === 'e') { _setTool('eraser'); }
+            else {
+                const colorIndex = parseInt(key, 10) - 1;
+                if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
+                    _setColor(PaintAppConfig.PALETTE[colorIndex]);
+                }
             }
-
-            if (isCharKey) {
-                drawChar = event.key;
-            }
-            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        } else if (isCharKey) {
+            event.preventDefault();
+            drawChar = event.key;
         }
+
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
     }
 
     return { enter, exit, isActive: () => isActiveState };
