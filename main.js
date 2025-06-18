@@ -170,6 +170,7 @@ window.onload = async () => {
     await Config.loadFromFile();
     GroupManager.initialize();
     AliasManager.initialize();
+    EnvironmentManager.initialize();
 
     SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
 

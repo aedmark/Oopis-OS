@@ -1542,6 +1542,46 @@ const CommandExecutor = (() => {
       };
     }
   };
+  const setCommandDefinition = {
+    commandName: "set",
+    coreLogic: async (context) => {
+      const { args } = context;
+      if (args.length === 0) {
+        const allVars = EnvironmentManager.getAll();
+        const output = Object.keys(allVars).sort().map(key => `${key}="${allVars[key]}"`).join('\n');
+        return { success: true, output: output };
+      }
+
+      let allSuccess = true;
+      const messages = [];
+
+      for (const arg of args) {
+        const parts = arg.split('=');
+        if (parts.length >= 2) { // Allow for '=' in the value
+          const varName = parts[0];
+          const value = parts.slice(1).join('=');
+          const result = EnvironmentManager.set(varName, value);
+          if (!result.success) {
+            allSuccess = false;
+            messages.push(result.error);
+          }
+        } else {
+          messages.push(`set: invalid format: '${arg}'. Use 'VAR=value'`);
+          allSuccess = false;
+        }
+      }
+      return { success: allSuccess, output: messages.join('\n'), error: allSuccess ? null : messages.join('\n') };
+    }
+  };
+
+  const unsetCommandDefinition = {
+    commandName: "unset",
+    argValidation: { min: 1, error: "Usage: unset <variable_name>..." },
+    coreLogic: async (context) => {
+      context.args.forEach(varName => EnvironmentManager.unset(varName));
+      return { success: true };
+    }
+  };
   const delayCommandDefinition = {
     commandName: "delay",
     argValidation: {
@@ -4946,6 +4986,16 @@ const CommandExecutor = (() => {
       helpText:
           "Usage: run <script_path> [arg1 arg2 ...]\n\nExecutes the commands listed in the specified .sh script file.\nSupports argument passing: $1, $2, ..., $@, $#.",
     },
+    set: {
+      handler: createCommandHandler(setCommandDefinition),
+      description: "Sets or displays environment variables.",
+      helpText: "Usage: set [name=value]...\n\nSets environment variables. If no arguments are given, it displays all variables."
+    },
+    unset: {
+      handler: createCommandHandler(unsetCommandDefinition),
+      description: "Removes environment variables.",
+      helpText: "Usage: unset [name]...\n\nRemoves one or more environment variables."
+    },
     groupdel: {
       handler: createCommandHandler(groupdelCommandDefinition),
       description: "Deletes a user group.",
@@ -5347,12 +5397,14 @@ const CommandExecutor = (() => {
     }
     TerminalUI.setIsNavigatingHistory(false);
   }
+
   async function processSingleCommand(rawCommandText, isInteractive = true, scriptingContext = null) {
     let overallResult = {
       success: true,
       output: null,
       error: null,
     };
+
     if (
         scriptExecutionInProgress &&
         isInteractive &&
@@ -5369,14 +5421,29 @@ const CommandExecutor = (() => {
         error: "Script execution in progress.",
       };
     }
+
     if (ModalManager.isAwaiting()) {
       await ModalManager.handleTerminalInput(rawCommandText);
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return overallResult;
     }
+
     if (EditorManager.isActive()) return overallResult;
 
-    const aliasResult = AliasManager.resolveAlias(rawCommandText.trim());
+    // --- START: New Variable Expansion & Alias Resolution Logic ---
+
+    // 1. Expand environment variables from the raw text
+    let expandedCommand = rawCommandText.trim();
+    if (expandedCommand) {
+      expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
+        const varName = var1 || var2;
+        // Assumes EnvironmentManager is available in this scope
+        return EnvironmentManager.get(varName);
+      });
+    }
+
+    // 2. Resolve aliases on the *expanded* command string
+    const aliasResult = AliasManager.resolveAlias(expandedCommand);
     if (aliasResult.error) {
       await OutputManager.appendToOutput(aliasResult.error, {
         typeClass: Config.CSS_CLASSES.ERROR_MSG,
@@ -5388,25 +5455,35 @@ const CommandExecutor = (() => {
       };
     }
 
-    const commandToProcess = aliasResult.newCommand;
-    const cmdToEcho = rawCommandText.trim();
+    // This is the final, fully-processed command string for the parser
+    const commandToParse = aliasResult.newCommand;
+
+    // --- END: New Logic ---
+
+    const cmdToEcho = rawCommandText.trim(); // We still echo the original command the user typed
+
     if (isInteractive) {
       DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
       const prompt = `${DOM.promptUserSpan.textContent}${Config.TERMINAL.PROMPT_AT}${DOM.promptHostSpan.textContent}${Config.TERMINAL.PROMPT_SEPARATOR}${DOM.promptPathSpan.textContent}${Config.TERMINAL.PROMPT_CHAR} `;
       await OutputManager.appendToOutput(`${prompt}${cmdToEcho}`);
     }
+
     if (cmdToEcho === "") {
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return overallResult;
     }
+
     if (isInteractive) HistoryManager.add(cmdToEcho);
     if (isInteractive && !TerminalUI.getIsNavigatingHistory())
       HistoryManager.resetIndex();
+
     let parsedPipelines;
     try {
+      // Use the fully processed command string for parsing
       parsedPipelines = new Parser(
-          new Lexer(commandToProcess).tokenize()
+          new Lexer(commandToParse).tokenize()
       ).parse();
+
       if (
           parsedPipelines.length === 0 ||
           (parsedPipelines.length === 1 &&
@@ -5430,6 +5507,7 @@ const CommandExecutor = (() => {
         error: e.message || "Command parse error.",
       };
     }
+
     for (const pipeline of parsedPipelines) {
       if (
           pipeline.segments.length === 0 &&
@@ -5444,7 +5522,7 @@ const CommandExecutor = (() => {
         const abortController = new AbortController();
         activeJobs[jobId] = {
           id: jobId,
-          command: cmdToEcho,
+          command: cmdToEcho, // Store the original command for 'ps'
           abortController: abortController,
         };
         await OutputManager.appendToOutput(
@@ -5495,9 +5573,11 @@ const CommandExecutor = (() => {
         if (!overallResult.success) break;
       }
     }
+
     if (isInteractive && !scriptExecutionInProgress) {
       await _finalizeInteractiveModeUI(rawCommandText);
     }
+
     return (
         overallResult || {
           success: false,

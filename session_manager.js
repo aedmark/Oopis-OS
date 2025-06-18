@@ -1,3 +1,57 @@
+const EnvironmentManager = (() => {
+    "use strict";
+    let envVars = {};
+
+    function initialize() {
+        const currentUser = UserManager.getCurrentUser().name;
+        envVars = {
+            'USER': currentUser,
+            'HOME': `/home/${currentUser}`,
+            'HOST': Config.OS.DEFAULT_HOST_NAME,
+            'PATH': '/bin:/usr/bin', // Standard practice
+        };
+    }
+
+    function get(varName) {
+        return envVars[varName] || '';
+    }
+
+    function set(varName, value) {
+        // Basic validation for variable names
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(varName)) {
+            return { success: false, error: `Invalid variable name: '${varName}'. Must start with a letter or underscore, followed by letters, numbers, or underscores.` };
+        }
+        envVars[varName] = value;
+        return { success: true };
+    }
+
+    function unset(varName) {
+        delete envVars[varName];
+    }
+
+    function getAll() {
+        return { ...envVars };
+    }
+
+    function load(vars) {
+        envVars = { ...(vars || {}) };
+    }
+
+    function clear() {
+        envVars = {};
+    }
+
+    return {
+        initialize,
+        get,
+        set,
+        unset,
+        getAll,
+        load,
+        clear
+    };
+})();
+
 const HistoryManager = (() => {
     "use strict";
     let commandHistory = [];
@@ -162,6 +216,7 @@ const SessionManager = (() => {
             outputHTML: DOM.outputDiv ? DOM.outputDiv.innerHTML : "",
             currentInput: currentInput,
             commandHistory: HistoryManager.getFullHistory(),
+            environmentVariables: EnvironmentManager.getAll(),
         };
         StorageManager.saveItem(
             _getAutomaticSessionStateKey(username),
@@ -206,6 +261,7 @@ const SessionManager = (() => {
             }
             TerminalUI.setCurrentInputValue(autoState.currentInput || "");
             HistoryManager.setHistory(autoState.commandHistory || []);
+            EnvironmentManager.load(autoState.environmentVariables);
         } else {
             if (DOM.outputDiv) DOM.outputDiv.innerHTML = "";
             TerminalUI.setCurrentInputValue("");
@@ -216,6 +272,7 @@ const SessionManager = (() => {
                 FileSystemManager.setCurrentPath(Config.FILESYSTEM.ROOT_PATH);
             }
             HistoryManager.clearHistory();
+            EnvironmentManager.initialize();
             void OutputManager.appendToOutput(
                 `${Config.MESSAGES.WELCOME_PREFIX} ${username}${Config.MESSAGES.WELCOME_SUFFIX}`
             );
