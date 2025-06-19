@@ -1,0 +1,142 @@
+// scripts/commands/touch.js
+
+(() => {
+    "use strict";
+    const touchCommandDefinition = {
+        commandName: "touch",
+        flagDefinitions: [
+            { name: "noCreate", short: "-c", long: "--no-create" },
+            { name: "dateString", short: "-d", long: "--date", takesValue: true },
+            { name: "stamp", short: "-t", takesValue: true },
+        ],
+        argValidation: { min: 1 },
+        coreLogic: async (context) => {
+            const { args, flags, currentUser } = context;
+
+            const timestampResult = TimestampParser.resolveTimestampFromCommandFlags(
+                flags,
+                "touch"
+            );
+            if (timestampResult.error)
+                return { success: false, error: timestampResult.error };
+
+            const timestampToUse = timestampResult.timestampISO;
+            const nowActualISO = new Date().toISOString();
+            let allSuccess = true;
+            const messages = [];
+            let changesMade = false;
+
+            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+
+            for (const pathArg of args) {
+                const pathValidation = FileSystemManager.validatePath(
+                    "touch",
+                    pathArg,
+                    { allowMissing: true, disallowRoot: true }
+                );
+
+                if (pathValidation.node) {
+                    if (
+                        !FileSystemManager.hasPermission(
+                            pathValidation.node,
+                            currentUser,
+                            "write"
+                        )
+                    ) {
+                        messages.push(
+                            `touch: cannot update timestamp of '${pathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`
+                        );
+                        allSuccess = false;
+                        continue;
+                    }
+                    pathValidation.node.mtime = timestampToUse;
+                    changesMade = true;
+                } else if (pathValidation.error) {
+                    messages.push(pathValidation.error);
+                    allSuccess = false;
+                } else {
+                    if (flags.noCreate) continue;
+
+                    if (pathArg.trim().endsWith(Config.FILESYSTEM.PATH_SEPARATOR)) {
+                        messages.push(
+                            `touch: cannot touch '${pathArg}': No such file or directory`
+                        );
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    const parentPath =
+                        pathValidation.resolvedPath.substring(
+                            0,
+                            pathValidation.resolvedPath.lastIndexOf(
+                                Config.FILESYSTEM.PATH_SEPARATOR
+                            )
+                        ) || Config.FILESYSTEM.ROOT_PATH;
+                    const parentNode = FileSystemManager.getNodeByPath(parentPath);
+
+                    if (
+                        !parentNode ||
+                        parentNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+                    ) {
+                        messages.push(
+                            `touch: cannot create '${pathArg}': Parent directory not found or is not a directory.`
+                        );
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    if (
+                        !FileSystemManager.hasPermission(parentNode, currentUser, "write")
+                    ) {
+                        messages.push(
+                            `touch: cannot create '${pathArg}': Permission denied in parent directory.`
+                        );
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    if (!primaryGroup) {
+                        messages.push(
+                            `touch: could not determine primary group for user '${currentUser}'`
+                        );
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    const fileName = pathValidation.resolvedPath.substring(
+                        pathValidation.resolvedPath.lastIndexOf(
+                            Config.FILESYSTEM.PATH_SEPARATOR
+                        ) + 1
+                    );
+
+                    parentNode.children[fileName] = FileSystemManager._createNewFileNode(
+                        fileName,
+                        "",
+                        currentUser,
+                        primaryGroup
+                    );
+
+                    parentNode.mtime = nowActualISO;
+                    changesMade = true;
+                }
+            }
+
+            if (changesMade && !(await FileSystemManager.save())) {
+                messages.push("touch: CRITICAL - Failed to save file system changes.");
+                allSuccess = false;
+            }
+
+            const outputMessage = messages.join("\n");
+            if (!allSuccess)
+                return {
+                    success: false,
+                    error: outputMessage || "touch: Not all operations were successful.",
+                };
+
+            return { success: true, output: "" };
+        },
+    };
+    const touchDescription = "Updates the access and modification times of the specified files.";
+    const touchHelpText = "Usage: touch [options] <file>...\n\nUpdates the access and modification times of the specified files.";
+    CommandRegistry.register("touch", touchCommandDefinition, touchDescription, touchHelpText);
+})();

@@ -173,6 +173,9 @@ window.onload = async () => {
     AliasManager.initialize();
     EnvironmentManager.initialize();
 
+    // Initialize the command executor from the registry
+    CommandExecutor.initialize();
+
     SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
 
     const guestHome = `/home/${Config.USER.DEFAULT_NAME}`;
