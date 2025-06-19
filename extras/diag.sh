@@ -349,8 +349,7 @@ set
 delay 700
 
 # Cleanup the file we created
-rm -f $TARGET_FILE
-
+rm -f env_test_file.txt
 echo "---------------------------------------------------------------------"
 
 # --- Phase 10: 'find' command ---

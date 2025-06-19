@@ -63,28 +63,38 @@
                     break;
                 }
 
-                let line = scriptingContext.lines[scriptingContext.currentLineIndex]; // Keep original for input
+                let line = scriptingContext.lines[scriptingContext.currentLineIndex];
+
+                // --- START OF FIX ---
+                // Find the first '#' and treat the rest of the line as a comment.
+                const commentIndex = line.indexOf('#');
+                if (commentIndex !== -1) {
+                    line = line.substring(0, commentIndex);
+                }
                 const trimmedLine = line.trim();
+                // --- END OF FIX ---
+
 
                 if (scriptingContext.waitingForInput) {
-                    // New, more robust state management
+                    // This block handles scripted input for interactive prompts like 'rm -i'
                     const cb = scriptingContext.inputCallback;
                     scriptingContext.inputCallback = null;
                     scriptingContext.waitingForInput = false;
 
                     if (cb) {
-                        await cb(line); // Pass the raw line, not trimmed
+                        await cb(trimmedLine);
                     }
                     scriptingContext.currentLineIndex++;
                     continue;
                 }
 
-                if (trimmedLine.startsWith('#') || trimmedLine.startsWith('#!') || trimmedLine === '') {
+                if (trimmedLine === '') { // Use the now-comment-free trimmedLine
                     scriptingContext.currentLineIndex++;
                     continue;
                 }
 
-                let processedLine = line; // Use original line for processing
+
+                let processedLine = line;
                 for (let i = 0; i < scriptArgs.length; i++) {
                     processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
                 }
@@ -106,17 +116,17 @@
                     scriptingContext.waitingForInput = false;
 
                     if (cb) {
-                        await cb(lineForInput); // Use the cleaned line
+                        await cb(lineForInput);
                     }
                     scriptingContext.currentLineIndex++;
                     continue;
                 }
 
                 if (!result || !result.success) {
-                    const errorMsg = `Script '${scriptPathArg}' error on line: ${line}\nError: ${result.error || result.output || 'Unknown error.'}`;
+                    const errorMsg = `Script '${scriptPathArg}' error on line: ${scriptingContext.lines[scriptingContext.currentLineIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
                     await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                     overallScriptSuccess = false;
-                    break; // Exit the script on the first error
+                    break;
                 }
                 scriptingContext.currentLineIndex++;
             }
