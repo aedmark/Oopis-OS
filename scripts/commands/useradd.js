@@ -91,5 +91,5 @@
     const useraddDescription = "Adds a new user.";
     const useraddHelpText = "Usage: useradd <username>\n\nAdds a new user with the specified username.";
 
-    CommandRegistry.register("", useraddCommandDefinition, useraddDescription, useraddHelpText);
+    CommandRegistry.register("useradd", useraddCommandDefinition, useraddDescription, useraddHelpText);
 })();
