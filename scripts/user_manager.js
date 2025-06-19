@@ -205,8 +205,8 @@ const UserManager = (() => {
 
     async function logout() {
         const oldUser = currentUser.name;
-        if (oldUser === SessionManager.getCurrentUserFromStack() && SessionManager.getStack().length <= 1) {
-            return { success: true, message: "Already at the base session (Guest). Cannot log out further.", noAction: true };
+        if (SessionManager.getStack().length <= 1) {
+            return { success: true, message: `Cannot log out from user '${oldUser}'. This is the only active session. Use 'login' to switch to a different user.`, noAction: true };
         }
 
         SessionManager.saveAutomaticState(oldUser);
