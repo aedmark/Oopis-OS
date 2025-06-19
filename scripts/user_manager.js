@@ -1,3 +1,5 @@
+// scripts/commands/user_manager.js
+
 const UserManager = (() => {
     "use strict";
     let currentUser = {
@@ -87,59 +89,66 @@ const UserManager = (() => {
             };
         }
     }
-    async function login(username, providedPassword = null) {
-        if (currentUser.name === username)
-            return {
-                success: true,
-                message: `...`,
-                noAction: true,
-            };
-        const users = StorageManager.loadItem(
-            Config.STORAGE_KEYS.USER_CREDENTIALS,
-            "User list",
-            {}
-        );
+    async function _authenticateUser(username, providedPassword) {
+        const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
         const userEntry = users[username];
-        if (
-            !userEntry &&
-            username !== Config.USER.DEFAULT_NAME &&
-            username !== "root"
-        ) {
-            return {
-                success: false,
-                error: "Invalid username.",
-            };
+
+        if (!userEntry && username !== Config.USER.DEFAULT_NAME && username !== 'root') {
+            return { success: false, error: "Invalid username." };
         }
+
         const storedPasswordHash = userEntry ? userEntry.passwordHash : null;
+
         if (storedPasswordHash !== null) {
             if (providedPassword === null) {
-                return {
-                    success: false,
-                    error: "Password required.",
-                    requiresPasswordPrompt: true,
-                };
+                return { success: false, error: "Password required.", requiresPasswordPrompt: true };
             }
             const providedPasswordHash = await _secureHashPassword(providedPassword);
             if (providedPasswordHash !== storedPasswordHash) {
-                return {
-                    success: false,
-                    error: Config.MESSAGES.INVALID_PASSWORD,
-                };
+                return { success: false, error: Config.MESSAGES.INVALID_PASSWORD };
             }
-        } else {
-            if (providedPassword !== null) {
-                return {
-                    success: false,
-                    error: "This account does not require a password.",
-                };
-            }
+        } else if (providedPassword !== null) {
+            return { success: false, error: "This account does not require a password." };
         }
+
+        return { success: true };
+    }
+
+
+    async function login(username, providedPassword, options = {}) {
+        const authResult = await _authenticateUser(username, providedPassword);
+
+        if (!authResult.success) {
+            if (!authResult.requiresPasswordPrompt) {
+                return authResult;
+            }
+            // If password prompt is required
+            return new Promise(resolve => {
+                ModalInputManager.requestInput(
+                    Config.MESSAGES.PASSWORD_PROMPT,
+                    async (passwordFromPrompt) => {
+                        const finalAuthResult = await _authenticateUser(username, passwordFromPrompt);
+                        if (finalAuthResult.success) {
+                            resolve(await _performLogin(username));
+                        } else {
+                            resolve({ success: false, error: finalAuthResult.error || "Login failed." });
+                        }
+                    },
+                    () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
+                    true, // isObscured
+                    options
+                );
+            });
+        }
+        return await _performLogin(username);
+    }
+
+    async function _performLogin(username) {
         if (currentUser.name !== Config.USER.DEFAULT_NAME) {
             SessionManager.saveAutomaticState(currentUser.name);
         }
-        currentUser = {
-            name: username,
-        };
+        SessionManager.clearUserStack(username);
+        currentUser = { name: username };
         SessionManager.loadAutomaticState(username);
         const homePath = `/home/${username}`;
         if (FileSystemManager.getNodeByPath(homePath)) {
@@ -147,37 +156,73 @@ const UserManager = (() => {
         } else {
             FileSystemManager.setCurrentPath(Config.FILESYSTEM.ROOT_PATH);
         }
-        TerminalUI.updatePrompt();
-        return {
-            success: true,
-            message: `Logged in as ${username}.`,
-        };
+        return { success: true, message: `Logged in as ${username}.`, isLogin: true };
     }
-    async function logout() {
-        if (currentUser.name === Config.USER.DEFAULT_NAME)
-            return {
-                success: true,
-                message: `...`,
-                noAction: true,
-            };
+
+    async function su(username, providedPassword, options = {}) {
+        if (currentUser.name === username) {
+            return { success: true, message: `Already user '${username}'.`, noAction: true };
+        }
+        const authResult = await _authenticateUser(username, providedPassword);
+        if (!authResult.success) {
+            if (!authResult.requiresPasswordPrompt) {
+                return authResult;
+            }
+            return new Promise(resolve => {
+                ModalInputManager.requestInput(
+                    Config.MESSAGES.PASSWORD_PROMPT,
+                    async (passwordFromPrompt) => {
+                        const finalAuthResult = await _authenticateUser(username, passwordFromPrompt);
+                        if (finalAuthResult.success) {
+                            resolve(await _performSu(username));
+                        } else {
+                            resolve({ success: false, error: finalAuthResult.error || "su: Authentication failure." });
+                        }
+                    },
+                    () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
+                    true, // isObscured
+                    options
+                );
+            });
+        }
+        return await _performSu(username);
+    }
+
+    async function _performSu(username) {
         SessionManager.saveAutomaticState(currentUser.name);
-        const prevUserName = currentUser.name;
-        currentUser = {
-            name: Config.USER.DEFAULT_NAME,
-        };
-        SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
-        const guestHome = `/home/${Config.USER.DEFAULT_NAME}`;
-        if (FileSystemManager.getNodeByPath(guestHome)) {
-            FileSystemManager.setCurrentPath(guestHome);
+        SessionManager.pushUserToStack(username);
+        currentUser = { name: username };
+        SessionManager.loadAutomaticState(username);
+        const homePath = `/home/${username}`;
+        if (FileSystemManager.getNodeByPath(homePath)) {
+            FileSystemManager.setCurrentPath(homePath);
         } else {
             FileSystemManager.setCurrentPath(Config.FILESYSTEM.ROOT_PATH);
         }
-        TerminalUI.updatePrompt();
-        return {
-            success: true,
-            message: `User ${prevUserName} logged out. Now logged in as ${Config.USER.DEFAULT_NAME}.`,
-        };
+        return { success: true, message: `Switched to user: ${username}.` };
     }
+
+
+    async function logout() {
+        const oldUser = currentUser.name;
+        if (oldUser === SessionManager.getCurrentUserFromStack() && SessionManager.getStack().length <= 1) {
+            return { success: true, message: "Already at the base session (Guest). Cannot log out further.", noAction: true };
+        }
+
+        SessionManager.saveAutomaticState(oldUser);
+        SessionManager.popUserFromStack();
+        const newUsername = SessionManager.getCurrentUserFromStack();
+        currentUser = { name: newUsername };
+        SessionManager.loadAutomaticState(newUsername);
+        const homePath = `/home/${newUsername}`;
+        if (FileSystemManager.getNodeByPath(homePath)) {
+            FileSystemManager.setCurrentPath(homePath);
+        } else {
+            FileSystemManager.setCurrentPath(Config.FILESYSTEM.ROOT_PATH);
+        }
+        return { success: true, message: `Logged out from ${oldUser}. Now logged in as ${newUsername}.`, isLogout: true, newUser: newUsername };
+    }
+
     async function initializeDefaultUsers() {
         const users = StorageManager.loadItem(
             Config.STORAGE_KEYS.USER_CREDENTIALS,
@@ -223,6 +268,7 @@ const UserManager = (() => {
         register,
         login,
         logout,
+        su,
         initializeDefaultUsers,
         getPrimaryGroupForUser,
     };

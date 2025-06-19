@@ -1,4 +1,4 @@
-// oopisos.js - OopisOS Core
+// main.js - OopisOS Core
 
 let DOM = {};
 function initializeTerminalEventListeners() {
@@ -172,6 +172,7 @@ window.onload = async () => {
     GroupManager.initialize();
     AliasManager.initialize();
     EnvironmentManager.initialize();
+    SessionManager.initializeStack(); // Initialize the session stack
 
     // Initialize the command executor from the registry
     CommandExecutor.initialize();

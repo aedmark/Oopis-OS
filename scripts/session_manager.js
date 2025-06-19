@@ -1,3 +1,5 @@
+// scripts/commands/session_manager.js
+
 const EnvironmentManager = (() => {
     "use strict";
     let envVars = {};
@@ -190,6 +192,37 @@ const AliasManager = (() => {
 })();
 const SessionManager = (() => {
     "use strict";
+    let userSessionStack = [];
+
+    function initializeStack() {
+        userSessionStack = [Config.USER.DEFAULT_NAME];
+    }
+
+    function getStack() {
+        return userSessionStack;
+    }
+
+    function pushUserToStack(username) {
+        userSessionStack.push(username);
+    }
+
+    function popUserFromStack() {
+        if (userSessionStack.length > 1) {
+            return userSessionStack.pop();
+        }
+        return null;
+    }
+
+    function getCurrentUserFromStack() {
+        return userSessionStack.length > 0
+            ? userSessionStack[userSessionStack.length - 1]
+            : Config.USER.DEFAULT_NAME;
+    }
+
+    function clearUserStack(username) {
+        userSessionStack = [username];
+    }
+
 
     function _getAutomaticSessionStateKey(user) {
         return `${Config.STORAGE_KEYS.USER_TERMINAL_STATE_PREFIX}${user}`;
@@ -460,6 +493,12 @@ const SessionManager = (() => {
         }, 1500);
     }
     return {
+        initializeStack,
+        getStack,
+        pushUserToStack,
+        popUserFromStack,
+        getCurrentUserFromStack,
+        clearUserStack,
         saveAutomaticState,
         loadAutomaticState,
         saveManualState,
