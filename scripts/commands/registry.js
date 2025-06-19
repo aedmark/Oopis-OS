@@ -1,4 +1,5 @@
 // scripts/commands/registry.js
+
 const CommandRegistry = (() => {
     "use strict";
 

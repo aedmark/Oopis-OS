@@ -18,7 +18,7 @@
                     messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
                 };
             }
-            return _handleUserSwitch("su", targetUser, null, options);
+            return CommandUtils._handleUserSwitch("su", targetUser, null, options);
         },
     };
     const suDescription = "Switches to a different user.";

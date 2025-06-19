@@ -14,7 +14,7 @@
             const { args, options } = context;
             const username = args[0];
             const providedPassword = args.length === 2 ? args[1] : null;
-            return _handleUserSwitch("login", username, providedPassword, options);
+            return CommandUtils._handleUserSwitch("login", username, providedPassword, options);
         },
     };
     const loginDescription = "Logs in as a user.";
