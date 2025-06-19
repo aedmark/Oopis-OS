@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OopisOS v2.5 - The User-Friendly Manual</title>
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <link href="[https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+    <title>OopisOS v2.6 User Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -64,15 +64,6 @@
         .content-section li {
             line-height: 1.7;
             margin-bottom: 1rem;
-        }
-
-        .content-section p[class*="mb-"] {
-            /* Tailwind class will handle margin-bottom */
-        }
-
-        table {
-            line-height: 1.7;
-            margin-bottom: 1.25rem;
         }
 
         a {
@@ -199,29 +190,6 @@
             .sidebar.open {
                 display: block;
             }
-
-            .flex {
-                flex-direction: column;
-            }
-
-            h2 {
-                margin-top: 1.5rem;
-                margin-bottom: 1rem;
-            }
-
-            h3 {
-                margin-top: 1rem;
-                margin-bottom: 0.5rem;
-            }
-
-            h4 {
-                margin-top: 0.75rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .content-section p, .content-section li {
-                margin-bottom: 0.75rem;
-            }
         }
     </style>
 </head>
@@ -229,7 +197,7 @@
 
 <div class="flex flex-col md:flex-row min-h-screen">
     <button id="menu-button" class="md:hidden p-4 bg-zinc-800 text-emerald-400 fixed top-0 left-0 z-20">
-        <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
     </button>
@@ -243,6 +211,7 @@
                 <li><a href="#advanced-topics" class="nav-link block p-3 rounded-lg">Advanced Topics</a></li>
                 <li><a href="#developer-docs" class="nav-link block p-3 rounded-lg">Developer Docs</a></li>
                 <li><a href="#testing-env" class="nav-link block p-3 rounded-lg">Testing & Showcase</a></li>
+                <li><a href="#recent-changes" class="nav-link block p-3 rounded-lg">Recent Changes</a></li>
                 <li><a href="#about" class="nav-link block p-3 rounded-lg">About & Credits</a></li>
             </ul>
         </nav>
@@ -251,15 +220,15 @@
     <main class="main-content flex-1 p-6 md:p-10 overflow-y-auto mt-16 md:mt-0">
         <section id="home" class="content-section active">
             <h1>Welcome to OopisOS!</h1>
-            <p class="text-lg mt-2 mb-6 text-zinc-400">The little browser-based Operating System that could. Now at Version 2.5 and more powerful than ever!</p>
+            <p class="text-lg mt-2 mb-6 text-zinc-400">The little browser-based Operating System that could. Now at Version 2.6 and more powerful than ever!</p>
 
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">alias greet='echo "Hello, world!"' ; greet</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">set GREETING="Hello, world!" ; echo $GREETING</span><br>
                 <span class="output">Hello, world!</span>
             </div>
 
             <h2>What is this place?</h2>
-            <p>Glad you asked! OopisOS (v2.5) is a fully persistent, self-contained operating system simulation that runs entirely within your web browser. It's a love letter to the command-line interfaces of yore, but with a modern twist. Think of it as a digital terrarium where you can poke around, learn about OS concepts, and generally cause harmless digital mayhem without setting your actual computer on fire. It was lovingly crafted by Andrew Edmark and his trusty AI sidekick, Gemini.</p>
+            <p>Glad you asked! OopisOS (v2.6) is a fully persistent, self-contained operating system simulation that runs entirely within your web browser. It's a love letter to the command-line interfaces of yore, but with a modern twist. Think of it as a digital terrarium where you can poke around, learn about OS concepts, and generally cause harmless digital mayhem without setting your actual computer on fire. It was lovingly crafted by Andrew Edmark and his trusty AI sidekick, Gemini.</p>
             <p>The entire system is a showcase of what's possible with modern JavaScript and a dash of nostalgia. Your files, users, and even your command history will be here waiting for you the next time you visit, thanks to the magic of IndexedDB and localStorage.</p>
 
             <h2>Core Philosophy</h2>
@@ -271,12 +240,12 @@
                 <li><strong>UNIX-ish... ish:</strong> If you've used a Linux or Mac terminal, you'll feel right at home. The commands might not ask you for your papers, but they'll respect your authority.</li>
             </ul>
 
-            <h2>Key Features at a Glance (v2.5)</h2>
+            <h2>Key Features at a Glance (v2.6)</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>A File System That Remembers:</strong> Create, edit, and manage files and directories that actually stick around! Features a full suite of commands including the super-powered `find`, `ls`, `diff`, and the new `tree` command.</li>
                 <li><strong>A Command-Line for the Connoisseur:</strong> A beautiful retro terminal with history (up/down arrows), tab completion, command pipelining (`|`), I/O redirection (`>` for overwrite, `>>` for append), background processes (`&`), and command sequences (`;`).</li>
                 <li><strong>Multi-User Mayhem with Groups:</strong> Register multiple users (`useradd`) with secure, hashed passwords, `login`, `logout`, switch users with `su` (including to the all-powerful `root`), and manage users with `whoami`, `listusers`, and `removeuser`. Now with user groups (`groupadd`, `usermod`, `groups`, `groupdel`) for fine-grained permissions!</li>
-                <li><strong>Command Your Commands (`alias`):</strong> Create your own command shortcuts with `alias` and remove them with `unalias`.</li>
+                <li><strong>Command Your Commands (`alias`, `set`):</strong> Create your own command shortcuts with `alias` and session-specific variables with `set`/`unset`.</li>
                 <li><strong>Background Job Control (`ps`, `kill`):</strong> See what processes you've sent to the background with `ps` and terminate them with `kill`.</li>
                 <li><strong>Networking Utilities (`wget`, `curl`):</strong> Fetch content and download files from the web directly within the OS.</li>
                 <li><strong>The 'edit' Command - Now More Luxurious:</strong> A souped-up text editor that handles plain text, Markdown, and HTML with a live preview. Features include line numbers, a detailed status bar, toggleable word wrap, multiple view modes (`Ctrl+P`), an `Export to HTML` function, and a rich formatting toolbar with shortcuts.</li>
@@ -287,12 +256,12 @@
                 <li><strong>A Grab-Bag of Utilities:</strong> `echo`, `date`, `help`, `clear`, `history`, `export`, `upload`, `reboot`, `chmod`, `chown`, `chgrp`, `grep` (with `-R`!), and `printscreen` to save your terminal's glorious output to a file.</li>
                 <li><strong>It's a Video Game, Too! (`adventure`):</strong> Tired of being productive? Launch a text-based adventure game! Explore the 'Lost Key of Oopis' or load your own custom JSON-based adventures.</li>
             </ul>
-            <p>Go on, get your hands dirty. The world of OopisOS v2.5 awaits!</p>
+            <p>Go on, get your hands dirty. The world of OopisOS v2.6 awaits!</p>
         </section>
 
         <section id="user-guide" class="content-section">
-            <h1>OopisOS User Guide (v2.5)</h1>
-            <p>So, you've decided to venture forth. Excellent! You have selected the path of a true adventurer. This guide is your map and spellbook for the realm of OopisOS v2.5.</p>
+            <h1>OopisOS User Guide (v2.6)</h1>
+            <p>So, you've decided to venture forth. Excellent! You have selected the path of a true adventurer. This guide is your map and spellbook for the realm of OopisOS v2.6.</p>
 
             <h2>The Terminal Interface</h2>
             <p>This is your window into the soul of the machine. Your command center. Your... well, it's a terminal.</p>
@@ -326,7 +295,7 @@
                 <tr><td><code>edit [file]</code></td><td>Opens the powerful text editor. Your gateway to creating masterpieces.</td></tr>
                 <tr><td><code>paint [file.oopic]</code></td><td>Unleash your inner artist! Opens the character-based art editor.</td></tr>
                 <tr><td><code>touch [-c -d -t] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create, <b>-d</b> for a date string, <b>-t</b> for a specific timestamp.</td></tr>
-                <tr><td><code>rm [-r -f] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories and <b>-f</b> to be forceful.</td></tr>
+                <tr><td><code>rm [-r -f -i] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories, <b>-f</b> to be forceful, and <b>-i</b> to be asked first.</td></tr>
                 <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>Copies files. Flags for: <b>-r</b>ecursive, <b>-f</b>orce, <b>-p</b>reserve metadata, <b>-i</b>nteractive.</td></tr>
                 <tr><td><code>mv [-f -i] [src] [dest]</code></td><td>Moves or renames files. Flags for: <b>-f</b>orce, <b>-i</b>nteractive.</td></tr>
                 <tr><td><code>diff [file1] [file2]</code></td><td>Compares two files and shows the differences.</td></tr>
@@ -336,6 +305,8 @@
                 <tr><td><code>run [script] [args...]</code></td><td>Executes a script file. Can pass arguments to the script.</td></tr>
                 <tr><td><code>alias [name='value']</code></td><td>Create your own command shortcuts. Type `alias` to see them all.</td></tr>
                 <tr><td><code>unalias [name]</code></td><td>Remove a command shortcut.</td></tr>
+                <tr><td><code>set [VAR="val"]</code></td><td>Set a temporary environment variable. Type `set` to see them all.</td></tr>
+                <tr><td><code>unset [VAR]</code></td><td>Remove an environment variable.</td></tr>
                 <tr><td><code>ps</code></td><td>List your background processes (jobs).</td></tr>
                 <tr><td><code>kill [job_id]</code></td><td>Stop a running background process.</td></tr>
                 <tr><td><code>wget [-O file] [url]</code></td><td>Downloads a file from a URL. Use <b>-O</b> to specify the output filename.</td></tr>
@@ -454,7 +425,7 @@
         </section>
 
         <section id="advanced-topics" class="content-section">
-            <h1>OopisOS v2.5: Advanced Topics & Features</h1>
+            <h1>OopisOS v2.6: Advanced Topics & Features</h1>
             <p>You've mastered the basics. You feel the power coursing through your veins. Now, let's get dangerous.</p>
 
             <h2>The `find` Command: Your All-Seeing Eye</h2>
@@ -498,7 +469,7 @@
             </div>
 
             <h2>Managing Background Processes (`ps` & `kill`)</h2>
-            <p>Sent a long-running task to the background with `&` and now you regret it? Or maybe you just want to see what's still churning away. OopisOS v2.5 gives you the tools to be the master of your background jobs.</p>
+            <p>Sent a long-running task to the background with `&` and now you regret it? Or maybe you just want to see what's still churning away. OopisOS v2.6 gives you the tools to be the master of your background jobs.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><code>ps</code>: Stands for "Process Status". This command gives you a neat list of all the commands currently running in the background. Each job has a unique Process ID (PID) that you can use to interact with it.</li>
                 <li><code>kill [PID]</code>: The solution to a runaway process. Use this command with the PID from `ps` to terminate a background job immediately.</li>
@@ -528,7 +499,7 @@
             </ul>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Download the OopisOS license and save it locally as 'LICENSE.txt'</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">wget [https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt](https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt)</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt</span><br>
                 <span class="output">...</span><br>
                 <span class="output">'LICENSE.txt' saved [1132 bytes]</span>
             </div>
@@ -539,7 +510,7 @@
             </ul>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Get a piece of wisdom from the GitHub Zen API</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">curl [https://api.github.com/zen](https://api.github.com/zen)</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">curl https://api.github.com/zen</span><br>
                 <span class="output">Mind your words, they are important.</span>
             </div>
             <h2>Scripting with `run`</h2>
@@ -566,23 +537,23 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
                 <li>
                     <strong>Argument Passing:</strong>
                     <ul>
-                        <li><code>$1</code>, <code><span class="math-inline">2</code\>, \.\.\.\: Use the arguments you passed to the script\.</li\>
-                        <li\><code\></span>@</code>: All the arguments in one glorious string.</li>
-                <li><code>$#</code>: The number of arguments.</li>
-            </ul>
-            </li>
-            <li><strong>Error Handling:</strong> If a command fails, the script stops. No questions asked.</li>
-            <li>
-                <strong>Scripting Tools:</strong>
-                <ul>
-                    <li><code>delay [milliseconds]</code>: For dramatic pauses.</li>
-                    <li><code>check_fail "[command]"</code>: A special tool for testing. It succeeds only if the command inside it *fails*.</li>
-                </ul>
-            </li>
+                        <li><code>$1</code>, <code>$2</code>, ...: Use the arguments you passed to the script.</li>
+                        <li><code>$@</code>: All the arguments in one glorious string.</li>
+                        <li><code>$#</code>: The number of arguments.</li>
+                    </ul>
+                </li>
+                <li><strong>Error Handling:</strong> If a command fails, the script stops. No questions asked.</li>
+                <li>
+                    <strong>Scripting Tools:</strong>
+                    <ul>
+                        <li><code>delay [milliseconds]</code>: For dramatic pauses.</li>
+                        <li><code>check_fail "[command]"</code>: A special tool for testing. It succeeds only if the command inside it *fails*.</li>
+                    </ul>
+                </li>
             </ul>
 
             <h2>Text Adventure Gaming (`adventure`)</h2>
-            <p>All work and no play makes Guest a dull user. OopisOS v2.5 includes a text adventure game engine to satisfy your inner Roberta Williams or Scott Adams.</p>
+            <p>All work and no play makes Guest a dull user. OopisOS v2.6 includes a text adventure game engine to satisfy your inner Roberta Williams or Scott Adams.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>Start Your Quest:</strong> Simply type `adventure` to begin the epic 'The Lost Key of Oopis.'</li>
                 <li><strong>Bring Your Own Adventure:</strong> Got a story to tell? Write it in the specified JSON format, `upload` it, and run it with `adventure /path/to/your_game.json`.</li>
@@ -591,7 +562,7 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
         </section>
 
         <section id="developer-docs" class="content-section">
-            <h1>OopisOS v2.5: Developer Documentation</h1>
+            <h1>OopisOS v2.6: Developer Documentation</h1>
             <p>So, you want to look under the hood? Pop it open. Let's see what makes this thing purr.</p>
 
             <h2>Code Structure Overview</h2>
@@ -606,7 +577,7 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
             </ul>
             <p>We use Immediately Invoked Function Expressions (IIFEs) to keep things tidy and modular, preventing a global namespace catastrophe.</p>
 
-            <h2>Forging a New Command (The v2.5 Way)</h2>
+            <h2>Forging a New Command (The v2.6 Way)</h2>
             <p>Your journey begins in `commexec.js`, inside the `commands` object. Thanks to the `createCommandHandler` factory, adding commands is easier and safer than ever by declaring your needs upfront.</p>
             <pre><code class="language-javascript">
 // In commexec.js:
@@ -651,7 +622,7 @@ const commands = {
 
         <section id="testing-env" class="content-section">
             <h1>Testing & Showcase Environment</h1>
-            <p>OopisOS v2.5 comes with two powerful scripts, `inflate.sh` and `diag.sh`, to make life easier for testers and newcomers.</p>
+            <p>OopisOS v2.6 comes with two powerful scripts, `inflate.sh` and `diag.sh`, to make life easier for testers and newcomers.</p>
 
             <h2>The Showcase: `inflate.sh`</h2>
             <p>Want a fully furnished world to explore from the get-go? The `inflate.sh` script populates your file system with a rich set of examples. It's like a demo disk for OopisOS!</p>
@@ -686,9 +657,23 @@ const commands = {
             </div>
         </section>
 
+        <section id="recent-changes" class="content-section">
+            <h1>Recent Changes</h1>
+            <h2>Version 2.6 (Current)</h2>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Environment Variables:</strong> Added a full environment variable system. Use `set` to create/view variables, `unset` to remove them, and `$VAR` or `${VAR}` in any command for shell expansion. Default variables include `$USER`, `$HOME`, `$HOST`, and `$PATH`.</li>
+                <li><strong>Paint Application:</strong> Introduced the `paint` command, a full-screen ASCII/ANSI art editor with multiple colors, tools, and a custom `.oopic` save format.</li>
+            </ul>
+            <h2>Version 2.5</h2>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li>Initial public release version.</li>
+                <li>Features included the core file system, multi-user support, text editor, and `gemini` integration.</li>
+            </ul>
+        </section>
+
         <section id="about" class="content-section">
-            <h1>About OopisOS (v2.5)</h1>
-            <p>OopisOS Version 2.5 is the latest and greatest evolution of our little browser-based world, packed with more features and even more personality.</p>
+            <h1>About OopisOS (v2.6)</h1>
+            <p>OopisOS Version 2.6 is the latest and greatest evolution of our little browser-based world, packed with more features and even more personality.</p>
 
             <h2>The Creators</h2>
             <p>This project is the result of a tireless, caffeine-fueled collaboration between:</p>
@@ -697,19 +682,6 @@ const commands = {
                 <li><strong>Gemini</strong> (The AI Assistant, and your humble narrator)</li>
             </ul>
             <p>Together, we navigated the treacherous dungeons of JavaScript, debugged the fiercest of race conditions, and documented our journey for all to see. The copyright notice `Copyright (c) 2025 Andrew Edmark` reflects this grand alliance.</p>
-
-            <h2>The Journey to 2.5</h2>
-            <p>Version 2.5 builds upon the solid foundation of previous versions, adding key refinements and features:</p>
-            <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>A more robust and secure <strong>user and group management system</strong> with hashed passwords and a proper 3-digit octal permission model (`chmod`).</li>
-                <li>Powerful new commands including `alias` for shortcuts, `tree` for visualizing directories, `diff` for comparing files, and `ps`/`kill` for managing background jobs.</li>
-                <li>The powerful `find` command, with predicates like `-name`, `-type`, `-user`, `-perm`, `-mtime`, and actions like `-print`, `-exec`, and `-delete`.</li>
-                <li>A more sophisticated `ls` command with advanced sorting and formatting options.</li>
-                <li>Full scripting support with argument passing (`$1`, `$@`, `$#`).</li>
-                <li>A significantly upgraded `edit` command, now featuring a full formatting toolbar for Markdown/HTML, a detailed status bar, and an export-to-HTML function.</li>
-                <li>An even smarter `gemini` command that can use tools like `tree`, and a more enchanting `adventure` engine.</li>
-                <li>A codebase thoughtfully reorganized into logical modules for easier maintenance.</li>
-            </ul>
 
             <h2>License Information: MIT License (AI Assisted) - OopisOS License Agreement</h2>
             <h3>Preamble</h3>
@@ -727,11 +699,11 @@ const commands = {
 
             <h2>The Future?</h2>
             <p>What's next for OopisOS? A graphical user interface? Simulated networking? A command to generate pictures of cats? The possibilities are as vast as your imagination. The modular architecture is ready for it.</p>
-            <p class="mt-6"><em>"OopisOS v2.5: Now with 25% more Oopis!"</em></p>
+            <p class="mt-6"><em>"OopisOS v2.6: Now with 26% more Oopis!"</em></p>
         </section>
 
         <footer class="footer text-center">
-            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.5).</p>
+            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.6).</p>
         </footer>
     </main>
 </div>
