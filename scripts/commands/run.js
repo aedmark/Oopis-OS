@@ -65,14 +65,31 @@
 
                 let line = scriptingContext.lines[scriptingContext.currentLineIndex];
 
-                // --- START OF FIX ---
-                // Find the first '#' and treat the rest of the line as a comment.
-                const commentIndex = line.indexOf('#');
+                // --- START OF REFINED FIX ---
+                // This logic correctly finds the first '#' that is not inside single or double quotes.
+                let inDoubleQuote = false;
+                let inSingleQuote = false;
+                let commentIndex = -1;
+
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const prevChar = i > 0 ? line[i - 1] : null;
+
+                    if (char === '"' && prevChar !== '\\' && !inSingleQuote) {
+                        inDoubleQuote = !inDoubleQuote;
+                    } else if (char === '\'' && prevChar !== '\\' && !inDoubleQuote) {
+                        inSingleQuote = !inSingleQuote;
+                    } else if (char === '#' && !inDoubleQuote && !inSingleQuote) {
+                        commentIndex = i;
+                        break; // Found the real comment, no need to look further
+                    }
+                }
+
                 if (commentIndex !== -1) {
                     line = line.substring(0, commentIndex);
                 }
                 const trimmedLine = line.trim();
-                // --- END OF FIX ---
+                // --- END OF REFINED FIX ---
 
 
                 if (scriptingContext.waitingForInput) {
