@@ -1,3 +1,5 @@
+// storage.js - OopisOS Storage IO
+
 const StorageManager = (() => {
     "use strict";
 

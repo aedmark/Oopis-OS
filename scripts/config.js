@@ -1,3 +1,5 @@
+// scripts/config.js - OopisOS Configuration
+
 const Config = (() => {
     "use strict";
     const defaultConfig = {
@@ -9,7 +11,7 @@ const Config = (() => {
         },
         OS: {
             NAME: "OopisOs",
-            VERSION: "2.5",
+            VERSION: "2.6",
             DEFAULT_HOST_NAME: "OopisOs",
         },
         USER: {

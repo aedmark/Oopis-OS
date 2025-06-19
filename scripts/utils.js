@@ -1,3 +1,5 @@
+//utils.js - OopisOS Utility Functions
+
 const Utils = (() => {
     "use strict";
 

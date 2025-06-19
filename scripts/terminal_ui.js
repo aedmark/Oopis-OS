@@ -1,3 +1,5 @@
+//terminal_ui.js OopisOS Terminal Aesthetics and Functionality
+
 const ModalManager = (() => {
     "use strict";
     let isAwaitingTerminalInput = false;

@@ -1,11 +1,13 @@
+// fs_manager.js - OopisOS Filesystem Manager
+
 const FileSystemManager = (() => {
     "use strict";
     let fsData = {};
     let currentPath = Config.FILESYSTEM.ROOT_PATH;
     const OOPIS_CONF_CONTENT = `TERMINAL.PROMPT_CHAR=>
 OS.DEFAULT_HOST_NAME=OopisOS
-MESSAGES.WELCOME_PREFIX=Greetings and Salutations,
-MESSAGES.WELCOME_SUFFIX=! Welcome to OopisOS!`;
+MESSAGES.WELCOME_PREFIX=Welcome,
+MESSAGES.WELCOME_SUFFIX=!`;
     async function initialize(guestUsername) {
         const nowISO = new Date().toISOString();
         fsData = {

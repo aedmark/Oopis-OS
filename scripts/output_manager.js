@@ -1,3 +1,5 @@
+//output_manager.js - OopisOS Output Manager
+
 const OutputManager = (() => {
     "use strict";
     let isEditorActive = false;
