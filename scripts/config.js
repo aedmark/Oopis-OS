@@ -1,31 +1,48 @@
-// scripts/config.js - OopisOS Configuration
+/**
+ * @file Manages all static and dynamic configuration for OopisOS.
+ * @module Config
+ */
 
 const Config = (() => {
     "use strict";
+
+    /**
+     * The default configuration object for the entire OS.
+     * Contains settings for the database, OS metadata, user constraints,
+     * terminal behavior, storage keys, CSS classes, file system parameters,
+     * and predefined messages.
+     * @private
+     * @type {object}
+     */
     const defaultConfig = {
+        /** Database settings for IndexedDB. */
         DATABASE: {
             NAME: "OopisOsDB",
             VERSION: 2,
             FS_STORE_NAME: "FileSystemsStore",
             UNIFIED_FS_KEY: "OopisOS_SharedFS",
         },
+        /** Core OS metadata. */
         OS: {
             NAME: "OopisOs",
             VERSION: "2.6",
             DEFAULT_HOST_NAME: "OopisOs",
         },
+        /** User-related constants and constraints. */
         USER: {
             DEFAULT_NAME: "Guest",
             RESERVED_USERNAMES: ["guest", "root", "admin", "system"],
             MIN_USERNAME_LENGTH: 3,
             MAX_USERNAME_LENGTH: 20,
         },
+        /** Terminal appearance and behavior settings. */
         TERMINAL: {
             MAX_HISTORY_SIZE: 50,
             PROMPT_CHAR: ">",
             PROMPT_SEPARATOR: ":",
             PROMPT_AT: "@",
         },
+        /** Keys used for storing data in localStorage. */
         STORAGE_KEYS: {
             USER_CREDENTIALS: "oopisOsUserCredentials",
             USER_TERMINAL_STATE_PREFIX: "oopisOsUserTerminalState_",
@@ -35,6 +52,7 @@ const Config = (() => {
             GEMINI_API_KEY: "oopisGeminiApiKey",
             USER_GROUPS: "oopisOsUserGroups",
         },
+        /** CSS classes used for styling terminal output and UI components. */
         CSS_CLASSES: {
             ERROR_MSG: "text-red-500",
             SUCCESS_MSG: "text-lime-400",
@@ -43,10 +61,10 @@ const Config = (() => {
             EDITOR_MSG: "text-sky-400",
             DIR_ITEM: "text-sky-400 font-semibold",
             FILE_ITEM: "text-green-500",
-            OUTPUT_LINE:
-                "whitespace-pre-wrap break-words overflow-x-hidden min-h-[1.2em] leading-[1.2em]",
+            OUTPUT_LINE: "whitespace-pre-wrap break-words overflow-x-hidden min-h-[1.2em] leading-[1.2em]",
             HIDDEN: "hidden",
         },
+        /** File system constants and default values. */
         FILESYSTEM: {
             ROOT_PATH: "/",
             CURRENT_DIR_SYMBOL: ".",
@@ -63,10 +81,10 @@ const Config = (() => {
             PERMISSION_BIT_EXECUTE: 0b001,
             MAX_VFS_SIZE: 640 * 1024 * 1024,
         },
+        /** Predefined messages for various command outputs and system events. */
         MESSAGES: {
             PERMISSION_DENIED_SUFFIX: ": Permission denied",
-            CONFIRMATION_PROMPT:
-                "Type 'YES' (all caps) to confirm, or any other input to cancel.",
+            CONFIRMATION_PROMPT: "Type 'YES' (all caps) to confirm, or any other input to cancel.",
             OPERATION_CANCELLED: "Operation cancelled.",
             ALREADY_LOGGED_IN_AS_PREFIX: "Already logged in as '",
             ALREADY_LOGGED_IN_AS_SUFFIX: "'.",
@@ -104,8 +122,7 @@ const Config = (() => {
             RESTORE_SUCCESS_SUFFIX: "'.",
             UPLOAD_NO_FILE: "Upload cancelled: No file selected.",
             UPLOAD_INVALID_TYPE_PREFIX: "Error: Invalid file type '",
-            UPLOAD_INVALID_TYPE_SUFFIX:
-                "'. Only .txt, .md, .html, .sh, .js, .css, .json files are allowed.",
+            UPLOAD_INVALID_TYPE_SUFFIX: "'. Only .txt, .md, .html, .sh, .js, .css, .json files are allowed.",
             UPLOAD_SUCCESS_PREFIX: "File '",
             UPLOAD_SUCCESS_MIDDLE: "' uploaded successfully to '",
             UPLOAD_SUCCESS_SUFFIX: "'.",
@@ -115,8 +132,7 @@ const Config = (() => {
             EDITOR_DISCARD_CONFIRM: "Care to save your work?",
             BACKGROUND_PROCESS_STARTED_PREFIX: "[",
             BACKGROUND_PROCESS_STARTED_SUFFIX: "] Backgrounded.",
-            BACKGROUND_PROCESS_OUTPUT_SUPPRESSED:
-                "[Output suppressed for background process]",
+            BACKGROUND_PROCESS_OUTPUT_SUPPRESSED: "[Output suppressed for background process]",
             PIPELINE_ERROR_PREFIX: "Pipeline error in command: ",
             PASSWORD_PROMPT: "Enter password:",
             PASSWORD_CONFIRM_PROMPT: "Confirm password:",
@@ -124,6 +140,7 @@ const Config = (() => {
             INVALID_PASSWORD: "Incorrect password. Please try again.",
             EMPTY_PASSWORD_NOT_ALLOWED: "Password cannot be empty.",
         },
+        /** Predefined internal error messages for debugging. */
         INTERNAL_ERRORS: {
             DB_NOT_INITIALIZED_FS_SAVE: "DB not initialized for FS save",
             DB_NOT_INITIALIZED_FS_LOAD: "DB not initialized for FS load",
@@ -134,11 +151,26 @@ const Config = (() => {
             SOURCE_NOT_FOUND_IN_PARENT_MIDDLE: "' not found in parent '",
             SOURCE_NOT_FOUND_IN_PARENT_SUFFIX: "'",
         },
+        /** API endpoint configuration. */
         API: {
             GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
         },
     };
+
+    /**
+     * The active configuration object, initialized with defaults and potentially
+     * overridden by values from `/etc/oopis.conf`.
+     * @private
+     * @type {object}
+     */
     let currentConfig = Utils.deepCopyNode(defaultConfig);
+
+    /**
+     * Parses a string value from the config file into a boolean, number, or string.
+     * @private
+     * @param {string} valueStr - The string value to parse.
+     * @returns {boolean|number|string} The parsed value.
+     */
     function parseConfigValue(valueStr) {
         if (typeof valueStr !== "string") return valueStr;
 
@@ -152,6 +184,14 @@ const Config = (() => {
         }
         return valueStr;
     }
+
+    /**
+     * Sets a property on a nested object using a dot-separated path string.
+     * @private
+     * @param {object} obj - The object to modify.
+     * @param {string} path - The dot-separated path (e.g., "TERMINAL.PROMPT_CHAR").
+     * @param {*} value - The value to set at the specified path.
+     */
     function setNestedProperty(obj, path, value) {
         const parts = path.split(".");
         let current = obj;
@@ -163,6 +203,12 @@ const Config = (() => {
         }
         current[parts[parts.length - 1]] = parseConfigValue(value);
     }
+
+    /**
+     * Asynchronously loads and applies configuration settings from the `/etc/oopis.conf`
+     * file within the virtual file system, overriding the default values.
+     * @async
+     */
     async function loadFromFile() {
         const configFilePath = "/etc/oopis.conf";
         try {
@@ -229,6 +275,21 @@ const Config = (() => {
             );
         }
     }
+
+    /**
+     * The public interface for the Config module.
+     * @property {function} loadFromFile - Function to load config from the VFS.
+     * @property {object} DATABASE - Database configuration.
+     * @property {object} OS - OS metadata.
+     * @property {object} USER - User-related constants.
+     * @property {object} TERMINAL - Terminal behavior settings.
+     * @property {object} STORAGE_KEYS - Keys for localStorage.
+     * @property {object} CSS_CLASSES - CSS classes for styling.
+     * @property {object} FILESYSTEM - File system constants.
+     * @property {object} MESSAGES - Predefined system messages.
+     * @property {object} INTERNAL_ERRORS - Internal error messages.
+     * @property {object} API - API endpoint configuration.
+     */
     return {
         ...currentConfig,
         loadFromFile,

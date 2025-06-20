@@ -647,7 +647,7 @@ const CommandExecutor = (() => {
           abortController: abortController,
         };
         await OutputManager.appendToOutput(
-            `${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${pipeline.jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`,
+            `${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`,
             {
               typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
             }

@@ -134,6 +134,7 @@ class ParsedPipeline {
     this.segments = [];
     this.redirection = null;
     this.isBackground = false;
+    this.jobId = null;
   }
 }
 class Parser {

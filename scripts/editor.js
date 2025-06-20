@@ -1,5 +1,7 @@
 // editor.js - OopisOS Live Markdown Text Editor
 
+/* global marked, Utils */
+
 const EditorAppConfig = {
   EDITOR: {
     DEBOUNCE_DELAY_MS: 250,
