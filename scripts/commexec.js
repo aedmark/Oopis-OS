@@ -5,18 +5,7 @@ const CommandExecutor = (() => {
   let scriptExecutionInProgress = false;
   let backgroundProcessIdCounter = 0;
   let activeJobs = {};
-  let geminiConversationHistory = [];
   const commands = {}; // This will be populated from the registry
-
-  const GEMINI_SYSTEM_PROMPT = `You are a helpful and witty digital librarian embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions.
-
-	You have access to a set of tools (OopisOS shell commands) that you can use to explore the user's virtual file system to gather information for your answers.
-
-	When the user asks a question, you must first determine if running one or more shell commands would be helpful.
-	- If the file system contains relevant information, plan and execute the necessary commands. Then, synthesize an answer based on the command output.
-	- If the request is a general knowledge question not related to the user's files, answer it directly without using any tools.
-	- Do not make up file paths or content. Only use information returned from the tools.
-	- Be friendly and conversational in your final response.`;
 
   function _initializeCommands() {
     const definitions = CommandRegistry.getDefinitions();
@@ -42,7 +31,6 @@ const CommandExecutor = (() => {
       const currentUser = UserManager.getCurrentUser().name;
 
       if (definition.argValidation) {
-        const argCount = remainingArgs.length;
         const validation = Utils.validateArguments(remainingArgs, definition.argValidation);
         if (!validation.isValid) {
           return { success: false, error: `${definition.commandName}: ${validation.errorDetail}` };

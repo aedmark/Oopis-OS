@@ -126,10 +126,8 @@ const EditorUI = (() => {
   elements.codeBlockButton = null;
   elements.ulButton = null;
   elements.olButton = null;
-  // START - ADDED NEW VARIABLES FOR UNDO/REDO BUTTONS
   elements.undoButton = null;
   elements.redoButton = null;
-  // END - ADDED NEW VARIABLES FOR UNDO/REDO BUTTONS
   let eventCallbacks = {};
   let previewDebounceTimer = null;
   const GUTTER_WRAP_HIDDEN_CLASS = "gutter-hidden-by-wrap";
@@ -607,7 +605,6 @@ const EditorManager = (() => {
     if(!isActiveState) return;
     const currentContent = EditorUI.getTextareaContent();
 
-    // START - ADDED DEBOUNCE LOGIC FOR UNDO STATE SAVING
     if (saveUndoStateTimeout) {
       clearTimeout(saveUndoStateTimeout);
     }
@@ -615,7 +612,6 @@ const EditorManager = (() => {
       _saveUndoState(currentContent);
       saveUndoStateTimeout = null;
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
-    // END - ADDED DEBOUNCE LOGIC FOR UNDO STATE SAVING
 
     isDirty = currentContent !== originalContent;
     _updateFullEditorUI();
@@ -692,12 +688,11 @@ const EditorManager = (() => {
   }
 
   function _performUndo() {
-    if (undoStack.length > 1) { // We need more than the initial state to undo
+    if (undoStack.length > 1) {
       const currentState = undoStack.pop();
       redoStack.push(currentState);
       const prevState = undoStack[undoStack.length - 1];
 
-      // Manually update the UI without triggering a new undo state
       EditorUI.setTextareaContent(prevState);
       isDirty = (prevState !== originalContent);
       _updateFullEditorUI();
@@ -712,7 +707,6 @@ const EditorManager = (() => {
       const nextState = redoStack.pop();
       undoStack.push(nextState);
 
-      // Manually update the UI without triggering a new undo state
       EditorUI.setTextareaContent(nextState);
       isDirty = (nextState !== originalContent);
       _updateFullEditorUI();
@@ -730,7 +724,6 @@ const EditorManager = (() => {
       EditorUI.elements.redoButton.disabled = redoStack.length === 0;
     }
   }
-  // END - ADDED NEW UNDO/REDO FUNCTIONS
 
   function _applyTextManipulation(type) {
     if(!isActiveState) return;
@@ -855,11 +848,9 @@ const EditorManager = (() => {
     originalContent = content;
     isDirty = false;
 
-    // START - INITIALIZE UNDO/REDO STACKS ON ENTRY
     undoStack = [];
     redoStack = [];
-    _saveUndoState(content); // Save initial state
-    // END - INITIALIZE UNDO/REDO STACKS ON ENTRY
+    _saveUndoState(content);
 
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     document.addEventListener('keydown', handleKeyDown);
@@ -879,13 +870,11 @@ const EditorManager = (() => {
       onFormatCodeBlock: () => _applyTextManipulation('codeblock'),
       onFormatUl: () => _applyTextManipulation('ul'),
       onFormatOl: () => _applyTextManipulation('ol'),
-      // START - ADDED NEW CALLBACKS FOR UNDO/REDO BUTTONS
       onUndo: _performUndo.bind(this),
       onRedo: _performRedo.bind(this)
-      // END - ADDED NEW CALLBACKS
     });
     EditorUI.setGutterVisibility(!isWordWrapActive);
-    currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY; // Set it here, once.
+    currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
     EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
     EditorUI.applyTextareaWordWrap(isWordWrapActive);
     EditorUI.updateWordWrapButtonText(isWordWrapActive);
@@ -894,9 +883,7 @@ const EditorManager = (() => {
     _updateFormattingToolbarVisibility();
     _updateFullEditorUI();
     EditorUI.setEditorFocus();
-    // START - Call to update button states after building UI
     _updateUndoRedoButtonStates();
-    // END - Call to update button states after building UI
   }
   async function _performExitActions() {
     document.removeEventListener('keydown', handleKeyDown);
@@ -907,11 +894,9 @@ const EditorManager = (() => {
     isDirty = false;
     originalContent = "";
 
-    // START - CLEAR STACKS ON EXIT
     undoStack = [];
     redoStack = [];
-    saveUndoStateTimeout = null; // Clear any pending debounced saves
-    // END - CLEAR STACKS ON EXIT
+    saveUndoStateTimeout = null;
 
     if(DOM.outputDiv) DOM.outputDiv.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
     if(DOM.inputLineContainerDiv) DOM.inputLineContainerDiv.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
@@ -924,7 +909,9 @@ const EditorManager = (() => {
     let proceedToExit = true;
     let saveSuccess = true;
     const currentUser = UserManager.getCurrentUser().name;
-    const nowISO = new Date().toISOString();
+    // START - LINTER FIX: Removed unused nowISO constant
+    // const nowISO = new Date().toISOString();
+    // END - LINTER FIX
     let terminalMessage = null;
     let terminalMessageClass = null;
     if (!saveChanges && isDirty) {
@@ -1037,27 +1024,23 @@ const EditorManager = (() => {
           }
           break;
         case "i":
-          // ONLY trigger if Shift is NOT pressed
           if(!event.shiftKey && (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML)) {
             event.preventDefault();
             _applyTextManipulation('italic');
           }
-          // If Shift IS pressed, we do nothing, letting the browser handle it.
           break;
-          // START - ADDED NEW KEYBOARD SHORTCUTS FOR UNDO/REDO
         case "z":
           event.preventDefault();
-          if (event.shiftKey) { // Ctrl+Shift+Z for Redo
+          if (event.shiftKey) {
             _performRedo();
-          } else { // Ctrl+Z for Undo
+          } else {
             _performUndo();
           }
           break;
-        case "y": // Ctrl+Y for Redo
+        case "y":
           event.preventDefault();
           _performRedo();
           break;
-          // END - ADDED NEW KEYBOARD SHORTCUTS FOR UNDO/REDO
       }
     }
     setTimeout(_handleEditorSelectionChange, 0);

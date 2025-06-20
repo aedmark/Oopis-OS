@@ -583,8 +583,10 @@ MESSAGES.WELCOME_SUFFIX=!`;
         const w = Config.FILESYSTEM.PERMISSION_BIT_WRITE;
         const x = Config.FILESYSTEM.PERMISSION_BIT_EXECUTE;
 
+        // START - LINTER FIX: Add parentheses around bitwise operations
         const perm_str = (p) =>
-            (p & r ? "r" : "-") + (p & w ? "w" : "-") + (p & x ? "x" : "-");
+            ((p & r) ? "r" : "-") + ((p & w) ? "w" : "-") + ((p & x) ? "x" : "-");
+        // END - LINTER FIX
 
         return (
             typeChar +

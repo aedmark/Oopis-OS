@@ -7,7 +7,7 @@ const TextAdventureModal = (() => {
   let promptResolver = null;
   let currentEngineInstance = null;
   let currentScriptingContext = null;
-  let sessionCompletionResolver = null; // Add this line
+  let sessionCompletionResolver = null;
 
   function _initDOM() {
     adventureModal = document.getElementById('adventure-modal');
@@ -206,6 +206,7 @@ const TextAdventureEngine = (() => {
       itemStates: itemStates
     };
 
+    // START - LINTER FIX: Properly use currentUser and get primaryGroup
     const currentUser = UserManager.getCurrentUser().name;
     const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
     const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
@@ -215,6 +216,7 @@ const TextAdventureEngine = (() => {
         JSON.stringify(saveState, null, 2),
         { currentUser, primaryGroup }
     );
+    // END - LINTER FIX
 
     if (saveResult.success) {
       await FileSystemManager.save();
@@ -231,7 +233,6 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    const currentUser = UserManager.getCurrentUser().name;
     const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
     const pathInfo = FileSystemManager.validatePath("adventure load", savePath, {
       expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE
