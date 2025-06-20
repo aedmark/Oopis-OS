@@ -572,27 +572,50 @@ MESSAGES.WELCOME_SUFFIX=!`;
     }
 
     function formatModeToString(node) {
-        if (!node || typeof node.mode !== "number") return "----------";
+        if (!node || typeof node.mode !== "number") {
+            return "----------";
+        }
         const typeChar =
             node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? "d" : "-";
 
         const ownerPerms = (node.mode >> 6) & 7;
         const groupPerms = (node.mode >> 3) & 7;
-        const otherPerms = (node.mode >> 0) & 7;
-        const r = Config.FILESYSTEM.PERMISSION_BIT_READ;
-        const w = Config.FILESYSTEM.PERMISSION_BIT_WRITE;
-        const x = Config.FILESYSTEM.PERMISSION_BIT_EXECUTE;
+        let p = node.mode & 7; // Other permissions
 
-        // START - LINTER FIX: Add parentheses around bitwise operations
-        const perm_str = (p) =>
-            ((p & r) ? "r" : "-") + ((p & w) ? "w" : "-") + ((p & x) ? "x" : "-");
-        // END - LINTER FIX
+        const perm_str = (permValue) => {
+            let str = "";
+            let p_copy = permValue;
+
+            // Read
+            if (p_copy >= 4) {
+                str += "r";
+                p_copy -= 4;
+            } else {
+                str += "-";
+            }
+
+            // Write
+            if (p_copy >= 2) {
+                str += "w";
+                p_copy -= 2;
+            } else {
+                str += "-";
+            }
+
+            // Execute
+            if (p_copy >= 1) {
+                str += "x";
+            } else {
+                str += "-";
+            }
+            return str;
+        };
 
         return (
             typeChar +
             perm_str(ownerPerms) +
             perm_str(groupPerms) +
-            perm_str(otherPerms)
+            perm_str(p)
         );
     }
 
