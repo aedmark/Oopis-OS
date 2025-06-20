@@ -148,6 +148,8 @@ Automate tasks by writing shell scripts.
 
 ### Developer Guide
 
+For comprehensive developer documentation, please see [docs/developer.md](docs/developer.md).
+
 #### Project Structure
 
 - `main.js`: Main entry point, event listeners.
@@ -198,6 +200,8 @@ commands.mycmd = {
     helpText: "Usage: mycmd [file]\n\nExplain your command in detail here."
 };
 ```
+
+For more detailed information on the architecture, APIs, and best practices, refer to the [developer documentation](docs/developer.md).
 
 ### Technology Stack
 
