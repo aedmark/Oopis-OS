@@ -441,7 +441,7 @@ const PaintManager = (() => {
 
     function _reenterPaint(logMessage) {
         if (logMessage) {
-            OutputManager.appendToOutput(logMessage, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+            void OutputManager.appendToOutput(logMessage, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
         }
         PaintUI.show(paintEventCallbacks);
         PaintUI.renderCanvas(canvasData);
@@ -475,7 +475,7 @@ const PaintManager = (() => {
                 canvasData = parsedData.cells;
             } else {
                 const errorMessage = parseError ? parseError.message : "Invalid .oopic file format.";
-                OutputManager.appendToOutput(`Error loading paint file: ${errorMessage}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                void OutputManager.appendToOutput(`Error loading paint file: ${errorMessage}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                 canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
             }
         } else {
@@ -598,9 +598,9 @@ const PaintManager = (() => {
             } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
                 event.preventDefault(); _performRedo();
             } else if (key === 's') {
-                event.preventDefault(); exit(true);
+                event.preventDefault(); void exit(true);
             } else if (key === 'o') {
-                event.preventDefault(); exit(false);
+                event.preventDefault(); void exit(false);
             }
             return;
         }

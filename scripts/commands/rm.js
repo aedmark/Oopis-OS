@@ -63,7 +63,6 @@
                 if (flags.force) {
                     confirmed = true;
                 } else if (flags.interactive) {
-                    // Explicit -i flag always forces a prompt
                     const promptMsg =
                         node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
                             ? `Recursively remove directory '${pathArg}'?`

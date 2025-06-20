@@ -12,79 +12,58 @@
         coreLogic: async (context) => {
             const { args, options } = context;
             const username = args[0];
-            const userCheck = StorageManager.loadItem(
-                Config.STORAGE_KEYS.USER_CREDENTIALS,
-                "User list", {}
-            );
-            if (userCheck[username]) {
-                return {
-                    success: false,
-                    error: `User '${username}' already exists.`,
-                };
-            }
-            try {
-                let firstPassword;
+
+            // This logic can be handled by UserManager.register, which already checks for existence and format.
+            // Let's rely on that for a single source of truth.
+
+            return new Promise(async (resolve) => {
+                const userCheck = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
+                if (userCheck[username]) {
+                    resolve({ success: false, error: `User '${username}' already exists.` });
+                    return;
+                }
+
+                // First password prompt
                 ModalInputManager.requestInput(
                     Config.MESSAGES.PASSWORD_PROMPT,
-                    (pwd) => { firstPassword = pwd; },
-                    () => { throw new Error(Config.MESSAGES.OPERATION_CANCELLED); },
-                    true, // isObscured
-                    options // Pass context for scripting
-                );
-
-                if (firstPassword.trim() === "") {
-                    await OutputManager.appendToOutput(
-                        "Registering user with no password.", {
-                            typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+                    async (firstPassword) => {
+                        if (firstPassword.trim() === "") {
+                            // User intends to create an account with no password.
+                            await OutputManager.appendToOutput("Registering user with no password.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                            const registerResult = await UserManager.register(username, null);
+                            resolve(registerResult);
+                            return;
                         }
-                    );
-                } else {
-                    let confirmedPassword;
-                    ModalInputManager.requestInput(
-                        Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
-                        (pwd) => { confirmedPassword = pwd; },
-                        () => { throw new Error(Config.MESSAGES.OPERATION_CANCELLED); },
-                        true, // isObscured
-                        options // Pass context for scripting
-                    );
-                    if (firstPassword !== confirmedPassword) {
-                        return {
-                            success: false,
-                            error: Config.MESSAGES.PASSWORD_MISMATCH,
-                        };
-                    }
-                }
-                const registerResult = await UserManager.register(
-                    username,
-                    firstPassword || null
+
+                        // Second password prompt for confirmation
+                        ModalInputManager.requestInput(
+                            Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
+                            async (confirmedPassword) => {
+                                if (firstPassword !== confirmedPassword) {
+                                    resolve({ success: false, error: Config.MESSAGES.PASSWORD_MISMATCH });
+                                    return;
+                                }
+                                // Passwords match, proceed with registration
+                                const registerResult = await UserManager.register(username, firstPassword);
+                                resolve(registerResult);
+                            },
+                            () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
+                            true, // isObscured
+                            options
+                        );
+                    },
+                    () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
+                    true, // isObscured
+                    options
                 );
-                if (registerResult.success) {
-                    await OutputManager.appendToOutput(registerResult.message, {
-                        typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-                    });
-                    return {
-                        success: true,
-                        output: "",
-                    };
-                } else {
-                    return {
-                        success: false,
-                        error: registerResult.error,
-                    };
+            }).then(result => {
+                // This `.then()` block ensures we handle the resolved promise from the prompts
+                if (result.success && result.message) {
+                    // Successful registration often returns a message instead of output
+                    return { success: true, output: result.message, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
                 }
-            } catch (e) {
-                if (e.message === Config.MESSAGES.OPERATION_CANCELLED) {
-                    return {
-                        success: true,
-                        output: Config.MESSAGES.OPERATION_CANCELLED,
-                        messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-                    };
-                }
-                return {
-                    success: false,
-                    error: `useradd: ${e.message}`,
-                };
-            }
+                return result; // Return success or error objects as they are
+            });
         },
     };
 
