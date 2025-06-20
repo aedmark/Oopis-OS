@@ -1,5 +1,3 @@
-// scripts/commands/diff.js
-
 /**
  * @file Defines the 'diff' command, which compares the content of two files line by line.
  * It provides a formatted output highlighting additions, deletions, and common lines.

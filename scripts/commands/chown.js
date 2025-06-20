@@ -1,5 +1,3 @@
-// scripts/commands/chown.js
-
 /**
  * @file Defines the 'chown' command, which changes the user ownership of files and directories.
  * @author Andrew Edmark

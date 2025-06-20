@@ -1,5 +1,3 @@
-// scripts/commands/cp.js
-
 /**
  * @file Defines the 'cp' command, which copies files and directories within the OopisOS file system.
  * It supports various flags for recursive copying, forcing overwrites, preserving metadata, and interactive prompts.

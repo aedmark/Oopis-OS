@@ -1,5 +1,3 @@
-// scripts/commands/chgrp.js
-
 /**
  * @file Defines the 'chgrp' command, which allows changing the group ownership of files and directories.
  * @author Andrew Edmark

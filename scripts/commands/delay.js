@@ -1,5 +1,3 @@
-// scripts/commands/delay.js
-
 /**
  * @file Defines the 'delay' command, which pauses command execution for a specified duration.
  * It is particularly useful in scripts for timed sequences or demonstrations.

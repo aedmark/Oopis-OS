@@ -1,5 +1,3 @@
-// scripts/commands/clearfs.js
-
 /**
  * @file Defines the 'clearfs' command, which clears the current user's home directory.
  * @author Andrew Edmark

@@ -1,5 +1,3 @@
-// scripts/commands/date.js
-
 /**
  * @file Defines the 'date' command, which displays the current system date and time.
  * @author Andrew Edmark

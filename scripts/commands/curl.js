@@ -1,5 +1,3 @@
-// scripts/commands/curl.js
-
 /**
  * @file Defines the 'curl' command, a network utility for transferring data from or to a server.
  * It supports displaying fetched content to standard output or saving it to a file.

@@ -1,5 +1,3 @@
-// scripts/commands/echo.js
-
 /**
  * @file Defines the 'echo' command, which prints arguments to the standard output.
  * @author Andrew Edmark

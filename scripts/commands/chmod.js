@@ -1,5 +1,3 @@
-// scripts/commands/chmod.js
-
 /**
  * @file Defines the 'chmod' command, which changes the access permissions of files and directories.
  * @author Andrew Edmark

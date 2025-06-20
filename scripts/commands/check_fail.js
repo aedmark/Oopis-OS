@@ -1,5 +1,3 @@
-// scripts/commands/check_fail.js
-
 /**
  * @file Defines the 'check_fail' command, a diagnostic tool used to verify that
  * other commands correctly produce an error when expected.

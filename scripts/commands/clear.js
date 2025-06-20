@@ -1,5 +1,3 @@
-// scripts/commands/clear.js
-
 /**
  * @file Defines the 'clear' command, which clears the terminal screen.
  * @author Andrew Edmark

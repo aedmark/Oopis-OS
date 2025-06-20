@@ -1,22 +1,47 @@
-// scripts/commands/gemini.js
+/**
+ * @file Defines the 'gemini' command, enabling interaction with the Google Gemini AI model
+ * within the OopisOS terminal. This command supports conversational memory and tool use
+ * (OopisOS shell commands) for file system awareness.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
 
 (() => {
     "use strict";
 
     // START - MOVED STATE AND CONFIG HERE
+    /**
+     * @private
+     * @type {Array<object>}
+     * @description Stores the ongoing conversation history with the Gemini AI.
+     * Each element in the array represents a turn in the conversation, containing
+     * 'role' (user/model/function) and 'parts' (text or function calls/responses).
+     */
     let geminiConversationHistory = [];
 
+    /**
+     * @private
+     * @const {string} GEMINI_SYSTEM_PROMPT
+     * @description The system instruction provided to the Gemini AI, defining its persona,
+     * goals, and guidelines for using tools and responding to users.
+     */
     const GEMINI_SYSTEM_PROMPT = `You are a helpful and witty digital librarian embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions.
 
-	You have access to a set of tools (OopisOS shell commands) that you can use to explore the user's virtual file system to gather information for your answers.
+    You have access to a set of tools (OopisOS shell commands) that you can use to explore the user's virtual file system to gather information for your answers.
 
-	When the user asks a question, you must first determine if running one or more shell commands would be helpful.
-	- If the file system contains relevant information, plan and execute the necessary commands. Then, synthesize an answer based on the command output.
-	- If the request is a general knowledge question not related to the user's files, answer it directly without using any tools.
-	- Do not make up file paths or content. Only use information returned from the tools.
-	- Be friendly and conversational in your final response.`;
+    When the user asks a question, you must first determine if running one or more shell commands would be helpful.
+    - If the file system contains relevant information, plan and execute the necessary commands. Then, synthesize an answer based on the command output.
+    - If the request is a general knowledge question not related to the user's files, answer it directly without using any tools.
+    - Do not make up file paths or content. Only use information returned from the tools.
+    - Be friendly and conversational in your final response.`;
     // END - MOVED STATE AND CONFIG HERE
 
+    /**
+     * @const {object} geminiCommandDefinition
+     * @description The command definition for the 'gemini' command.
+     * This object specifies the command's name, supported flags (e.g., -n for new conversation),
+     * argument validation, and the core logic for managing the AI interaction flow.
+     */
     const geminiCommandDefinition = {
         commandName: "gemini",
         flagDefinitions: [
@@ -30,9 +55,34 @@
             min: 1,
             error: 'Insufficient arguments. Usage: gemini [-n|--new] "<prompt>"',
         },
+        /**
+         * The core logic for the 'gemini' command.
+         * It orchestrates the entire AI interaction:
+         * 1. Retrieves/prompts for the Gemini API key.
+         * 2. Manages the conversation history, including starting new conversations if requested.
+         * 3. Sends user prompts and previous turns to the Gemini API.
+         * 4. Processes the AI's response, which might be a text reply or a tool (shell command) call.
+         * 5. If a tool call, executes the shell command and feeds its output back to the AI.
+         * 6. Continues the loop until the AI provides a text response or an error occurs.
+         * @async
+         * @param {object} context - The context object provided by the command executor.
+         * @param {string[]} context.args - The arguments provided to the command, forming the user's prompt.
+         * @param {object} context.options - Execution options, including `isInteractive` for UI prompts.
+         * @param {object} context.flags - An object containing the parsed flags (e.g., `new`).
+         * @returns {Promise<object>} A promise that resolves to a command result object
+         * containing the AI's final text response or an error.
+         */
         coreLogic: async (context) => {
             const { args, options, flags } = context;
 
+            /**
+             * @private
+             * @async
+             * @returns {Promise<{success: boolean, key?: string, error?: string}>} A promise that resolves
+             * to an object containing the API key or an error message. It will prompt the user if needed.
+             * @description Retrieves the Gemini API key from local storage or prompts the user for it.
+             * The key is then saved for future use.
+             */
             const _getApiKey = () => {
                 return new Promise((resolve) => {
                     let apiKey = StorageManager.loadItem(
@@ -70,7 +120,7 @@
                             () => {
                                 resolve({ success: false, error: "API key entry cancelled." });
                             },
-                            false,
+                            false, // Not obscured input (key is visible)
                             options // Pass context for scripting
                         );
                     } else {
@@ -82,8 +132,23 @@
                 });
             };
 
+            /**
+             * @private
+             * @async
+             * @param {string} apiKey - The Gemini API key.
+             * @param {Array<object>} conversationHistory - The current conversation history to send to the API.
+             * @returns {Promise<{success: boolean, data?: object, error?: string}>} A promise that resolves
+             * to an object containing the API response data or an error message.
+             * @description Makes the actual API call to the Gemini model, including the conversation history
+             * and the defined OopisOS tools.
+             */
             const _callGeminiApi = async (apiKey, conversationHistory) => {
-                const GEMINI_API_URL = Config.API.GEMINI_URL
+                const GEMINI_API_URL = Config.API.GEMINI_URL; // Get API URL from Config.
+                /**
+                 * @const {Array<object>} OopisOS_TOOLS
+                 * @description Defines the shell commands that Gemini can call as tools.
+                 * Each tool includes its name, description, and parameter schema.
+                 */
                 const OopisOS_TOOLS = [
                     {
                         function_declarations: [
@@ -183,27 +248,31 @@
                         },
                         body: JSON.stringify({
                             contents: conversationHistory,
-                            tools: OopisOS_TOOLS,
-                            system_instruction: { parts: [{ text: GEMINI_SYSTEM_PROMPT }] },
+                            tools: OopisOS_TOOLS, // Pass the defined tools to the AI.
+                            system_instruction: { parts: [{ text: GEMINI_SYSTEM_PROMPT }] }, // Provide system prompt.
                         }),
                     });
 
+                    // Handle non-OK HTTP responses.
                     if (!response.ok) {
                         let errorBody = null;
                         try {
-                            errorBody = await response.json();
+                            errorBody = await response.json(); // Attempt to parse error body for more details.
                         } catch (e) {
+                            // If parsing fails, use generic error message.
                             return {
                                 success: false,
                                 error: `API request failed with status ${response.status}. ${response.statusText}`,
                             };
                         }
+                        // Specific handling for invalid API key.
                         if (
                             response.status === 400 &&
                             errorBody?.error?.message.includes("API key not valid")
                         ) {
                             return { success: false, error: "INVALID_API_KEY" };
                         }
+                        // General API error with message from response body.
                         return {
                             success: false,
                             error: `API request failed with status ${response.status}. ${
@@ -223,17 +292,19 @@
                 }
             };
 
+            // Get API key; prompt if not found.
             const apiKeyResult = await _getApiKey();
             if (!apiKeyResult.success) {
                 return { success: false, error: `gemini: ${apiKeyResult.error}` };
             }
             const apiKey = apiKeyResult.key;
 
-            const userPrompt = args.join(" ");
+            const userPrompt = args.join(" "); // Combine arguments into a single prompt string.
             if (userPrompt.trim() === "") {
                 return { success: false, error: "gemini: Prompt cannot be empty." };
             }
 
+            // If '-n' or '--new' flag is present, clear conversation history.
             if (flags["new"]) {
                 geminiConversationHistory = [];
                 if (options.isInteractive) {
@@ -244,17 +315,20 @@
                 }
             }
 
+            // Add the user's prompt to the conversation history.
             geminiConversationHistory.push({
                 role: "user",
                 parts: [{ text: userPrompt }],
             });
 
+            // Display "thinking" message only for initial interactive prompts.
             if (options.isInteractive && geminiConversationHistory.length <= 1) {
                 await OutputManager.appendToOutput("Gemini is thinking...", {
                     typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
                 });
             }
 
+            // Loop to handle multi-turn interactions (e.g., tool calls).
             while (true) {
                 const apiResult = await _callGeminiApi(
                     apiKey,
@@ -262,9 +336,9 @@
                 );
 
                 if (!apiResult.success) {
-                    geminiConversationHistory.pop(); // Remove the failed user prompt
+                    geminiConversationHistory.pop(); // Remove the user's prompt as the API call failed for it.
                     if (apiResult.error === "INVALID_API_KEY") {
-                        StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                        StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY); // Remove invalid key.
                         return {
                             success: false,
                             error:
@@ -283,10 +357,10 @@
                         ? result.candidates[0]
                         : undefined;
 
+                // Handle cases where no valid candidate or content is returned.
                 if (!candidate || !candidate.content || !candidate.content.parts) {
-                    geminiConversationHistory.pop(); // The user's prompt failed, so remove it.
+                    geminiConversationHistory.pop(); // Remove the user's prompt if AI response is invalid.
 
-                    // Explicitly check for promptFeedback and its blockReason property
                     const blockReason =
                         result.promptFeedback && result.promptFeedback.blockReason
                             ? result.promptFeedback.blockReason
@@ -299,7 +373,6 @@
                         };
                     }
 
-                    // Explicitly check for an error message on the result object
                     const errorMessage =
                         result.error && result.error.message
                             ? result.error.message
@@ -309,24 +382,27 @@
 
                 let textResponse = "";
                 let functionCall = null;
+                // Iterate through parts to find text or function calls.
                 for (const part of candidate.content.parts) {
                     if (part.text) {
                         textResponse += part.text;
                     } else if (part.functionCall) {
                         functionCall = part.functionCall;
-                        break;
+                        break; // Prioritize function calls.
                     }
                 }
 
+                // Prepare the AI's response turn for history.
                 const modelResponseTurn = {
                     role: "model",
                     parts: candidate.content.parts,
                 };
 
+                // If a function call is detected, execute it as a shell command.
                 if (functionCall) {
-                    geminiConversationHistory.push(modelResponseTurn);
+                    geminiConversationHistory.push(modelResponseTurn); // Add AI's tool call to history.
                     if (textResponse && options.isInteractive) {
-                        await OutputManager.appendToOutput(textResponse);
+                        await OutputManager.appendToOutput(textResponse); // Output any text preamble from AI.
                     }
 
                     if (options.isInteractive) {
@@ -339,15 +415,19 @@
                     }
 
                     const commandName = functionCall.name;
+                    // Format command arguments for `processSingleCommand`.
                     const commandArgs = Object.values(functionCall.args || {})
                         .map((arg) => (typeof arg === "string" ? `"${arg}"` : arg))
                         .join(" ");
                     const fullCommandStr = `${commandName} ${commandArgs}`.trim();
+
+                    // Execute the shell command (tool).
                     const execResult = await CommandExecutor.processSingleCommand(
                         fullCommandStr,
-                        false
+                        false // Commands executed by Gemini are non-interactive.
                     );
 
+                    // Add the tool's response to the conversation history.
                     geminiConversationHistory.push({
                         role: "function",
                         parts: [
@@ -364,9 +444,11 @@
                         ],
                     });
                 } else if (textResponse) {
+                    // If AI returns a text response, add it to history and return it as command output.
                     geminiConversationHistory.push(modelResponseTurn);
                     return { success: true, output: textResponse };
                 } else {
+                    // If AI returns neither text nor function call (unexpected), remove user prompt and report error.
                     geminiConversationHistory.pop();
                     return {
                         success: false,
