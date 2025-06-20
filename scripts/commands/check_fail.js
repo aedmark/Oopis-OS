@@ -1,13 +1,38 @@
 // scripts/commands/check_fail.js
 
+/**
+ * @file Defines the 'check_fail' command, a diagnostic tool used to verify that
+ * other commands correctly produce an error when expected.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
+
+    /**
+     * @const {object} check_failCommandDefinition
+     * @description The command definition for the 'check_fail' command.
+     * This command is designed for testing purposes within scripts, asserting
+     * that a given command string will fail its execution.
+     */
     const check_failCommandDefinition = {
         commandName: "check_fail",
         argValidation: {
             exact: 1,
             error: "expects exactly one argument (a command string)",
         },
+        /**
+         * The core logic for the 'check_fail' command.
+         * It executes a provided command string in a non-interactive mode.
+         * If the executed command fails (as expected), `check_fail` reports success.
+         * If the executed command unexpectedly succeeds, `check_fail` reports failure.
+         * @async
+         * @param {object} context - The context object provided by the command executor.
+         * @param {string[]} context.args - The arguments provided to the command. Expected to contain a single command string to test.
+         * @returns {Promise<object>} A promise that resolves to a command result object, indicating
+         * whether the tested command failed as expected.
+         */
         coreLogic: async (context) => {
             const { args } = context;
             const commandToTest = args[0];

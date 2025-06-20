@@ -1,7 +1,20 @@
 // scripts/commands/chmod.js
 
+/**
+ * @file Defines the 'chmod' command, which changes the access permissions of files and directories.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
+
+    /**
+     * @const {object} chmodCommandDefinition
+     * @description The command definition for the 'chmod' command.
+     * This object specifies the command's name, argument validation, path validation,
+     * and the core logic for changing a node's permissions.
+     */
     const chmodCommandDefinition = {
         commandName: "chmod",
         argValidation: {
@@ -13,6 +26,7 @@
                 argIndex: 1,
             },
         ],
+        // No explicit permissionChecks here because coreLogic handles root/owner permissions dynamically.
         coreLogic: async (context) => {
             const { args, currentUser, validatedPaths } = context;
             const modeArg = args[0];
@@ -21,6 +35,7 @@
             const node = pathInfo.node;
             const nowISO = new Date().toISOString();
 
+            // Validate the mode argument format.
             if (!/^[0-7]{3,4}$/.test(modeArg)) {
                 return {
                     success: false,
@@ -29,6 +44,8 @@
             }
             const newMode = parseInt(modeArg, 8);
 
+            // Permission check: Only root or the owner of the file can change permissions.
+            // Additionally, the owner must have write permission on the file itself to change its permissions.
             if (currentUser !== "root") {
                 if (node.owner !== currentUser) {
                     return {
@@ -36,6 +53,7 @@
                         error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,
                     };
                 }
+                // Even the owner needs 'write' permission on the file to change its metadata (permissions).
                 if (!FileSystemManager.hasPermission(node, currentUser, "write")) {
                     return {
                         success: false,
@@ -44,6 +62,7 @@
                 }
             }
 
+            // Apply the new mode and update modification times.
             node.mode = newMode;
             node.mtime = nowISO;
             FileSystemManager._updateNodeAndParentMtime(
@@ -51,6 +70,7 @@
                 nowISO
             );
 
+            // Attempt to save the file system changes.
             if (!(await FileSystemManager.save())) {
                 return {
                     success: false,

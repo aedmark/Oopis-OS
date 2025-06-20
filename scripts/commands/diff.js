@@ -1,7 +1,21 @@
 // scripts/commands/diff.js
 
+/**
+ * @file Defines the 'diff' command, which compares the content of two files line by line.
+ * It provides a formatted output highlighting additions, deletions, and common lines.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
+
+    /**
+     * @const {object} diffCommandDefinition
+     * @description The command definition for the 'diff' command.
+     * This object specifies the command's name, argument validation, path validation,
+     * required permissions, and the core logic for comparing two files.
+     */
     const diffCommandDefinition = {
         commandName: "diff",
         argValidation: {
@@ -26,13 +40,29 @@
             pathArgIndex: 1,
             permissions: ["read"]
         }, ],
+        /**
+         * The core logic for the 'diff' command.
+         * It retrieves the content of the two specified files (which are guaranteed
+         * to exist and be readable by `pathValidation` and `permissionChecks`).
+         * It then uses the `DiffUtils.compare` function to generate a line-by-line
+         * comparison and returns the formatted diff output.
+         * @async
+         * @param {object} context - The context object provided by the command executor.
+         * @param {object[]} context.validatedPaths - An array containing information about the two validated file paths.
+         * @returns {Promise<object>} A promise that resolves to a command result object
+         * with the formatted diff output.
+         */
         coreLogic: async (context) => {
             const {
                 validatedPaths
             } = context;
+            // The first validated path corresponds to file1.
             const file1Node = validatedPaths[0].node;
+            // The second validated path corresponds to file2.
             const file2Node = validatedPaths[1].node;
 
+            // Use DiffUtils to compare the content of the two files.
+            // Provide empty strings if content is null or undefined to prevent errors.
             const diffResult = DiffUtils.compare(
                 file1Node.content || "",
                 file2Node.content || ""

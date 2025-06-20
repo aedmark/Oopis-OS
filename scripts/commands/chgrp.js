@@ -1,11 +1,36 @@
 // scripts/commands/chgrp.js
 
+/**
+ * @file Defines the 'chgrp' command, which allows changing the group ownership of files and directories.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
+
+    /**
+     * @const {object} chgrpCommandDefinition
+     * @description The command definition for the 'chgrp' command.
+     * This object specifies the command's name, argument validation, path validation,
+     * and the core logic for changing a node's group.
+     */
     const chgrpCommandDefinition = {
         commandName: "chgrp",
         argValidation: { exact: 2, error: "Usage: chgrp <groupname> <path>" },
         pathValidation: [{ argIndex: 1 }],
+        /**
+         * The core logic for the 'chgrp' command.
+         * It changes the group ownership of the specified file or directory.
+         * Permissions are checked to ensure that only the file's owner or 'root' can perform this action.
+         * It also validates that the new group name exists.
+         * @async
+         * @param {object} context - The context object provided by the command executor.
+         * @param {string[]} context.args - The arguments provided to the command, expecting a group name and a path.
+         * @param {string} context.currentUser - The name of the current user.
+         * @param {object[]} context.validatedPaths - An array of validated path information objects.
+         * @returns {Promise<object>} A promise that resolves to a command result object.
+         */
         coreLogic: async (context) => {
             const { args, currentUser, validatedPaths } = context;
             const groupName = args[0];

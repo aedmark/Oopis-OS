@@ -1,11 +1,25 @@
 // scripts/commands/echo.js
 
+/**
+ * @file Defines the 'echo' command, which prints arguments to the standard output.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
 
+    /**
+     * @const {object} echoCommandDefinition
+     * @description The command definition for the 'echo' command.
+     * This object specifies the command's name and its core logic for
+     * outputting provided arguments.
+     */
     const echoCommandDefinition = {
         commandName: "echo",
+        // No argValidation needed as 'echo' accepts any number of arguments.
         coreLogic: async (context) => {
+            // Join all provided arguments with a space and return as output.
             return {
                 success: true,
                 output: context.args.join(" "),
@@ -40,5 +54,6 @@ EXAMPLES
               Displays the name of the current user by expanding the
               $USER environment variable.`;
 
+    // Register the command with the CommandRegistry.
     CommandRegistry.register("echo", echoCommandDefinition, echoDescription, echoHelpText);
 })();
