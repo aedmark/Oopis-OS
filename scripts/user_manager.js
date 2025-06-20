@@ -1,10 +1,23 @@
-// scripts/commands/user_manager.js
+// scripts/user_manager.js
+
+/**
+ * @file Manages all user and group-related logic for OopisOS.
+ * @module UserManager
+ * @module GroupManager
+ */
 
 const UserManager = (() => {
     "use strict";
     let currentUser = {
         name: Config.USER.DEFAULT_NAME,
     };
+
+    /**
+     * Hashes a password using the Web Crypto API (SHA-256).
+     * @private
+     * @param {string} password The plain-text password to hash.
+     * @returns {Promise<string|null>} A promise that resolves to the hex-encoded hash string, or null on failure.
+     */
     async function _secureHashPassword(password) {
         if (!password || typeof password !== "string" || password.trim() === "") {
             return null;
@@ -21,9 +34,19 @@ const UserManager = (() => {
         }
     }
 
+    /**
+     * Gets the currently active user object.
+     * @returns {{name: string}} The current user object.
+     */
     function getCurrentUser() {
         return currentUser;
     }
+
+    /**
+     * Retrieves the primary group for a given user.
+     * @param {string} username - The name of the user to check.
+     * @returns {string|null} The name of the user's primary group, or null if not found.
+     */
     function getPrimaryGroupForUser(username) {
         const users = StorageManager.loadItem(
             Config.STORAGE_KEYS.USER_CREDENTIALS,
@@ -32,6 +55,13 @@ const UserManager = (() => {
         );
         return users[username]?.primaryGroup || null;
     }
+
+    /**
+     * Registers a new user, creates their home directory and primary group.
+     * @param {string} username - The desired username.
+     * @param {string|null} password - The desired password (can be null for no password).
+     * @returns {Promise<object>} A command result object indicating success or failure.
+     */
     async function register(username, password) {
         const formatValidation = Utils.validateUsernameFormat(username);
         if (!formatValidation.isValid)
@@ -89,6 +119,14 @@ const UserManager = (() => {
             };
         }
     }
+
+    /**
+     * Authenticates a user against stored credentials. Does not handle UI/modals.
+     * @private
+     * @param {string} username - The username to authenticate.
+     * @param {string|null} providedPassword - The password to check.
+     * @returns {Promise<object>} An object indicating the result. Includes `requiresPasswordPrompt` if a password is needed but wasn't provided.
+     */
     async function _authenticateUser(username, providedPassword) {
         const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
         const userEntry = users[username];
@@ -114,24 +152,33 @@ const UserManager = (() => {
         return { success: true };
     }
 
-
-    async function login(username, providedPassword, options = {}) {
+    /**
+     * Handles the shared authentication logic for login and su, including interactive password prompts.
+     * @private
+     * @param {string} username - The user to authenticate.
+     * @param {string|null} providedPassword - The password from the command arguments.
+     * @param {function} successCallback - The function to call upon successful authentication (e.g., _performLogin, _performSu).
+     * @param {string} failureMessage - The error message to show on authentication failure.
+     * @param {object} options - Command options, including scriptingContext.
+     * @returns {Promise<object>} A command result object.
+     */
+    async function _handleAuthFlow(username, providedPassword, successCallback, failureMessage, options) {
         const authResult = await _authenticateUser(username, providedPassword);
 
         if (!authResult.success) {
             if (!authResult.requiresPasswordPrompt) {
-                return authResult;
+                return authResult; // Return direct failure (e.g., invalid user, wrong password type)
             }
-            // If password prompt is required
+            // Password prompt is required
             return new Promise(resolve => {
                 ModalInputManager.requestInput(
                     Config.MESSAGES.PASSWORD_PROMPT,
                     async (passwordFromPrompt) => {
                         const finalAuthResult = await _authenticateUser(username, passwordFromPrompt);
                         if (finalAuthResult.success) {
-                            resolve(await _performLogin(username));
+                            resolve(await successCallback(username));
                         } else {
-                            resolve({ success: false, error: finalAuthResult.error || "Login failed." });
+                            resolve({ success: false, error: finalAuthResult.error || failureMessage });
                         }
                     },
                     () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
@@ -140,9 +187,27 @@ const UserManager = (() => {
                 );
             });
         }
-        return await _performLogin(username);
+        // Authentication succeeded without needing a prompt
+        return await successCallback(username);
     }
 
+    /**
+     * Logs in as a specified user, replacing the current session stack.
+     * @param {string} username - The username to log in as.
+     * @param {string|null} providedPassword - The password, if provided.
+     * @param {object} [options={}] - Command options, including scriptingContext for automated tests.
+     * @returns {Promise<object>} A command result object.
+     */
+    async function login(username, providedPassword, options = {}) {
+        return _handleAuthFlow(username, providedPassword, _performLogin, "Login failed.", options);
+    }
+
+    /**
+     * Performs the final actions of a login after authentication is successful.
+     * @private
+     * @param {string} username - The username to log in as.
+     * @returns {Promise<object>} A command result object.
+     */
     async function _performLogin(username) {
         if (currentUser.name !== Config.USER.DEFAULT_NAME) {
             SessionManager.saveAutomaticState(currentUser.name);
@@ -159,35 +224,26 @@ const UserManager = (() => {
         return { success: true, message: `Logged in as ${username}.`, isLogin: true };
     }
 
+    /**
+     * Switches to a new user, stacking the session on top of the current one.
+     * @param {string} username - The user to switch to.
+     * @param {string|null} providedPassword - The password, if provided.
+     * @param {object} [options={}] - Command options, including scriptingContext for automated tests.
+     * @returns {Promise<object>} A command result object.
+     */
     async function su(username, providedPassword, options = {}) {
         if (currentUser.name === username) {
             return { success: true, message: `Already user '${username}'.`, noAction: true };
         }
-        const authResult = await _authenticateUser(username, providedPassword);
-        if (!authResult.success) {
-            if (!authResult.requiresPasswordPrompt) {
-                return authResult;
-            }
-            return new Promise(resolve => {
-                ModalInputManager.requestInput(
-                    Config.MESSAGES.PASSWORD_PROMPT,
-                    async (passwordFromPrompt) => {
-                        const finalAuthResult = await _authenticateUser(username, passwordFromPrompt);
-                        if (finalAuthResult.success) {
-                            resolve(await _performSu(username));
-                        } else {
-                            resolve({ success: false, error: finalAuthResult.error || "su: Authentication failure." });
-                        }
-                    },
-                    () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
-                    true, // isObscured
-                    options
-                );
-            });
-        }
-        return await _performSu(username);
+        return _handleAuthFlow(username, providedPassword, _performSu, "su: Authentication failure.", options);
     }
 
+    /**
+     * Performs the final actions of a user switch after authentication is successful.
+     * @private
+     * @param {string} username - The username to switch to.
+     * @returns {Promise<object>} A command result object.
+     */
     async function _performSu(username) {
         SessionManager.saveAutomaticState(currentUser.name);
         SessionManager.pushUserToStack(username);
@@ -202,7 +258,10 @@ const UserManager = (() => {
         return { success: true, message: `Switched to user: ${username}.` };
     }
 
-
+    /**
+     * Logs out of the current stacked session and returns to the previous user.
+     * @returns {Promise<object>} A command result object.
+     */
     async function logout() {
         const oldUser = currentUser.name;
         if (SessionManager.getStack().length <= 1) {
@@ -223,6 +282,10 @@ const UserManager = (() => {
         return { success: true, message: `Logged out from ${oldUser}. Now logged in as ${newUsername}.`, isLogout: true, newUser: newUsername };
     }
 
+    /**
+     * Initializes the default users (root, Guest, userDiag) if they do not already exist in storage.
+     * @returns {Promise<void>}
+     */
     async function initializeDefaultUsers() {
         const users = StorageManager.loadItem(
             Config.STORAGE_KEYS.USER_CREDENTIALS,
@@ -263,6 +326,10 @@ const UserManager = (() => {
             );
         }
     }
+
+    /**
+     * Public interface for UserManager.
+     */
     return {
         getCurrentUser,
         register,
@@ -273,10 +340,15 @@ const UserManager = (() => {
         getPrimaryGroupForUser,
     };
 })();
+
 const GroupManager = (() => {
     "use strict";
     let groups = {};
 
+    /**
+     * Initializes the GroupManager by loading groups from storage and creating defaults.
+     * @returns {void}
+     */
     function initialize() {
         groups = StorageManager.loadItem(
             Config.STORAGE_KEYS.USER_GROUPS,
@@ -298,6 +370,11 @@ const GroupManager = (() => {
         console.log("GroupManager initialized.");
     }
 
+    /**
+     * Saves the current group data to local storage.
+     * @private
+     * @returns {void}
+     */
     function _save() {
         StorageManager.saveItem(
             Config.STORAGE_KEYS.USER_GROUPS,
@@ -306,10 +383,20 @@ const GroupManager = (() => {
         );
     }
 
+    /**
+     * Checks if a group exists.
+     * @param {string} groupName - The name of the group to check.
+     * @returns {boolean} True if the group exists, false otherwise.
+     */
     function groupExists(groupName) {
         return !!groups[groupName];
     }
 
+    /**
+     * Creates a new, empty group.
+     * @param {string} groupName - The name for the new group.
+     * @returns {boolean} True if the group was created, false if it already existed.
+     */
     function createGroup(groupName) {
         if (groupExists(groupName)) {
             return false;
@@ -319,6 +406,12 @@ const GroupManager = (() => {
         return true;
     }
 
+    /**
+     * Adds a user to a supplementary group.
+     * @param {string} username - The user to add.
+     * @param {string} groupName - The group to add the user to.
+     * @returns {boolean} True if the user was added, false if they were already a member or the group doesn't exist.
+     */
     function addUserToGroup(username, groupName) {
         if (
             groupExists(groupName) &&
@@ -331,6 +424,11 @@ const GroupManager = (() => {
         return false;
     }
 
+    /**
+     * Gets all groups a user belongs to (primary and supplementary).
+     * @param {string} username - The user to query.
+     * @returns {string[]} An array of group names.
+     */
     function getGroupsForUser(username) {
         const userGroups = [];
         const users = StorageManager.loadItem(
@@ -357,6 +455,11 @@ const GroupManager = (() => {
         return userGroups;
     }
 
+    /**
+     * Deletes a group, unless it is a primary group for any user.
+     * @param {string} groupName - The group to delete.
+     * @returns {{success: boolean, error?: string}} An object indicating the result of the operation.
+     */
     function deleteGroup(groupName) {
         if (!groupExists(groupName)) {
             return { success: false, error: `group '${groupName}' does not exist.` };
@@ -374,6 +477,11 @@ const GroupManager = (() => {
         return { success: true };
     }
 
+    /**
+     * Removes a user from all supplementary groups they are a member of.
+     * @param {string} username - The username to remove from groups.
+     * @returns {void}
+     */
     function removeUserFromAllGroups(username) {
         let changed = false;
         for (const groupName in groups) {
@@ -388,6 +496,9 @@ const GroupManager = (() => {
         }
     }
 
+    /**
+     * Public interface for GroupManager.
+     */
     return {
         initialize,
         createGroup,

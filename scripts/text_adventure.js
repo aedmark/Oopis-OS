@@ -1,4 +1,62 @@
-// adventure.js - OopisOS Adventure Engine and Editor
+// text_adventure.js - OopisOS Adventure Engine and Editor
+
+/**
+ * @typedef {Object.<string, Room>} RoomDict
+ */
+
+/**
+ * @typedef {Object.<string, Item>} ItemDict
+ */
+
+/**
+ * @typedef {Object} WinCondition
+ * @property {'itemInRoom' | 'playerHasItem'} type - The type of condition to check for winning.
+ * @property {string} itemId - The ID of the item involved in the win condition.
+ * @property {string} [roomId] - The ID of the room, required if type is 'itemInRoom'.
+ */
+
+/**
+ * @typedef {Object} PlayerState
+ * @property {string} currentLocation - The ID of the room the player is currently in.
+ * @property {string[]} inventory - An array of item IDs that the player is carrying.
+ */
+
+/**
+ * @typedef {Object} Item
+ * @property {string} id - The unique identifier for the item.
+ * @property {string} name - The display name of the item.
+ * @property {string} description - The default description of the item when looked at.
+ * @property {Object.<string, string>} [descriptions] - State-based descriptions (e.g., for 'open', 'closed').
+ * @property {string} location - The current location of the item (a room ID, container ID, or 'player').
+ * @property {boolean} [canTake=true] - Whether the player can pick up this item.
+ * @property {boolean} [isContainer=false] - Whether this item can hold other items.
+ * @property {boolean} [isOpenable=false] - Whether this item can be opened or closed.
+ * @property {string} [state] - The current state of the item (e.g., 'locked', 'open', 'closed').
+ * @property {string} [unlocksWith] - The ID of the item required to unlock this one.
+ * @property {string} [unlockMessage] - The message displayed upon successful unlocking.
+ * @property {string} [lockedMessage] - The message displayed when trying to interact while locked.
+ * @property {string} [leadsTo] - For door-like items, the room ID they lead to.
+ */
+
+/**
+ * @typedef {Object} Room
+ * @property {string} id - The unique identifier for the room.
+ * @property {string} name - The name of the room.
+ * @property {string} description - The description of the room.
+ * @property {Object.<string, string>} [exits] - A dictionary mapping direction names to room or item IDs.
+ */
+
+/**
+ * @typedef {Object} Adventure
+ * @property {string} title - The title of the adventure.
+ * @property {string} startingRoomId - The ID of the room where the player begins.
+ * @property {RoomDict} rooms - A dictionary of all rooms in the adventure.
+ * @property {ItemDict} items - A dictionary of all items in the adventure.
+ * @property {PlayerState} player - The initial state of the player.
+ * @property {WinCondition} winCondition - The condition required to win the game.
+ * @property {string} winMessage - The message displayed when the win condition is met.
+ */
+
 
 const TextAdventureModal = (() => {
   "use strict";
@@ -7,7 +65,7 @@ const TextAdventureModal = (() => {
   let promptResolver = null;
   let currentEngineInstance = null;
   let currentScriptingContext = null;
-  let sessionCompletionResolver = null;
+  let sessionCompletionResolver = null; // Add this line
 
   function _initDOM() {
     adventureModal = document.getElementById('adventure-modal');
@@ -148,10 +206,16 @@ const TextAdventureModal = (() => {
 
 const TextAdventureEngine = (() => {
   "use strict";
+  /** @type {Adventure} */
   let adventure;
+  /** @type {PlayerState} */
   let player;
   let scriptingContext = null;
 
+  /**
+   * @param {Adventure} adventureData
+   * @param {object} options
+   */
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
     scriptingContext = options.scriptingContext || null;
@@ -206,7 +270,6 @@ const TextAdventureEngine = (() => {
       itemStates: itemStates
     };
 
-    // START - LINTER FIX: Properly use currentUser and get primaryGroup
     const currentUser = UserManager.getCurrentUser().name;
     const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
     const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
@@ -216,7 +279,6 @@ const TextAdventureEngine = (() => {
         JSON.stringify(saveState, null, 2),
         { currentUser, primaryGroup }
     );
-    // END - LINTER FIX
 
     if (saveResult.success) {
       await FileSystemManager.save();
@@ -387,7 +449,7 @@ const TextAdventureEngine = (() => {
           _lookInContainer(targetItem);
         }
       }
-    } else {
+    } else { // 'close'
       if (targetItem.state === 'closed') {
         TextAdventureModal.appendOutput(`The ${targetItem.name} is already closed.`, 'info');
       } else {
@@ -397,6 +459,7 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /** @param {Item} container */
   function _lookInContainer(container) {
     const itemsInside = _getItemsInContainer(container.id);
     if (itemsInside.length > 0) {
@@ -408,6 +471,7 @@ const TextAdventureEngine = (() => {
   }
 
   function _getItemsInContainer(containerId) {
+    /** @type {Item[]} */
     const items = [];
     for (const id in adventure.items) {
       if (adventure.items[id].location === containerId) {
@@ -500,6 +564,11 @@ const TextAdventureEngine = (() => {
     TextAdventureModal.appendOutput("  load          - Loads a previous save file.", 'system');
   }
 
+  /**
+   * @param {string} name
+   * @param {string | null} locationId
+   * @returns {Item | null}
+   */
   function _findItemByName(name, locationId = null) {
     for (const id in adventure.items) {
       const item = adventure.items[id];
@@ -507,6 +576,7 @@ const TextAdventureEngine = (() => {
         if (item.location === locationId) {
           return item;
         }
+        // Check if item is inside an open container in the current location
         const container = adventure.items[item.location];
         if (container && container.location === locationId && container.isContainer && container.state === 'open') {
           return item;
@@ -516,12 +586,21 @@ const TextAdventureEngine = (() => {
     return null;
   }
 
+  /**
+   * @param {string} name
+   * @returns {Item | null}
+   */
   function _findItemInInventory(name) {
     const itemId = player.inventory.find(id => adventure.items[id].name.toLowerCase() === name.toLowerCase());
     return itemId ? adventure.items[itemId] : null;
   }
 
+  /**
+   * @param {string} roomId
+   * @returns {Item[]}
+   */
   function _getItemsInRoom(roomId) {
+    /** @type {Item[]} */
     const itemsInRoom = [];
     for (const id in adventure.items) {
       if (adventure.items[id].location === roomId) {
@@ -534,12 +613,14 @@ const TextAdventureEngine = (() => {
   function _checkWinConditions() {
     const winCondition = adventure.winCondition;
     if (!winCondition) return;
+
     let won = false;
     if (winCondition.type === "itemInRoom" && adventure.items[winCondition.itemId]?.location === winCondition.roomId) {
       won = true;
     } else if (winCondition.type === "playerHasItem" && player.inventory.includes(winCondition.itemId)) {
       won = true;
     }
+
     if (won) {
       TextAdventureModal.appendOutput(adventure.winMessage || "\n*** Congratulations! You have won! ***", 'system');
       const adventureInput = document.getElementById('adventure-input');
