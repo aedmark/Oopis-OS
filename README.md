@@ -17,6 +17,22 @@ Welcome to OopisOS, a sophisticated, fully client-side application that simulate
 
 It features a retro-style terminal, a persistent hierarchical file system with a full user/group permission model, a multi-user system with password authentication, an advanced text editor, a character-based paint program, a tool-using AI, an interactive text adventure engine, and a suite of command-line utilities with support for I/O redirection, piping, background processes, aliasing, and scripting.
 
+## Table of Contents
+- [Key Features](#key-features-v26)
+- [Getting Started](#getting-started)
+  - [First Commands to Try](#first-commands-to-try)
+- [Core Concepts](#core-concepts)
+  - [The Terminal Interface](#the-terminal-interface)
+  - [User and Permission Model](#user-and-permission-model)
+  - [The Text Editor](#the-text-editor-edit)
+  - [AI Integration](#ai-integration-gemini)
+  - [Scripting Engine](#scripting-engine-run)
+  - [Utility Scripts: inflate & diag](#utility-scripts-inflate--diag)
+- [Developer Guide](#developer-guide)
+  - [Project Structure](#project-structure)
+  - [Adding a New Command](#adding-a-new-command-the-v26-way)
+- [Technology Stack](#technology-stack)
+
 ### Key Features (v2.6)
 
 - **100% Client-Side:** Runs entirely in the browser with no server-side dependencies. All user data is stored locally and persistently using IndexedDB and LocalStorage. Your world remains your own.
