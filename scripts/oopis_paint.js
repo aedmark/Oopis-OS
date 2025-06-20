@@ -1,4 +1,4 @@
-// paint.js - OopisOS ASCII/ANSI Art Editor v1.5
+// paint.js - OopisOS ASCII/ANSI Art Editor
 
 const PaintAppConfig = {
     CANVAS: {
@@ -11,10 +11,14 @@ const PaintAppConfig = {
     ERASER_CHAR: ' ',
     ERASER_BG_COLOR: 'bg-neutral-950',
     FILE_EXTENSION: 'oopic',
+    // START - ADDED NEW CONFIG
+    ASCII_CHAR_RANGE: { START: 32, END: 126 },
     CSS_CLASSES: {
         MODAL_HIDDEN: 'hidden',
         ACTIVE_TOOL: 'paint-tool-active',
+        GRID_ACTIVE: 'paint-grid-active', // Class to activate the grid view
     },
+    // END - ADDED NEW CONFIG
     PALETTE: [
         { name: 'green',   class: 'text-green-500',   value: 'rgb(34, 197, 94)' },
         { name: 'red',     class: 'text-red-500',     value: 'rgb(239, 68, 68)' },
@@ -44,8 +48,12 @@ const PaintUI = (() => {
         elements.toolbar = document.getElementById('paint-toolbar');
         elements.canvas = document.getElementById('paint-canvas');
         elements.statusBar = document.getElementById('paint-statusbar');
+        // START - ADDED CHAR SELECT MODAL ELEMENTS
+        elements.charSelectModal = document.getElementById('paint-char-select-modal');
+        elements.charSelectGrid = document.getElementById('paint-char-select-grid');
+        // END - ADDED CHAR SELECT MODAL ELEMENTS
 
-        if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar) {
+        if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar || !elements.charSelectModal || !elements.charSelectGrid) {
             console.error("PaintUI: Critical UI elements missing!");
             return false;
         }
@@ -57,11 +65,19 @@ const PaintUI = (() => {
         const eraserSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M16.24,3.56L21.19,8.5C21.58,8.89 21.58,9.5 21.19,9.9L12.1,19L3,19L3,9.9L7.94,5M17.31,2.5L6.81,13L4,13L4,18L9,18L19.5,7.5M15.12,5.12L18.87,8.87" /></svg>';
         const undoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M12.5,8C9.81,8,7.5,10.27,7.5,13S9.81,18,12.5,18c2.04,0,3.84-1.18,4.63-2.92l1.48,1.48C17.34,18.23,15.06,20,12.5,20C8.91,20,6,16.91,6,13.5S8.91,7,12.5,7c1.78,0,3.4,.71,4.59,1.86L19,7v6h-6l1.92-1.92C14.04,9.82,13.3,9,12.5,9c-1.38,0-2.5,1.12-2.5,2.5s1.12,2.5,2.5,2.5c.83,0,1.55-.4,2-1h1.53c-.64,1.9-2.51,3.25-4.53,3.25-2.76,0-5-2.24-5-5s2.24-5,5-5c1.38,0,2.64,.56,3.54,1.46L18.5,6H12.5V8Z"/></svg>';
         const redoSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M11.5,8c2.76,0,5,2.24,5,5s-2.24,5-5,5c-1.38,0-2.64-.56-3.54-1.46L5.5,18H11.5v-2c.83,0,1.55-.39,2-1h-1.53c.64-1.9,2.51,3.25,4.53-3.25,1.38,0,2.5,1.12,2.5,2.5s-1.12,2.5-2.5,2.5c-.82,0-1.55-.39-2-1H5.41l1.46-1.46C8.16,11.23,9.78,10,11.5,10c2.76,0,5,2.24,5,5s-2.24,5-5,5-5-2.24-5-5c0-.17.01-.34.04-.5L4,14.08C4,14.54,4,15,4,15.5c0,3.59,3.09,6.5,6.5,6.5s6.5-2.91,6.5-6.5S14.91,9,11.5,9c-1.78,0-3.4,.71-4.59,1.86L5,9V3h6l-1.92,1.92C10.96,6.18,11.7,7,11.5,7Z" /></svg>';
+        // START - ADDED NEW BUTTON ICONS
+        const gridSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg>';
+        const charSelectSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M6,15.5L9.5,12L6,8.5L7.42,7.08L12.34,12L7.42,16.92L6,15.5M13.42,16.92L18.34,12L13.42,7.08L14.84,5.66L21.17,12L14.84,18.34L13.42,16.92Z" /></svg>';
+        // END - ADDED NEW BUTTON ICONS
 
         elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
         elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
         elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
         elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
+        // START - ADDED NEW BUTTONS
+        elements.gridBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
+        elements.charSelectBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
+        // END - ADDED NEW BUTTONS
 
         elements.colorButtons = [];
         const colorPaletteContainer = Utils.createElement('div', { className: 'paint-palette' });
@@ -79,7 +95,7 @@ const PaintUI = (() => {
         elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save & Exit', title: 'Save & Exit (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit without Saving (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, elements.eraserBtn);
+        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, elements.eraserBtn, elements.gridBtn, elements.charSelectBtn);
         const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveExitBtn, elements.exitBtn);
 
         elements.toolbar.append(leftGroup, colorPaletteContainer, rightGroup);
@@ -88,10 +104,52 @@ const PaintUI = (() => {
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
         document.addEventListener('mouseup', eventCallbacks.onMouseUp);
         elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
+        // START - ADDED CLICK LISTENER FOR CHAR SELECT MODAL
+        elements.charSelectModal.addEventListener('click', (e) => {
+            // If the click is on the background, close it
+            if (e.target === elements.charSelectModal) {
+                hideCharSelect();
+            }
+        });
+        // END - ADDED CLICK LISTENER
 
         isInitialized = true;
         return true;
     }
+
+    // START - ADDED NEW UI FUNCTIONS
+    function toggleGrid(isActive) {
+        if (!elements.canvas) return;
+        elements.canvas.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
+    }
+
+    function populateAndShowCharSelect(onSelectCallback) {
+        if (!elements.charSelectGrid || !elements.charSelectModal) return;
+        elements.charSelectGrid.innerHTML = ''; // Clear previous
+        const fragment = document.createDocumentFragment();
+        const { START, END } = PaintAppConfig.ASCII_CHAR_RANGE;
+
+        for (let i = START; i <= END; i++) {
+            const char = String.fromCharCode(i);
+            const btn = Utils.createElement('button', {
+                className: 'paint-char-btn',
+                textContent: char,
+                eventListeners: {
+                    click: () => onSelectCallback(char)
+                }
+            });
+            fragment.appendChild(btn);
+        }
+        elements.charSelectGrid.appendChild(fragment);
+        elements.charSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+    }
+
+    function hideCharSelect() {
+        if (elements.charSelectModal) {
+            elements.charSelectModal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
+    }
+    // END - ADDED NEW UI FUNCTIONS
 
     function _calculateCellSize() {
         if (!elements.canvas || !elements.canvas.firstChild) return;
@@ -118,12 +176,15 @@ const PaintUI = (() => {
         elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Coords: ${status.coords.x},${status.coords.y}`;
     }
 
-    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible) {
+    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive) {
         if (!isInitialized) return;
         elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
         elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
         elements.undoBtn.disabled = !undoPossible;
         elements.redoBtn.disabled = !redoPossible;
+        // START - ADDED GRID BUTTON STATE UPDATE
+        elements.gridBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isGridActive);
+        // END - ADDED GRID BUTTON STATE UPDATE
 
         elements.colorButtons.forEach((btn, index) => {
             const colorClass = PaintAppConfig.PALETTE[index].class;
@@ -143,6 +204,9 @@ const PaintUI = (() => {
         if (elements.modal) {
             elements.modal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
         }
+        // START - ENSURE CHAR SELECT IS ALSO HIDDEN ON EXIT
+        hideCharSelect();
+        // END - ENSURE CHAR SELECT IS ALSO HIDDEN
         OutputManager.setEditorActive(false);
     }
 
@@ -177,7 +241,7 @@ const PaintUI = (() => {
         isInitialized = false;
     }
 
-    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar };
+    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect };
 })();
 
 const PaintManager = (() => {
@@ -186,6 +250,9 @@ const PaintManager = (() => {
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
     let fgColor = PaintAppConfig.DEFAULT_FG_COLOR, lastCoords = { x: -1, y: -1 };
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
+    // START - ADDED NEW STATE
+    let isGridVisible = false;
+    // END - ADDED NEW STATE
 
     const paintEventCallbacks = {
         onMouseDown: _handleMouseDown,
@@ -197,7 +264,11 @@ const PaintManager = (() => {
         onSaveAndExit: () => exit(true),
         onExit: () => exit(false),
         onUndo: _performUndo,
-        onRedo: _performRedo
+        onRedo: _performRedo,
+        // START - ADDED NEW CALLBACKS
+        onGridToggle: _toggleGrid,
+        onCharSelectOpen: _openCharSelect,
+        // END - ADDED NEW CALLBACKS
     };
 
     function _createBlankCanvas(w, h) {
@@ -210,8 +281,8 @@ const PaintManager = (() => {
         return data;
     }
 
-    function _updateUndoRedoButtonStates() {
-        PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0);
+    function _updateToolbarState() {
+        PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible);
     }
 
     function _saveUndoState() {
@@ -220,7 +291,7 @@ const PaintManager = (() => {
         if (undoStack.length > PaintAppConfig.EDITOR.MAX_UNDO_STATES) {
             undoStack.shift();
         }
-        _updateUndoRedoButtonStates();
+        _updateToolbarState();
     }
 
     function _triggerSaveUndoState() {
@@ -234,7 +305,7 @@ const PaintManager = (() => {
         redoStack.push(currentState);
         canvasData = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
         PaintUI.renderCanvas(canvasData);
-        _updateUndoRedoButtonStates();
+        _updateToolbarState();
     }
 
     function _performRedo() {
@@ -243,8 +314,26 @@ const PaintManager = (() => {
         undoStack.push(nextState);
         canvasData = JSON.parse(JSON.stringify(nextState));
         PaintUI.renderCanvas(canvasData);
-        _updateUndoRedoButtonStates();
+        _updateToolbarState();
     }
+
+    // START - ADDED NEW LOGIC HANDLERS
+    function _toggleGrid() {
+        isGridVisible = !isGridVisible;
+        PaintUI.toggleGrid(isGridVisible);
+        _updateToolbarState();
+    }
+
+    function _openCharSelect() {
+        PaintUI.populateAndShowCharSelect(_setDrawCharFromSelection);
+    }
+
+    function _setDrawCharFromSelection(char) {
+        drawChar = char;
+        PaintUI.hideCharSelect();
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+    }
+    // END - ADDED NEW LOGIC HANDLERS
 
     function _drawOnCanvas(x, y) {
         if (y < 0 || y >= canvasData.length || x < 0 || x >= canvasData[0].length) return;
@@ -313,12 +402,12 @@ const PaintManager = (() => {
 
     function _setTool(toolName) {
         currentTool = toolName;
-        _updateUndoRedoButtonStates();
+        _updateToolbarState();
     }
 
     function _setColor(colorClass) {
         fgColor = colorClass;
-        _updateUndoRedoButtonStates();
+        _updateToolbarState();
     }
 
     function _resetState() {
@@ -333,6 +422,7 @@ const PaintManager = (() => {
         lastCoords = { x: -1, y: -1 };
         undoStack = [];
         redoStack = [];
+        isGridVisible = false; // Reset grid state
         if (saveUndoStateTimeout) {
             clearTimeout(saveUndoStateTimeout);
             saveUndoStateTimeout = null;
@@ -378,7 +468,7 @@ const PaintManager = (() => {
         // Re-show the UI and re-attach listeners.
         PaintUI.show(paintEventCallbacks);
         PaintUI.renderCanvas(canvasData);
-        _updateUndoRedoButtonStates();
+        _updateToolbarState();
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
         document.addEventListener('keydown', handleKeyDown);
         TerminalUI.setInputState(false);
@@ -393,6 +483,7 @@ const PaintManager = (() => {
         currentTool = 'pencil';
         drawChar = PaintAppConfig.DEFAULT_CHAR;
         fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
+        isGridVisible = false; // Ensure grid is off by default on entry
 
         if (fileContent) {
             let parsedData = null;
@@ -418,9 +509,9 @@ const PaintManager = (() => {
         redoStack = [];
 
         PaintUI.show(paintEventCallbacks);
-
         PaintUI.renderCanvas(canvasData);
-        _updateUndoRedoButtonStates();
+        PaintUI.toggleGrid(isGridVisible); // Ensure grid UI matches state
+        _updateToolbarState();
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1} });
 
         document.addEventListener('keydown', handleKeyDown);
@@ -429,10 +520,8 @@ const PaintManager = (() => {
     async function exit(save = false) {
         if (!isActiveState) return;
 
-        // Immediately remove the app-specific key listener to prevent interference with modals.
         document.removeEventListener('keydown', handleKeyDown);
 
-        // 1. Handle discard confirmation
         if (isDirty && !save) {
             const confirmed = await new Promise(resolve => {
                 ModalManager.request({
@@ -445,27 +534,24 @@ const PaintManager = (() => {
                 });
             });
             if (!confirmed) {
-                _reenterPaint(); // User cancelled, so re-enter paint.
+                _reenterPaint();
                 return;
             }
         }
 
-        // 2. Handle save logic if needed
         if (save && isDirty) {
             let savePath = currentFilePath;
             let wasSaveSuccessful = false;
 
             if (savePath) {
-                // Case A: File already has a name, just save.
                 wasSaveSuccessful = await _performSave(savePath);
             } else {
-                // Case B: New file, need to prompt for a name.
-                PaintUI.hide(); // Hide paint UI to reveal terminal prompt.
+                PaintUI.hide();
 
                 const prospectivePath = await new Promise(resolve => {
                     ModalInputManager.requestInput(
                         "Enter filename to save as (.oopic extension will be added if missing):",
-                        (filename) => { // onConfirm callback
+                        (filename) => {
                             if (!filename || filename.trim() === "") {
                                 resolve({ path: null, reason: "Save cancelled. No filename provided." });
                             } else {
@@ -475,10 +561,10 @@ const PaintManager = (() => {
                                 resolve({ path: FileSystemManager.getAbsolutePath(filename, FileSystemManager.getCurrentPath()), reason: null });
                             }
                         },
-                        () => { // onCancel callback
+                        () => {
                             resolve({ path: null, reason: "Save cancelled." });
                         },
-                        false // isObscured
+                        false
                     );
                 });
 
@@ -486,7 +572,7 @@ const PaintManager = (() => {
                     let proceedWithSave = true;
                     const pathInfo = FileSystemManager.validatePath("paint save", prospectivePath.path, { allowMissing: true });
 
-                    if (pathInfo.node) { // File exists, confirm overwrite
+                    if (pathInfo.node) {
                         const confirmedOverwrite = await new Promise(resolve => {
                             ModalManager.request({
                                 context: 'graphical',
@@ -508,19 +594,16 @@ const PaintManager = (() => {
                         }
                     }
                 } else {
-                    // User cancelled the filename prompt
                     await OutputManager.appendToOutput(prospectivePath.reason, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                 }
             }
 
-            // If the save process was attempted but failed or was cancelled, we must re-enter paint mode.
             if (!wasSaveSuccessful) {
                 _reenterPaint("Returning to paint editor.");
-                return; // Abort the exit process.
+                return;
             }
         }
 
-        // 3. If we got here, it's safe to exit.
         PaintUI.hide();
         PaintUI.reset();
         _resetState();
@@ -546,13 +629,16 @@ const PaintManager = (() => {
         }
 
         const key = event.key.toLowerCase();
-        const isAppKey = ['p', 'e', '1', '2', '3', '4', '5', '6'].includes(key);
+        // START - ADDED GRID (G) AND CHAR SELECT (C) TO KEYBINDS
+        const isAppKey = ['p', 'e', 'g', 'c', '1', '2', '3', '4', '5', '6'].includes(key);
         const isCharKey = event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey;
 
         if (isAppKey) {
             event.preventDefault();
             if (key === 'p') { _setTool('pencil'); }
             else if (key === 'e') { _setTool('eraser'); }
+            else if (key === 'g') { _toggleGrid(); }
+            else if (key === 'c') { _openCharSelect(); }
             else {
                 const colorIndex = parseInt(key, 10) - 1;
                 if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
