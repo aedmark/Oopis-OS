@@ -1,8 +1,32 @@
-// editor.js - OopisOS Live Markdown Text Editor
+/**
+ * @file Manages the entire lifecycle and functionality of the OopisOS full-screen text editor.
+ * @author Andrew Edmark
+ * @author Gemini
+ * @see EditorManager
+ */
 
-/* global marked, Utils */
+/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, StorageManager */
 
+/**
+ * @module EditorAppConfig
+ * @description Provides a centralized configuration object for the editor application.
+ * This includes constants for editor behavior, storage keys, and CSS class names.
+ */
 const EditorAppConfig = {
+  /**
+   * @property {object} EDITOR - Configuration settings specific to the editor's behavior.
+   * @property {number} EDITOR.DEBOUNCE_DELAY_MS - Delay in milliseconds for debouncing preview rendering.
+   * @property {string} EDITOR.TAB_REPLACEMENT - The string to insert when the Tab key is pressed.
+   * @property {string} EDITOR.CTRL_S_ACTION - Action identifier for the Ctrl+S key combination.
+   * @property {string} EDITOR.CTRL_O_ACTION - Action identifier for the Ctrl+O key combination.
+   * @property {string} EDITOR.CTRL_P_ACTION - Action identifier for the Ctrl+P key combination.
+   * @property {string} EDITOR.DEFAULT_MODE - The default editor mode if none can be determined from the file extension.
+   * @property {object} EDITOR.MODES - Enumeration of available editor modes.
+   * @property {object} EDITOR.EXTENSIONS_MAP - A map of file extensions to their corresponding editor modes.
+   * @property {object} EDITOR.VIEW_MODES - Enumeration of available view modes (split, edit-only, preview-only).
+   * @property {boolean} EDITOR.WORD_WRAP_DEFAULT_ENABLED - The default state for word wrap.
+   * @property {string} EDITOR.FORMATTING_TOOLBAR_ID - The DOM ID for the formatting toolbar.
+   */
   EDITOR: {
     DEBOUNCE_DELAY_MS: 250,
     TAB_REPLACEMENT: "    ",
@@ -31,23 +55,49 @@ const EditorAppConfig = {
     WORD_WRAP_DEFAULT_ENABLED: false,
     FORMATTING_TOOLBAR_ID: "editor-formatting-toolbar",
   },
+  /**
+   * @property {object} STORAGE_KEYS - Keys used for storing editor settings in localStorage.
+   * @property {string} STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED - Key for the word wrap setting.
+   */
   STORAGE_KEYS: {
     EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
   },
+  /**
+   * @property {object} CSS_CLASSES - CSS class names used for styling the editor UI.
+   * @property {string} CSS_CLASSES.EDITOR_MSG - Class for editor-related messages in the terminal.
+   * @property {string} CSS_CLASSES.EDITOR_FORMATTING_TOOLBAR_HIDDEN - Class to hide the formatting toolbar.
+   * @property {string} CSS_CLASSES.HIDDEN - General-purpose class to hide elements.
+   */
   CSS_CLASSES: {
     EDITOR_MSG: "text-sky-400",
     EDITOR_FORMATTING_TOOLBAR_HIDDEN: "editor-formatting-toolbar-hidden",
     HIDDEN: "hidden",
   }
 };
+
+/**
+ * @module EditorUtils
+ * @description Provides helper and utility functions specifically for the editor.
+ */
 const EditorUtils = (() => {
   "use strict";
 
+  /**
+   * Determines the editor mode based on a file's extension.
+   * @param {string} filePath - The full path of the file.
+   * @returns {string} The determined editor mode (e.g., 'markdown', 'html', 'text').
+   */
   function determineMode(filePath) {
     const extension = Utils.getFileExtension(filePath);
     return(EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
   }
 
+  /**
+   * Generates the CSS required for styling the preview pane.
+   * Provides different styles for HTML and Markdown previews.
+   * @param {boolean} [isHtmlMode=false] - Flag to indicate if HTML-specific styles are needed.
+   * @returns {string} The CSS style block as a string.
+   */
   function getPreviewStylingCSS(isHtmlMode = false) {
     let baseStyles = `
                     body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #fff; color: #333; }
@@ -68,6 +118,12 @@ const EditorUtils = (() => {
                 `);
   }
 
+  /**
+   * Calculates various statistics for the status bar (lines, words, chars, cursor position).
+   * @param {string} text - The full text content of the editor.
+   * @param {number} selectionStart - The starting position of the cursor/selection.
+   * @returns {{lines: number, words: number, chars: number, cursor: {line: number, col: number}}} An object containing the calculated stats.
+   */
   function calculateStatusBarInfo(text, selectionStart) {
     const lines = text.split("\n");
     const lineCount = lines.length;
@@ -103,6 +159,11 @@ const EditorUtils = (() => {
     };
   }
 
+  /**
+   * Generates an array of line numbers based on the text content.
+   * @param {string} text - The text content to analyze.
+   * @returns {number[]} An array of numbers, e.g., [1, 2, 3, ...].
+   */
   function generateLineNumbersArray(text) {
     const lines = text.split("\n").length;
     return Array.from({
@@ -116,8 +177,14 @@ const EditorUtils = (() => {
     generateLineNumbersArray,
   };
 })();
+
+/**
+ * @module EditorUI
+ * @description Manages all DOM manipulations for the editor, including building, updating, and destroying the UI.
+ */
 const EditorUI = (() => {
   "use strict";
+  /** @private @type {Object.<string, HTMLElement>} */
   let elements = {};
   elements.formattingToolbar = null;
   elements.boldButton = null;
@@ -130,10 +197,18 @@ const EditorUI = (() => {
   elements.olButton = null;
   elements.undoButton = null;
   elements.redoButton = null;
+  /** @private @type {Object.<string, Function>} */
   let eventCallbacks = {};
+  /** @private @type {?number} */
   let previewDebounceTimer = null;
+  /** @private @const {string} */
   const GUTTER_WRAP_HIDDEN_CLASS = "gutter-hidden-by-wrap";
 
+  /**
+   * Builds the entire editor layout and injects it into the DOM.
+   * @param {HTMLElement} containerElement - The parent element to build the editor within.
+   * @param {Object.<string, Function>} callbacks - An object containing callback functions for UI events.
+   */
   function buildLayout(containerElement, callbacks) {
     eventCallbacks = callbacks;
     elements.filenameDisplay = Utils.createElement("span", {
@@ -336,6 +411,10 @@ const EditorUI = (() => {
     }
   }
 
+  /**
+   * Toggles the visibility of the line number gutter.
+   * @param {boolean} visible - If true, the gutter is shown; otherwise, it's hidden.
+   */
   function setGutterVisibility(visible) {
     if(elements.lineGutter) {
       if(visible) {
@@ -346,6 +425,9 @@ const EditorUI = (() => {
     }
   }
 
+  /**
+   * Removes the editor layout from the DOM and resets its state.
+   */
   function destroyLayout() {
     if(elements.editorContainer && elements.editorContainer.parentNode) {
       elements.editorContainer.parentNode.removeChild(elements.editorContainer);
@@ -359,12 +441,22 @@ const EditorUI = (() => {
     eventCallbacks = {};
   }
 
+  /**
+   * Updates the filename display in the status bar.
+   * @param {string} filePath - The path of the current file.
+   * @param {boolean} isDirty - Whether the file has unsaved changes.
+   */
   function updateFilenameDisplay(filePath, isDirty) {
     if(elements.filenameDisplay) {
       elements.filenameDisplay.textContent = `File: ${filePath || "Untitled"}${isDirty ? "*" : ""}`;
     }
   }
 
+  /**
+   * Updates all information in the status bar.
+   * @param {string} text - The full text content of the editor.
+   * @param {number} selectionStart - The starting position of the cursor/selection.
+   */
   function updateStatusBar(text, selectionStart) {
     if(!elements.textarea || !elements.statusBar) return;
     const stats = EditorUtils.calculateStatusBarInfo(text, selectionStart);
@@ -374,6 +466,10 @@ const EditorUI = (() => {
     if(elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col}`;
   }
 
+  /**
+   * Renders the line numbers in the gutter.
+   * @param {string} text - The full text content of the editor.
+   */
   function updateLineNumbers(text) {
     if(!elements.textarea || !elements.lineGutter) return;
     const numbersArray = EditorUtils.generateLineNumbersArray(text);
@@ -381,26 +477,44 @@ const EditorUI = (() => {
     elements.lineGutter.scrollTop = elements.textarea.scrollTop;
   }
 
+  /**
+   * Synchronizes the scroll position of the line gutter with the textarea.
+   */
   function syncLineGutterScroll() {
     if(elements.lineGutter && elements.textarea) {
       elements.lineGutter.scrollTop = elements.textarea.scrollTop;
     }
   }
 
+  /**
+   * Sets the content of the main textarea.
+   * @param {string} text - The content to set.
+   */
   function setTextareaContent(text) {
     if(elements.textarea) elements.textarea.value = text;
   }
 
+  /**
+   * Gets the current content of the main textarea.
+   * @returns {string} The textarea's content.
+   */
   function getTextareaContent() {
     return elements.textarea ? elements.textarea.value : "";
   }
 
+  /**
+   * Sets focus to the main textarea.
+   */
   function setEditorFocus() {
     if(elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains(EditorAppConfig.CSS_CLASSES.HIDDEN)) {
       elements.textarea.focus();
     }
   }
 
+  /**
+   * Gets the current selection start and end positions in the textarea.
+   * @returns {{start: number, end: number}} The selection object.
+   */
   function getTextareaSelection() {
     if(elements.textarea) {
       return {
@@ -414,6 +528,11 @@ const EditorUI = (() => {
     };
   }
 
+  /**
+   * Sets the selection range in the textarea.
+   * @param {number} start - The starting position of the selection.
+   * @param {number} end - The ending position of the selection.
+   */
   function setTextareaSelection(start, end) {
     if(elements.textarea) {
       elements.textarea.selectionStart = start;
@@ -421,6 +540,10 @@ const EditorUI = (() => {
     }
   }
 
+  /**
+   * Applies the word wrap setting to the textarea element.
+   * @param {boolean} isWordWrapActive - The desired word wrap state.
+   */
   function applyTextareaWordWrap(isWordWrapActive) {
     if(!elements.textarea) return;
     if(isWordWrapActive) {
@@ -432,6 +555,11 @@ const EditorUI = (() => {
     }
   }
 
+  /**
+   * Applies the word wrap setting to the preview pane.
+   * @param {boolean} isWordWrapActive - The desired word wrap state.
+   * @param {string} currentFileMode - The current mode of the editor.
+   */
   function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
     if(!elements.previewPane) return;
     if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
@@ -439,12 +567,20 @@ const EditorUI = (() => {
     }
   }
 
+  /**
+   * Updates the text of the word wrap toggle button.
+   * @param {boolean} isWordWrapActive - The current word wrap state.
+   */
   function updateWordWrapButtonText(isWordWrapActive) {
     if(elements.wordWrapToggleButton) {
       elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
     }
   }
 
+  /**
+   * Gets the inner HTML of the preview pane.
+   * @returns {string} The HTML content of the preview pane.
+   */
   function getPreviewPaneHTML() {
     if(elements.previewPane) {
       const iframe = elements.previewPane.querySelector("iframe");
@@ -458,6 +594,12 @@ const EditorUI = (() => {
     return "";
   }
 
+  /**
+   * Renders the preview pane based on the current content and mode.
+   * @param {string} content - The text content to render.
+   * @param {string} currentFileMode - The current editor mode.
+   * @param {boolean} isWordWrapActive - The current word wrap state.
+   */
   function renderPreview(content, currentFileMode, isWordWrapActive) {
     if(!elements.previewPane) return;
     if(currentFileMode !== EditorAppConfig.EDITOR.MODES.MARKDOWN && currentFileMode !== EditorAppConfig.EDITOR.MODES.HTML) {
@@ -491,6 +633,13 @@ const EditorUI = (() => {
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }
 
+  /**
+   * Sets the view mode of the editor (split, edit-only, preview-only).
+   * @param {string} viewMode - The desired view mode.
+   * @param {string} currentFileMode - The current editor mode.
+   * @param {boolean} isPreviewable - Whether the current file type can be previewed.
+   * @param {boolean} isWordWrapActive - The current word wrap state.
+   */
   function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
     // Guard clause: ensure all required elements exist.
     if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) {
@@ -551,29 +700,57 @@ const EditorUI = (() => {
     elements: elements,
   };
 })();
+
+/**
+ * @module EditorManager
+ * @description The main controller for the editor. Manages state, user interactions, and coordinates between the UI and file system.
+ */
 const EditorManager = (() => {
   "use strict";
+  /** @private @type {boolean} */
   let isActiveState = false;
+  /** @private @type {?string} */
   let currentFilePath = null;
+  /** @private @type {string} */
   let currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
+  /** @private @type {string} */
   let currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT;
+  /** @private @type {boolean} */
   let isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
+  /** @private @type {string} */
   let originalContent = "";
+  /** @private @type {boolean} */
   let isDirty = false;
+  /** @private @type {string[]} */
   let undoStack = [];
+  /** @private @type {string[]} */
   let redoStack = [];
-  const MAX_UNDO_STATES = 100; // Max number of undoable actions
-  let saveUndoStateTimeout = null; // Debounce timer for saving undo states
+  /** @private @const {number} */
+  const MAX_UNDO_STATES = 100;
+  /** @private @type {?number} */
+  let saveUndoStateTimeout = null;
 
+  /**
+   * Loads the word wrap setting from local storage.
+   * @private
+   */
   function _loadWordWrapSetting() {
     const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
     isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
   }
 
+  /**
+   * Saves the current word wrap setting to local storage.
+   * @private
+   */
   function _saveWordWrapSetting() {
     StorageManager.saveItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, isWordWrapActive, "Editor word wrap setting");
   }
 
+  /**
+   * Toggles the word wrap state and updates the UI accordingly.
+   * @private
+   */
   function _toggleWordWrap() {
     if(!isActiveState) return;
     isWordWrapActive = !isWordWrapActive;
@@ -588,6 +765,10 @@ const EditorManager = (() => {
     EditorUI.setGutterVisibility(!isWordWrapActive);
   }
 
+  /**
+   * Updates all components of the editor UI (status bar, line numbers, preview).
+   * @private
+   */
   function _updateFullEditorUI() {
     if(!isActiveState) return;
     EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
@@ -600,6 +781,10 @@ const EditorManager = (() => {
     }
   }
 
+  /**
+   * Handles the 'input' event from the textarea, updating the dirty state and UI.
+   * @private
+   */
   function _handleEditorInput() {
     if(!isActiveState) return;
     const currentContent = EditorUI.getTextareaContent();
@@ -616,17 +801,31 @@ const EditorManager = (() => {
     _updateFullEditorUI();
   }
 
+  /**
+   * Handles the 'scroll' event from the textarea to sync the line gutter.
+   * @private
+   */
   function _handleEditorScroll() {
     if(!isActiveState) return;
     EditorUI.syncLineGutterScroll();
   }
 
+  /**
+   * Handles cursor movement or selection changes to update the status bar.
+   * @private
+   */
   function _handleEditorSelectionChange() {
     if(!isActiveState) return;
     const textContent = EditorUI.getTextareaContent();
     const selection = EditorUI.getTextareaSelection();
     EditorUI.updateStatusBar(textContent, selection.start);
   }
+
+  /**
+   * Exports the current preview pane content as a downloadable HTML file.
+   * @private
+   * @async
+   */
   async function exportPreviewAsHtml() {
     if(!isActiveState) return;
     let contentToExport
@@ -675,6 +874,11 @@ const EditorManager = (() => {
     }
   }
 
+  /**
+   * Saves the current editor content to the undo stack.
+   * @param {string} content - The current text content.
+   * @private
+   */
   function _saveUndoState(content) {
     if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== content) {
       undoStack.push(content);
@@ -686,6 +890,10 @@ const EditorManager = (() => {
     }
   }
 
+  /**
+   * Reverts the editor content to the previous state in the undo stack.
+   * @private
+   */
   function _performUndo() {
     if (undoStack.length > 1) {
       const currentState = undoStack.pop();
@@ -701,6 +909,10 @@ const EditorManager = (() => {
     }
   }
 
+  /**
+   * Re-applies a state from the redo stack.
+   * @private
+   */
   function _performRedo() {
     if (redoStack.length > 0) {
       const nextState = redoStack.pop();
@@ -715,6 +927,10 @@ const EditorManager = (() => {
     }
   }
 
+  /**
+   * Updates the enabled/disabled state of the undo and redo buttons.
+   * @private
+   */
   function _updateUndoRedoButtonStates() {
     if (EditorUI.elements.undoButton) {
       EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
@@ -724,6 +940,11 @@ const EditorManager = (() => {
     }
   }
 
+  /**
+   * Applies a formatting manipulation (e.g., bold, italic) to the selected text.
+   * @param {string} type - The type of formatting to apply (e.g., 'bold', 'link').
+   * @private
+   */
   function _applyTextManipulation(type) {
     if(!isActiveState) return;
     const selection = EditorUI.getTextareaSelection();
@@ -816,6 +1037,10 @@ const EditorManager = (() => {
     EditorUI.setEditorFocus();
   }
 
+  /**
+   * Handles the logic for toggling between editor view modes.
+   * @private
+   */
   function _toggleViewModeHandler() {
     if(!isActiveState) return;
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
@@ -827,6 +1052,11 @@ const EditorManager = (() => {
     EditorUI.setEditorFocus();
   }
 
+  /**
+   * Enters the editor mode, initializing the UI and state.
+   * @param {string} filePath - The path of the file to edit.
+   * @param {string} content - The initial content of the file.
+   */
   function enter(filePath, content) {
     if(isActiveState) {
       void OutputManager.appendToOutput("Editor already active.", {
@@ -884,6 +1114,12 @@ const EditorManager = (() => {
     EditorUI.setEditorFocus();
     _updateUndoRedoButtonStates();
   }
+
+  /**
+   * Performs all necessary cleanup and state reset when exiting the editor.
+   * @private
+   * @async
+   */
   async function _performExitActions() {
     document.removeEventListener('keydown', handleKeyDown);
     EditorUI.destroyLayout();
@@ -904,13 +1140,17 @@ const EditorManager = (() => {
     TerminalUI.focusInput();
     TerminalUI.updatePrompt();
   }
+
+  /**
+   * Exits the editor, handling save logic and confirmation prompts.
+   * @param {boolean} [saveChanges=false] - If true, attempts to save the file before exiting.
+   * @returns {Promise<boolean>} A promise that resolves to true if the editor was successfully exited, false otherwise.
+   * @async
+   */
   async function exit(saveChanges = false) {
     let proceedToExit = true;
     let saveSuccess = true;
     const currentUser = UserManager.getCurrentUser().name;
-    // START - LINTER FIX: Removed unused nowISO constant
-    // const nowISO = new Date().toISOString();
-    // END - LINTER FIX
     let terminalMessage = null;
     let terminalMessageClass = null;
     if (!saveChanges && isDirty) {
@@ -991,6 +1231,13 @@ const EditorManager = (() => {
       return false;
     }
   }
+
+  /**
+   * Global keydown handler for the editor, processing shortcuts and special keys.
+   * @param {KeyboardEvent} event - The keydown event object.
+   * @private
+   * @async
+   */
   async function handleKeyDown(event) {
     if(!isActiveState) return;
     if(event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
@@ -1045,6 +1292,10 @@ const EditorManager = (() => {
     setTimeout(_handleEditorSelectionChange, 0);
   }
 
+  /**
+   * Shows or hides the formatting toolbar based on the current file mode.
+   * @private
+   */
   function _updateFormattingToolbarVisibility() {
     if(!isActiveState || !EditorUI || !EditorUI.elements || !EditorUI.elements.formattingToolbar) {
       console.warn("EditorManager: Formatting toolbar UI not ready.");
@@ -1053,7 +1304,12 @@ const EditorManager = (() => {
     const isMarkdownOrHTML = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     EditorUI.elements.formattingToolbar.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isMarkdownOrHTML);
   }
+
   return {
+    /**
+     * Checks if the editor is currently active.
+     * @returns {boolean} True if the editor is active, false otherwise.
+     */
     isActive: () => isActiveState,
     enter,
     exit,
