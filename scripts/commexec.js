@@ -454,7 +454,7 @@ const CommandExecutor = (() => {
 
     let expandedCommand = rawCommandText.trim();
     if (expandedCommand) {
-      expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
+      expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)}/g, (match, var1, var2) => {
         const varName = var1 || var2;
         return EnvironmentManager.get(varName);
       });
