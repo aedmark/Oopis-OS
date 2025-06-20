@@ -438,7 +438,7 @@ cd /
 login root mcgoopis
 delay 300
 rm -r -f /home/userDiag/diag_workspace
-logout
+login Guest
 echo "Final user list (expected: Guest, root, userDiag):"
 listusers
 delay 700

@@ -562,7 +562,7 @@ const TabCompletionManager = (() => {
 
             if (!commandDefinition) return [];
 
-            if (commandName === "help") {
+            if (commandName === "help" || commandName === "man") {
                 suggestions = Object.keys(allCommands)
                     .filter((cmd) =>
                         cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase())
