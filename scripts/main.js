@@ -1,6 +1,22 @@
-// main.js - OopisOS Core
+/**
+ * @file This is the main entry point for OopisOS. It handles the initial boot sequence,
+ * caches essential DOM elements, and sets up the primary terminal event listeners.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
 
+/**
+ * A global object to cache frequently accessed DOM elements.
+ * This improves performance by reducing the number of `getElementById` or `querySelector` calls.
+ * @type {Object.<string, HTMLElement|null>}
+ */
 let DOM = {};
+
+/**
+ * Sets up the core event listeners for the terminal, enabling user interaction.
+ * This includes handling clicks for focus, key presses for commands, command history,
+ * tab completion, and pasting text.
+ */
 function initializeTerminalEventListeners() {
   if (!DOM.terminalDiv || !DOM.editableInputDiv) {
     console.error(
@@ -8,6 +24,8 @@ function initializeTerminalEventListeners() {
     );
     return;
   }
+
+  // Focus the input area when the terminal is clicked, unless text is being selected.
   DOM.terminalDiv.addEventListener("click", (e) => {
     if (EditorManager.isActive()) return;
     const selection = window.getSelection();
@@ -22,6 +40,8 @@ function initializeTerminalEventListeners() {
         TerminalUI.focusInput();
     }
   });
+
+  // Main keyboard input handler for the entire document.
   document.addEventListener("keydown", async (e) => {
     // --- START REORDERED LOGIC ---
     // HIGHEST PRIORITY: Check if a modal input is actively waiting for an Enter key.
@@ -46,13 +66,18 @@ function initializeTerminalEventListeners() {
     }
     // --- END REORDERED LOGIC ---
 
+    // Ignore key events not targeting the main input div.
     if (e.target !== DOM.editableInputDiv) {
       return;
     }
+
+    // Prevent user input while a script is running.
     if (CommandExecutor.isScriptRunning()) {
       e.preventDefault();
       return;
     }
+
+    // Handle special key presses for terminal functionality.
     switch (e.key) {
       case "Enter":
         e.preventDefault();
@@ -113,6 +138,8 @@ function initializeTerminalEventListeners() {
         break;
     }
   });
+
+  // Handle pasting text into the input area, sanitizing newlines.
   if (DOM.editableInputDiv) {
     DOM.editableInputDiv.addEventListener("paste", (e) => {
       e.preventDefault();
@@ -140,6 +167,8 @@ function initializeTerminalEventListeners() {
       selection.removeAllRanges();
       selection.addRange(range);
     });
+
+    // Reset tab completion cycle on any manual input.
     DOM.editableInputDiv.addEventListener("input", (e) => {
       if (e.isTrusted) {
         TabCompletionManager.resetCycle();
@@ -147,7 +176,15 @@ function initializeTerminalEventListeners() {
     });
   }
 }
+
+/**
+ * The main entry point for the OopisOS application. This function serves as the
+ * "bootloader" for the OS, initializing all managers in the correct order,
+ * loading data from storage, and setting up the UI for interaction.
+ * @async
+ */
 window.onload = async () => {
+  // Cache all necessary DOM elements for performance.
   DOM = {
     terminalBezel: document.getElementById("terminal-bezel"),
     terminalDiv: document.getElementById("terminal"),
@@ -163,8 +200,11 @@ window.onload = async () => {
     adventureInput: document.getElementById("adventure-input"),
   };
 
+  // Override console methods to output to the terminal display.
   OutputManager.initializeConsoleOverrides();
+
   try {
+    // Begin the OS boot sequence. Order is important here.
     await IndexedDBManager.init();
     await FileSystemManager.load();
     await UserManager.initializeDefaultUsers();
@@ -172,13 +212,15 @@ window.onload = async () => {
     GroupManager.initialize();
     AliasManager.initialize();
     EnvironmentManager.initialize();
-    SessionManager.initializeStack(); // Initialize the session stack
+    SessionManager.initializeStack();
 
-    // Initialize the command executor from the registry
+    // Initialize the command executor, which loads all command definitions.
     CommandExecutor.initialize();
 
+    // Load the initial user's session state.
     SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
 
+    // Ensure the current path is valid after loading.
     const guestHome = `/home/${Config.USER.DEFAULT_NAME}`;
     if (!FileSystemManager.getNodeByPath(FileSystemManager.getCurrentPath())) {
       if (FileSystemManager.getNodeByPath(guestHome)) {
@@ -188,6 +230,7 @@ window.onload = async () => {
       }
     }
 
+    // Finalize UI setup and event listeners.
     initializeTerminalEventListeners();
     TerminalUI.updatePrompt();
     TerminalUI.focusInput();
@@ -195,6 +238,7 @@ window.onload = async () => {
         `${Config.OS.NAME} v.${Config.OS.VERSION} loaded successfully!`
     );
   } catch (error) {
+    // Catch any fatal errors during initialization and display them.
     console.error(
         "Failed to initialize OopisOs on window.onload:",
         error,

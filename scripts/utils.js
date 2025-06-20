@@ -1,8 +1,22 @@
-//utils.js - OopisOS Utility Functions
+/**
+ * @file Provides globally accessible utility functions for various tasks such as string manipulation,
+ * DOM creation, data validation, and command-line parsing. Also includes specialized parsers for timestamps and diffing.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
 
+/**
+ * @module Utils
+ * @description A collection of general-purpose utility functions used throughout OopisOS.
+ */
 const Utils = (() => {
     "use strict";
 
+    /**
+     * Formats a function's arguments object into a single, space-separated string for display.
+     * @param {IArguments} args - The arguments object from a function call.
+     * @returns {string} A string representation of the arguments.
+     */
     function formatConsoleArgs(args) {
         return Array.from(args)
             .map((arg) =>
@@ -13,10 +27,21 @@ const Utils = (() => {
             .join(" ");
     }
 
+    /**
+     * Creates a deep copy of a JSON-serializable object.
+     * @param {object} node - The object (e.g., a file system node) to copy.
+     * @returns {object|null} A deep copy of the object, or null if the input is null.
+     */
     function deepCopyNode(node) {
         return node ? JSON.parse(JSON.stringify(node)) : null;
     }
 
+    /**
+     * Formats a number of bytes into a human-readable string (e.g., "1.25 KB").
+     * @param {number} bytes - The number of bytes to format.
+     * @param {number} [decimals=2] - The number of decimal places to include.
+     * @returns {string} The formatted byte string.
+     */
     function formatBytes(bytes, decimals = 2) {
         if (bytes === 0) return "0 B";
         const k = 1024;
@@ -26,6 +51,11 @@ const Utils = (() => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
     }
 
+    /**
+     * Extracts the file extension from a file path.
+     * @param {string} filePath - The path of the file.
+     * @returns {string} The file's extension in lowercase, or an empty string if none is found.
+     */
     function getFileExtension(filePath) {
         if (!filePath || typeof filePath !== "string") return "";
         const name = filePath.substring(
@@ -38,6 +68,18 @@ const Utils = (() => {
         return name.substring(lastDot + 1).toLowerCase();
     }
 
+    /**
+     * A powerful and flexible utility to create DOM elements programmatically.
+     * @param {string} tag - The HTML tag for the element (e.g., 'div', 'button').
+     * @param {object} [attributes={}] - An object of attributes to set on the element. Special keys include:
+     * - `textContent`: Sets the element's text content.
+     * - `innerHTML`: Sets the element's inner HTML.
+     * - `className` or `classList`: A string or array of strings for CSS classes.
+     * - `style`: An object of CSS style properties.
+     * - `eventListeners`: An object mapping event types to listener functions.
+     * @param {...(Node|string)} childrenArgs - A variable number of child nodes or strings to append to the element.
+     * @returns {HTMLElement} The newly created DOM element.
+     */
     function createElement(tag, attributes = {}, ...childrenArgs) {
         const element = document.createElement(tag);
         for (const key in attributes) {
@@ -101,6 +143,15 @@ const Utils = (() => {
         return element;
     }
 
+    /**
+     * Validates the number of arguments provided against a configuration object.
+     * @param {Array<string>} argsArray - The array of arguments to validate.
+     * @param {object} [config={}] - Configuration for validation.
+     * @param {number} [config.exact] - The exact number of arguments expected.
+     * @param {number} [config.min] - The minimum number of arguments expected.
+     * @param {number} [config.max] - The maximum number of arguments expected.
+     * @returns {{isValid: boolean, errorDetail?: string}} An object indicating if validation passed and an error message if it failed.
+     */
     function validateArguments(argsArray, config = {}) {
         const argCount = argsArray.length;
         if (typeof config.exact === "number") {
@@ -126,6 +177,16 @@ const Utils = (() => {
         };
     }
 
+    /**
+     * Parses a string argument into a number with validation.
+     * @param {string} argString - The string to parse.
+     * @param {object} [options={}] - Parsing options.
+     * @param {boolean} [options.allowFloat=false] - Whether to allow floating-point numbers.
+     * @param {boolean} [options.allowNegative=false] - Whether to allow negative numbers.
+     * @param {number} [options.min] - The minimum allowed value.
+     * @param {number} [options.max] - The maximum allowed value.
+     * @returns {{value: number|null, error: string|null}} An object containing the parsed value or an error message.
+     */
     function parseNumericArg(argString, options = {}) {
         const { allowFloat = false, allowNegative = false, min, max } = options;
         const num = allowFloat ? parseFloat(argString) : parseInt(argString, 10);
@@ -155,6 +216,11 @@ const Utils = (() => {
         };
     }
 
+    /**
+     * Validates a username against system rules (length, characters, reserved names).
+     * @param {string} username - The username to validate.
+     * @returns {{isValid: boolean, error: string|null}} An object indicating if validation passed and an error message if it failed.
+     */
     function validateUsernameFormat(username) {
         if (!username || typeof username !== "string" || username.trim() === "")
             return {
@@ -187,6 +253,13 @@ const Utils = (() => {
         };
     }
 
+    /**
+     * Parses an array of command-line arguments into flags and remaining non-flag arguments.
+     * Supports long flags (`--force`), short flags (`-f`), combined short flags (`-la`), and flags that take values (`-o file`).
+     * @param {string[]} argsArray - The array of raw arguments from the command line.
+     * @param {Array<object>} flagDefinitions - An array of objects defining the valid flags for a command.
+     * @returns {{flags: object, remainingArgs: string[]}} An object containing a `flags` object (with boolean or string values) and an array of `remainingArgs`.
+     */
     function parseFlags(argsArray, flagDefinitions) {
         const flags = {};
         const remainingArgs = [];
@@ -294,6 +367,12 @@ const Utils = (() => {
         };
     }
 
+    /**
+     * Converts a glob pattern (like *.txt) into a regular expression for matching.
+     * Supports `*`, `?`, and `[...]` character sets.
+     * @param {string} glob - The glob pattern string.
+     * @returns {RegExp|null} A RegExp object or null if the glob is invalid.
+     */
     function globToRegex(glob) {
         let regexStr = "^";
         for (let i = 0; i < glob.length; i++) {
@@ -372,9 +451,19 @@ const Utils = (() => {
         parseFlags,
         globToRegex,};
 })();
+
+/**
+ * @module TimestampParser
+ * @description A specialized parser for handling various date and time string formats.
+ */
 const TimestampParser = (() => {
     "use strict";
 
+    /**
+     * Parses a human-readable relative or absolute date string into a Date object.
+     * @param {string} dateStr - The string to parse (e.g., "1 day ago", "2025-01-01", "-1 week").
+     * @returns {Date|null} A Date object or null if parsing fails.
+     */
     function parseDateString(dateStr) {
         if (typeof dateStr !== "string") return null;
 
@@ -423,6 +512,11 @@ const TimestampParser = (() => {
         return null;
     }
 
+    /**
+     * Parses a `touch`-style timestamp string into an ISO 8601 date string.
+     * @param {string} stampStr - The timestamp string in the format [[CC]YY]MMDDhhmm[.ss].
+     * @returns {string|null} An ISO 8601 string or null if parsing fails.
+     */
     function parseStampToISO(stampStr) {
         let year,
             monthVal,
@@ -499,6 +593,12 @@ const TimestampParser = (() => {
         return dateObj.toISOString();
     }
 
+    /**
+     * Resolves a final timestamp from command flags, handling `-d` and `-t` options.
+     * @param {object} flags - The parsed flags object from a command.
+     * @param {string} commandName - The name of the command calling this function, for error messages.
+     * @returns {{timestampISO: string|null, error: string|null}} An object with the resulting ISO timestamp or an error.
+     */
     function resolveTimestampFromCommandFlags(flags, commandName) {
         const nowActualISO = new Date().toISOString();
 
@@ -525,9 +625,20 @@ const TimestampParser = (() => {
         resolveTimestampFromCommandFlags,
     };
 })();
+
+/**
+ * @module DiffUtils
+ * @description Provides utilities for comparing text content, used by the `diff` command.
+ */
 const DiffUtils = (() => {
     "use strict";
 
+    /**
+     * Compares two strings line by line using a diff algorithm.
+     * @param {string} textA - The first string to compare.
+     * @param {string} textB - The second string to compare.
+     * @returns {string} A formatted diff string, with lines prefixed by '<' (in A but not B), '>' (in B but not A), or ' ' (common).
+     */
     function compare(textA, textB) {
         const a = textA.split('\n');
         const b = textB.split('\n');

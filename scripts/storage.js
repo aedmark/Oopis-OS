@@ -1,14 +1,32 @@
-// storage.js - OopisOS Storage IO
+/**
+ * @file Manages all data persistence for OopisOS, providing wrappers for both
+ * localStorage (for session data, users, settings) and IndexedDB (for the file system).
+ * @module Storage
+ */
 
+/**
+ * @module StorageManager
+ * @description Provides a robust, error-handling wrapper around the browser's `localStorage` API.
+ * It is used for storing simple key-value data like user credentials, session states, and settings.
+ */
 const StorageManager = (() => {
     "use strict";
 
+    /**
+     * Loads an item from localStorage, parsing it from JSON if possible.
+     * @param {string} key - The key of the item to load.
+     * @param {string} itemName - A human-readable name for the item, used in error messages.
+     * @param {*} [defaultValue=null] - The value to return if the item is not found or an error occurs.
+     * @returns {*} The loaded and parsed value, or the defaultValue.
+     */
     function loadItem(key, itemName, defaultValue = null) {
         try {
             const storedValue = localStorage.getItem(key);
             if (storedValue !== null) {
+                // Handle specific non-JSON values first
                 if (key === Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED)
                     return storedValue === "true";
+                // Attempt to parse as JSON, fall back to returning the raw string on error
                 try {
                     return JSON.parse(storedValue);
                 } catch (e) {
@@ -29,6 +47,13 @@ const StorageManager = (() => {
         return defaultValue;
     }
 
+    /**
+     * Saves an item to localStorage, converting objects to JSON strings.
+     * @param {string} key - The key under which to save the data.
+     * @param {*} data - The data to save. Objects will be stringified.
+     * @param {string} itemName - A human-readable name for the item, used in error messages.
+     * @returns {boolean} True if the save was successful, false otherwise.
+     */
     function saveItem(key, data, itemName) {
         try {
             const valueToStore =
@@ -51,6 +76,10 @@ const StorageManager = (() => {
         return false;
     }
 
+    /**
+     * Removes an item from localStorage.
+     * @param {string} key - The key of the item to remove.
+     */
     function removeItem(key) {
         try {
             localStorage.removeItem(key);
@@ -61,6 +90,10 @@ const StorageManager = (() => {
         }
     }
 
+    /**
+     * Retrieves all keys currently stored in localStorage.
+     * @returns {string[]} An array of all keys.
+     */
     function getAllLocalStorageKeys() {
         const keys = [];
         try {
@@ -75,6 +108,7 @@ const StorageManager = (() => {
         }
         return keys;
     }
+
     return {
         loadItem,
         saveItem,
@@ -82,11 +116,24 @@ const StorageManager = (() => {
         getAllLocalStorageKeys,
     };
 })();
+
+/**
+ * @module IndexedDBManager
+ * @description Manages the connection to the IndexedDB database, which is used for
+ * storing the entire OopisOS virtual file system.
+ */
 const IndexedDBManager = (() => {
     "use strict";
+    /** @private @type {IDBDatabase|null} */
     let dbInstance = null;
+    /** @private @type {boolean} */
     let hasLoggedNormalInitialization = false;
 
+    /**
+     * Initializes the IndexedDB database connection. This should be called once at startup.
+     * It handles database creation, version upgrades, and connection success/error events.
+     * @returns {Promise<IDBDatabase>} A promise that resolves with the database instance on success.
+     */
     function init() {
         return new Promise((resolve, reject) => {
             if (dbInstance) {
@@ -111,6 +158,8 @@ const IndexedDBManager = (() => {
                 Config.DATABASE.NAME,
                 Config.DATABASE.VERSION
             );
+
+            // Handles database creation and version upgrades.
             request.onupgradeneeded = (event) => {
                 const tempDb = event.target.result;
                 if (!tempDb.objectStoreNames.contains(Config.DATABASE.FS_STORE_NAME))
@@ -118,6 +167,8 @@ const IndexedDBManager = (() => {
                         keyPath: "id",
                     });
             };
+
+            // Handles a successful database connection.
             request.onsuccess = (event) => {
                 dbInstance = event.target.result;
                 if (!hasLoggedNormalInitialization) {
@@ -140,6 +191,8 @@ const IndexedDBManager = (() => {
                 }
                 resolve(dbInstance);
             };
+
+            // Handles errors during database connection.
             request.onerror = (event) => {
                 const errorMsg =
                     "Error: OopisOs could not access its file system storage. This might be due to browser settings (e.g., private Browse mode, disabled storage, or full storage). Please check your browser settings and try again. Some features may be unavailable.";
@@ -157,6 +210,11 @@ const IndexedDBManager = (() => {
         });
     }
 
+    /**
+     * Returns the active IndexedDB database instance.
+     * @throws {Error} If the database has not been initialized.
+     * @returns {IDBDatabase} The active database instance.
+     */
     function getDbInstance() {
         if (!dbInstance) {
             const errorMsg =

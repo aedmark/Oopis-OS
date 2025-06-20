@@ -903,6 +903,12 @@ MESSAGES.WELCOME_SUFFIX=!`;
                 return { success: false, error: parentDirResult.error };
             }
             const parentNode = parentDirResult.parentNode;
+
+            // **REFINEMENT:** Add a defensive check here.
+            if (!parentNode) {
+                return { success: false, error: `Could not find or create parent directory for '${absolutePath}'.` };
+            }
+
             if (!hasPermission(parentNode, currentUser, "write")) {
                 return { success: false, error: `Cannot create file in parent directory: Permission denied` };
             }

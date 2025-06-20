@@ -1,8 +1,17 @@
-// scripts/commands/adventure.js
+/**
+ * @file Defines the 'adventure' command, which launches the OopisOS text adventure game engine.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
 
 (() => {
     "use strict";
 
+    /**
+     * @const {object} adventureCommandDefinition
+     * @description The command definition for the 'adventure' command.
+     * This object specifies how the command should be parsed and executed.
+     */
     const adventureCommandDefinition = {
         commandName: "adventure",
         argValidation: {
@@ -19,6 +28,15 @@
                 },
             },
         ],
+        /**
+         * The core logic for the 'adventure' command.
+         * It handles loading adventure data from a file or using a default,
+         * then launches the adventure modal and engine. It also manages scripted
+         * interaction for automated testing.
+         * @async
+         * @param {object} context - The context object provided by the command executor.
+         * @returns {Promise<object>} A promise that resolves to a command result object.
+         */
         coreLogic: async (context) => {
             const { args, currentUser, validatedPaths, options } = context;
 
@@ -85,8 +103,16 @@
         },
     };
 
+    /**
+     * @const {string} adventureDescription
+     * @description A brief, one-line description of the 'adventure' command for the 'help' command.
+     */
     const adventureDescription = "Starts an interactive text adventure game.";
 
+    /**
+     * @const {string} adventureHelpText
+     * @description The detailed help text for the 'adventure' command, used by 'man'.
+     */
     const adventureHelpText = `Usage: adventure [path_to_game.json]
 
 Launches the OopisOS interactive text adventure game engine. The game runs in a dedicated full-screen view.
@@ -112,5 +138,6 @@ GAMEPLAY COMMANDS
 CUSTOM ADVENTURES
        You can create your own adventures using a specific JSON format. The JSON file must contain objects for 'rooms' and 'items', and specify a 'startingRoomId' and a 'winCondition'. Upload your .json file and run \`adventure /path/to/your_game.json\` to play.`;
 
+    // Register the command with the system
     CommandRegistry.register("adventure", adventureCommandDefinition, adventureDescription, adventureHelpText);
 })();
