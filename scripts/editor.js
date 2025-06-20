@@ -492,46 +492,43 @@ const EditorUI = (() => {
   }
 
   function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
-    if(!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
+    // Guard clause: ensure all required elements exist.
+    if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) {
+      return;
+    }
+
+    // Perform initial UI setup that's common to all modes.
     elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
-    if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+    if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
       applyPreviewWordWrap(isWordWrapActive, currentFileMode);
     }
     elements.viewToggleButton.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isPreviewable);
     elements.exportPreviewButton.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isPreviewable);
     elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "1px solid #404040" : "none";
-    if(!isPreviewable) {
-      elements.lineGutter.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.style.flex = "1";
-      elements.previewWrapper.classList.add(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.previewWrapper.style.flex = "0";
-      elements.viewToggleButton.textContent = "Split View";
-      return;
-    }
-    if(viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT) {
-      elements.viewToggleButton.textContent = "Edit Only";
-      elements.lineGutter.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.style.flex = "1";
-      elements.previewWrapper.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.previewWrapper.style.flex = "1";
-    } else if(viewMode === EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY) {
-      elements.viewToggleButton.textContent = "Preview Only";
-      elements.lineGutter.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.style.flex = "1";
-      elements.previewWrapper.classList.add(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.previewWrapper.style.flex = "0";
-    } else if(viewMode === EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY) {
-      elements.viewToggleButton.textContent = "Split View";
-      elements.lineGutter.classList.add(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.classList.add(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.textareaWrapper.style.flex = "0";
-      elements.previewWrapper.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-      elements.previewWrapper.style.flex = "1";
+
+    // Configuration map for different view modes.
+    const viewConfigs = {
+      [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]:       { text: "Edit Only",    gutter: true,  editor: true,  editorFlex: "1", preview: true,  previewFlex: "1" },
+      [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]:   { text: "Preview Only", gutter: true,  editor: true,  editorFlex: "1", preview: false, previewFlex: "0" },
+      [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]:{ text: "Split View",   gutter: false, editor: false, editorFlex: "0", preview: true,  previewFlex: "1" },
+      // Define a configuration for the non-previewable state.
+      noPreview:                                     { text: "Split View",   gutter: true,  editor: true,  editorFlex: "1", preview: false, previewFlex: "0" }
+    };
+
+    // Select the appropriate configuration based on whether the file is previewable.
+    const config = isPreviewable ? viewConfigs[viewMode] : viewConfigs.noPreview;
+
+    // Apply the selected configuration to the UI elements.
+    if (config) {
+      elements.viewToggleButton.textContent = config.text;
+      elements.lineGutter.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.gutter);
+      elements.textareaWrapper.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.editor);
+      elements.textareaWrapper.style.flex = config.editorFlex;
+      elements.previewWrapper.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.preview);
+      elements.previewWrapper.style.flex = config.previewFlex;
     }
   }
+
   return {
     buildLayout,
     destroyLayout,

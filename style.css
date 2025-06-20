@@ -613,7 +613,7 @@ body {
 
 .editor-modal-buttons {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 12px;
 }
 
@@ -805,7 +805,6 @@ body {
   max-height: 100%;
   background-color: #0A0A0A;
   border: 2px solid #60a5fa;
-  /* Blue to distinguish from adventure */
   border-radius: 0.75rem;
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
   display: flex;
@@ -813,16 +812,13 @@ body {
   padding: 0.5rem;
   font-family: 'VT323', monospace;
   color: #a3a3a3;
-  /* Neutral color for status bar */
 }
 
 #paint-canvas {
   flex-grow: 1;
   overflow: hidden;
-  /* Canvas should not scroll */
   display: grid;
   grid-template-columns: repeat(80, 1fr);
-  /* Default, will be updated by JS if needed */
   grid-template-rows: repeat(24, 1fr);
   background-color: #101010;
   cursor: crosshair;
@@ -847,7 +843,6 @@ body {
   background-color: #1f1f22;
 }
 
-/* --- NEW Paint Toolbar Styles --- */
 #paint-toolbar {
   display: flex;
   justify-content: space-between;
@@ -933,10 +928,8 @@ body {
   color: #fecaca;
 }
 
-/* --- START - ADDED GRID AND CHAR SELECT STYLES --- */
 .paint-grid-active span {
   box-shadow: inset 0 0 0 1px rgba(68, 68, 68, 0.5);
-  /* Subtle grid lines */
 }
 
 #paint-char-select-modal {
@@ -947,7 +940,6 @@ body {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.85);
   z-index: 1000;
-  /* On top of the paint modal */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -975,7 +967,6 @@ body {
 #paint-char-select-grid {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
-  /* 16 characters wide */
   gap: 4px;
   overflow-y: auto;
   padding: 0.5rem;
@@ -998,5 +989,3 @@ body {
   background-color: #3f3f46;
   transform: scale(1.1);
 }
-
-/* --- END - ADDED GRID AND CHAR SELECT STYLES --- */
