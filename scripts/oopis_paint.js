@@ -105,7 +105,7 @@ const PaintUI = (() => {
             elements.colorButtons.push(colorBtn);
             colorPaletteContainer.appendChild(colorBtn);
         });
-        elements.colorPalleteBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: colorPalleteSVG, title: 'Select Color', eventListeners: { click: () => colorPaletteContainer.click() } });
+        elements.colorPalleteBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: colorPalleteSVG, title: 'Select Color', eventListeners: { click: () => colorPaletteContainer.click() } }); //Implement a color selector modal later, much like the character select
 
         elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save & Exit', title: 'Save & Exit (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit without Saving (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
