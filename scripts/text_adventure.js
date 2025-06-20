@@ -6,7 +6,8 @@ const TextAdventureModal = (() => {
   let isActive = false;
   let promptResolver = null;
   let currentEngineInstance = null;
-  let currentScriptingContext = null; // <-- FIX: Context is stored here
+  let currentScriptingContext = null;
+  let sessionCompletionResolver = null; // Add this line
 
   function _initDOM() {
     adventureModal = document.getElementById('adventure-modal');
@@ -21,29 +22,37 @@ const TextAdventureModal = (() => {
     return true;
   }
 
-  // FIX: Accept the scriptingContext from the engine
   function show(adventureData, engineInstance, scriptingContext) {
-    if (!_initDOM()) return;
+    if (!_initDOM()) return Promise.reject("DOM Not Ready");
 
-    currentEngineInstance = engineInstance;
-    currentScriptingContext = scriptingContext; // <-- FIX: Store the context
-    isActive = true;
-    adventureTitle.textContent = adventureData.title || "Text Adventure";
-    adventureOutput.innerHTML = '';
-    adventureInput.value = '';
-    adventureInput.disabled = false;
-    adventureModal.classList.remove('hidden');
+    return new Promise(resolve => {
+      sessionCompletionResolver = resolve;
+      currentEngineInstance = engineInstance;
+      currentScriptingContext = scriptingContext;
+      isActive = true;
+      adventureTitle.textContent = adventureData.title || "Text Adventure";
+      adventureOutput.innerHTML = '';
+      adventureInput.value = '';
+      adventureInput.disabled = false;
+      adventureModal.classList.remove('hidden');
 
-    if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(true);
-    if (typeof TerminalUI !== 'undefined') TerminalUI.setInputState(false);
+      if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(true);
+      if (typeof TerminalUI !== 'undefined') TerminalUI.setInputState(false);
 
-    adventureInput.focus();
-    adventureInput.addEventListener('keydown', _handleInputKeydown);
-    adventureCloseBtn.addEventListener('click', hide);
+      adventureInput.focus();
+      adventureInput.addEventListener('keydown', _handleInputKeydown);
+      adventureCloseBtn.addEventListener('click', hide);
+    });
   }
 
   function hide() {
     if (!isActive) return;
+
+    if (sessionCompletionResolver) {
+      sessionCompletionResolver();
+      sessionCompletionResolver = null;
+    }
+
     isActive = false;
 
     if (promptResolver) {
@@ -51,7 +60,7 @@ const TextAdventureModal = (() => {
       promptResolver = null;
     }
 
-    currentScriptingContext = null; // <-- FIX: Clear context on exit
+    currentScriptingContext = null;
 
     adventureModal.classList.add('hidden');
     if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(false);
@@ -89,7 +98,6 @@ const TextAdventureModal = (() => {
     appendOutput(promptText, 'system');
 
     if (currentScriptingContext && currentScriptingContext.isScripting) {
-      // Find the next valid line of input from the script
       let inputLine = null;
       while (currentScriptingContext.currentLineIndex < currentScriptingContext.lines.length - 1) {
         currentScriptingContext.currentLineIndex++;
@@ -100,13 +108,12 @@ const TextAdventureModal = (() => {
         }
       }
 
-      // Echo the "typed" input for clarity in the diagnostic log and resolve immediately
       if (inputLine !== null) {
         appendOutput(`> ${inputLine}`, 'system');
-        return Promise.resolve(inputLine); // Resolve immediately with the script line
+        return Promise.resolve(inputLine);
       } else {
         appendOutput("> [end of script]", 'system');
-        return Promise.resolve(null); // Resolve with null if script ends
+        return Promise.resolve(null);
       }
     }
 
@@ -134,7 +141,6 @@ const TextAdventureModal = (() => {
     hide,
     appendOutput,
     clearOutput,
-
     requestInput,
     isActive: () => isActive,
   };
@@ -144,7 +150,7 @@ const TextAdventureEngine = (() => {
   "use strict";
   let adventure;
   let player;
-  let scriptingContext = null; // <-- FIX: Correct typo from 'nulll'
+  let scriptingContext = null;
 
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
@@ -153,7 +159,6 @@ const TextAdventureEngine = (() => {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
     };
-    // FIX: Pass the context to the modal
     TextAdventureModal.show(adventure, { processCommand }, scriptingContext);
     _displayCurrentRoom();
   }
@@ -229,7 +234,7 @@ const TextAdventureEngine = (() => {
     const currentUser = UserManager.getCurrentUser().name;
     const savePath = FileSystemManager.getAbsolutePath(`${fileName}.sav`, FileSystemManager.getCurrentPath());
     const pathInfo = FileSystemManager.validatePath("adventure load", savePath, {
-      expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE // Expecting a file
+      expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE
     });
 
     if (pathInfo.error) {

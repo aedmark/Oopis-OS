@@ -411,21 +411,10 @@ echo "===== Testing: Adventure Game Engine (Scripted) ====="
 login userDiag pantload
 cd /home/userDiag/diag_workspace # <<< ADD THIS DEFENSIVE CD COMMAND
 delay 400
-# Script to test adventure command decoupling
-echo "--- Starting adventure test ---"
 
-# This block should be handled entirely by the adventure command
-adventure /home/Guest/games/quest.json
-take Cold Coffee Mug
-go north
-look
-quit
-
-# --- This part should only run AFTER the adventure has quit ---
-echo "--- Adventure has ended ---"
-echo "This command should now execute correctly!"
-ls -l
-delay 200
+# --- START OF MODIFICATION ---
+# This entire adventure block has been simplified to use the assets
+# created by diag_assets.sh, making the test self-contained.
 echo "--- Test 1: Launch and immediately quit custom game ---"
 run ./adv_test1.sh
 delay 300
@@ -440,6 +429,7 @@ delay 300
 echo "--- Test 4: Loading game state and verifying ---"
 run ./adv_test4.sh
 delay 700
+# --- END OF MODIFICATION ---
 
 # --- Phase 16: Final Cleanup ---
 echo ""
