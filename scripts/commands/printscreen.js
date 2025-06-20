@@ -121,7 +121,26 @@
             };
         },
     };
-    const printscreenDescription = "Saves the terminal output to a file.";
-    const printscreenHelpText = "Usage: printscreen [filename]\n\nSaves the terminal output to the specified file.";
+
+    const printscreenDescription = "Saves the visible terminal output to a file.";
+
+    const printscreenHelpText = `Usage: printscreen <filepath>
+
+Save the visible terminal output to a file.
+
+DESCRIPTION
+       The printscreen command captures all text currently visible in the
+       terminal's output area and saves it as plain text to the specified
+       <filepath>.
+
+       This is useful for creating logs or saving the results of a series
+       of commands for later review. If the file already exists, it will be
+       overwritten.
+
+EXAMPLES
+       ls -la /
+       printscreen /home/Guest/root_listing.txt
+              Saves the output of the 'ls -la /' command into a new file.`;
+
     CommandRegistry.register("printscreen", printscreenCommandDefinition, printscreenDescription, printscreenHelpText);
 })();

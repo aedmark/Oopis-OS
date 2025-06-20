@@ -46,8 +46,42 @@
         }
     };
 
-    const paintDescription = "Opens a file for painting.";
-    const paintHelpText = "Usage: paint [filename]\n\nOpens the specified file for painting.";
+    const paintDescription = "Opens the character-based art editor.";
+
+    const paintHelpText = `Usage: paint [filename.oopic]
+
+Launch the OopisOS character-based art editor.
+
+DESCRIPTION
+       The paint command opens a full-screen, grid-based editor for
+       creating ASCII and ANSI art. The canvas is 80 characters wide
+       by 24 characters high.
+
+       If a <filename> is provided, it will be opened. If it does not
+       exist, it will be created upon saving. Files should have the
+       '.oopic' extension.
+
+CONTROLS
+       Mouse
+              Click or click-and-drag on the canvas to draw with the
+              selected tool, character, and color.
+
+       Keyboard
+              P - Select the Pencil tool.
+              E - Select the Eraser tool.
+              1-6 - Select a color from the palette.
+              Any other character key - Set the drawing character.
+
+KEYBOARD SHORTCUTS
+       Ctrl+S
+              Save the current artwork and exit the editor.
+       Ctrl+O
+              Exit the editor. If there are unsaved changes, you will be
+              prompted to confirm before discarding them.
+       Ctrl+Z
+              Undo the last stroke.
+       Ctrl+Y / Ctrl+Shift+Z
+              Redo the last undone stroke.`;
 
     CommandRegistry.register("paint", paintCommandDefinition, paintDescription, paintHelpText);
 })();

@@ -64,7 +64,48 @@
             };
         },
     };
-    const chmodDescription = "Changes the permissions of a file or directory.";
-    const chmodHelpText = "Usage: chmod <mode> <path>\n\nChanges the permissions of the specified file or directory to <mode>.";
+
+    const chmodDescription = "Changes the access permissions of a file or directory.";
+
+    const chmodHelpText = `Usage: chmod <mode> <path>
+
+Change the access permissions of a file or directory.
+
+DESCRIPTION
+       The chmod command changes the file mode bits of the file or
+       directory specified by <path>. The <mode> is a 3-digit octal
+       number that represents the permissions for the owner, the group,
+       and all other users.
+
+       Each digit is a sum of the following values:
+       4 - read (r)
+       2 - write (w)
+       1 - execute (x)
+
+       The three digits of the mode correspond to:
+       1st digit: Owner's permissions
+       2nd digit: Group's permissions
+       3rd digit: Others' permissions
+
+       For example, a mode of 754 means:
+       - Owner: 7 (4+2+1) -> read, write, and execute
+       - Group: 5 (4+0+1) -> read and execute
+       - Other: 4 (4+0+0) -> read only
+
+EXAMPLES
+       chmod 755 script.sh
+              Makes 'script.sh' executable by the owner, and readable
+              and executable by the group and others. A common mode for
+              executable scripts.
+
+       chmod 640 secret.txt
+              Makes 'secret.txt' readable and writable by the owner,
+              readable by the group, and completely inaccessible to
+              other users.
+
+PERMISSIONS
+       To change the permissions of a file, you must be the owner of
+       the file or the superuser (root).`;
+
     CommandRegistry.register("chmod", chmodCommandDefinition, chmodDescription, chmodHelpText);
 })();

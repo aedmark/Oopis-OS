@@ -21,7 +21,26 @@
             };
         },
     };
-    const loadstateDescription = "Loads the last saved session state.";
-    const loadstateHelpText = "Usage: loadstate";
+
+    const loadstateDescription = "Loads the last manually saved session state.";
+
+    const loadstateHelpText = `Usage: loadstate
+
+Load the last manually saved session state for the current user.
+
+DESCRIPTION
+       The loadstate command restores the OopisOS environment to the
+       last state that was explicitly saved using the 'savestate'
+       command.
+
+       This includes the entire file system, the state of the terminal
+       screen, and command history at the moment 'savestate' was run.
+       It only loads the state for the currently active user.
+
+WARNING
+       This operation is destructive and will overwrite your current
+       file system and session with the saved data. The command will
+       prompt for confirmation before proceeding.`;
+
     CommandRegistry.register("loadstate", loadstateCommandDefinition, loadstateDescription, loadstateHelpText);
 })();

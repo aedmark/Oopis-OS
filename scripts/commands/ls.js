@@ -169,8 +169,38 @@
         },
     };
 
-    const lsDescription = "Lists directory contents or file information.";
-    const lsHelpText = `Usage: ls [OPTIONS] [PATH...]\n\nLists information about the FILEs (the current directory by default).\nSort entries alphabetically if none of -tSUXU is specified.\n\nOptions:\n  -a, --all          Do not ignore entries starting with .\n  -d, --dirs-only    List directories themselves, rather than their contents.\n  -l, --long         Use a long listing format.\n  -R, --recursive    List subdirectories recursively.\n  -r, --reverse      Reverse order while sorting.\n  -S                 Sort by file size, largest first.\n  -t                 Sort by modification time, newest first.\n  -X                 Sort alphabetically by entry extension.\n  -U                 Do not sort; list entries in directory order.`;
+    const lsDescription = "Lists directory contents and file information.";
+
+    const lsHelpText = `Usage: ls [OPTION]... [FILE]...
+
+List information about the FILEs (the current directory by default).
+Sort entries alphabetically if none of -tSUXU is specified.
+
+DESCRIPTION
+       The ls command lists files and directories. By default, it lists
+       the contents of the current directory. If one or more files or
+       directories are given, it lists information about them.
+
+OPTIONS
+       -a, --all
+              Do not ignore entries starting with .
+       -d, --dirs-only
+              List directories themselves, not their contents.
+       -l, --long
+              Use a long listing format, showing permissions, owner,
+              size, and modification time.
+       -R, --recursive
+              List subdirectories recursively.
+       -r, --reverse
+              Reverse order while sorting.
+       -S
+              Sort by file size, largest first.
+       -t
+              Sort by modification time, newest first.
+       -X
+              Sort alphabetically by entry extension.
+       -U
+              Do not sort; list entries in directory order.`;
 
     CommandRegistry.register("ls", lsCommandDefinition, lsDescription, lsHelpText);
 })();

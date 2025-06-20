@@ -20,7 +20,29 @@
             };
         },
     };
-    const logoutDescription = "Logs out the current user, returning to the previous session.";
-    const logoutHelpText = "Usage: logout\n\nEnds the current user session and returns to the previous user in the session stack (e.g., after using 'su').";
+
+    const logoutDescription = "Logs out of the current user session.";
+
+    const logoutHelpText = `Usage: logout
+
+Log out of the current user session.
+
+DESCRIPTION
+       The logout command terminates the current user's session and returns
+       to the session of the previous user in the stack.
+
+       This command is the counterpart to 'su'. If you use 'su' to become
+       another user, 'logout' will return you to your original session.
+
+       If there is no previous session in the stack (i.e., you are in the
+       initial session started with 'login'), logout will do nothing.
+
+EXAMPLES
+       su root
+              (Enter password)
+              ... perform actions as root ...
+       logout
+              Returns to the original user's session.`;
+
     CommandRegistry.register("logout", logoutCommandDefinition, logoutDescription, logoutHelpText);
 })();

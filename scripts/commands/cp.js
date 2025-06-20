@@ -288,7 +288,49 @@
             };
         },
     };
-    const cpDescription = "Copies a file or directory.";
-    const cpHelpText = "Usage: cp [options] <source> <destination>\n\nCopies the file or directory at [source] to [destination].";
+
+    const cpDescription = "Copies files and directories.";
+
+    const cpHelpText = `Usage: cp [OPTION]... <source> <destination>
+       cp [OPTION]... <source>... <directory>
+
+Copy files and directories.
+
+DESCRIPTION
+       In the first form, the cp utility copies the contents of the <source>
+       file to the <destination> file.
+
+       In the second form, each <source> file is copied to the destination
+       <directory>. The destination must be a directory and must exist.
+
+       Copying a directory requires the -r or -R (recursive) option.
+
+OPTIONS
+       -f, --force
+              If a destination file cannot be opened, remove it and try
+              again. Overwrites existing files without prompting.
+
+       -i, --interactive
+              Prompt before overwriting an existing file.
+
+       -p, --preserve
+              Preserve the original file's mode, owner, group, and
+              modification time.
+
+       -r, -R, --recursive
+              Copy directories recursively.
+
+EXAMPLES
+       cp file1.txt file2.txt
+              Copies the content of file1.txt to file2.txt.
+
+       cp -i notes.txt /home/Guest/docs/
+              Copies 'notes.txt' to the docs directory, prompting if a
+              file with the same name exists.
+
+       cp -r project/ backup/
+              Recursively copies the entire 'project' directory into the
+              'backup' directory.`;
+
     CommandRegistry.register("cp", cpCommandDefinition, cpDescription, cpHelpText);
 })();

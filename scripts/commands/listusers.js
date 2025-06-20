@@ -31,7 +31,23 @@
             };
         },
     };
-    const listusersDescription = "Displays a list of registered users.";
-    const listusersHelpText = "Usage: listusers";
+
+    const listusersDescription = "Lists all registered users on the system.";
+
+    const listusersHelpText = `Usage: listusers
+
+List all registered users.
+
+DESCRIPTION
+       The listusers command displays a list of all user accounts that
+       currently exist on the system.
+
+EXAMPLES
+       listusers
+              Registered users:
+                Guest
+                root
+                userDiag`;
+
     CommandRegistry.register("listusers", listusersCommandDefinition, listusersDescription, listusersHelpText);
 })();

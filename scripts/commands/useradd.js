@@ -88,8 +88,29 @@
         },
     };
 
-    const useraddDescription = "Adds a new user.";
-    const useraddHelpText = "Usage: useradd <username>\n\nAdds a new user with the specified username.";
+    const useraddDescription = "Creates a new user account.";
+
+    const useraddHelpText = `Usage: useradd <username>
+
+Create a new user account.
+
+DESCRIPTION
+       The useradd command creates a new user account with the specified
+       <username>. When run, the command will prompt you to enter and
+       confirm a password for the new user in a secure, obscured input.
+
+       Upon successful creation, the following actions are performed:
+       - The user's credentials are created and stored securely.
+       - A new home directory is created for the user at /home/<username>.
+       - A new primary group with the same name as the user is created.
+       - The new user is added to their new primary group.
+
+       Usernames cannot contain spaces and must be unique.
+
+EXAMPLES
+       useradd newdev
+              Starts the process to create a user named 'newdev',
+              prompting for a password.`;
 
     CommandRegistry.register("useradd", useraddCommandDefinition, useraddDescription, useraddHelpText);
 })();

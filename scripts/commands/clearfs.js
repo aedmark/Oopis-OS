@@ -72,7 +72,25 @@
             };
         },
     };
-    const clearfsDescription = "Clears the current user's home directory.";
-    const clearfsHelpText = "Usage: clearfs";
+
+    const clearfsDescription = "Clears the current user's home directory of all contents.";
+
+    const clearfsHelpText = `Usage: clearfs
+
+Clears the current user's home directory of all contents.
+
+DESCRIPTION
+       The clearfs command permanently removes all files and subdirectories
+       within the current user's home directory (e.g., /home/Guest),
+       effectively resetting it to an empty state.
+
+       This command only affects the home directory of the user who runs it.
+       It does not affect other parts of the file system.
+
+WARNING
+       This operation is irreversible. All data within your home
+       directory will be permanently lost. The command will prompt for
+       confirmation before proceeding.`;
+
     CommandRegistry.register("clearfs", clearfsCommandDefinition, clearfsDescription, clearfsHelpText);
 })();

@@ -84,8 +84,33 @@
             };
         },
     };
-    const adventureDescription = "Starts a text adventure.";
-    const adventureHelpText = "Usage: adventure [path_to_adventure_file.json]\n\nStarts a text adventure. If no path is specified, the default game will be loaded.";
+
+    const adventureDescription = "Starts an interactive text adventure game.";
+
+    const adventureHelpText = `Usage: adventure [path_to_game.json]
+
+Launches the OopisOS interactive text adventure game engine. The game runs in a dedicated full-screen view.
+
+If no path to a custom game file is provided, the default built-in adventure, "The Lost Key of Oopis," will be started.
+
+GAMEPLAY COMMANDS
+       The following commands are available while inside the adventure:
+       
+       look [target]      - Describes the room or a specific item.
+       go [direction]     - Moves the player (e.g., go north).
+       take [item]        - Picks up an item from the room.
+       drop [item]        - Drops an item from inventory.
+       use [item] on [target]
+                          - Uses an inventory item on something in the room.
+       inventory (or i)   - Shows what you are carrying.
+       open/close [target]
+                          - Opens or closes an item like a door or chest.
+       save / load        - Saves or loads game progress to a file in the VFS.
+       help               - Shows this list of gameplay commands.
+       quit / exit        - Exits the game and returns to the terminal.
+
+CUSTOM ADVENTURES
+       You can create your own adventures using a specific JSON format. The JSON file must contain objects for 'rooms' and 'items', and specify a 'startingRoomId' and a 'winCondition'. Upload your .json file and run \`adventure /path/to/your_game.json\` to play.`;
 
     CommandRegistry.register("adventure", adventureCommandDefinition, adventureDescription, adventureHelpText);
 })();

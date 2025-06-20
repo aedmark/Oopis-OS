@@ -92,7 +92,38 @@
             }
         },
     };
-    const curlDescription = "Downloads a file from a URL.";
-    const curlHelpText = "Usage: curl [options] <URL>\n\nDownloads a file from the specified URL.";
+
+    const curlDescription = "Transfer data from or to a server.";
+
+    const curlHelpText = `Usage: curl [options] <URL>
+
+Transfer data from or to a server.
+
+DESCRIPTION
+       curl is a tool to transfer data from or to a server. By default,
+       it prints the fetched content to standard output.
+
+       Note: Due to browser security restrictions, curl is subject to
+       Cross-Origin Resource Sharing (CORS) policies and may not be able
+       to fetch content from all URLs.
+
+OPTIONS
+       -o, --output <file>
+              Write output to <file> instead of standard output.
+
+       -i, --include
+              Include protocol response headers in the output.
+
+       -L, --location
+              (Not yet implemented) Follow redirects.
+
+EXAMPLES
+       curl https://api.github.com/zen
+              Displays a random piece of GitHub zen wisdom.
+
+       curl -o page.html https://example.com
+              Downloads the content of example.com and saves it to a
+              file named 'page.html'.`;
+
     CommandRegistry.register("curl", curlCommandDefinition, curlDescription, curlHelpText);
 })();

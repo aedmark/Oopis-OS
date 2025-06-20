@@ -191,8 +191,29 @@
             }
         },
     };
-    const uploadDescription = "Uploads one or more files to the current directory.";
-    const uploadHelpText = "Usage: upload [options] [destination]\n\nUploads one or more files to the current directory.";
-    CommandRegistry.register("upload", uploadCommandDefinition, uploadDescription, uploadHelpText);
 
+    const uploadDescription = "Uploads files from your local machine to OopisOS.";
+
+    const uploadHelpText = `Usage: upload [-f] [destination_directory]
+
+Upload one or more files from your local machine to OopisOS.
+
+DESCRIPTION
+       The upload command opens your browser's file selection dialog,
+       allowing you to choose one or more files from your actual computer
+       to upload into the OopisOS virtual file system.
+
+       If a <destination_directory> is specified, the files will be
+       uploaded there. Otherwise, they will be uploaded to the current
+       working directory.
+
+       If a file with the same name already exists in the destination,
+       you will be prompted to confirm before overwriting it.
+
+OPTIONS
+       -f, --force
+              Do not prompt for confirmation; automatically overwrite any
+              existing files with the same name.`;
+
+    CommandRegistry.register("upload", uploadCommandDefinition, uploadDescription, uploadHelpText);
 })();

@@ -185,8 +185,50 @@
             };
         },
     };
-    const grepDescription = "Searches for a pattern in one or more files.";
-    const grepHelpText = "Usage: grep [options] <pattern> <file>...\n\nSearches for a pattern in one or more files.";
-    CommandRegistry.register("grep", grepCommandDefinition, grepDescription, grepHelpText);
 
+    const grepDescription = "Searches for a pattern in files or standard input.";
+
+    const grepHelpText = `Usage: grep [OPTION]... <PATTERN> [FILE]...
+
+Search for PATTERN in each FILE or standard input.
+
+DESCRIPTION
+       The grep utility searches any given input files, selecting lines
+       that match one or more patterns. The pattern is specified by the
+       <PATTERN> option and can be a string or a regular expression.
+
+       By default, grep prints the matching lines. If no files are
+       specified, it reads from standard input, which is useful when
+       combined with other commands in a pipeline.
+
+OPTIONS
+       -i, --ignore-case
+              Perform case-insensitive matching.
+
+       -v, --invert-match
+              Select non-matching lines.
+
+       -n, --line-number
+              Prefix each line of output with its line number within
+              its input file.
+
+       -c, --count
+              Suppress normal output; instead print a count of matching
+              lines for each input file.
+              
+       -R
+              Recursively search subdirectories listed.
+
+EXAMPLES
+       grep "error" log.txt
+              Finds all lines containing "error" in log.txt.
+
+       history | grep -i "git"
+              Searches your command history for the word "git",
+              ignoring case.
+
+       grep -v "success" results.txt
+              Displays all lines that DO NOT contain "success".`;
+
+    CommandRegistry.register("grep", grepCommandDefinition, grepDescription, grepHelpText);
 })();

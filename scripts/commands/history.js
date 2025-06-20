@@ -34,8 +34,24 @@
             };
         },
     };
-    const historyDescription = "Displays the command history.";
-    const historyHelpText = "Usage: history [options]\n\nDisplays the command history.";
-    CommandRegistry.register("history", historyCommandDefinition, historyDescription, historyHelpText);
 
+    const historyDescription = "Displays or clears the command history.";
+
+    const historyHelpText = `Usage: history [-c]
+
+Display or clear the command history.
+
+DESCRIPTION
+       The history command displays the list of previously executed
+       commands from the current session, with each command prefixed
+       by its history number.
+
+       The command history can be navigated in the prompt using the
+       up and down arrow keys.
+
+OPTIONS
+       -c, --clear
+              Clear the entire command history for the current session.`;
+
+    CommandRegistry.register("history", historyCommandDefinition, historyDescription, historyHelpText);
 })();

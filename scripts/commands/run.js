@@ -159,7 +159,55 @@
             };
         }
     };
-    const runDescription = "Runs a shell script.";
-    const runHelpText = "Usage: run [script] [args]\n\nRuns the specified shell script with the specified arguments.";
+
+    const runDescription = "Executes a shell script.";
+
+    const runHelpText = `Usage: run <script_path> [arguments...]
+
+Execute a shell script.
+
+DESCRIPTION
+       The run command executes a script file containing a sequence of
+       OopisOS commands. The script is read and executed line by line.
+
+       By convention, script files should have a '.sh' extension.
+       To be executed, the script file must have execute (x) permissions
+       for the current user (see 'chmod').
+
+SCRIPTING
+       Scripts can be made more powerful and flexible using the following
+       features:
+
+       Comments
+              Lines beginning with a '#' are treated as comments and are
+              ignored by the executor.
+
+       Arguments
+              You can pass arguments to your script from the command line.
+              These arguments can be accessed within the script using
+              special variables:
+              $1, $2, ...  - The first, second, etc., argument.
+              $@           - All arguments as a single string.
+              $#           - The total number of arguments.
+
+       Error Handling
+              If any command within the script fails, the script will
+              stop execution immediately.
+
+EXAMPLES
+       Suppose you have a file named 'greet.sh' with the following content:
+       #!/bin/oopis_shell
+       # This is a simple greeting script
+       echo "Hello, $1! You provided $# argument(s)."
+
+       First, make the script executable:
+       chmod 755 greet.sh
+
+       Then, run it with an argument:
+       run ./greet.sh "Brave User"
+
+       This will output:
+       Hello, Brave User! You provided 1 argument(s).`;
+
     CommandRegistry.register("run", runCommandDefinition, runDescription, runHelpText);
 })();

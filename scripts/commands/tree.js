@@ -112,7 +112,34 @@
             };
         },
     };
-    const treeDescription = "Displays a tree of the current directory.";
-    const treeHelpText = "Usage: tree [options] [path]\n\nDisplays a tree of the current directory.";
+
+    const treeDescription = "Lists directory contents in a tree-like format.";
+
+    const treeHelpText = `Usage: tree [OPTION]... [PATH]
+
+List the contents of directories in a tree-like format.
+
+DESCRIPTION
+       The tree command recursively lists the contents of the given
+       directory PATH, or the current directory if none is specified,
+       in a visually structured tree.
+
+OPTIONS
+       -L <level>
+              Descend only <level> directories deep.
+       -d
+              List directories only.
+
+EXAMPLES
+       tree
+              Displays the entire directory tree starting from the
+              current location.
+
+       tree -L 2 /home
+              Displays the first two levels of the /home directory.
+              
+       tree -d
+              Displays only the subdirectories, not the files.`;
+
     CommandRegistry.register("tree", treeCommandDefinition, treeDescription, treeHelpText);
 })();

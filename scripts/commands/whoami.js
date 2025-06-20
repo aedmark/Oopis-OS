@@ -14,7 +14,16 @@
             };
         },
     };
-    const whoamiDescription = "Displays the current user.";
-    const whoamiHelpText = "Usage: whoami";
+
+    const whoamiDescription = "Prints the current effective user name.";
+
+    const whoamiHelpText = `Usage: whoami
+
+Print the current user name.
+
+DESCRIPTION
+       The whoami command prints the user name associated with the
+       current effective user ID.`;
+
     CommandRegistry.register("whoami", whoamiCommandDefinition, whoamiDescription, whoamiHelpText);
 })();

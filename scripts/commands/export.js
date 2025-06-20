@@ -54,7 +54,22 @@
             }
         },
     };
-    const exportDescription = "Exports a file to a local file.";
-    const exportHelpText = "Usage: export [filename]\n\nExports the specified file to a local file.";
+
+    const exportDescription = "Downloads a file from OopisOS to your local machine.";
+
+    const exportHelpText = `Usage: export <file_path>
+
+Download a file from OopisOS to your local machine.
+
+DESCRIPTION
+       The export command initiates a browser download for the file
+       specified by <file_path>. This allows you to save files from
+       the OopisOS virtual file system onto your actual computer's
+       hard drive.
+
+EXAMPLES
+       export /home/Guest/documents/report.txt
+              Triggers a download of 'report.txt' to your computer.`;
+
     CommandRegistry.register("export", exportCommandDefinition, exportDescription, exportHelpText);
 })();

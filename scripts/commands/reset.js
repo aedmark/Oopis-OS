@@ -43,7 +43,29 @@
             }
         },
     };
-    const resetDescription = "Resets OopisOS to its initial state.";
-    const resetHelpText = "Usage: reset";
+
+    const resetDescription = "Resets the entire OopisOS system to factory defaults.";
+
+    const resetHelpText = `Usage: reset
+
+Resets the entire OopisOS system to its factory default state.
+
+DESCRIPTION
+       The reset command is the most powerful and destructive command in
+       the system. It erases ALL data associated with OopisOS from your
+       browser's storage, including:
+       - All user accounts and credentials
+       - The entire file system
+       - All saved states and aliases
+
+       After running, the system will be as it was when you first
+       visited. This is different from 'clearfs', which only clears the
+       current user's home directory.
+
+WARNING
+       THIS OPERATION IS IRREVERSIBLE AND WILL PERMANENTLY DELETE ALL
+       OOPISOS DATA FROM YOUR BROWSER. THE COMMAND WILL PROMPT FOR
+       CONFIRMATION BEFORE PROCEEDING.`;
+
     CommandRegistry.register("reset", resetCommandDefinition, resetDescription, resetHelpText);
 })();

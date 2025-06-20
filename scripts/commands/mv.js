@@ -221,9 +221,40 @@
         },
     };
 
-    const mvDescription = "Moves a file or directory.";
-    const mvHelpText = "Usage: mv [options] <source> <destination>\n\nMoves the file or directory at [source] to [destination].";
+    const mvDescription = "Move or rename files and directories.";
 
+    const mvHelpText = `Usage: mv [OPTION]... <source> <destination>
+
+Rename SOURCE to DEST, or move SOURCE to DIRECTORY.
+
+DESCRIPTION
+       The mv command renames the file or directory at <source> to the
+       name given by <destination>, or moves it into an existing
+       <directory>.
+
+       If <destination> is an existing directory, the source file or
+       directory is moved inside of it.
+
+       If <destination> is not an existing directory, the source file or
+       directory is renamed to <destination>.
+
+OPTIONS
+       -f, --force
+              Do not prompt before overwriting. This option overrides a
+              previous -i option.
+
+       -i, --interactive
+              Prompt before overwriting an existing file.
+
+EXAMPLES
+       mv old_name.txt new_name.txt
+              Renames 'old_name.txt' to 'new_name.txt'.
+
+       mv report.txt /home/Guest/documents/
+              Moves 'report.txt' into the 'documents' directory.
+
+       mv old_dir new_dir
+              Renames the directory 'old_dir' to 'new_dir'.`;
 
     CommandRegistry.register("mv", mvCommandDefinition, mvDescription, mvHelpText);
 })();

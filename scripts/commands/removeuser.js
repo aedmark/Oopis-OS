@@ -132,8 +132,33 @@
             }
         },
     };
-    const removeuserDescription = "Removes a user from the system.";
-    const removeuserHelpText = "Usage: removeuser [-f] <username>";
-    CommandRegistry.register("removeuser", removeuserCommandDefinition, removeuserDescription, removeuserHelpText);
 
+    const removeuserDescription = "Removes a user account and all associated data.";
+
+    const removeuserHelpText = `Usage: removeuser [-f] <username>
+
+Remove a user account and all associated data.
+
+DESCRIPTION
+       The removeuser command permanently deletes the specified <username>
+       from the system. This action includes:
+       - Deleting the user's home directory (e.g., /home/<username>).
+       - Removing the user from all groups.
+       - Deleting all saved session states for the user.
+       - Removing the user's credentials.
+
+       The 'root' and 'Guest' users cannot be removed. You also cannot
+       remove the user you are currently logged in as.
+
+OPTIONS
+       -f, --force
+              Do not prompt for confirmation. Use with caution, especially
+              in scripts.
+
+WARNING
+       This operation is irreversible. All data associated with the user
+       will be permanently lost. The command will prompt for confirmation
+       before proceeding unless the -f flag is used.`;
+
+    CommandRegistry.register("removeuser", removeuserCommandDefinition, removeuserDescription, removeuserHelpText);
 })();

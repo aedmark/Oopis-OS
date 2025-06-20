@@ -28,8 +28,31 @@
             };
         },
     };
-    const killDescription = "Kills a running job.";
-    const killHelpText = "Usage: kill <job_id>";
-    CommandRegistry.register("kill", killCommandDefinition, killDescription, killHelpText);
 
+    const killDescription = "Terminates a background job.";
+
+    const killHelpText = `Usage: kill <job_id>
+
+Terminate a background job.
+
+DESCRIPTION
+       The kill command sends a termination signal to the background job
+       identified by <job_id>.
+
+       This is part of OopisOS's job control feature set. Use the 'ps'
+       command to get a list of active background jobs and their
+       corresponding job IDs.
+
+EXAMPLES
+       delay 10000 &
+              [1] Backgrounded.
+              
+       ps
+                PID   COMMAND
+                1     delay 10000
+
+       kill 1
+              Signal sent to terminate job 1.`;
+
+    CommandRegistry.register("kill", killCommandDefinition, killDescription, killHelpText);
 })();

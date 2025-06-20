@@ -144,7 +144,31 @@
             };
         },
     };
+
     const mkdirDescription = "Creates one or more new directories.";
-    const mkdirHelpText = "Usage: mkdir [options] <directory>...\n\nCreates one or more new directories.";
+
+    const mkdirHelpText = `Usage: mkdir [OPTION]... <DIRECTORY>...
+
+Create the DIRECTORY(ies), if they do not already exist.
+
+DESCRIPTION
+       The mkdir command creates one or more new directories with the
+       specified names.
+
+OPTIONS
+       -p, --parents
+              Create parent directories as needed. If this option is not
+              specified, the full path prefix of each operand must already
+              exist.
+
+EXAMPLES
+       mkdir documents
+              Creates a new directory named 'documents' in the current
+              directory.
+
+       mkdir -p projects/assets/images
+              Creates the 'projects', 'assets', and 'images' directories
+              if they do not already exist.`;
+
     CommandRegistry.register("mkdir", mkdirCommandDefinition, mkdirDescription, mkdirHelpText);
 })();

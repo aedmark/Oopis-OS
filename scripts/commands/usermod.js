@@ -58,7 +58,32 @@
             }
         },
     };
-    const usermodDescription = "Adds a user to a group.";
-    const usermodHelpText = "Usage: usermod -aG <groupname> <username>\n\nAdds the specified user to the specified group.";
+
+    const usermodDescription = "Modifies a user account, primarily for group membership.";
+
+    const usermodHelpText = `Usage: usermod -aG <groupname> <username>
+
+Modify a user account.
+
+DESCRIPTION
+       The usermod command modifies the user account specified by
+       <username>. Its primary function in OopisOS is to add a user to a
+       supplementary group.
+
+OPTIONS
+       -aG <groupname>
+              Add the user to the supplementary <groupname>. The -a flag
+              (append) is important to ensure the user is not removed
+              from other groups. The -G flag specifies that we are
+              modifying a group membership. In OopisOS, these flags
+              must be used together.
+
+PERMISSIONS
+       Only the superuser (root) can modify user accounts.
+
+EXAMPLES
+       usermod -aG developers newdev
+              Adds the user 'newdev' to the 'developers' group.`;
+
     CommandRegistry.register("usermod", usermodCommandDefinition, usermodDescription, usermodHelpText);
 })();

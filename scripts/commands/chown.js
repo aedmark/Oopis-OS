@@ -58,7 +58,26 @@
             };
         },
     };
-    const chownDescription = "Changes the owner of a file or directory.";
-    const chownHelpText = "Usage: chown <new_owner> <path>\n\nChanges the owner of the specified file or directory to <new_owner>.";
+
+    const chownDescription = "Changes the user ownership of a file or directory.";
+
+    const chownHelpText = `Usage: chown <owner> <path>
+
+Change the user ownership of a file or directory.
+
+DESCRIPTION
+       The chown command changes the user ownership of the file or
+       directory specified by <path> to <owner>. The <owner> must be a
+       valid, existing user on the system.
+
+       Use the 'ls -l' command to view the current owner of a file.
+
+EXAMPLES
+       chown Guest /home/root/somefile
+              Changes the owner of 'somefile' from 'root' to 'Guest'.
+
+PERMISSIONS
+       Only the superuser (root) can change the ownership of a file.`;
+
     CommandRegistry.register("chown", chownCommandDefinition, chownDescription, chownHelpText);
 })();

@@ -150,7 +150,31 @@
             }
         },
     };
-    const restoreDescription = "Restores the system state from a backup file.";
-    const restoreHelpText = "Usage: restore";
+
+    const restoreDescription = "Restores the entire system state from a backup file.";
+
+    const restoreHelpText = `Usage: restore
+
+Restore the entire OopisOS system state from a backup file.
+
+DESCRIPTION
+       The restore command initiates a full system restoration from a
+       '.json' file previously created with the 'backup' command.
+
+       This command will open your browser's file selection dialog,
+       allowing you to choose the backup file from your local machine.
+
+       Upon confirmation, the entire current state of OopisOS will be
+       wiped and replaced with the data from the backup file. This
+       includes all users, groups, files, directories, aliases, and
+       saved session states.
+
+       After a successful restore, the system will automatically reboot.
+
+WARNING
+       THIS OPERATION IS IRREVERSIBLE AND WILL PERMANENTLY OVERWRITE
+       ALL CURRENT OOPISOS DATA. THE COMMAND WILL PROMPT FOR CONFIRMATION
+       BEFORE PROCEEDING.`;
+
     CommandRegistry.register("restore", restoreCommandDefinition, restoreDescription, restoreHelpText);
 })();

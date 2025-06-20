@@ -44,7 +44,25 @@
             };
         },
     };
-    const diffDescription = "Displays the differences between two files.";
-    const diffHelpText = "Usage: diff <file1> <file2>\n\nDisplays the differences between the specified files.";
+
+    const diffDescription = "Compares two files line by line.";
+
+    const diffHelpText = `Usage: diff <file1> <file2>
+
+Compare two files line by line.
+
+DESCRIPTION
+       The diff command analyzes two files and prints the lines that are
+       different.
+
+       The output format uses the following prefixes:
+       <      A line that is in <file1> but not in <file2>.
+       >      A line that is in <file2> but not in <file1>.
+         (a space) A line that is common to both files (context).
+
+EXAMPLES
+       diff original.txt updated.txt
+              Shows the differences between the two text files.`;
+
     CommandRegistry.register("diff", diffCommandDefinition, diffDescription, diffHelpText);
 })();

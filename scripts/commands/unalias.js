@@ -31,7 +31,23 @@
             }
         },
     };
-    const unaliasDescription = "Removes one or more aliases.";
-    const unaliasHelpText = "Usage: unalias <alias_name>...";
+
+    const unaliasDescription = "Removes one or more defined aliases.";
+
+    const unaliasHelpText = `Usage: unalias <alias_name>...
+
+Remove aliases from the set of defined aliases.
+
+DESCRIPTION
+       The unalias command is used to remove one or more specified
+       aliases. Once unaliased, the shortcut will no longer be available.
+
+EXAMPLES
+       unalias ll
+              Removes the 'll' alias.
+
+       unalias mypath mycommand
+              Removes both the 'mypath' and 'mycommand' aliases.`;
+
     CommandRegistry.register("unalias", unaliasCommandDefinition, unaliasDescription, unaliasHelpText);
 })();
