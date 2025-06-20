@@ -53,6 +53,8 @@
   --tw-backdrop-opacity: ;
   --tw-backdrop-saturate: ;
   --tw-backdrop-sepia: ;
+  --tw-space-x-reverse: 0;
+  --tw-space-y-reverse: 0;
 }
 
 .m-0 {
@@ -379,8 +381,6 @@
   position: relative;
 }
 
-/* 3. Original terminal.css content */
-
 html {
   box-sizing: border-box;
 }
@@ -556,35 +556,20 @@ body {
   overflow-x: auto !important;
 }
 
-/* --- START EDITOR PADDING CHANGES --- */
-
-/* Apply consistent padding to the main textarea */
 #editor-textarea {
-  /* Inherit/keep existing styles like font-family, font-size, line-height, etc. */
   padding: 1rem;
-  /* This is the new uniform padding on all sides */
   box-sizing: border-box;
-  /* Ensure padding is included in element's total width/height */
-  /* Remove any conflicting padding-left/right if set by Tailwind/HTML directly on textarea */
 }
 
-/* Apply consistent padding to the preview content area */
 #editor-preview-content {
   padding: 1rem;
-  /* Match textarea for visual consistency */
   box-sizing: border-box;
 }
 
-/* Ensure the wrapper for the textarea doesn't add its own conflicting padding.
-   The `pl-0` in the HTML for `editor-textarea-wrapper` is redundant
-   if `#editor-textarea` has its own `padding-left`.
-   We'll explicitly set it to 0 here to be safe and clear. */
 #editor-textarea-wrapper {
   padding-left: 0;
-  /* Override any unwanted default/inherited padding-left */
 }
 
-/* --- END EDITOR PADDING CHANGES --- */
 #editor-modal-dialog {
   position: absolute;
   top: 50%;
