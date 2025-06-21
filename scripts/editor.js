@@ -460,10 +460,10 @@ const EditorUI = (() => {
   function updateStatusBar(text, selectionStart) {
     if(!elements.textarea || !elements.statusBar) return;
     const stats = EditorUtils.calculateStatusBarInfo(text, selectionStart);
-    if(elements.statusBarLineCount) elements.statusBarLineCount.textContent = `Lines: ${stats.lines}`;
-    if(elements.statusBarWordCount) elements.statusBarWordCount.textContent = `Words: ${stats.words}`;
-    if(elements.statusBarCharCount) elements.statusBarCharCount.textContent = `Chars: ${stats.chars}`;
-    if(elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col}`;
+    if(elements.statusBarLineCount) elements.statusBarLineCount.textContent = ` Lines: ${stats.lines}`;
+    if(elements.statusBarWordCount) elements.statusBarWordCount.textContent = `Words: ${stats.words}_`;
+    if(elements.statusBarCharCount) elements.statusBarCharCount.textContent = ` Chars: ${stats.chars}`;
+    if(elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col}_`;
   }
 
   /**
