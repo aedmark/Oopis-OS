@@ -399,9 +399,12 @@ const ChidiApp = {
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
+                    <div class="chidi-header-spacer"></div>
                     <h1 id="chidi-mainTitle">chidi.md</h1>
-                    <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                    <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
+                    <div class="chidi-header-right-group">
+                        <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
+                        <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
+                    </div>
                 </header>
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
                     <p class="chidi-placeholder-text">Awaiting file selection...</p>
@@ -413,8 +416,8 @@ const ChidiApp = {
                     </div>
                     <div class="chidi-control-group">
                         <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
-                        <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Suggest Q's</button>
-                        <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask All</button>
+                        <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
+                        <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
                     </div>
                 </div>
                 <footer class="chidi-status-readout">
@@ -441,7 +444,6 @@ const ChidiApp = {
      * @returns {string} The CSS rules as a string.
      */
     getStyles() {
-        // CSS remains the same as previous version, but z-index on nested modal is now less critical.
         return `
             #chidi-modal {
                 --panel-bg: #1a1a1d;
@@ -469,16 +471,27 @@ const ChidiApp = {
                 padding: 1rem; color: var(--text-primary);
             }
             .chidi-console-header {
-                display: flex; justify-content: space-between; align-items: center;
-                border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;
-                position: relative;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid var(--border-color);
+                padding-bottom: 0.5rem;
+                margin-bottom: 1rem;
             }
             #chidi-mainTitle {
                 font-size: 1.5rem;
                 color: var(--accent-green);
                 text-align: center;
                 flex-grow: 1;
-                padding: 0 1rem; /* Space around title */
+            }
+            .chidi-header-spacer, .chidi-header-right-group {
+                display: flex;
+                align-items: center;
+                flex: 0 1 150px;
+            }
+            .chidi-header-right-group {
+                justify-content: flex-end;
+                gap: 0.75rem;
             }
             .chidi-markdown-content {
                 flex-grow: 1; background-color: var(--screen-bg); color: var(--text-primary);
@@ -540,17 +553,16 @@ const ChidiApp = {
                 font-size: 1.2rem; color: var(--text-secondary);
             }
             .chidi-status-message { text-align: right; }
-            .chidi-loader { 
-                border: 4px solid #3f3f46;
-                border-top: 4px solid var(--accent-blue);
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
-                animation: chidi-spin 1s linear infinite;
+            .chidi-loader {
+                width: 10px;
+                height: 18px;
+                background-color: var(--accent-green);
+                animation: chidi-blink-cursor 1.2s steps(2, start) infinite;
             }
-            @keyframes chidi-spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
+            @keyframes chidi-blink-cursor {
+                to {
+                    visibility: hidden;
+                }
             }
             .chidi-hidden { display: none !important; }
 
