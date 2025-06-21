@@ -43,6 +43,7 @@ const ChidiApp = {
         this.injectStyles();
         this.createModal();
         this.cacheDOMElements();
+        this._populateFileDropdown();
         this.setupEventListeners();
 
         this.updateUI();
@@ -113,16 +114,17 @@ const ChidiApp = {
             ...this.elements,
             prevBtn: get('chidi-prevBtn'),
             nextBtn: get('chidi-nextBtn'),
+            fileSelector: get('chidi-file-selector'),
             summarizeBtn: get('chidi-summarizeBtn'),
             suggestQuestionsBtn: get('chidi-suggestQuestionsBtn'),
             askAllFilesBtn: get('chidi-askAllFilesBtn'),
+            exportBtn: get('chidi-exportBtn'),
             closeBtn: get('chidi-closeBtn'),
             markdownDisplay: get('chidi-markdownDisplay'),
             messageBox: get('chidi-messageBox'),
             loader: get('chidi-loader'),
             mainTitle: get('chidi-mainTitle'),
             fileCountDisplay: get('chidi-fileCountDisplay'),
-            // No longer need to cache the nested input modal elements
         };
     },
 
@@ -138,6 +140,12 @@ const ChidiApp = {
         this.elements.fileCountDisplay.textContent = `FILES: ${this.state.loadedFiles.length}`;
         this.elements.prevBtn.disabled = this.state.currentIndex <= 0;
         this.elements.nextBtn.disabled = this.state.currentIndex >= this.state.loadedFiles.length - 1;
+        this.elements.fileSelector.disabled = !hasFiles;
+        this.elements.exportBtn.disabled = !hasFiles;
+
+        if (hasFiles) {
+            this.elements.fileSelector.value = this.state.currentIndex;
+        }
 
         this.elements.summarizeBtn.disabled = !hasFiles;
         this.elements.suggestQuestionsBtn.disabled = !hasFiles;
@@ -155,6 +163,48 @@ const ChidiApp = {
             this.elements.mainTitle.textContent = "chidi.md";
             this.elements.markdownDisplay.innerHTML = `<p class="chidi-placeholder-text">No Markdown files loaded.</p>`;
         }
+
+        this._adjustTitleFontSize();
+    },
+
+    /**
+     * Dynamically adjusts the title's font size to prevent it from overflowing its container.
+     * @private
+     */
+    _adjustTitleFontSize() {
+        const titleEl = this.elements.mainTitle;
+        if (!titleEl) return;
+
+        titleEl.style.fontSize = '1.5rem';
+
+        const minFontSize = 0.8;
+        let currentFontSize = 1.5;
+
+        while (titleEl.scrollWidth > titleEl.offsetWidth + 1 && currentFontSize > minFontSize) {
+            currentFontSize -= 0.05;
+            titleEl.style.fontSize = `${currentFontSize}rem`;
+        }
+    },
+
+    /**
+     * Populates the file selector dropdown with the names of all loaded files.
+     * @private
+     */
+    _populateFileDropdown() {
+        const selector = this.elements.fileSelector;
+        selector.innerHTML = '';
+        if (this.state.loadedFiles.length === 0) {
+            const defaultOption = document.createElement('option');
+            defaultOption.textContent = "No Files";
+            selector.appendChild(defaultOption);
+            return;
+        }
+        this.state.loadedFiles.forEach((file, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = file.name;
+            selector.appendChild(option);
+        });
     },
 
     // --- Event Handling ---
@@ -164,6 +214,7 @@ const ChidiApp = {
      */
     setupEventListeners() {
         this.elements.closeBtn.addEventListener('click', () => this.close());
+        this.elements.exportBtn.addEventListener('click', () => this._exportConversation());
         document.addEventListener('keydown', (e) => {
             if (this.isActive() && e.key === 'Escape') {
                 this.close();
@@ -172,6 +223,7 @@ const ChidiApp = {
 
         this.elements.prevBtn.addEventListener('click', () => this.navigate(-1));
         this.elements.nextBtn.addEventListener('click', () => this.navigate(1));
+        this.elements.fileSelector.addEventListener('change', (e) => this._selectFileByIndex(e.target.value));
 
         this.elements.summarizeBtn.addEventListener('click', async () => {
             const currentFile = this.getCurrentFile();
@@ -189,8 +241,6 @@ const ChidiApp = {
             this.appendAiOutput("Suggested Questions", questions);
         });
 
-        // The askAllFilesBtn needs its own input modal, which is a different use case
-        // than the API key prompt. So we will keep that functionality.
         this.elements.askAllFilesBtn.addEventListener('click', async () => {
             const userQuestion = await this.showInputModal({
                 title: "Ask All Files",
@@ -221,6 +271,19 @@ const ChidiApp = {
         const newIndex = this.state.currentIndex + direction;
         if (newIndex >= 0 && newIndex < this.state.loadedFiles.length) {
             this.state.currentIndex = newIndex;
+            this.updateUI();
+        }
+    },
+
+    /**
+     * Sets the current file based on the dropdown selection.
+     * @param {string} indexStr - The index of the file to select, as a string.
+     * @private
+     */
+    _selectFileByIndex(indexStr) {
+        const index = parseInt(indexStr, 10);
+        if (!isNaN(index) && index >= 0 && index < this.state.loadedFiles.length) {
+            this.state.currentIndex = index;
             this.updateUI();
         }
     },
@@ -268,6 +331,57 @@ const ChidiApp = {
         if (this.elements.loader) {
             this.elements.loader.classList.toggle('chidi-hidden', !show);
         }
+    },
+
+    /**
+     * Exports the current view (including original content and AI responses) as an HTML file.
+     * @private
+     */
+    _exportConversation() {
+        const currentFile = this.getCurrentFile();
+        if (!currentFile) {
+            this.showMessage("Error: No file to export.");
+            return;
+        }
+
+        const content = this.elements.markdownDisplay.innerHTML;
+        const title = `Chidi Export: ${currentFile.name}`;
+        const styles = `
+            body { background-color: #0d0d0d; color: #e4e4e7; font-family: 'VT323', monospace; line-height: 1.6; padding: 2rem; }
+            h1, h2, h3 { border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: #60a5fa; }
+            a { color: #34d399; }
+            code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; }
+            pre { background-color: #000; padding: 1rem; border-radius: 4px; border: 1px solid #333; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+            blockquote { border-left: 4px solid #60a5fa; padding-left: 1rem; margin-left: 0; color: #a1a1aa; }
+            .chidi-ai-output { border-top: 2px dashed #60a5fa; margin-top: 2rem; padding-top: 1rem; }
+        `;
+        const html = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+                <title>${title}</title>
+                <style>${styles}</style>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                ${content}
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentFile.name.replace(/\.md$/, '')}_export.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showMessage(`Exported view for ${currentFile.name}.`);
     },
 
     // --- Gemini API Interaction ---
@@ -347,7 +461,6 @@ const ChidiApp = {
      * @returns {Promise<string|null>} A promise that resolves with the user's input or null if canceled.
      */
     showInputModal({ title, prompt, placeholder, confirmText }) {
-        // This is a separate input modal for asking questions, defined in getHTML
         const inputModal = document.getElementById('chidi-inputModal');
         const inputModalField = document.getElementById('chidi-inputModalField');
         if (!inputModal || !inputModalField) return Promise.resolve(null);
@@ -399,10 +512,10 @@ const ChidiApp = {
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
-                    <div class="chidi-header-spacer"></div>
                     <h1 id="chidi-mainTitle">chidi.md</h1>
                     <div class="chidi-header-right-group">
                         <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
+                        <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
                         <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
                     </div>
                 </header>
@@ -410,11 +523,14 @@ const ChidiApp = {
                     <p class="chidi-placeholder-text">Awaiting file selection...</p>
                 </main>
                 <div class="chidi-controls-container">
-                    <div class="chidi-control-group">
+                    <div class="chidi-control-group chidi-group-left">
                         <button id="chidi-prevBtn" class="chidi-btn" disabled>&larr; PREV</button>
                         <button id="chidi-nextBtn" class="chidi-btn" disabled>NEXT &rarr;</button>
                     </div>
-                    <div class="chidi-control-group">
+                    <div class="chidi-control-group chidi-group-center">
+                        <select id="chidi-file-selector" class="chidi-btn chidi-select"></select>
+                    </div>
+                    <div class="chidi-control-group chidi-group-right">
                         <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
                         <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
                         <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
@@ -471,27 +587,29 @@ const ChidiApp = {
                 padding: 1rem; color: var(--text-primary);
             }
             .chidi-console-header {
-                display: flex;
-                justify-content: space-between;
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
                 align-items: center;
                 border-bottom: 2px solid var(--border-color);
                 padding-bottom: 0.5rem;
                 margin-bottom: 1rem;
             }
             #chidi-mainTitle {
+                grid-column: 2;
                 font-size: 1.5rem;
                 color: var(--accent-green);
                 text-align: center;
-                flex-grow: 1;
-            }
-            .chidi-header-spacer, .chidi-header-right-group {
-                display: flex;
-                align-items: center;
-                flex: 0 1 150px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 0 1rem;
             }
             .chidi-header-right-group {
+                grid-column: 3;
+                display: flex;
+                align-items: center;
                 justify-content: flex-end;
-                gap: 0.75rem;
+                gap: 1.25rem;
             }
             .chidi-markdown-content {
                 flex-grow: 1; background-color: var(--screen-bg); color: var(--text-primary);
@@ -513,8 +631,8 @@ const ChidiApp = {
             .chidi-error-text { color: var(--accent-red); }
             .chidi-ai-output { border-top: 2px dashed var(--accent-blue); margin-top: 2rem; padding-top: 1rem; }
             
-            .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; }
-            .chidi-control-group { display: flex; gap: 0.5rem; }
+            .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; align-items: center; }
+            .chidi-control-group { display: flex; gap: 0.5rem; align-items: center;}
             
             .chidi-btn {
                 background-color: #3f3f46;
@@ -526,6 +644,7 @@ const ChidiApp = {
                 font-size: 1.1rem;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                white-space: nowrap;
             }
             .chidi-btn:hover:not(:disabled) {
                 background-color: #52525b;
@@ -536,6 +655,22 @@ const ChidiApp = {
                 color: #52525b;
                 border-color: #3f3f46;
                 cursor: not-allowed;
+            }
+            .chidi-select {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                text-align: left;
+                padding-right: 2.5rem;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a7f3d0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+                background-position: right 0.5rem center;
+                background-repeat: no-repeat;
+                background-size: 1.5em 1.5em;
+                max-width: 300px;
+                text-overflow: ellipsis;
+            }
+             .chidi-select:disabled {
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2352525b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             }
             .chidi-exit-btn {
                 background-color: #3f1212;

@@ -250,6 +250,7 @@
                 <li><strong>Networking Utilities (`wget`, `curl`):</strong> Fetch content and download files from the web directly within the OS.</li>
                 <li><strong>The 'edit' Command - Now More Luxurious:</strong> A souped-up text editor that handles plain text, Markdown, and HTML with a live preview. Features include line numbers, a detailed status bar, toggleable word wrap, multiple view modes (`Ctrl+P`), an `Export to HTML` function, and a rich formatting toolbar with shortcuts.</li>
                 <li><strong>The 'paint' Command - An Artist's Studio:</strong> Unleash your inner artist with a character-based paint program. Supports multiple colors, undo/redo, and saves to a custom `.oopic` file format.</li>
+                <li><strong>The 'chidi' Command - Your Personal AI Librarian:</strong> An advanced Markdown reader that recursively finds all `.md` files in a path and lets you use AI to summarize, study, and ask questions about them, either individually or all at once.</li>
                 <li><strong>An AI in the Shell (`gemini`):</strong> Chat with the Gemini AI directly from your terminal. Ask it to write a poem, summarize a file, or start a new conversation with the `-n` flag. It can now use `tree` and other tools to better understand your files.</li>
                 <li><strong>Scripting for the Masses (`run`):</strong> Write your own command scripts! Supports comments (`#`), argument passing (`$1`, `$2`, `$@`, `$#`), and includes handy tools like `delay` and `check_fail` for crafting your own diagnostic epics.</li>
                 <li><strong>Save Your Progress! (No, really):</strong> Automatic session saving per user, plus manual `savestate`/`loadstate` and `backup`/`restore` commands. `clearfs` lets you clean your home directory, and `reset` is the big red button that nukes everything (don't worry, we'll ask first).</li>
@@ -294,6 +295,7 @@
                 <tr><td><code>echo [text]</code></td><td>Repeats text. Primarily used with redirection to write to files.</td></tr>
                 <tr><td><code>edit [file]</code></td><td>Opens the powerful text editor. Your gateway to creating masterpieces.</td></tr>
                 <tr><td><code>paint [file.oopic]</code></td><td>Unleash your inner artist! Opens the character-based art editor.</td></tr>
+                <tr><td><code>chidi [path]</code></td><td>Opens the advanced Markdown reader and AI analysis tool.</td></tr>
                 <tr><td><code>touch [-c -d -t] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create, <b>-d</b> for a date string, <b>-t</b> for a specific timestamp.</td></tr>
                 <tr><td><code>rm [-r -f -i] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories, <b>-f</b> to be forceful, and <b>-i</b> to be asked first.</td></tr>
                 <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>Copies files. Flags for: <b>-r</b>ecursive, <b>-f</b>orce, <b>-p</b>reserve metadata, <b>-i</b>nteractive.</td></tr>
@@ -374,6 +376,15 @@
                         <li><code>Ctrl+Z</code> / <code>Ctrl+Y</code>: Undo and Redo your strokes.</li>
                     </ul>
                 </li>
+            </ul>
+
+            <h2>The AI Librarian (`chidi` command)</h2>
+            <p>The `chidi` command launches a powerful Markdown reader and analysis tool. When you run `chidi` on a file or directory, it finds all `.md` files and loads them into a dedicated reading interface.</p>
+            <ul class="list-disc ml-6 my-4 space-y-2">
+                <li><strong>Focused Reading:</strong> Presents a clean, rendered view of your Markdown files, free from terminal distractions.</li>
+                <li><strong>Multi-File Navigation:</strong> If you target a directory, you can easily navigate between all found `.md` files using PREV/NEXT buttons or a file selector dropdown menu.</li>
+                <li><strong>AI Integration:</strong> Chidi uses the Gemini AI to provide powerful analysis tools for your documents. You can summarize the current document, ask for study questions, or even ask a question across all loaded documents at once.</li>
+                <li><strong>Export View:</strong> You can export the current view, including any AI-generated summaries or answers, as a single, self-contained HTML file for easy sharing or archiving.</li>
             </ul>
 
             <h2>Users, Groups, and Permissions</h2>
