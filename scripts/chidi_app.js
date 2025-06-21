@@ -619,8 +619,6 @@ const ChidiApp = {
                     <h1 id="chidi-mainTitle">chidi.md</h1>
                     <div class="chidi-header-right-group">
                         <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                        <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
-                        <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
                     </div>
                 </header>
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
@@ -646,6 +644,10 @@ const ChidiApp = {
                 <footer class="chidi-status-readout">
                     <div id="chidi-fileCountDisplay" class="chidi-status-item">FILES: 0</div>
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>
+                    <div class="chidi-controls-container">
+                        <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
+                        <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
+                        </div>  
                 </footer>
             </div>
         `;
