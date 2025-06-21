@@ -9,6 +9,7 @@ const ChidiApp = {
         loadedFiles: [],
         currentIndex: -1,
         isModalOpen: false,
+        isAskingMode: false, // NEW: State to track if user is in "Ask" mode
     },
 
     // DOM element references
@@ -64,6 +65,7 @@ const ChidiApp = {
             loadedFiles: [],
             currentIndex: -1,
             isModalOpen: false,
+            isAskingMode: false,
         };
         this.elements = {};
 
@@ -116,8 +118,8 @@ const ChidiApp = {
             nextBtn: get('chidi-nextBtn'),
             fileSelector: get('chidi-file-selector'),
             summarizeBtn: get('chidi-summarizeBtn'),
-            suggestQuestionsBtn: get('chidi-suggestQuestionsBtn'),
-            askAllFilesBtn: get('chidi-askAllFilesBtn'),
+            studyBtn: get('chidi-suggestQuestionsBtn'), // Renamed for clarity
+            askBtn: get('chidi-askAllFilesBtn'),      // Renamed for clarity
             exportBtn: get('chidi-exportBtn'),
             closeBtn: get('chidi-closeBtn'),
             markdownDisplay: get('chidi-markdownDisplay'),
@@ -125,6 +127,8 @@ const ChidiApp = {
             loader: get('chidi-loader'),
             mainTitle: get('chidi-mainTitle'),
             fileCountDisplay: get('chidi-fileCountDisplay'),
+            askInputContainer: get('chidi-ask-input-container'), // NEW
+            askInput: get('chidi-ask-input'),                   // NEW
         };
     },
 
@@ -148,8 +152,8 @@ const ChidiApp = {
         }
 
         this.elements.summarizeBtn.disabled = !hasFiles;
-        this.elements.suggestQuestionsBtn.disabled = !hasFiles;
-        this.elements.askAllFilesBtn.disabled = !hasFiles;
+        this.elements.studyBtn.disabled = !hasFiles;
+        this.elements.askBtn.disabled = !hasFiles;
 
         if (currentFile) {
             this.elements.mainTitle.textContent = currentFile.name.replace(/\.md$/i, '');
@@ -215,15 +219,28 @@ const ChidiApp = {
     setupEventListeners() {
         this.elements.closeBtn.addEventListener('click', () => this.close());
         this.elements.exportBtn.addEventListener('click', () => this._exportConversation());
+
         document.addEventListener('keydown', (e) => {
-            if (this.isActive() && e.key === 'Escape') {
-                this.close();
+            if (!this.isActive()) return;
+
+            if (e.key === 'Escape') {
+                if (this.state.isAskingMode) {
+                    this._exitQuestionMode(); // NEW: Exit ask mode on Escape
+                } else {
+                    this.close();
+                }
             }
         });
 
         this.elements.prevBtn.addEventListener('click', () => this.navigate(-1));
         this.elements.nextBtn.addEventListener('click', () => this.navigate(1));
-        this.elements.fileSelector.addEventListener('change', (e) => this._selectFileByIndex(e.target.value));
+
+        this.elements.fileSelector.addEventListener('change', (e) => {
+            if (this.state.isAskingMode) {
+                this._exitQuestionMode(); // NEW: Exit ask mode on file change
+            }
+            this._selectFileByIndex(e.target.value);
+        });
 
         this.elements.summarizeBtn.addEventListener('click', async () => {
             const currentFile = this.getCurrentFile();
@@ -233,7 +250,12 @@ const ChidiApp = {
             this.appendAiOutput("Summary", summary);
         });
 
-        this.elements.suggestQuestionsBtn.addEventListener('click', async () => {
+        // The "Study" button's primary role
+        this.elements.studyBtn.addEventListener('click', async () => {
+            if (this.state.isAskingMode) {
+                this._exitQuestionMode(); // In ask mode, this button is "Cancel"
+                return;
+            }
             const currentFile = this.getCurrentFile();
             if (!currentFile) return;
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${currentFile.content}`;
@@ -241,33 +263,104 @@ const ChidiApp = {
             this.appendAiOutput("Suggested Questions", questions);
         });
 
-        this.elements.askAllFilesBtn.addEventListener('click', async () => {
-            const userQuestion = await this.showInputModal({
-                title: "Ask All Files",
-                prompt: "What question would you like to ask across all loaded documents?",
-                placeholder: "e.g., 'Summarize the main points from all documents'",
-                confirmText: "Ask"
-            });
-            if (!userQuestion || userQuestion.trim() === '') return;
+        // The "Ask" button's primary role
+        this.elements.askBtn.addEventListener('click', async () => {
+            if (this.state.isAskingMode) {
+                await this._submitQuestion(); // In ask mode, this button is "Submit"
+            } else {
+                this._enterQuestionMode();
+            }
+        });
 
-            let combinedContent = "You have access to the following documents:\n\n";
-            this.state.loadedFiles.forEach(file => {
-                combinedContent += `--- DOCUMENT: ${file.name} ---\n${file.content}\n\n`;
-            });
-
-            const prompt = `${combinedContent}Based on all the documents provided, please answer the following question: ${userQuestion}`;
-            const answer = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
-            this.appendAiOutput(`Answer based on all files`, answer);
+        // NEW: Handle Enter key in the new input field
+        this.elements.askInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                await this._submitQuestion();
+            }
         });
     },
 
     // --- Core Logic & Helpers ---
 
     /**
+     * Switches the UI into question-asking mode.
+     * @private
+     */
+    _enterQuestionMode() {
+        if (!this.getCurrentFile()) return;
+        this.state.isAskingMode = true;
+
+        // Hide markdown, show input
+        this.elements.markdownDisplay.classList.add('chidi-hidden');
+        this.elements.askInputContainer.classList.remove('chidi-hidden');
+        this.elements.askInput.value = '';
+        this.elements.askInput.focus();
+
+        // Change button labels and functions
+        this.elements.askBtn.textContent = 'Submit';
+        this.elements.studyBtn.textContent = 'Cancel';
+
+        // Disable other buttons
+        this.elements.summarizeBtn.disabled = true;
+        this.elements.exportBtn.disabled = true;
+        this.elements.prevBtn.disabled = true;
+        this.elements.nextBtn.disabled = true;
+        this.elements.fileSelector.disabled = true;
+
+        this.showMessage("Ask a question about all loaded files.");
+    },
+
+    /**
+     * Exits question-asking mode and reverts the UI.
+     * @private
+     */
+    _exitQuestionMode() {
+        this.state.isAskingMode = false;
+
+        // Hide input, show markdown
+        this.elements.askInputContainer.classList.add('chidi-hidden');
+        this.elements.markdownDisplay.classList.remove('chidi-hidden');
+
+        // Revert button labels
+        this.elements.askBtn.textContent = 'Ask';
+        this.elements.studyBtn.textContent = 'Study';
+
+        // Re-enable buttons based on state
+        this.updateUI();
+
+        this.showMessage("Question mode cancelled.");
+    },
+
+    /**
+     * Submits the question from the input field to the AI.
+     * @private
+     */
+    async _submitQuestion() {
+        const userQuestion = this.elements.askInput.value.trim();
+        if (!userQuestion) return;
+
+        let combinedContent = "You have access to the following documents:\n\n";
+        this.state.loadedFiles.forEach(file => {
+            combinedContent += `--- DOCUMENT: ${file.name} ---\n${file.content}\n\n`;
+        });
+
+        const prompt = `${combinedContent}Based on all the documents provided, please answer the following question: ${userQuestion}`;
+
+        // Exit question mode before awaiting the API call so the UI feels responsive
+        this._exitQuestionMode();
+
+        const answer = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
+        this.appendAiOutput(`Answer for "${userQuestion}"`, answer);
+    },
+
+    /**
      * Navigates to the next or previous file.
      * @param {number} direction - -1 for previous, 1 for next.
      */
     navigate(direction) {
+        if (this.state.isAskingMode) this._exitQuestionMode(); // NEW
+
         const newIndex = this.state.currentIndex + direction;
         if (newIndex >= 0 && newIndex < this.state.loadedFiles.length) {
             this.state.currentIndex = newIndex;
@@ -434,11 +527,9 @@ const ChidiApp = {
 
             const result = await response.json();
 
-            // Check for valid candidates in the response.
             if (result.candidates && result.candidates.length > 0) {
                 const candidate = result.candidates[0];
 
-                // Check if the response was blocked for safety/other reasons.
                 if (candidate.finishReason && candidate.finishReason !== "STOP") {
                     const blockReason = candidate.finishReason;
                     const safetyRatings = candidate.safetyRatings?.map(r => `${r.category}: ${r.probability}`).join(', ') || 'No details';
@@ -448,7 +539,6 @@ const ChidiApp = {
                     return "";
                 }
 
-                // Concatenate all text parts from the response.
                 if (candidate.content && candidate.content.parts) {
                     const fullText = candidate.content.parts.map(part => part.text || "").join("");
                     if (fullText) {
@@ -458,7 +548,6 @@ const ChidiApp = {
                 }
             }
 
-            // Handle cases where the prompt itself was blocked before generating candidates.
             if (result.promptFeedback?.blockReason) {
                 const errorMsg = `Request was blocked. Reason: ${result.promptFeedback.blockReason}`;
                 this.showMessage(`Error: ${errorMsg}`);
@@ -466,7 +555,6 @@ const ChidiApp = {
                 return "";
             }
 
-            // Fallback for any other invalid response structure.
             this.showMessage("Error: Invalid or empty response structure from API.");
             this.appendAiOutput("API Error", "The AI returned an empty or un-parsable response. The context might be too large or the query unsupported.");
             return "";
@@ -479,58 +567,6 @@ const ChidiApp = {
         }
     },
 
-    /**
-     * Displays a modal to get user input for general questions (not for API key).
-     * @param {object} options - Configuration for the input modal.
-     * @returns {Promise<string|null>} A promise that resolves with the user's input or null if canceled.
-     */
-    showInputModal({ title, prompt, placeholder, confirmText }) {
-        const inputModal = document.getElementById('chidi-inputModal');
-        const inputModalField = document.getElementById('chidi-inputModalField');
-        if (!inputModal || !inputModalField) return Promise.resolve(null);
-
-        document.getElementById('chidi-inputModalTitle').textContent = title;
-        document.getElementById('chidi-inputModalText').textContent = prompt;
-        inputModalField.placeholder = placeholder;
-        document.getElementById('chidi-confirmInputBtn').textContent = confirmText;
-
-        return new Promise((resolve) => {
-            inputModal.classList.remove('chidi-hidden');
-            inputModalField.focus();
-
-            const confirmHandler = () => {
-                cleanup();
-                resolve(inputModalField.value);
-            };
-            const cancelHandler = () => {
-                cleanup();
-                resolve(null);
-            };
-            const keyHandler = (e) => {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    confirmHandler();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    cancelHandler();
-                }
-            };
-
-            const cleanup = () => {
-                inputModal.classList.add('chidi-hidden');
-                document.getElementById('chidi-confirmInputBtn').removeEventListener('click', confirmHandler);
-                document.getElementById('chidi-cancelInputBtn').removeEventListener('click', cancelHandler);
-                inputModalField.removeEventListener('keydown', keyHandler);
-                inputModalField.value = '';
-            };
-
-            document.getElementById('chidi-confirmInputBtn').addEventListener('click', confirmHandler, { once: true });
-            document.getElementById('chidi-cancelInputBtn').addEventListener('click', cancelHandler, { once: true });
-            inputModalField.addEventListener('keydown', keyHandler);
-        });
-    },
-
     // --- HTML and CSS Definitions ---
 
     /**
@@ -538,6 +574,7 @@ const ChidiApp = {
      * @returns {string} The HTML content as a string.
      */
     getHTML() {
+        // MODIFIED: Removed the nested modal and added a container for the "Ask" input field.
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
@@ -551,6 +588,9 @@ const ChidiApp = {
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
                     <p class="chidi-placeholder-text">Awaiting file selection...</p>
                 </main>
+                <div id="chidi-ask-input-container" class="chidi-ask-container chidi-hidden">
+                    <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
+                </div>
                 <div class="chidi-controls-container">
                     <div class="chidi-control-group chidi-group-left">
                         <button id="chidi-prevBtn" class="chidi-btn" disabled>&larr; PREV</button>
@@ -570,17 +610,6 @@ const ChidiApp = {
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>
                 </footer>
             </div>
-            <div id="chidi-inputModal" class="chidi-modal-overlay-nested chidi-hidden">
-                 <div class="chidi-modal-content">
-                    <h3 id="chidi-inputModalTitle">Input Required</h3>
-                    <p id="chidi-inputModalText">Please provide input.</p>
-                    <input type="text" id="chidi-inputModalField" class="chidi-modal-input" placeholder="Enter value...">
-                    <div class="chidi-modal-actions">
-                        <button id="chidi-confirmInputBtn" class="chidi-btn">Confirm</button>
-                        <button id="chidi-cancelInputBtn" class="chidi-btn chidi-exit-btn">Cancel</button>
-                    </div>
-                </div>
-            </div>
         `;
     },
 
@@ -589,6 +618,7 @@ const ChidiApp = {
      * @returns {string} The CSS rules as a string.
      */
     getStyles() {
+        // MODIFIED: Added styles for the new 'ask' input area and removed old modal styles.
         return `
             #chidi-modal {
                 --panel-bg: #1a1a1d;
@@ -659,6 +689,15 @@ const ChidiApp = {
             .chidi-placeholder-text, .chidi-error-text { color: #888; text-align: center; margin-top: 3rem; font-style: italic; }
             .chidi-error-text { color: var(--accent-red); }
             .chidi-ai-output { border-top: 2px dashed var(--accent-blue); margin-top: 2rem; padding-top: 1rem; }
+
+            .chidi-ask-container { flex-grow: 1; display: flex; }
+            .chidi-ask-textarea {
+                width: 100%; height: 100%; background-color: var(--screen-bg);
+                border: 1px solid var(--accent-blue); border-radius: 4px;
+                color: var(--text-primary); font-family: var(--font-family);
+                font-size: 1.1rem; line-height: 1.6; padding: 1rem; resize: none;
+                outline: none;
+            }
             
             .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; align-items: center; }
             .chidi-control-group { display: flex; gap: 0.5rem; align-items: center;}
@@ -729,16 +768,6 @@ const ChidiApp = {
                 }
             }
             .chidi-hidden { display: none !important; }
-
-            /* Nested Input Modal Styles */
-            .chidi-modal-overlay-nested {
-                position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                background-color: rgba(0, 0, 0, 0.7);
-                display: flex; align-items: center; justify-content: center; z-index: 1000;
-            }
-            .chidi-modal-content { background: var(--panel-bg); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-primary); border: 1px solid var(--border-color); }
-            .chidi-modal-input { width: 100%; padding: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); background-color: var(--screen-bg); color: var(--text-primary); font-family: var(--font-family); }
-            .chidi-modal-actions { display: flex; justify-content: center; gap: 1rem; }
         `;
     }
 };
