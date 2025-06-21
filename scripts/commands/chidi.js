@@ -68,30 +68,55 @@
                 options: { allowMissing: false }
             }
         ],
-        // Read permission on the top-level path is checked here.
-        // The recursive search will handle permissions for sub-items.
         permissionChecks: [
             {
                 pathArgIndex: 0,
                 permissions: ["read"]
             }
         ],
-        async coreLogic(context) {
+        coreLogic: async (context) => {
             const { args, currentUser, validatedPaths, options } = context;
 
-            // This is the key part - the command executor has done the initial validation.
+            if (!options.isInteractive) {
+                return { success: false, error: "chidi: Can only be run in interactive mode." };
+            }
+
+            // --- NEW: API Key Check ---
+            let apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
+            if (!apiKey) {
+                const keyResult = await new Promise(resolve => {
+                    ModalInputManager.requestInput(
+                        "A Gemini API key is required for Chidi. Please enter your key:",
+                        (providedKey) => {
+                            if (!providedKey || providedKey.trim() === "") {
+                                resolve({ success: false, error: "API key entry cancelled or empty." });
+                                return;
+                            }
+                            StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, providedKey, "Gemini API Key");
+                            OutputManager.appendToOutput("API Key saved. Launching Chidi...", { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                            resolve({ success: true, key: providedKey });
+                        },
+                        () => {
+                            resolve({ success: false, error: "API key entry cancelled." });
+                        },
+                        false, // isObscured
+                        options
+                    );
+                });
+
+                if (!keyResult.success) {
+                    return { success: false, error: `chidi: ${keyResult.error}` };
+                }
+                apiKey = keyResult.key;
+            }
+            // --- END: API Key Check ---
+
             const pathInfo = validatedPaths[0];
             const startNode = pathInfo.node;
             const startPath = pathInfo.resolvedPath;
 
             try {
-                // Using a promise to correctly handle the async nature of the modal UI.
-                // The command executor will `await` this promise.
                 return new Promise(async (resolve, reject) => {
-                    if (!options.isInteractive) {
-                        return reject(new Error("chidi: Can only be run in interactive mode."));
-                    }
-
                     try {
                         const files = await getMarkdownFiles(startPath, startNode, currentUser);
 
@@ -102,35 +127,22 @@
                             });
                         }
 
-                        // Define the onExit callback for when the app closes.
-                        // This callback is what resolves the promise, ending the command.
                         const onExit = () => {
-                            // No need to manually resume terminal; the modal manager should handle it,
-                            // but let's ensure it's re-enabled.
                             TerminalUI.setInputState(true);
                             TerminalUI.focusInput();
-                            resolve({
-                                success: true,
-                                output: "" // No output on successful exit
-                            });
+                            resolve({ success: true, output: "" });
                         };
 
-                        // Pause terminal input before launching the modal.
                         TerminalUI.setInputState(false);
-
-                        // Assuming ChidiApp is globally available from chidi_app.js
                         ChidiApp.launch(files, onExit);
 
                     } catch (e) {
-                        // If an error occurs (e.g., parsing, file access),
-                        // ensure terminal is re-enabled and reject the promise.
                         TerminalUI.setInputState(true);
                         TerminalUI.focusInput();
                         reject(e);
                     }
                 });
             } catch (error) {
-                // This catch block will handle synchronous errors in the setup.
                 return { success: false, error: error.message };
             }
         }
@@ -144,6 +156,9 @@ DESCRIPTION
     Launches a modal application to read and analyze Markdown (.md) files.
     The path can be to a single .md file or a directory.
     If a directory is provided, Chidi will recursively find and load all .md files within it.
+
+    The first time you run this command, you will be prompted for a Gemini API key
+    if one is not already saved.
 
     Inside the application:
     - Use PREV/NEXT to navigate between files if multiple are loaded.

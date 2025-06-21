@@ -14,6 +14,14 @@ const ChidiApp = {
     // DOM element references
     elements: {},
 
+    /**
+     * Checks if the Chidi modal is currently open and active.
+     * @returns {boolean} True if the modal is open, false otherwise.
+     */
+    isActive() {
+        return this.state.isModalOpen;
+    },
+
     // --- Core Application Flow ---
 
     /**
@@ -114,12 +122,7 @@ const ChidiApp = {
             loader: get('chidi-loader'),
             mainTitle: get('chidi-mainTitle'),
             fileCountDisplay: get('chidi-fileCountDisplay'),
-            inputModal: get('chidi-inputModal'),
-            inputModalTitle: get('chidi-inputModalTitle'),
-            inputModalText: get('chidi-inputModalText'),
-            inputModalField: get('chidi-inputModalField'),
-            confirmInputBtn: get('chidi-confirmInputBtn'),
-            cancelInputBtn: get('chidi-cancelInputBtn'),
+            // No longer need to cache the nested input modal elements
         };
     },
 
@@ -161,6 +164,12 @@ const ChidiApp = {
      */
     setupEventListeners() {
         this.elements.closeBtn.addEventListener('click', () => this.close());
+        document.addEventListener('keydown', (e) => {
+            if (this.isActive() && e.key === 'Escape') {
+                this.close();
+            }
+        });
+
         this.elements.prevBtn.addEventListener('click', () => this.navigate(-1));
         this.elements.nextBtn.addEventListener('click', () => this.navigate(1));
 
@@ -180,6 +189,8 @@ const ChidiApp = {
             this.appendAiOutput("Suggested Questions", questions);
         });
 
+        // The askAllFilesBtn needs its own input modal, which is a different use case
+        // than the API key prompt. So we will keep that functionality.
         this.elements.askAllFilesBtn.addEventListener('click', async () => {
             const userQuestion = await this.showInputModal({
                 title: "Ask All Files",
@@ -230,7 +241,9 @@ const ChidiApp = {
      * @param {string} msg - The message to display.
      */
     showMessage(msg) {
-        this.elements.messageBox.textContent = `LOG: ${msg}`;
+        if (this.elements.messageBox) {
+            this.elements.messageBox.textContent = `LOG: ${msg}`;
+        }
     },
 
     /**
@@ -252,36 +265,16 @@ const ChidiApp = {
      * @param {boolean} show - True to show the loader, false to hide it.
      */
     toggleLoader(show) {
-        this.elements.loader.classList.toggle('chidi-hidden', !show);
+        if (this.elements.loader) {
+            this.elements.loader.classList.toggle('chidi-hidden', !show);
+        }
     },
 
     // --- Gemini API Interaction ---
 
     /**
-     * Prompts the user for their Gemini API key using the app's own modal.
-     * @private
-     * @returns {Promise<string|null>} A promise that resolves with the API key, or null if cancelled/empty.
-     */
-    async _promptForApiKey() {
-        const apiKey = await this.showInputModal({
-            title: "Gemini API Key Required",
-            prompt: "Please enter your Gemini API key. It will be saved locally for future use.",
-            placeholder: "Enter your API key here...",
-            confirmText: "Save Key"
-        });
-
-        if (!apiKey || apiKey.trim() === '') {
-            this.showMessage("API key entry cancelled or empty.");
-            return null;
-        }
-
-        StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, apiKey, "Gemini API Key");
-        this.showMessage("API Key saved. Resuming request...");
-        return apiKey;
-    },
-
-    /**
      * Calls the Gemini API with a given chat history.
+     * Assumes API key is already present in StorageManager.
      * @param {Array<object>} chatHistory - The conversation history to send to the model.
      * @returns {Promise<string>} A promise that resolves to the model's text response.
      */
@@ -289,114 +282,110 @@ const ChidiApp = {
         this.toggleLoader(true);
         this.showMessage("Contacting Gemini API...");
 
-        const _executeApiCall = async () => {
-            let apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
-            if (!apiKey) {
-                apiKey = await this._promptForApiKey();
-                if (!apiKey) {
-                    return { success: false, error: "An API key is required to use this feature. Please try the action again to enter a key." };
+        const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
+        if (!apiKey) {
+            this.toggleLoader(false);
+            const errorMsg = "API key not found. Please exit and run `chidi` again to set it.";
+            this.showMessage(`Error: ${errorMsg}`);
+            this.appendAiOutput("API Error", errorMsg);
+            return "";
+        }
+
+        try {
+            const apiUrl = Config.API.GEMINI_URL;
+            const headers = {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey
+            };
+            const payload = { contents: chatHistory };
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+            });
+
+            this.toggleLoader(false);
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
+                let errorMsg = `API request failed with status ${response.status}: ${errorBody.error.message}`;
+                if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
+                    StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                    errorMsg = "Invalid API key. It has been removed. Please exit and run `chidi` again to enter a new one.";
                 }
+                this.showMessage(`Error: ${errorMsg}`);
+                this.appendAiOutput("API Error", `Failed to get a response. Details: ${errorMsg}`);
+                return "";
             }
 
-            try {
-                const apiUrl = Config.API.GEMINI_URL;
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': apiKey
-                };
-                const payload = { contents: chatHistory };
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
-                    if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
-                        return { success: false, error: "INVALID_API_KEY" };
-                    }
-                    return { success: false, error: `API request failed with status ${response.status}: ${errorBody.error.message}` };
-                }
-
-                const result = await response.json();
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0]?.content?.parts[0]?.text) {
-                    return { success: true, value: result.candidates[0].content.parts[0].text };
-                }
-                if (result.promptFeedback?.blockReason) {
-                    return { success: false, error: `Request was blocked. Reason: ${result.promptFeedback.blockReason}` };
-                }
-                return { success: false, error: "Invalid or empty response structure from API." };
-            } catch (networkError) {
-                return { success: false, error: networkError.message };
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 && result.candidates[0]?.content?.parts[0]?.text) {
+                this.showMessage("Response received from Gemini.");
+                return result.candidates[0].content.parts[0].text;
             }
-        };
-
-        const result = await _executeApiCall();
-        this.toggleLoader(false);
-
-        if (result.success) {
-            this.showMessage("Response received from Gemini.");
-            return result.value;
-        } else {
-            if (result.error === "INVALID_API_KEY") {
-                StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-                const specificErrorMsg = "Invalid API key. It has been removed. Please try the action again to enter a new one.";
-                console.error('Gemini API Error:', new Error(specificErrorMsg));
-                this.showMessage(`Error: ${specificErrorMsg}`);
-                this.appendAiOutput("API Error", `Failed to get a response. Details: ${specificErrorMsg}`);
+            if (result.promptFeedback?.blockReason) {
+                const errorMsg = `Request was blocked. Reason: ${result.promptFeedback.blockReason}`;
+                this.showMessage(`Error: ${errorMsg}`);
+                this.appendAiOutput("API Error", errorMsg);
             } else {
-                console.error('Gemini API Error:', new Error(result.error));
-                this.showMessage(`Error: ${result.error}`);
-                this.appendAiOutput("API Error", `Failed to get a response. Details: ${result.error}`);
+                this.showMessage("Error: Invalid or empty response structure from API.");
+                this.appendAiOutput("API Error", "Invalid or empty response structure from API.");
             }
+            return "";
+
+        } catch (networkError) {
+            this.toggleLoader(false);
+            this.showMessage(`Error: ${networkError.message}`);
+            this.appendAiOutput("Network Error", networkError.message);
             return "";
         }
     },
 
     /**
-     * Displays a modal to get user input.
+     * Displays a modal to get user input for general questions (not for API key).
      * @param {object} options - Configuration for the input modal.
      * @returns {Promise<string|null>} A promise that resolves with the user's input or null if canceled.
      */
     showInputModal({ title, prompt, placeholder, confirmText }) {
+        // This is a separate input modal for asking questions, defined in getHTML
+        const inputModal = document.getElementById('chidi-inputModal');
+        const inputModalField = document.getElementById('chidi-inputModalField');
+        if (!inputModal || !inputModalField) return Promise.resolve(null);
+
+        document.getElementById('chidi-inputModalTitle').textContent = title;
+        document.getElementById('chidi-inputModalText').textContent = prompt;
+        inputModalField.placeholder = placeholder;
+        document.getElementById('chidi-confirmInputBtn').textContent = confirmText;
+
         return new Promise((resolve) => {
-            this.elements.inputModalTitle.textContent = title;
-            this.elements.inputModalText.textContent = prompt;
-            this.elements.inputModalField.placeholder = placeholder;
-            this.elements.confirmInputBtn.textContent = confirmText;
-            this.elements.inputModal.classList.remove('chidi-hidden');
-            this.elements.inputModalField.focus();
+            inputModal.classList.remove('chidi-hidden');
+            inputModalField.focus();
 
             const confirmHandler = () => {
                 cleanup();
-                resolve(this.elements.inputModalField.value);
+                resolve(inputModalField.value);
             };
-
             const cancelHandler = () => {
                 cleanup();
                 resolve(null);
             };
-
             const keyHandler = (e) => {
-                if (e.key === 'Enter') {
-                    confirmHandler();
-                } else if (e.key === 'Escape') {
-                    cancelHandler();
-                }
-            }
-
-            const cleanup = () => {
-                this.elements.inputModal.classList.add('chidi-hidden');
-                this.elements.confirmInputBtn.removeEventListener('click', confirmHandler);
-                this.elements.cancelInputBtn.removeEventListener('click', cancelHandler);
-                this.elements.inputModalField.removeEventListener('keydown', keyHandler);
-                this.elements.inputModalField.value = '';
+                e.stopPropagation();
+                if (e.key === 'Enter') confirmHandler();
+                else if (e.key === 'Escape') cancelHandler();
             };
 
-            this.elements.confirmInputBtn.addEventListener('click', confirmHandler, { once: true });
-            this.elements.cancelInputBtn.addEventListener('click', cancelHandler, { once: true });
-            this.elements.inputModalField.addEventListener('keydown', keyHandler);
+            const cleanup = () => {
+                inputModal.classList.add('chidi-hidden');
+                document.getElementById('chidi-confirmInputBtn').removeEventListener('click', confirmHandler);
+                document.getElementById('chidi-cancelInputBtn').removeEventListener('click', cancelHandler);
+                inputModalField.removeEventListener('keydown', keyHandler);
+                inputModalField.value = '';
+            };
+
+            document.getElementById('chidi-confirmInputBtn').addEventListener('click', confirmHandler, { once: true });
+            document.getElementById('chidi-cancelInputBtn').addEventListener('click', cancelHandler, { once: true });
+            inputModalField.addEventListener('keydown', keyHandler);
         });
     },
 
@@ -412,7 +401,7 @@ const ChidiApp = {
                 <header class="chidi-console-header">
                     <h1 id="chidi-mainTitle">chidi.md</h1>
                     <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                    <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi">Exit</button>
+                    <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
                 </header>
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
                     <p class="chidi-placeholder-text">Awaiting file selection...</p>
@@ -434,7 +423,7 @@ const ChidiApp = {
                 </footer>
             </div>
             <div id="chidi-inputModal" class="chidi-modal-overlay-nested chidi-hidden">
-                <div class="chidi-modal-content">
+                 <div class="chidi-modal-content">
                     <h3 id="chidi-inputModalTitle">Input Required</h3>
                     <p id="chidi-inputModalText">Please provide input.</p>
                     <input type="text" id="chidi-inputModalField" class="chidi-modal-input" placeholder="Enter value...">
@@ -452,6 +441,7 @@ const ChidiApp = {
      * @returns {string} The CSS rules as a string.
      */
     getStyles() {
+        // CSS remains the same as previous version, but z-index on nested modal is now less critical.
         return `
             #chidi-modal {
                 --panel-bg: #1a1a1d;
@@ -568,7 +558,7 @@ const ChidiApp = {
             .chidi-modal-overlay-nested {
                 position: absolute; top: 0; left: 0; right: 0; bottom: 0;
                 background-color: rgba(0, 0, 0, 0.7);
-                display: flex; align-items: center; justify-content: center; z-index: 100;
+                display: flex; align-items: center; justify-content: center; z-index: 1000;
             }
             .chidi-modal-content { background: var(--panel-bg); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-primary); border: 1px solid var(--border-color); }
             .chidi-modal-input { width: 100%; padding: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); background-color: var(--screen-bg); color: var(--text-primary); font-family: var(--font-family); }

@@ -61,7 +61,8 @@ function initializeTerminalEventListeners() {
     }
 
     // SECOND PRIORITY: If a full-screen app is running, let it handle its own keys.
-    if (EditorManager.isActive() || TextAdventureModal.isActive() || PaintManager.isActive()) {
+    if (EditorManager.isActive() || TextAdventureModal.isActive() || PaintManager.isActive() || (typeof ChidiApp !== 'undefined' && ChidiApp.isActive())) {
+      console.log('Main keydown listener ignored due to active modal app.'); // Diagnostic Log
       return;
     }
     // --- END REORDERED LOGIC ---
