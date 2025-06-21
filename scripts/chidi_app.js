@@ -286,55 +286,71 @@ const ChidiApp = {
      * @returns {Promise<string>} A promise that resolves to the model's text response.
      */
     async callGeminiApi(chatHistory) {
-        let apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
-
-        if (!apiKey) {
-            apiKey = await this._promptForApiKey();
-            if (!apiKey) {
-                this.appendAiOutput("API Error", "An API key is required to use this feature. Please try the action again to enter a key.");
-                return "";
-            }
-        }
-
         this.toggleLoader(true);
         this.showMessage("Contacting Gemini API...");
-        try {
-            const apiUrl = `${Config.API.GEMINI_URL}?key=${apiKey}`;
 
-            const payload = { contents: chatHistory };
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
-                if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
-                    StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-                    throw new Error("Invalid API key. It has been removed. Please try the action again to enter a new one.");
+        const _executeApiCall = async () => {
+            let apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
+            if (!apiKey) {
+                apiKey = await this._promptForApiKey();
+                if (!apiKey) {
+                    return { success: false, error: "An API key is required to use this feature. Please try the action again to enter a key." };
                 }
-                throw new Error(`API request failed with status ${response.status}: ${errorBody.error.message}`);
             }
 
-            const result = await response.json();
+            try {
+                const apiUrl = Config.API.GEMINI_URL;
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': apiKey
+                };
+                const payload = { contents: chatHistory };
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
 
-            if (result.candidates && result.candidates.length > 0 && result.candidates[0]?.content?.parts[0]?.text) {
-                this.showMessage("Response received from Gemini.");
-                return result.candidates[0].content.parts[0].text;
-            } else if (result.promptFeedback?.blockReason) {
-                throw new Error(`Request was blocked. Reason: ${result.promptFeedback.blockReason}`);
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
+                    if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
+                        return { success: false, error: "INVALID_API_KEY" };
+                    }
+                    return { success: false, error: `API request failed with status ${response.status}: ${errorBody.error.message}` };
+                }
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0]?.content?.parts[0]?.text) {
+                    return { success: true, value: result.candidates[0].content.parts[0].text };
+                }
+                if (result.promptFeedback?.blockReason) {
+                    return { success: false, error: `Request was blocked. Reason: ${result.promptFeedback.blockReason}` };
+                }
+                return { success: false, error: "Invalid or empty response structure from API." };
+            } catch (networkError) {
+                return { success: false, error: networkError.message };
             }
-            else {
-                throw new Error("Invalid or empty response structure from API.");
+        };
+
+        const result = await _executeApiCall();
+        this.toggleLoader(false);
+
+        if (result.success) {
+            this.showMessage("Response received from Gemini.");
+            return result.value;
+        } else {
+            if (result.error === "INVALID_API_KEY") {
+                StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                const specificErrorMsg = "Invalid API key. It has been removed. Please try the action again to enter a new one.";
+                console.error('Gemini API Error:', new Error(specificErrorMsg));
+                this.showMessage(`Error: ${specificErrorMsg}`);
+                this.appendAiOutput("API Error", `Failed to get a response. Details: ${specificErrorMsg}`);
+            } else {
+                console.error('Gemini API Error:', new Error(result.error));
+                this.showMessage(`Error: ${result.error}`);
+                this.appendAiOutput("API Error", `Failed to get a response. Details: ${result.error}`);
             }
-        } catch (error) {
-            console.error('Gemini API Error:', error);
-            this.showMessage(`Error: ${error.message}`);
-            this.appendAiOutput("API Error", `Failed to get a response. Details: ${error.message}`);
             return "";
-        } finally {
-            this.toggleLoader(false);
         }
     },
 
@@ -438,11 +454,11 @@ const ChidiApp = {
     getStyles() {
         return `
             #chidi-modal {
-                --panel-bg: #020202;
-                --screen-bg: #212529;
+                --panel-bg: #171613;
+                --screen-bg: #000000;
                 --text-primary: #EAEAEA;
                 --text-dark: #343a40;
-                --accent-orange: #FF7F50;
+                --accent-orange: #4ade80;
                 --accent-blue: #4A90E2;
                 --accent-red: #D0021B;
                 --border-color: #D8CFC0;
