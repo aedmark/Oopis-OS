@@ -13,7 +13,7 @@
 ```
 # OopisOS v2.6: Open, Online, Persistent, Integrated System OS
 
-Welcome to OopisOS, a sophisticated, fully client-side application that simulates a desktop operating system environment. It's a love letter to the command line, built with modern web technologies to create a space for education, development, and interactive entertainment.
+Welcome to OopisOS, a sophisticated, fully client-side OS simulation that runs entirely in your browser, featuring a rich command line, a persistent file system, and an integrated, tool-using AI.
 
 It features a retro-style terminal, a persistent hierarchical file system with a full user/group permission model, a multi-user system with password authentication, an advanced text editor, a character-based paint program, a tool-using AI, an interactive text adventure engine, and a suite of command-line utilities with support for I/O redirection, piping, background processes, aliasing, and scripting.
 
