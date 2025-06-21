@@ -77,14 +77,22 @@ const ChidiApp = {
     },
 
     /**
-     * Creates and appends the main modal structure to the body.
+     * Creates and appends the main modal structure to the terminal div.
      */
     createModal() {
+        if (!DOM.terminalDiv) {
+            console.error("ChidiApp Error: Cannot create modal, DOM.terminalDiv not found.");
+            if (this.onExit) {
+                this.onExit();
+            }
+            return;
+        }
+
         const modal = document.createElement('div');
         modal.id = 'chidi-modal';
         modal.className = 'chidi-modal-overlay';
         modal.innerHTML = this.getHTML();
-        document.body.appendChild(modal);
+        DOM.terminalDiv.appendChild(modal);
         this.elements.modal = modal;
     },
 
@@ -250,16 +258,48 @@ const ChidiApp = {
     // --- Gemini API Interaction ---
 
     /**
+     * Prompts the user for their Gemini API key using the app's own modal.
+     * @private
+     * @returns {Promise<string|null>} A promise that resolves with the API key, or null if cancelled/empty.
+     */
+    async _promptForApiKey() {
+        const apiKey = await this.showInputModal({
+            title: "Gemini API Key Required",
+            prompt: "Please enter your Gemini API key. It will be saved locally for future use.",
+            placeholder: "Enter your API key here...",
+            confirmText: "Save Key"
+        });
+
+        if (!apiKey || apiKey.trim() === '') {
+            this.showMessage("API key entry cancelled or empty.");
+            return null;
+        }
+
+        StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, apiKey, "Gemini API Key");
+        this.showMessage("API Key saved. Resuming request...");
+        return apiKey;
+    },
+
+    /**
      * Calls the Gemini API with a given chat history.
      * @param {Array<object>} chatHistory - The conversation history to send to the model.
      * @returns {Promise<string>} A promise that resolves to the model's text response.
      */
     async callGeminiApi(chatHistory) {
+        let apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
+
+        if (!apiKey) {
+            apiKey = await this._promptForApiKey();
+            if (!apiKey) {
+                this.appendAiOutput("API Error", "An API key is required to use this feature. Please try the action again to enter a key.");
+                return "";
+            }
+        }
+
         this.toggleLoader(true);
         this.showMessage("Contacting Gemini API...");
         try {
-            const apiKey = ""; // Leave empty for Canvas magic
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `${Config.API.GEMINI_URL}?key=${apiKey}`;
 
             const payload = { contents: chatHistory };
             const response = await fetch(apiUrl, {
@@ -269,22 +309,29 @@ const ChidiApp = {
             });
 
             if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+                const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
+                if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
+                    StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                    throw new Error("Invalid API key. It has been removed. Please try the action again to enter a new one.");
+                }
+                throw new Error(`API request failed with status ${response.status}: ${errorBody.error.message}`);
             }
 
             const result = await response.json();
 
-            if (result.candidates && result.candidates.length > 0) {
+            if (result.candidates && result.candidates.length > 0 && result.candidates[0]?.content?.parts[0]?.text) {
                 this.showMessage("Response received from Gemini.");
                 return result.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error("Invalid response structure from API.");
+            } else if (result.promptFeedback?.blockReason) {
+                throw new Error(`Request was blocked. Reason: ${result.promptFeedback.blockReason}`);
+            }
+            else {
+                throw new Error("Invalid or empty response structure from API.");
             }
         } catch (error) {
             console.error('Gemini API Error:', error);
             this.showMessage(`Error: ${error.message}`);
-            this.appendAiOutput("API Error", `Failed to get a response. Please check the console for details.`);
+            this.appendAiOutput("API Error", `Failed to get a response. Details: ${error.message}`);
             return "";
         } finally {
             this.toggleLoader(false);
@@ -391,7 +438,7 @@ const ChidiApp = {
     getStyles() {
         return `
             #chidi-modal {
-                --panel-bg: #F5EFE6;
+                --panel-bg: #020202;
                 --screen-bg: #212529;
                 --text-primary: #EAEAEA;
                 --text-dark: #343a40;
@@ -403,10 +450,10 @@ const ChidiApp = {
                 --font-family-lcd: 'VT323', monospace;
             }
             .chidi-modal-overlay {
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background-color: rgba(0, 0, 0, 0.75);
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(10, 10, 10, 0.9);
                 display: flex; align-items: center; justify-content: center;
-                z-index: 9999; font-family: var(--font-family);
+                z-index: 998; font-family: var(--font-family);
             }
             #chidi-console-panel {
                 width: 95%; height: 95%; max-width: 1200px;
@@ -456,7 +503,18 @@ const ChidiApp = {
                 font-size: 1.2rem; color: var(--accent-blue);
             }
             .chidi-status-message { text-align: right; }
-            .chidi-loader { /* Styles for loader */ }
+            .chidi-loader { 
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid var(--accent-blue);
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                animation: chidi-spin 1s linear infinite;
+            }
+            @keyframes chidi-spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
             .chidi-hidden { display: none !important; }
 
             /* Nested Input Modal Styles */
@@ -465,8 +523,8 @@ const ChidiApp = {
                 background-color: rgba(0, 0, 0, 0.6);
                 display: flex; align-items: center; justify-content: center; z-index: 100;
             }
-            .chidi-modal-content { background: var(--panel-bg); padding: 2rem; border-radius: 8px; text-align: center; }
-            .chidi-modal-input { width: 100%; padding: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); }
+            .chidi-modal-content { background: var(--panel-bg); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-dark); }
+            .chidi-modal-input { width: 100%; padding: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); font-family: var(--font-family); }
             .chidi-modal-actions { display: flex; justify-content: center; gap: 1rem; }
         `;
     }
