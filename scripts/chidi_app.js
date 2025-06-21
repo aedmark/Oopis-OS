@@ -433,18 +433,42 @@ const ChidiApp = {
             }
 
             const result = await response.json();
-            if (result.candidates && result.candidates.length > 0 && result.candidates[0]?.content?.parts[0]?.text) {
-                this.showMessage("Response received from Gemini.");
-                return result.candidates[0].content.parts[0].text;
+
+            // Check for valid candidates in the response.
+            if (result.candidates && result.candidates.length > 0) {
+                const candidate = result.candidates[0];
+
+                // Check if the response was blocked for safety/other reasons.
+                if (candidate.finishReason && candidate.finishReason !== "STOP") {
+                    const blockReason = candidate.finishReason;
+                    const safetyRatings = candidate.safetyRatings?.map(r => `${r.category}: ${r.probability}`).join(', ') || 'No details';
+                    const errorMsg = `Request was blocked. Reason: ${blockReason}. Details: [${safetyRatings}]`;
+                    this.showMessage(`Error: ${errorMsg}`);
+                    this.appendAiOutput("API Error", errorMsg);
+                    return "";
+                }
+
+                // Concatenate all text parts from the response.
+                if (candidate.content && candidate.content.parts) {
+                    const fullText = candidate.content.parts.map(part => part.text || "").join("");
+                    if (fullText) {
+                        this.showMessage("Response received from Gemini.");
+                        return fullText;
+                    }
+                }
             }
+
+            // Handle cases where the prompt itself was blocked before generating candidates.
             if (result.promptFeedback?.blockReason) {
                 const errorMsg = `Request was blocked. Reason: ${result.promptFeedback.blockReason}`;
                 this.showMessage(`Error: ${errorMsg}`);
                 this.appendAiOutput("API Error", errorMsg);
-            } else {
-                this.showMessage("Error: Invalid or empty response structure from API.");
-                this.appendAiOutput("API Error", "Invalid or empty response structure from API.");
+                return "";
             }
+
+            // Fallback for any other invalid response structure.
+            this.showMessage("Error: Invalid or empty response structure from API.");
+            this.appendAiOutput("API Error", "The AI returned an empty or un-parsable response. The context might be too large or the query unsupported.");
             return "";
 
         } catch (networkError) {
@@ -484,8 +508,13 @@ const ChidiApp = {
             };
             const keyHandler = (e) => {
                 e.stopPropagation();
-                if (e.key === 'Enter') confirmHandler();
-                else if (e.key === 'Escape') cancelHandler();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    confirmHandler();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelHandler();
+                }
             };
 
             const cleanup = () => {
