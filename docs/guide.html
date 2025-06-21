@@ -276,7 +276,7 @@
             </ul>
 
             <h2>Essential Commands</h2>
-            <p>These are the fundamental spells in your arsenal. For a full grimoire, type `help`. For the nitty-gritty on a single command, type `help [command_name]`.</p>
+            <p>These are the fundamental spells in your arsenal. For a full grimoire, type <code>help</code>. For the nitty-gritty on a single command, type <code>man [command_name]</code>.</p>
             <table class="min-w-full divide-y divide-zinc-700">
                 <thead>
                 <tr>
@@ -296,7 +296,7 @@
                 <tr><td><code>edit [file]</code></td><td>Opens the powerful text editor. Your gateway to creating masterpieces.</td></tr>
                 <tr><td><code>paint [file.oopic]</code></td><td>Unleash your inner artist! Opens the character-based art editor.</td></tr>
                 <tr><td><code>chidi [path]</code></td><td>Opens the advanced Markdown reader and AI analysis tool.</td></tr>
-                <tr><td><code>touch [-c -d -t] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create, <b>-d</b> for a date string, <b>-t</b> for a specific timestamp.</td></tr>
+                <tr><td><code>touch [-c] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create.</td></tr>
                 <tr><td><code>rm [-r -f -i] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories, <b>-f</b> to be forceful, and <b>-i</b> to be asked first.</td></tr>
                 <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>Copies files. Flags for: <b>-r</b>ecursive, <b>-f</b>orce, <b>-p</b>reserve metadata, <b>-i</b>nteractive.</td></tr>
                 <tr><td><code>mv [-f -i] [src] [dest]</code></td><td>Moves or renames files. Flags for: <b>-f</b>orce, <b>-i</b>nteractive.</td></tr>
@@ -402,7 +402,7 @@
                 </li>
                 <li><code>useradd [username]</code>: Create a new user. You'll be prompted to create a password in a secure, obscured input field. A primary group with the same name is also created.</li>
                 <li><code>login [username]</code>: Log in as someone else. If a password is required, you'll be prompted securely.</li>
-                <li><code>logout</code>: Return to the safety of the Guest account.</li>
+                <li><code>logout</code>: Return to the previous user in the session stack.</li>
                 <li><code>su [username]</code>: Switch to another user, assuming you know their password (or you're `root`). Defaults to `root`.</li>
             </ul>
 
@@ -410,7 +410,7 @@
             <p>Use <code>ls -l</code> to view permissions like <code>-rwxr-x---</code>. This string represents: [type][owner permissions][group permissions][other permissions].</p>
             <div class="terminal-example">
                 <span class="prompt">root@OopisOs:/&gt;</span> <span class="command">touch newfile.txt ; ls -l newfile.txt</span><br>
-                <span class="output">-rw-r--r--  1 root    root        0 Jun 15 22:30 newfile.txt</span>
+                <span class="output">-rw-r--r--  1 root    root        0 Jun 21 11:34 newfile.txt</span>
             </div>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li>
@@ -424,7 +424,7 @@
                 <li><code>chgrp [new_group] [path]</code>: Change a file's group. Only the owner or `root` can do this.</li>
             </ul>
 
-            <h2>Pipes, Redirection, Sequences, and Backgrounding</h2>
+            <h2>Pipes, Redirection, Sequences, and Environment Variables</h2>
             <p>Chain your commands together for ultimate power!</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>Pipes <code>|</code></strong>: Take the output of the command on the left and "pipe" it as the input for the command on the right. <br>Example: `history | grep "sudo"`</li>
@@ -432,6 +432,7 @@
                 <li><strong>Append Output <code>>></code></strong>: Add a command's output to the end of a file. <br>Example: `echo "A new event happened!" >> activity.log`</li>
                 <li><strong>Command Separator <code>;</code></strong>: Run several commands, one after the other, on a single line. <br>Example: `cd / ; ls ; pwd`</li>
                 <li><strong>Background Process <code>&</code></strong>: Run a command in the background and continue working. <br>Example: `delay 5000 &`</li>
+                <li><strong>Environment Variables <code>$VAR</code></strong>: Use <code>set VAR="value"</code> to create session-specific variables, and use them with a `$` prefix (e.g., `echo $VAR`).</li>
             </ul>
         </section>
 
@@ -549,7 +550,7 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
                     <strong>Argument Passing:</strong>
                     <ul>
                         <li><code>$1</code>, <code>$2</code>, ...: Use the arguments you passed to the script.</li>
-                        <li><code>$@</code>: All the arguments in one glorious string.</li>
+                        <li><code>$@</code>: All the arguments as a single string.</li>
                         <li><code>$#</code>: The number of arguments.</li>
                     </ul>
                 </li>
@@ -574,61 +575,26 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
 
         <section id="developer-docs" class="content-section">
             <h1>OopisOS v2.6: Developer Documentation</h1>
-            <p>So, you want to look under the hood? Pop it open. Let's see what makes this thing purr.</p>
+            <p>So, you want to look under the hood? Pop it open. Let's see what makes this thing purr. For the complete, unabridged developer documentation, please see the `developer.md` file in the `/docs` directory of the project repository.</p>
 
             <h2>Code Structure Overview</h2>
-            <p>The logic of OopisOS is organized into several key JavaScript files, all loaded by `index.html`:</p>
+            <p>The logic of OopisOS is organized into a modular structure, with most files being self-contained managers or applications. The core architectural change in v2.6 is the migration of command definitions out of a monolithic file and into a dedicated `scripts/commands/` directory.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>`main.js` & `config.js` & `utils.js`:</strong> The heart and soul. Contains core infrastructure, configs, utilities, and managers for the file system, users, sessions, terminal UI, and more.</li>
-                <li><strong>`lexpar.js`:</strong> The brainy part. Contains the Lexer and Parser that translate your typed commands into something the machine can understand.</li>
-                <li><strong>`commexec.js`:</strong> The muscle. This is the Command Executor, containing the definitions and handlers for every single command in the OS.</li>
-                <li><strong>`editor.js`:</strong> The artist's studio. All logic for the `edit` command's powerful text editor lives here.</li>
-                <li><strong>`paint.js`:</strong> The other artist's studio. All logic for the `paint` command's ASCII/ANSI art editor.</li>
-                <li><strong>`adventure.js`:</strong> The dungeon master's screen. Contains the text adventure engine, UI modal, and sample game data.</li>
+                <li><strong>`main.js` & `config.js` & `utils.js`:</strong> The core trinity for booting the OS, defining its constants, and providing helper functions.</li>
+                <li><strong>`lexpar.js` & `commexec.js`:</strong> The command processing pipeline. The lexer/parser prepares the command, and the executor orchestrates its journey, but...</li>
+                <li><strong>`scripts/commands/` & `registry.js`:</strong> ...the actual logic for each command now lives in its own file in this directory, registering itself with the `CommandRegistry`. This is the biggest architectural shift and the key to future extensibility.</li>
+                <li><strong>Manager Files:</strong> `fs_manager.js`, `user_manager.js`, `session_manager.js`, `output_manager.js`, `terminal_ui.js`, and `storage.js` handle their respective domains.</li>
+                <li><strong>Application Files:</strong> `editor.js`, `oopis_paint.js`, `chidi_app.js`, and `text_adventure.js` contain the logic for the major modal applications.</li>
             </ul>
-            <p>We use Immediately Invoked Function Expressions (IIFEs) to keep things tidy and modular, preventing a global namespace catastrophe.</p>
 
             <h2>Forging a New Command (The v2.6 Way)</h2>
-            <p>Your journey begins in `commexec.js`, inside the `commands` object. Thanks to the `createCommandHandler` factory, adding commands is easier and safer than ever by declaring your needs upfront.</p>
-            <pre><code class="language-javascript">
-// In commexec.js:
-
-const myNewCmdDefinition = {
-  commandName: "mycmd",
-  // 1. Define validation rules for arguments, paths, and permissions.
-  flagDefinitions: [{ name: "verbose", short: "-v" }],
-  argValidation: { min: 1, error: "mycmd needs at least one argument!" },
-  pathValidation: [{ argIndex: 0, options: { expectedType: 'file' } }],
-  permissionChecks: [{ pathArgIndex: 0, permissions: ['read'] }],
-
-  // 2. Write the core logic. The factory handles the checks for you.
-  coreLogic: async (context) => {
-    // The context object contains everything you need, fully validated.
-    const { args, flags, currentUser, validatedPaths } = context;
-
-    // validatedPaths[0] is guaranteed to be a valid, readable file path object.
-    const pathInfo = validatedPaths[0];
-
-    if (flags.verbose) {
-        console.log(`Verbose mode on for user ${currentUser}!`);
-    }
-
-    return { success: true, output: `Successfully processed ${pathInfo.resolvedPath}` };
-  }
-};
-
-// 3. Add it to the main commands object.
-const commands = {
-    // ... other commands
-    mycmd: {
-        handler: createCommandHandler(myNewCmdDefinition),
-        description: "A one-line summary for the 'help' command.",
-        helpText: "Usage: mycmd [-v] [file]\\n\\nExplain your command in detail here."
-    },
-    // ... more commands
-};
-                </code></pre>
-            <p>This declarative pattern handles all the boilerplate error checking for argument counts, path existence, and permissions. Now go forth and create!</p>
+            <p>Adding a new command is now a clean, three-step process thanks to the new modular command structure.</p>
+            <ol class="list-decimal ml-6 my-4 space-y-2">
+                <li>Create a new command file (e.g., `mycmd.js`) in `/scripts/commands/`.</li>
+                <li>Define the command's properties and logic within an IIFE, and register it using `CommandRegistry.register()`.</li>
+                <li>Add a `<script>` tag for your new file in `index.html` after `registry.js` and before `commexec.js`.</li>
+            </ol>
+            <p>This declarative pattern lets the framework handle boilerplate validation, so you can focus on the core logic of your command. See the full `developer.md` for a complete code example.</p>
         </section>
 
         <section id="testing-env" class="content-section">
@@ -674,6 +640,7 @@ const commands = {
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>Environment Variables:</strong> Added a full environment variable system. Use `set` to create/view variables, `unset` to remove them, and `$VAR` or `${VAR}` in any command for shell expansion. Default variables include `$USER`, `$HOME`, `$HOST`, and `$PATH`.</li>
                 <li><strong>Paint Application:</strong> Introduced the `paint` command, a full-screen ASCII/ANSI art editor with multiple colors, tools, and a custom `.oopic` save format.</li>
+                <li><strong>Architectural Overhaul:</strong> Commands have been moved to individual files in `scripts/commands/` for vastly improved modularity and maintainability.</li>
             </ul>
             <h2>Version 2.5</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
@@ -718,7 +685,6 @@ const commands = {
         </footer>
     </main>
 </div>
-
 <script>
     // Simple SPA navigation
     const navLinks = document.querySelectorAll('.nav-link');
