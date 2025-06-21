@@ -600,16 +600,25 @@ const TimestampParser = (() => {
      * @returns {{timestampISO: string|null, error: string|null}} An object with the resulting ISO timestamp or an error.
      */
     function resolveTimestampFromCommandFlags(flags, commandName) {
-        const nowActualISO = new Date().toISOString();
-
         if (flags.dateString && flags.stamp) {
-        } else if (flags.dateString) {
-        } else if (flags.stamp) {
+            return {
+                timestampISO: null,
+                error: `${commandName}: cannot use both --date and --stamp flags simultaneously.`
+            };
         }
 
-        if (!flags.stamp) {
-            return { timestampISO: nowActualISO, error: null };
-        } else {
+        if (flags.dateString) {
+            const parsedDate = parseDateString(flags.dateString);
+            if (!parsedDate) {
+                return {
+                    timestampISO: null,
+                    error: `${commandName}: invalid date string format '${flags.dateString}'`
+                };
+            }
+            return { timestampISO: parsedDate.toISOString(), error: null };
+        }
+
+        if (flags.stamp) {
             const parsedISO = parseStampToISO(flags.stamp);
             if (!parsedISO) {
                 return {
@@ -619,6 +628,9 @@ const TimestampParser = (() => {
             }
             return { timestampISO: parsedISO, error: null };
         }
+
+        // If no flags are provided, return the current time.
+        return { timestampISO: new Date().toISOString(), error: null };
     }
     return {
         parseDateString,

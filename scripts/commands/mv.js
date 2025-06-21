@@ -52,8 +52,6 @@
             const sourcePathArg = args[0];
             const destPathArg = args[1];
             const nowISO = new Date().toISOString();
-            // Determine effective interactive mode: '-i' takes precedence over default behavior, but '-f' overrides '-i'.
-            const isInteractiveEffective = flags.interactive && !flags.force;
 
             // Validate the source path. It must exist and cannot be the root.
             const sourceValidation = FileSystemManager.validatePath(
@@ -187,7 +185,6 @@
 
             // Handle cases where a destination node already exists.
             if (destNode) {
-                // Prevent overwriting a non-directory with a directory, or vice-versa.
                 if (
                     sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
                     destNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
@@ -207,28 +204,22 @@
                     };
                 }
 
-                // Handle interactive overwrite prompt.
-                if (isInteractiveEffective) {
-                    const confirmed = await new Promise((resolve) => {
-                        ModalManager.request({
-                            context: "terminal",
-                            messageLines: [`Overwrite '${absDestPath}'?`],
-                            onConfirm: () => resolve(true),
-                            onCancel: () => resolve(false),
-                            options, // Pass context for scripting.
-                        });
-                    });
-                    if (!confirmed)
-                        return {
-                            success: true,
-                            output: `${Config.MESSAGES.OPERATION_CANCELLED} No changes made.`,
-                            messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-                        };
-                } else if (!flags.force) {
-                    // If not interactive and not forced, return an error about existing file.
+                let confirmed = false;
+                if (flags.force) {
+                    confirmed = true;
+                } else if (flags.interactive) {
+                    confirmed = await new Promise((resolve) => ModalManager.request({ context: "terminal", messageLines: [`Overwrite '${absDestPath}'?`], onConfirm: () => resolve(true), onCancel: () => resolve(false), options }));
+                } else if (options.isInteractive) {
+                    confirmed = await new Promise((resolve) => ModalManager.request({ context: "terminal", messageLines: [`Overwrite '${absDestPath}'?`], onConfirm: () => resolve(true), onCancel: () => resolve(false), options }));
+                } else {
+                    confirmed = true;
+                }
+
+                if (!confirmed) {
                     return {
-                        success: false,
-                        error: `mv: '${absDestPath}' already exists. Use -f to overwrite or -i to prompt.`,
+                        success: true,
+                        output: `${Config.MESSAGES.OPERATION_CANCELLED} No changes made.`,
+                        messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
                     };
                 }
             }
@@ -284,7 +275,7 @@
 
             return {
                 success: true,
-                output: `${Config.MESSAGES.MOVED_PREFIX}${sourcePathArg}${Config.MESSAGES.MOVED_TO}'${absDestPath}'${Config.MESSAGES.MOVED_SUFFIX}`,
+                output: `${Config.MESSAGES.MOVED_PREFIX}${sourcePathArg}${Config.MESSAGES.MOVED_TO}${absDestPath}'${Config.MESSAGES.MOVED_SUFFIX}`,
                 messageType: Config.CSS_CLASSES.SUCCESS_MSG,
             };
         },

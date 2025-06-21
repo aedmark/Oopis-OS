@@ -46,7 +46,6 @@
                 return { success: false, error: timestampResult.error };
 
             const timestampToUse = timestampResult.timestampISO; // The determined ISO timestamp.
-            const nowActualISO = new Date().toISOString(); // Current ISO timestamp for new files.
             let allSuccess = true; // Tracks overall success across all file operations.
             const messages = []; // Collects messages (errors) for output.
             let changesMade = false; // Flag to indicate if a file system save is needed.
@@ -147,14 +146,19 @@
                     );
 
                     // Create the new empty file node and add it to the parent.
-                    parentNode.children[fileName] = FileSystemManager._createNewFileNode(
+                    const newFileNode = FileSystemManager._createNewFileNode(
                         fileName,
                         "", // Empty content for a new file.
                         currentUser,
                         primaryGroup
                     );
 
-                    parentNode.mtime = nowActualISO; // Update parent's modification time.
+                    // *** FIX: Apply the specified timestamp to the new file ***
+                    newFileNode.mtime = timestampToUse;
+                    parentNode.children[fileName] = newFileNode;
+
+                    // Update parent's modification time to now.
+                    parentNode.mtime = new Date().toISOString();
                     changesMade = true;
                 }
             }

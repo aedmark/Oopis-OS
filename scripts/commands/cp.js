@@ -40,8 +40,6 @@
         coreLogic: async (context) => {
             const { args, flags, currentUser, options } = context;
             const nowISO = new Date().toISOString();
-            // Determine effective interactive mode: -i takes precedence unless -f is also present.
-            flags.isInteractiveEffective = flags.interactive && !flags.force;
 
             const rawDestPathArg = args.pop(); // The last argument is always the destination.
             const sourcePathArgs = args; // Remaining arguments are source paths.
@@ -66,8 +64,6 @@
              * @param {string} sourcePathForMsg - The path of the source node (for messages).
              * @param {string} targetContainerAbsPath - The absolute path of the directory where the new node will be placed.
              * @param {string} targetEntryName - The name of the new node at the destination.
-             * @param {object} currentCommandFlags - The flags object relevant to the current copy operation.
-             * @param {string} userPrimaryGroup - The primary group of the current user, for new node creation.
              * @returns {Promise<{success: boolean, messages: string[], changesMade: boolean}>} The result of the internal copy operation.
              * @private
              */
@@ -75,9 +71,7 @@
                 sourceNode,
                 sourcePathForMsg,
                 targetContainerAbsPath,
-                targetEntryName,
-                currentCommandFlags,
-                userPrimaryGroup
+                targetEntryName
             ) {
                 let currentOpMessages = [];
                 let currentOpSuccess = true;
@@ -135,34 +129,20 @@
                             changesMade: false,
                         };
                     }
-                    // Handle interactive overwrite prompt.
-                    if (currentCommandFlags.isInteractiveEffective) {
-                        const confirmed = await new Promise((r) =>
-                            ModalManager.request({
-                                context: "terminal",
-                                messageLines: [`Overwrite '${fullFinalDestPath}'?`],
-                                onConfirm: () => r(true),
-                                onCancel: () => r(false),
-                                options, // Pass context for scripting
-                            })
-                        );
-                        if (!confirmed)
-                            return {
-                                success: true, // Operation not performed, but not an error for cp.
-                                messages: [
-                                    `cp: not overwriting '${fullFinalDestPath}' (skipped)`,
-                                ],
-                                changesMade: false,
-                            };
-                    } else if (!currentCommandFlags.force) {
-                        // If not interactive and not forced, report error for existing file.
-                        return {
-                            success: false,
-                            messages: [
-                                `cp: '${fullFinalDestPath}' already exists. Use -f to overwrite or -i to prompt.`,
-                            ],
-                            changesMade: false,
-                        };
+
+                    let confirmed = false;
+                    if (flags.force) {
+                        confirmed = true;
+                    } else if (flags.interactive) {
+                        confirmed = await new Promise(r => ModalManager.request({ context: 'terminal', messageLines: [`Overwrite '${fullFinalDestPath}'?`], onConfirm: () => r(true), onCancel: () => r(false), options }));
+                    } else if (options.isInteractive) {
+                        confirmed = await new Promise(r => ModalManager.request({ context: 'terminal', messageLines: [`Overwrite '${fullFinalDestPath}'?`], onConfirm: () => r(true), onCancel: () => r(false), options }));
+                    } else {
+                        confirmed = true; // Non-interactive (script) default is to overwrite
+                    }
+
+                    if (!confirmed) {
+                        return { success: true, messages: [`cp: not overwriting '${fullFinalDestPath}' (skipped)`], changesMade: false };
                     }
                 }
 
@@ -171,23 +151,17 @@
                     targetContainerNode.children[targetEntryName] = {
                         type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
                         content: sourceNode.content,
-                        owner: currentCommandFlags.preserve // Preserve owner/group/mode if -p flag is used, otherwise set to current user/defaults.
-                            ? sourceNode.owner
-                            : currentUser,
-                        group: currentCommandFlags.preserve
-                            ? sourceNode.group
-                            : userPrimaryGroup,
-                        mode: currentCommandFlags.preserve
-                            ? sourceNode.mode
-                            : Config.FILESYSTEM.DEFAULT_FILE_MODE,
-                        mtime: currentCommandFlags.preserve ? sourceNode.mtime : nowISO,
+                        owner: flags.preserve ? sourceNode.owner : currentUser,
+                        group: flags.preserve ? sourceNode.group : primaryGroup,
+                        mode: flags.preserve ? sourceNode.mode : Config.FILESYSTEM.DEFAULT_FILE_MODE,
+                        mtime: flags.preserve ? sourceNode.mtime : nowISO,
                     };
                     madeChangeInThisCall = true;
                 } else if (
                     sourceNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
                 ) {
                     // If recursive flag is not present, omit directory copying.
-                    if (!currentCommandFlags.recursive) {
+                    if (!flags.recursive) {
                         return {
                             success: true, // Omission is not an error for cp.
                             messages: [
@@ -199,14 +173,14 @@
 
                     // If destination directory does not exist, create it.
                     if (!existingNodeAtDest) {
-                        const owner = currentCommandFlags.preserve ? sourceNode.owner : currentUser;
-                        const group = currentCommandFlags.preserve ? sourceNode.group : userPrimaryGroup;
-                        const mode = currentCommandFlags.preserve ? sourceNode.mode : Config.FILESYSTEM.DEFAULT_DIR_MODE;
+                        const owner = flags.preserve ? sourceNode.owner : currentUser;
+                        const group = flags.preserve ? sourceNode.group : primaryGroup;
+                        const mode = flags.preserve ? sourceNode.mode : Config.FILESYSTEM.DEFAULT_DIR_MODE;
 
                         const newDirNode = FileSystemManager._createNewDirectoryNode(owner, group, mode);
 
-                        if (currentCommandFlags.preserve) {
-                            newDirNode.mtime = sourceNode.mtime; // Preserve mtime for newly created directories if -p.
+                        if (flags.preserve) {
+                            newDirNode.mtime = sourceNode.mtime;
                         }
 
                         targetContainerNode.children[targetEntryName] = newDirNode;
@@ -218,9 +192,7 @@
                             sourceNode.children[childName],
                             FileSystemManager.getAbsolutePath(childName, sourcePathForMsg),
                             fullFinalDestPath, // The new parent path for the child.
-                            childName,
-                            currentCommandFlags,
-                            userPrimaryGroup
+                            childName
                         );
                         currentOpMessages.push(...childCopyResult.messages);
                         if (!childCopyResult.success) currentOpSuccess = false;
@@ -323,9 +295,7 @@
                     sourceValidation.node,
                     sourcePathArg,
                     targetContainerAbsPath,
-                    targetEntryName,
-                    flags,
-                    primaryGroup
+                    targetEntryName
                 );
 
                 operationMessages.push(...copyResult.messages);

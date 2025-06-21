@@ -43,21 +43,11 @@
             const newMode = parseInt(modeArg, 8);
 
             // Permission check: Only root or the owner of the file can change permissions.
-            // Additionally, the owner must have write permission on the file itself to change its permissions.
-            if (currentUser !== "root") {
-                if (node.owner !== currentUser) {
-                    return {
-                        success: false,
-                        error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,
-                    };
-                }
-                // Even the owner needs 'write' permission on the file to change its metadata (permissions).
-                if (!FileSystemManager.hasPermission(node, currentUser, "write")) {
-                    return {
-                        success: false,
-                        error: `chmod: cannot change permissions of '${pathArg}': Permission denied`,
-                    };
-                }
+            if (currentUser !== "root" && node.owner !== currentUser) {
+                return {
+                    success: false,
+                    error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,
+                };
             }
 
             // Apply the new mode and update modification times.
