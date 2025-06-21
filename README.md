@@ -1,5 +1,5 @@
-```  
-   /$$$$$$                      /$$            /$$$$$$   /$$$$$$   
+```
+/$$$$$$                      /$$            /$$$$$$   /$$$$$$   
  /$$__  $$                    |__/           /$$__  $$ /$$__  $$  
 | $$  \ $$  /$$$$$$   /$$$$$$  /$$  /$$$$$$$| $$  \ $$| $$  \__/  
 | $$  | $$ /$$__  $$ /$$__  $$| $$ /$$_____/| $$  | $$|  $$$$$$   
@@ -13,40 +13,115 @@
 ```
 # OopisOS v2.6: Open, Online, Persistent, Integrated System OS
 
-Welcome to OopisOS, a sophisticated, fully client-side OS simulation that runs entirely in your browser, featuring a rich command line, a persistent file system, and an integrated, tool-using AI.
+# Table of Contents
+
+1. [Key Features (v2.6)](#key-features-v26)
+    - [100% Client-Side Operation](#client-side-operation)
+    - [Advanced Terminal Interface](#advanced-terminal-interface)
+    - [Environment Variables](#environment-variables)
+    - [Persistent Hierarchical File System](#persistent-hierarchical-file-system)
+    - [Multi-User System with Groups & Permissions](#multi-user-system-with-groups--permissions)
+    - [Comprehensive Session Management](#comprehensive-session-management)
+    - [Enhanced Built-in Text Editor (`edit`)](#enhanced-built-in-text-editor-edit)
+    - [ASCII/ANSI Art Editor (`paint`)](#asciiansi-art-editor-paint)
+    - [The AI Librarian (`chidi`)](#the-ai-librarian-chidi)
+    - [Tool-Using AI Integration (`gemini`)](#tool-using-ai-integration-gemini)
+    - [Job Control (`ps`, `kill`)](#job-control-ps-kill)
+    - [Networking Utilities (`wget`, `curl`)](#networking-utilities-wget-curl)
+    - [Interactive Text Adventure Game (`adventure`)](#interactive-text-adventure-game-adventure)
+    - [Scripting Engine (`run`)](#scripting-engine-run)
+    - [Common Utilities](#common-utilities)
+2. [Getting Started](#getting-started)
+    - [Download and Setup](#download)
+    - [First Commands to Try](#first-commands-to-try)
+3. [Core Concepts](#core-concepts)
+    - [The Terminal Interface](#the-terminal-interface)
+        * [Piping](#piping-)
+        * [Redirection](#redirection-)
+        * [Sequencing](#sequencing-)
+        * [Backgrounding](#backgrounding-)
+        * [Aliasing](#aliasing-)
+        * [Environment Variables](#environment-variables-1)
+    - [User and Permission Model](#user-and-permission-model)
+
+**Welcome to OopisOS**, a sophisticated, fully client-side OS simulation that runs entirely in your browser, featuring a rich command line, a persistent file system, and an integrated, tool-using AI.
 
 It features a retro-style terminal, a persistent hierarchical file system with a full user/group permission model, a multi-user system with password authentication, an advanced text editor, a character-based paint program, a tool-using AI, an interactive text adventure engine, and a suite of command-line utilities with support for I/O redirection, piping, background processes, aliasing, and scripting.
 
 ### Key Features (v2.6)
 
+#### 100% Client-Side Operation
+
 - **100% Client-Side:** Runs entirely in the browser with no server-side dependencies. All user data is stored locally and persistently using IndexedDB and LocalStorage. Your world remains your own.
+
+#### Advanced Terminal Interface
+
 - **Advanced Terminal Interface:** An interactive command-line interface with history, tab completion, command aliasing (`alias`), command sequencing (`;`), background processes (`&`), and I/O redirection (`>` and `>>`).
+
+#### Environment Variables
+
 - **Environment Variables:** Use `set`, `unset`, and shell expansion (`$VAR`, `${VAR}`) to manage session-specific variables.
+
+#### Persistent Hierarchical File System
+
 - **Persistent Hierarchical File System:** A robust VFS managed via IndexedDB. Features a comprehensive suite of file management commands:
   - `ls`: Supports flags -l, -a, -R, -r, -t, -S (size), -X (extension), -U (unsorted), -d (directories only).
   - `find`: Supports predicates like -name, -type, -user, -perm, -mtime, -newermt and actions like -print, -exec, -delete.
   - `tree`: Display directory contents in a tree-like format.
   - `diff`: Compare two files line by line.
   - Standard commands: `mkdir`, `cd`, `touch`, `cat`, `cp` (with -p to preserve metadata), `mv`, `rm`, `pwd`.
+
+#### Multi-User System with Groups & Permissions
+
 - **Multi-User System with Groups & Permissions:**
   - Register users (`useradd`) with secure, hashed password prompts. A primary group is created for each user.
   - Login/logout (`login`, `logout`) and switch users (`su`), including to a `root` user with full system privileges (default password: `mcgoopis`).
   - Full user group management: `groupadd`, `groupdel`, `groups`, `usermod -aG`.
   - Unix-like permissions: `chmod` with 3-digit octal modes (e.g., 755) for owner, group, and other.
   - Ownership management: `chown`, `chgrp`.
+
+#### Comprehensive Session Management
+
 - **Comprehensive Session Management:** Automatic session saving per user, manual `savestate`/`loadstate`, full file system `backup`/`restore` via JSON, and system/home directory `reset`/`clearfs` capabilities.
+
+#### Enhanced Built-in Text Editor (`edit`)
+
 - **Enhanced Built-in Text Editor (`edit`):**
   - Full-screen editor for plain text, Markdown, and HTML with live preview.
   - Features include line numbers, toggleable word wrap, multiple view modes (Ctrl+P), a detailed status bar, and an "Export to HTML" function.
   - For Markdown/HTML, a formatting toolbar provides quick access to insert bold, italics, links, quotes, code, and lists.
   - Keyboard shortcuts: Ctrl+S (save/exit), Ctrl+O (exit/confirm), Ctrl+P (toggle preview), Ctrl+B/I (format).
+
+#### ASCII/ANSI Art Editor (`paint`)
+
 - **ASCII/ANSI Art Editor (`paint`):** Create and edit character-based art with a dedicated paint program. Supports multiple colors, tools (pencil, eraser), undo/redo, and saves to the custom `.oopic` file format.
+
+#### The AI Librarian (`chidi`)
+
 - **The AI Librarian (`chidi`):** An advanced Markdown reader that recursively finds all `.md` files in a path and lets you use AI to summarize, study, and ask questions about them, either individually or all at once.
+
+#### Tool-Using AI Integration (`gemini`)
+
 - **Tool-Using AI Integration (`gemini`):** Send a prompt to a Gemini AI model. The AI can now use OopisOS commands like `ls`, `cat`, `find`, and `tree` to explore the file system and gather information to provide more accurate, context-aware answers.
+
+#### Job Control (`ps`, `kill`)
+
 - **Job Control (`ps`, `kill`):** Run processes in the background with `&`, view them with `ps`, and terminate them with `kill`.
+
+#### Networking Utilities (`wget`, `curl`)
+
 - **Networking Utilities (`wget`, `curl`):** Fetch content from the web directly within the OS. `wget` downloads files, while `curl` displays data in the terminal.
+
+#### Interactive Text Adventure Game (`adventure`)
+
 - **Interactive Text Adventure Game (`adventure`):** Launch and play text-based adventure games within a dedicated modal window. Supports loading custom adventures from JSON files.
+
+#### Scripting Engine (`run`)
+
 - **Scripting Engine (`run`):** Execute sequences of OopisOS commands from script files. Supports comments (`#`) and argument passing (`$1`, `$@`, `$#`).
+
+#### Common Utilities
+
 - **Common Utilities:** `echo`, `date`, `help`, `clear`, `history`, `alias`, `unalias`, `export`, `upload`, `grep` (with -i, -v, -n, -c, -R), and `printscreen`.
 
 ### Getting Started
