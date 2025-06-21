@@ -141,7 +141,7 @@ const ChidiApp = {
         this.elements.askAllFilesBtn.disabled = !hasFiles;
 
         if (currentFile) {
-            this.elements.mainTitle.textContent = currentFile.name;
+            this.elements.mainTitle.textContent = currentFile.name.replace(/\.md$/i, '');
             try {
                 this.elements.markdownDisplay.innerHTML = marked.parse(currentFile.content);
             } catch (error) {
@@ -412,20 +412,20 @@ const ChidiApp = {
                 <header class="chidi-console-header">
                     <h1 id="chidi-mainTitle">chidi.md</h1>
                     <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                    <button id="chidi-closeBtn" class="chidi-close-button" title="Close Chidi">&times;</button>
+                    <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi">Exit</button>
                 </header>
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
                     <p class="chidi-placeholder-text">Awaiting file selection...</p>
                 </main>
                 <div class="chidi-controls-container">
                     <div class="chidi-control-group">
-                        <button id="chidi-prevBtn" disabled>&larr; PREV</button>
-                        <button id="chidi-nextBtn" disabled>NEXT &rarr;</button>
+                        <button id="chidi-prevBtn" class="chidi-btn" disabled>&larr; PREV</button>
+                        <button id="chidi-nextBtn" class="chidi-btn" disabled>NEXT &rarr;</button>
                     </div>
                     <div class="chidi-control-group">
-                        <button id="chidi-summarizeBtn" title="Summarize the current document">Summarize</button>
-                        <button id="chidi-suggestQuestionsBtn" title="Suggest questions about the document">Suggest Q's</button>
-                        <button id="chidi-askAllFilesBtn" title="Ask a question across all loaded documents">Ask All</button>
+                        <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
+                        <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Suggest Q's</button>
+                        <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask All</button>
                     </div>
                 </div>
                 <footer class="chidi-status-readout">
@@ -439,8 +439,8 @@ const ChidiApp = {
                     <p id="chidi-inputModalText">Please provide input.</p>
                     <input type="text" id="chidi-inputModalField" class="chidi-modal-input" placeholder="Enter value...">
                     <div class="chidi-modal-actions">
-                        <button id="chidi-confirmInputBtn">Confirm</button>
-                        <button id="chidi-cancelInputBtn">Cancel</button>
+                        <button id="chidi-confirmInputBtn" class="chidi-btn">Confirm</button>
+                        <button id="chidi-cancelInputBtn" class="chidi-btn chidi-exit-btn">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -454,16 +454,15 @@ const ChidiApp = {
     getStyles() {
         return `
             #chidi-modal {
-                --panel-bg: #171613;
-                --screen-bg: #000000;
-                --text-primary: #EAEAEA;
-                --text-dark: #343a40;
-                --accent-orange: #4ade80;
-                --accent-blue: #4A90E2;
-                --accent-red: #D0021B;
-                --border-color: #D8CFC0;
-                --font-family: 'Space Mono', monospace;
-                --font-family-lcd: 'VT323', monospace;
+                --panel-bg: #1a1a1d;
+                --screen-bg: #0d0d0d;
+                --text-primary: #e4e4e7;
+                --text-secondary: #a1a1aa;
+                --accent-green: #34d399;
+                --accent-blue: #60a5fa;
+                --accent-red: #f87171;
+                --border-color: #52525b;
+                --font-family: 'VT323', monospace;
             }
             .chidi-modal-overlay {
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -472,55 +471,87 @@ const ChidiApp = {
                 z-index: 998; font-family: var(--font-family);
             }
             #chidi-console-panel {
-                width: 95%; height: 95%; max-width: 1200px;
+                width: 95%; height: 95%; max-width: 1000px;
                 background-color: var(--panel-bg);
                 border: 2px solid var(--border-color); border-radius: 8px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.4);
                 display: flex; flex-direction: column;
-                padding: 1rem; color: var(--text-dark);
+                padding: 1rem; color: var(--text-primary);
             }
             .chidi-console-header {
                 display: flex; justify-content: space-between; align-items: center;
                 border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;
                 position: relative;
             }
-            #chidi-mainTitle { font-size: 1.5rem; font-family: var(--font-family-lcd); color: var(--accent-orange); }
-            .chidi-close-button {
-                background: none; border: none; font-size: 2rem; color: var(--text-dark);
-                cursor: pointer; line-height: 1; padding: 0 0.5rem;
+            #chidi-mainTitle {
+                font-size: 1.5rem;
+                color: var(--accent-green);
+                text-align: center;
+                flex-grow: 1;
+                padding: 0 1rem; /* Space around title */
             }
-            .chidi-close-button:hover { color: var(--accent-red); }
             .chidi-markdown-content {
                 flex-grow: 1; background-color: var(--screen-bg); color: var(--text-primary);
                 padding: 1.5rem; border-radius: 4px; overflow-y: auto;
-                font-family: var(--font-family); line-height: 1.6;
+                line-height: 1.6;
+                scrollbar-width: thin; scrollbar-color: var(--accent-green) var(--screen-bg);
             }
-            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; border-bottom: 1px solid #555; padding-bottom: 0.3rem; }
-            .chidi-markdown-content a { color: var(--accent-blue); text-decoration: none; }
+            .chidi-markdown-content::-webkit-scrollbar { width: 8px; }
+            .chidi-markdown-content::-webkit-scrollbar-track { background: var(--screen-bg); }
+            .chidi-markdown-content::-webkit-scrollbar-thumb { background-color: var(--accent-green); border-radius: 4px; border: 2px solid var(--screen-bg); }
+
+            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--accent-blue); }
+            .chidi-markdown-content a { color: var(--accent-green); text-decoration: none; }
             .chidi-markdown-content a:hover { text-decoration: underline; }
-            .chidi-markdown-content code { background-color: #333; padding: 0.2rem 0.4rem; border-radius: 3px; font-family: 'Courier New', Courier, monospace; }
-            .chidi-markdown-content pre { background-color: #111; padding: 1rem; border-radius: 4px; overflow-x: auto; }
-            .chidi-markdown-content blockquote { border-left: 4px solid var(--accent-blue); padding-left: 1rem; margin-left: 0; font-style: italic; color: #ccc; }
+            .chidi-markdown-content code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
+            .chidi-markdown-content pre { background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid #333; }
+            .chidi-markdown-content blockquote { border-left: 4px solid var(--accent-blue); padding-left: 1rem; margin-left: 0; font-style: italic; color: #a1a1aa; }
             .chidi-placeholder-text, .chidi-error-text { color: #888; text-align: center; margin-top: 3rem; font-style: italic; }
             .chidi-error-text { color: var(--accent-red); }
             .chidi-ai-output { border-top: 2px dashed var(--accent-blue); margin-top: 2rem; padding-top: 1rem; }
+            
             .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; }
             .chidi-control-group { display: flex; gap: 0.5rem; }
-            #chidi-console-panel button {
-                background-color: #fff; border: 1px solid var(--border-color); padding: 0.5rem 1rem;
-                border-radius: 4px; font-family: var(--font-family); cursor: pointer;
+            
+            .chidi-btn {
+                background-color: #3f3f46;
+                color: #a7f3d0;
+                border: 1px solid #52525b;
+                padding: 0.4rem 0.8rem;
+                border-radius: 0.375rem;
+                font-family: 'VT323', monospace;
+                font-size: 1.1rem;
+                cursor: pointer;
                 transition: all 0.2s ease;
             }
-            #chidi-console-panel button:hover:not(:disabled) { background-color: var(--accent-orange); color: white; border-color: var(--accent-orange); }
-            #chidi-console-panel button:disabled { opacity: 0.5; cursor: not-allowed; }
+            .chidi-btn:hover:not(:disabled) {
+                background-color: #52525b;
+                color: #d1fae5;
+            }
+            .chidi-btn:disabled {
+                background-color: #27272a;
+                color: #52525b;
+                border-color: #3f3f46;
+                cursor: not-allowed;
+            }
+            .chidi-exit-btn {
+                background-color: #3f1212;
+                color: #fca5a5;
+                border-color: #ef4444;
+            }
+            .chidi-exit-btn:hover:not(:disabled) {
+                background-color: #5b2121;
+                color: #fecaca;
+            }
+
             .chidi-status-readout {
                 display: flex; justify-content: space-between; border-top: 2px solid var(--border-color);
-                padding-top: 0.5rem; margin-top: 1rem; font-family: var(--font-family-lcd);
-                font-size: 1.2rem; color: var(--accent-blue);
+                padding-top: 0.5rem; margin-top: 1rem;
+                font-size: 1.2rem; color: var(--text-secondary);
             }
             .chidi-status-message { text-align: right; }
             .chidi-loader { 
-                border: 4px solid #f3f3f3;
+                border: 4px solid #3f3f46;
                 border-top: 4px solid var(--accent-blue);
                 border-radius: 50%;
                 width: 20px;
@@ -536,11 +567,11 @@ const ChidiApp = {
             /* Nested Input Modal Styles */
             .chidi-modal-overlay-nested {
                 position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                background-color: rgba(0, 0, 0, 0.6);
+                background-color: rgba(0, 0, 0, 0.7);
                 display: flex; align-items: center; justify-content: center; z-index: 100;
             }
-            .chidi-modal-content { background: var(--panel-bg); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-dark); }
-            .chidi-modal-input { width: 100%; padding: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); font-family: var(--font-family); }
+            .chidi-modal-content { background: var(--panel-bg); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-primary); border: 1px solid var(--border-color); }
+            .chidi-modal-input { width: 100%; padding: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); background-color: var(--screen-bg); color: var(--text-primary); font-family: var(--font-family); }
             .chidi-modal-actions { display: flex; justify-content: center; gap: 1rem; }
         `;
     }
