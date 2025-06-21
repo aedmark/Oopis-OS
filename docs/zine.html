@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The OopisOS v2.6 Compendium - A ComputerWorld Special Investigation</title>
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <link href="[https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@400;700&display=swap](https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@400;700&display=swap)" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
     <style>
         html, body {
             margin: 0;
@@ -211,31 +211,38 @@
 
         <h2 class="sub-headline">Chapter 5: The System and the Self</h2>
         <p>OopisOS v2.6 elevates system management from a simple utility to a core feature, offering deep control over both your digital identity and the environment itself. The user and group system is a cornerstone of this design. When you `useradd` a new account, the system not only prompts for a password that is then securely hashed, but it also creates a primary group for that user and a private, protected home directory. This security model is built on a 3-digit octal permission system, familiar to any UNIX veteran. `chmod` is used to set read (4), write (2), and execute (1) permissions for the file's owner, its group, and all other users. This allows for the creation of sophisticated collaboration schemes, such as a shared project directory where members of the "developers" group can write files, while others can only read them.</p>
-        <p>This robust user model is complemented by a suite of powerful, system-aware utilities. The `find` command is a developer's dream, capable of scouring the entire file system for files matching specific criteria—from name and type to permissions and modification time—and then executing another command upon them with `-exec`. The `gemini` command brings artificial intelligence into the shell, but with a crucial twist: it can use the system's own tools (`ls`, `cat`, `tree`, etc.) to gather real-time data from your file system before formulating its response, providing answers of unparalleled relevance. Finally, for pure fun and a showcase of the system's versatility, the `adventure` and `paint` commands launch full creative applications in dedicated modal windows, proving that even in a serious operating system, there's always room for play.</p>
+        <p>This robust user model is complemented by a suite of powerful, system-aware utilities. The `find` command is a developer's dream, capable of scouring the entire file system for files matching specific criteria—from name and type to permissions and modification time—and then executing another command upon them with `-exec`. This chapter introduces the system's new AI applications and networking tools that bridge the gap between this virtual world and the real one.</p>
+
         <div class="feature-box">
-            <h3>A Multi-User Metropolis with Groups</h3>
-            <p>You are not alone. With <code>useradd</code>, you can create new user accounts, each with a password-protected home directory. The <code>login</code>, <code>logout</code>, and <code>su</code> commands allow for seamless switching between users. But v2.6 introduces a full group system! Use <code>groupadd</code>, <code>usermod</code>, and <code>chgrp</code> to create and manage groups, controlling access to shared resources with the refined `chmod` command. The superuser, <code>root</code> (password: `mcgoopis`), has the ultimate authority.</p>
+            <h3>The AI Librarian: `chidi`</h3>
+            <p>While `gemini` is your conversationalist, `chidi` is your focused research assistant. Point it at a directory, and it launches a dedicated application that recursively finds all Markdown (`.md`) files and loads them into a clean reading interface. From there, you can ask the AI to summarize the current document, generate study questions, or—its most powerful feature—ask a complex question across the *entire set* of loaded documents. It's smart enough to find the most relevant text before answering, giving you fast, context-rich insights into your own notes and projects.</p>
         </div>
-        <div class="feature-box">
-            <h3>The Unforgiving `find`</h3>
-            <p>The `find` command is the system's bloodhound. It can search the entire file system based on a dizzying array of criteria: name (<code>-name "*.txt"</code>), type (<code>-type d</code> for directory), owner (<code>-user Guest</code>), permissions (<code>-perm 755</code>), and more. But its true power lies in its ability to execute actions on what it finds. You can print the results (<code>-print</code>), delete them (<code>-delete</code>), or even run another command on each result (<code>-exec</code>).</p>
-        </div>
-        <div class="screenshot">
-            <div class="text-xs text-gray-500 mb-2">// Using `find` to locate all temporary files in the home directory and delete them.</div>
-            <span class="prompt">root@OopisOs:/#></span> <span class="command">find /home -name "*.tmp" -delete</span>
-            <div class="output mt-2"></div>
-        </div>
+
         <div class="feature-box">
             <h3>An AI in the Shell: `gemini`</h3>
             <p>OopisOS v2.6 integrates the Gemini AI directly into the terminal. But this is no simple chatbot. Ask it a question like <code>gemini "summarize my project readme and list the scripts"</code>, and it can use the built-in commands (`ls`, `cat`, `find`, `tree`) to explore your file system, gather information, and provide a truly context-aware answer. It's like having a helpful digital librarian living inside your machine.</p>
         </div>
+
+        <div class="feature-box">
+            <h3>A Bridge to the Real World: `wget` & `curl`</h3>
+            <p>OopisOS can now reach beyond its digital borders. The `wget` and `curl` commands allow you to interact with the real-world internet, downloading files and fetching data directly into your virtual environment. Note: Due to browser security restrictions, these commands are subject to Cross-Origin Resource Sharing (CORS) policies.</p>
+        </div>
+
         <div class="feature-box">
             <h3>Creative Pursuits: `adventure` and `paint`</h3>
-            <p>All work and no play makes for a dull OS. The <code>adventure</code> command launches a full-featured text adventure game. For the more visually inclined, the new `paint` command opens a character-based art studio, complete with a color palette and tools to create your next ASCII masterpiece. Both are testaments to the system's versatility and provide delightful digital distractions.</p>
+            <p>All work and no play makes for a dull OS. The `adventure` command launches a full-featured text adventure game. For the more visually inclined, the new `paint` command opens a character-based art studio, complete with a color palette, multiple tools, undo/redo, and a keyboard-driven workflow. Your masterpieces are saved in the custom `.oopic` format. Both are testaments to the system's versatility and provide delightful digital distractions.</p>
         </div>
+
+        <h2 class="sub-headline">Your First Steps into the System</h2>
         <div class="feature-box">
-            <h3>Total System Recall</h3>
-            <p>Never fear a catastrophic error again. OopisOS provides a suite of commands for total system control. `savestate` and `loadstate` allow for manual session snapshots, while `backup` creates a downloadable JSON file of your entire OS state. Should you need to start over, `restore` can rebuild your world from that backup file, and the ultimate `reset` command will return the entire OS to its factory-fresh state (after a stern confirmation, of course).</p>
+            <h3>Inflate Your World</h3>
+            <p>The OopisOS environment starts as a blank slate. To get a feel for the system, you can immediately populate it with a rich set of example files, directories, scripts, and documentation. This is the perfect way to have a world ready-made for testing commands like `grep`, `tree`, `chidi`, and `find`.</p>
+            <p>Simply run the following command:</p>
+            <div class="screenshot">
+                <div class="text-xs text-gray-500 mb-2">// Run this command to populate your home directory.</div>
+                <span class="prompt">Guest@OopisOs:/></span> <span class="command">run /inflate.sh</span>
+            </div>
+            <p>After the script finishes, try `ls -R` or `tree` to see what's new!</p>
         </div>
 
         <h2 class="sub-headline">Epilogue: The Soul of the New Machine</h2>

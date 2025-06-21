@@ -1,5 +1,32 @@
 # OopisOS v2.6 Developer Documentation
 
+- [1. Introduction](#1-introduction)
+- [2. Project Overview](#2-project-overview)
+- [3. Architecture](#3-architecture)
+    - [Core System & Entry Point](#3-architecture)
+    - [Command Processing Layer](#3-architecture)
+    - [State & Persistence Layer](#3-architecture)
+    - [UI & Interaction Layer](#3-architecture)
+    - [Applications](#3-architecture)
+
+- [4. Setup and Installation](#4-setup-and-installation)
+    - [Prerequisites](#prerequisites)
+    - [Development Setup](#development-setup)
+    - [Project Structure](#project-structure)
+
+- [5. Core Components](#5-core-components)
+    - [Command System](#command-system)
+    - [File System](#file-system)
+    - [User & Group Management](#user--group-management)
+    - [Session & State Management](#session--state-management)
+    - [Terminal UI & Output](#terminal-ui--output)
+    - [The Editor Application (`edit`)](#the-editor-application-edit)
+    - [The Paint Application (`paint`)](#the-paint-application-paint)
+    - [The Chidi.md Reader & Analyzer (`chidi`)](#the-chidimd-reader--analyzer-chidi)
+
+- [6. Adding New Commands](#6-adding-new-commands)
+
+
 ## 1. Introduction
 
 This documentation provides a comprehensive technical overview of the OopisOS v2.6 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.
