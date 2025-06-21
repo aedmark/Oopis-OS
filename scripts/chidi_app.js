@@ -330,8 +330,9 @@ const ChidiApp = {
     },
 
     /**
-     * Submits the question from the input field to the AI.
-     * Iteratively summarizes each document, then asks the question based on the collected summaries.
+     * **[REVISED]**
+     * Submits the user's question. This new implementation first finds the most relevant
+     * files using a local keyword search before sending a single, focused request to the AI.
      * @private
      */
     async _submitQuestion() {
@@ -340,37 +341,55 @@ const ChidiApp = {
 
         this._exitQuestionMode();
         this.toggleLoader(true);
-        this.showMessage(`Processing question for ${this.state.loadedFiles.length} files...`);
+        this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
 
         try {
-            const summaries = [];
-            for (let i = 0; i < this.state.loadedFiles.length; i++) {
-                const file = this.state.loadedFiles[i];
-                this.showMessage(`Summarizing ${file.name} (${i + 1}/${this.state.loadedFiles.length})...`);
+            // 1. Retrieval Phase: Find the most relevant files locally.
+            const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how']);
+            const questionKeywords = userQuestion.toLowerCase().split(/\s+/).filter(word => word.length > 2 && !stopWords.has(word));
 
-                const summaryPrompt = `Please provide a concise, one-paragraph summary of the following document:\n\n---\n\n${file.content}`;
-                const summary = await this.callGeminiApi([{ role: 'user', parts: [{ text: summaryPrompt }] }]);
-
-                if (summary) {
-                    summaries.push({ fileName: file.name, summary: summary });
-                } else {
-                    summaries.push({ fileName: file.name, summary: "Could not generate a summary for this document." });
-                    this.showMessage(`Could not summarize ${file.name}. Continuing...`);
-                }
+            if (questionKeywords.length === 0) {
+                this.toggleLoader(false);
+                this.showMessage("Your question is too generic. Please be more specific.");
+                this.appendAiOutput("Refine Your Question", "Please ask a more specific question so I can find relevant documents for you.");
+                return;
             }
 
-            this.showMessage("All summaries collected. Synthesizing final answer...");
-
-            let combinedSummaries = "You have access to the following document summaries:\n\n";
-            summaries.forEach(s => {
-                combinedSummaries += `--- SUMMARY OF: ${s.fileName} ---\n${s.summary}\n\n`;
+            const scoredFiles = this.state.loadedFiles.map(file => {
+                let score = 0;
+                const contentLower = file.content.toLowerCase();
+                questionKeywords.forEach(keyword => {
+                    score += (contentLower.match(new RegExp(keyword, 'g')) || []).length;
+                });
+                return { file, score };
             });
 
-            const finalPrompt = `${combinedSummaries}Based on ALL the summaries provided, please provide a comprehensive answer to the following user question: "${userQuestion}"`;
+            scoredFiles.sort((a, b) => b.score - a.score);
+
+            const topN = 5; // We'll take the top 5 most relevant files
+            const relevantFiles = scoredFiles.slice(0, topN).filter(item => item.score > 0);
+
+            if (relevantFiles.length === 0) {
+                this.toggleLoader(false);
+                this.showMessage("Could not find any relevant files for your question.");
+                this.appendAiOutput("No Relevant Files Found", "I could not find any files that seem relevant to your question.");
+                return;
+            }
+
+            this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
+
+            // 2. Augmentation & Generation Phase: Build the prompt and call the API once.
+            let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question.\n\n";
+            relevantFiles.forEach(item => {
+                promptContext += `--- START OF DOCUMENT: ${item.file.name} ---\n\n${item.file.content}\n\n--- END OF DOCUMENT: ${item.file.name} ---\n\n`;
+            });
+
+            const finalPrompt = `${promptContext}User's Question: "${userQuestion}"`;
 
             const finalAnswer = await this.callGeminiApi([{ role: 'user', parts: [{ text: finalPrompt }] }]);
 
-            this.appendAiOutput(`Answer for "${userQuestion}"`, finalAnswer || "Could not generate a final answer based on the summaries.");
+            const fileNames = relevantFiles.map(item => item.file.name).join(', ');
+            this.appendAiOutput(`Answer for "${userQuestion}" (based on: ${fileNames})`, finalAnswer || "Could not generate a final answer based on the provided documents.");
 
         } catch (e) {
             this.showMessage(`An unexpected error occurred: ${e.message}`);
@@ -379,6 +398,7 @@ const ChidiApp = {
             this.toggleLoader(false);
         }
     },
+
 
     /**
      * Navigates to the next or previous file.
