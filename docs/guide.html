@@ -140,6 +140,12 @@
             margin-bottom: 1rem;
         }
 
+        .content-section ol {
+            list-style-type: decimal;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
         .terminal-example {
             background-color: #0d0d0d; /* darker than zinc-950 */
             border: 2px solid #3f3f46; /* zinc-700 */
@@ -575,26 +581,190 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
 
         <section id="developer-docs" class="content-section">
             <h1>OopisOS v2.6: Developer Documentation</h1>
-            <p>So, you want to look under the hood? Pop it open. Let's see what makes this thing purr. For the complete, unabridged developer documentation, please see the `developer.md` file in the `/docs` directory of the project repository.</p>
 
-            <h2>Code Structure Overview</h2>
-            <p>The logic of OopisOS is organized into a modular structure, with most files being self-contained managers or applications. The core architectural change in v2.6 is the migration of command definitions out of a monolithic file and into a dedicated `scripts/commands/` directory.</p>
-            <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>`main.js` & `config.js` & `utils.js`:</strong> The core trinity for booting the OS, defining its constants, and providing helper functions.</li>
-                <li><strong>`lexpar.js` & `commexec.js`:</strong> The command processing pipeline. The lexer/parser prepares the command, and the executor orchestrates its journey, but...</li>
-                <li><strong>`scripts/commands/` & `registry.js`:</strong> ...the actual logic for each command now lives in its own file in this directory, registering itself with the `CommandRegistry`. This is the biggest architectural shift and the key to future extensibility.</li>
-                <li><strong>Manager Files:</strong> `fs_manager.js`, `user_manager.js`, `session_manager.js`, `output_manager.js`, `terminal_ui.js`, and `storage.js` handle their respective domains.</li>
-                <li><strong>Application Files:</strong> `editor.js`, `oopis_paint.js`, `chidi_app.js`, and `text_adventure.js` contain the logic for the major modal applications.</li>
+            <h2>1. Introduction</h2>
+            <p>This documentation provides a comprehensive technical overview of the OopisOS v2.6 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.</p>
+
+            <h2>2. Project Overview</h2>
+            <p>OopisOS is a self-contained, browser-based terminal environment. Key characteristics include:</p>
+            <ul>
+                <li><strong>100% Client-Side:</strong> The application runs entirely in the browser, with no backend server dependency.</li>
+                <li><strong>Persistent State:</strong> Data, including the file system, user credentials, and session information, is persisted locally using <code>IndexedDB</code> and <code>localStorage</code>.</li>
+                <li><strong>Modular Architecture:</strong> The system is composed of discrete manager modules and a file-based command registration system, promoting maintainability and extensibility.</li>
+                <li><strong>Rich Feature Set:</strong> Includes a hierarchical file system, a multi-user model with groups and permissions, a suite of ~60 commands, I/O redirection and piping, background job control, and several full-screen applications (<code>edit</code>, <code>paint</code>, <code>chidi</code>, <code>adventure</code>).</li>
             </ul>
 
-            <h2>Forging a New Command (The v2.6 Way)</h2>
-            <p>Adding a new command is now a clean, three-step process thanks to the new modular command structure.</p>
-            <ol class="list-decimal ml-6 my-4 space-y-2">
-                <li>Create a new command file (e.g., `mycmd.js`) in `/scripts/commands/`.</li>
-                <li>Define the command's properties and logic within an IIFE, and register it using `CommandRegistry.register()`.</li>
-                <li>Add a `<script>` tag for your new file in `index.html` after `registry.js` and before `commexec.js`.</li>
+            <h2>3. Architecture</h2>
+            <p>OopisOS is built on a modular architecture where different concerns are handled by specialized manager objects.</p>
+            <ol>
+                <li><strong>Core System & Entry Point</strong>
+                    <ul>
+                        <li><code>index.html</code>: The main entry point. It defines the basic DOM structure and is responsible for loading all necessary JavaScript modules in the correct order.</li>
+                        <li><code>main.js</code>: Handles the OS boot sequence (<code>window.onload</code>), caching essential DOM elements, initializing all managers, and setting up the primary terminal event listeners.</li>
+                        <li><code>config.js</code>: A central module providing system-wide configuration constants, from API endpoints to default file permissions and UI message strings.</li>
+                        <li><code>utils.js</code>: A collection of globally accessible, stateless utility functions for tasks like DOM element creation, string formatting, and data validation.</li>
+                    </ul>
+                </li>
+                <li><strong>Command Processing Layer</strong>
+                    <ul>
+                        <li><code>lexpar.js</code>: Contains the <strong>Lexer</strong> and <strong>Parser</strong>. The Lexer transforms the raw command string into a sequence of tokens (e.g., <code>WORD</code>, <code>OPERATOR_PIPE</code>). The Parser then consumes this token stream to build a structured, executable representation of command pipelines.</li>
+                        <li><code>commexec.js</code>: The <strong>CommandExecutor</strong> is the central orchestrator for all command execution. It does <em>not</em> contain command logic itself. Instead, it processes the parsed pipelines, manages I/O between piped commands, handles output redirection (<code>&gt;</code>/<code>&gt;&gt;</code>), and launches/manages background processes (<code>&amp;</code>).</li>
+                        <li><code>scripts/commands/registry.js</code>: The <strong>CommandRegistry</strong> provides a central <code>register</code> function. Each individual command file calls this function to make the <code>CommandExecutor</code> aware of its existence, definition, and help text.</li>
+                        <li><code>scripts/commands/*.js</code>: Each file in this directory defines a single command, its validation rules, and its core logic. This modular approach keeps command logic isolated and maintainable.</li>
+                    </ul>
+                </li>
+                <li><strong>State & Persistence Layer</strong>
+                    <ul>
+                        <li><code>storage.js</code>: Implements the <code>StorageManager</code> (a robust wrapper for <code>localStorage</code>) and the <code>IndexedDBManager</code> (which handles the database connection for the file system).</li>
+                        <li><code>fs_manager.js</code>: The <strong>FileSystemManager</strong> controls the in-memory representation of the virtual file system (<code>fsData</code>) and orchestrates saving it to and loading it from <code>IndexedDB</code>.</li>
+                        <li><code>user_manager.js</code>: The <strong>UserManager</strong> and <strong>GroupManager</strong> handle user accounts, authentication (password hashing, login/su flow), and group memberships.</li>
+                        <li><code>session_manager.js</code>: Contains the <strong>SessionManager</strong> (which manages the user stack for <code>su</code>/<code>logout</code> and manual/automatic session state snapshots) and the <strong>EnvironmentManager</strong> (which handles session-specific variables like <code>$USER</code> and <code>$PATH</code>).</li>
+                    </ul>
+                </li>
+                <li><strong>UI & Interaction Layer</strong>
+                    <ul>
+                        <li><code>terminal_ui.js</code>: Manages all interactive components of the terminal, including the prompt, the user input line, tab completion logic (<code>TabCompletionManager</code>), and modal dialogs (<code>ModalManager</code>, <code>ModalInputManager</code>).</li>
+                        <li><code>output_manager.js</code>: The sole conduit for displaying text on the terminal screen. It handles formatting, styling, and console overrides.</li>
+                    </ul>
+                </li>
+                <li><strong>Applications</strong>
+                    <ul>
+                        <li><code>editor.js</code>: The full-screen text editor application (<code>edit</code>).</li>
+                        <li><code>oopis_paint.js</code>: The character-based art studio application (<code>paint</code>).</li>
+                        <li><code>chidi_app.js</code>: The AI-powered Markdown analyzer (<code>chidi</code>).</li>
+                        <li><code>text_adventure.js</code>: The text adventure game engine (<code>adventure</code>).</li>
+                    </ul>
+                </li>
             </ol>
-            <p>This declarative pattern lets the framework handle boilerplate validation, so you can focus on the core logic of your command. See the full `developer.md` for a complete code example.</p>
+
+            <h2>4. Setup and Installation</h2>
+            <h3>Prerequisites</h3>
+            <p>A modern web browser that supports ES6+ JavaScript, <code>IndexedDB</code>, and the Web Crypto API. For local development, a simple web server is required to handle file loading without running into CORS issues.</p>
+            <h3>Development Setup</h3>
+            <ol>
+                <li>Clone or download the project repository.</li>
+                <li>Navigate to the project's root directory in your local terminal.</li>
+                <li>Start a local web server. A simple one can be run with Python: <code>python -m http.server</code>.</li>
+                <li>Open your browser and navigate to the local server's address (e.g., <code>http://localhost:8000</code>).</li>
+            </ol>
+            <h3>Project Structure</h3>
+            <pre><code>
+oopisOS/
+├── docs/                 # Documentation files (guide.html, zine.html, etc.)
+├── extras/               # Helper scripts (diag.sh, inflate.sh)
+├── scripts/
+│   ├── commands/         # <-- All individual command definitions reside here
+│   │   ├── ls.js
+│   │   ├── cat.js
+│   │   └── ... (60+ command files)
+│   ├── chidi_app.js
+│   ├── commexec.js       # Command Executor
+│   ├── config.js
+│   ├── editor.js
+│   ├── fs_manager.js
+│   ├── lexpar.js
+│   ├── main.js           # Main boot sequence
+│   ├── marked.min.js     # Markdown parsing library
+│   ├── oopis_paint.js
+│   ├── output_manager.js
+│   ├── registry.js       # Command Registry
+│   ├── session_manager.js
+│   ├── storage.js
+│   ├── terminal_ui.js
+│   ├── text_adventure.js
+│   ├── user_manager.js
+│   └── utils.js
+├── style.css             # Unified stylesheet
+├── index.html            # Main application entry point
+└── LICENSE.txt
+            </code></pre>
+
+            <h2>5. Adding New Commands</h2>
+            <p>The v2.6 architecture makes adding new commands simple and clean.</p>
+            <h3>Step 1: Create the Command File</h3>
+            <p>Create a new JavaScript file in the <code>scripts/commands/</code> directory (e.g., <code>mycommand.js</code>).</p>
+            <h3>Step 2: Define the Command</h3>
+            <p>Inside your new file, create an IIFE and define your command using the declarative object pattern. Register it with the <code>CommandRegistry</code>.</p>
+            <pre><code class="language-javascript">
+// scripts/commands/mycommand.js
+(() => {
+    "use strict";
+
+    // 1. Define the command's behavior and requirements.
+    const myCommandDefinition = {
+        commandName: "mycommand",
+        flagDefinitions: [
+            { name: "verbose", short: "-v", long: "--verbose" }
+        ],
+        argValidation: {
+            min: 1,
+            error: "Usage: mycommand [-v] &lt;path&gt;"
+        },
+        pathValidation: [
+            {
+                argIndex: 0, // Validate the first argument (at index 0) as a path.
+                options: { expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE }
+            }
+        ],
+        permissionChecks: [
+            {
+                pathArgIndex: 0,
+                permissions: ["read"]
+            }
+        ],
+        // 2. Write the core logic. It only runs if all the above checks pass.
+        coreLogic: async (context) => {
+            // The context object contains everything you need, fully validated.
+            const { args, flags, currentUser, validatedPaths } = context;
+
+            // validatedPaths[0] is guaranteed to be a valid, readable file path object.
+            const pathInfo = validatedPaths[0];
+
+            if (flags.verbose) {
+                await OutputManager.appendToOutput(`Verbose mode ON for user ${currentUser}`);
+            }
+
+            // Command implementation goes here...
+            const content = pathInfo.node.content;
+
+            return {
+                success: true,
+                output: `Successfully processed ${pathInfo.resolvedPath}. Content length: ${content.length}.`
+            };
+        }
+    };
+
+    // 3. Define the help texts for 'help' and 'man'.
+    const myCommandDescription = "A brief, one-line description for the 'help' command.";
+    const myCommandHelpText = `Usage: mycommand [OPTIONS] &lt;path&gt;
+
+A detailed explanation of the command, its purpose, and how to use it.
+This text is used by the 'man' command.
+
+OPTIONS
+  -v, --verbose    Enable verbose output.
+
+EXAMPLES
+  mycommand /home/Guest/README.md       An example of how to use the command.`;
+
+    // 4. Register the command with the system.
+    CommandRegistry.register("mycommand", myCommandDefinition, myCommandDescription, myCommandHelpText);
+})();
+            </code></pre>
+
+            <h3>Step 3: Register the Script in `index.html`</h3>
+            <p>Open <code>index.html</code> and add a <code>&lt;script&gt;</code> tag for your new command file. It must be placed after <code>scripts/commands/registry.js</code> but before <code>scripts/commexec.js</code>.</p>
+            <pre><code class="language-html">
+...
+&lt;script src="./scripts/commands/registry.js"&gt;&lt;/script&gt;
+&lt;script src="./scripts/commands/ls.js"&gt;&lt;/script&gt;
+&lt;script src="./scripts/commands/mycommand.js"&gt;&lt;/script&gt;
+&lt;script src="./scripts/commands/pwd.js"&gt;&lt;/script&gt;
+...
+&lt;script src="./scripts/commexec.js"&gt;&lt;/script&gt;
+...
+            </code></pre>
+            <p>The <code>CommandExecutor</code> will automatically discover and integrate your command upon the next page load.</p>
         </section>
 
         <section id="testing-env" class="content-section">
@@ -637,15 +807,41 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
         <section id="recent-changes" class="content-section">
             <h1>Recent Changes</h1>
             <h2>Version 2.6 (Current)</h2>
+            <p>Version 2.6 represents a significant leap forward in functionality and architectural maturity, introducing major new applications and refining the core developer experience.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Environment Variables:</strong> Added a full environment variable system. Use `set` to create/view variables, `unset` to remove them, and `$VAR` or `${VAR}` in any command for shell expansion. Default variables include `$USER`, `$HOME`, `$HOST`, and `$PATH`.</li>
-                <li><strong>Paint Application:</strong> Introduced the `paint` command, a full-screen ASCII/ANSI art editor with multiple colors, tools, and a custom `.oopic` save format.</li>
-                <li><strong>Architectural Overhaul:</strong> Commands have been moved to individual files in `scripts/commands/` for vastly improved modularity and maintainability.</li>
+                <li>
+                    <strong>The `paint` Application:</strong> A full-featured, character-based art studio is now integrated into OopisOS.
+                    <ul>
+                        <li>Launched with the `paint [filename.oopic]` command, it opens a dedicated modal for creating ASCII and ANSI art on an 80x24 canvas.</li>
+                        <li>Features a complete toolbar with a Pencil, Eraser, Undo/Redo, and a Grid Toggle.</li>
+                        <li>Includes a 6-color palette and a character selector for all printable ASCII characters.</li>
+                        <li>Artwork is saved to a custom `.oopic` JSON file format, preserving character, color, and canvas data.</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>The `chidi` AI Librarian:</strong> A powerful new application for deep document analysis.
+                    <ul>
+                        <li>Launched via `chidi <path>`, it opens a modal application to view and analyze Markdown (`.md`) files.</li>
+                        <li>Recursively finds all `.md` files from a given directory to create a cohesive knowledge base, or "corpus," for analysis.</li>
+                        <li>Integrates a Gemini AI toolkit to **Summarize** documents, generate **Study** questions, or **Ask** a natural language question across the entire document set.</li>
+                        <li>Employs an efficient Retrieval-Augmented Generation (RAG) strategy, finding relevant files locally before making a focused query to the Gemini API.</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Environment Variables:</strong> Added a full environment variable system. Use `set` to create/view variables, `unset` to remove them, and `$VAR` or `${VAR}` in any command for shell expansion. Default variables include `$USER`, `$HOME`, `$HOST`, and `$PATH`.
+                </li>
+                <li>
+                    <strong>`tree` Command:</strong> A new utility to list directory contents in a tree-like format, with flags for controlling depth (`-L`) and listing directories only (`-d`).
+                </li>
+                <li>
+                    <strong>Architectural Overhaul:</strong> Commands have been moved to individual files in `scripts/commands/`, registering themselves with a central `CommandRegistry`. This greatly improves system modularity, maintainability, and makes it significantly easier for developers to add new commands.
+                </li>
             </ul>
+
             <h2>Version 2.5</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li>Initial public release version.</li>
-                <li>Features included the core file system, multi-user support, text editor, and `gemini` integration.</li>
+                <li>Features included the core file system, multi-user support with permissions, a rich text editor, and the `gemini` command.</li>
             </ul>
         </section>
 
