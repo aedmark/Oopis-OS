@@ -9,7 +9,7 @@ const ChidiApp = {
         loadedFiles: [],
         currentIndex: -1,
         isModalOpen: false,
-        isAskingMode: false, // NEW: State to track if user is in "Ask" mode
+        isAskingMode: false, // State to track if user is in "Ask" mode
     },
 
     // DOM element references
@@ -118,8 +118,8 @@ const ChidiApp = {
             nextBtn: get('chidi-nextBtn'),
             fileSelector: get('chidi-file-selector'),
             summarizeBtn: get('chidi-summarizeBtn'),
-            studyBtn: get('chidi-suggestQuestionsBtn'), // Renamed for clarity
-            askBtn: get('chidi-askAllFilesBtn'),      // Renamed for clarity
+            studyBtn: get('chidi-suggestQuestionsBtn'),
+            askBtn: get('chidi-askAllFilesBtn'),
             exportBtn: get('chidi-exportBtn'),
             closeBtn: get('chidi-closeBtn'),
             markdownDisplay: get('chidi-markdownDisplay'),
@@ -127,8 +127,8 @@ const ChidiApp = {
             loader: get('chidi-loader'),
             mainTitle: get('chidi-mainTitle'),
             fileCountDisplay: get('chidi-fileCountDisplay'),
-            askInputContainer: get('chidi-ask-input-container'), // NEW
-            askInput: get('chidi-ask-input'),                   // NEW
+            askInputContainer: get('chidi-ask-input-container'),
+            askInput: get('chidi-ask-input'),
         };
     },
 
@@ -225,7 +225,7 @@ const ChidiApp = {
 
             if (e.key === 'Escape') {
                 if (this.state.isAskingMode) {
-                    this._exitQuestionMode(); // NEW: Exit ask mode on Escape
+                    this._exitQuestionMode();
                 } else {
                     this.close();
                 }
@@ -237,7 +237,7 @@ const ChidiApp = {
 
         this.elements.fileSelector.addEventListener('change', (e) => {
             if (this.state.isAskingMode) {
-                this._exitQuestionMode(); // NEW: Exit ask mode on file change
+                this._exitQuestionMode();
             }
             this._selectFileByIndex(e.target.value);
         });
@@ -246,33 +246,36 @@ const ChidiApp = {
             const currentFile = this.getCurrentFile();
             if (!currentFile) return;
             const prompt = `Please provide a concise summary of the following document:\n\n---\n\n${currentFile.content}`;
+            this.toggleLoader(true);
+            this.showMessage("Contacting Gemini API...");
             const summary = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
+            this.toggleLoader(false);
             this.appendAiOutput("Summary", summary);
         });
 
-        // The "Study" button's primary role
         this.elements.studyBtn.addEventListener('click', async () => {
             if (this.state.isAskingMode) {
-                this._exitQuestionMode(); // In ask mode, this button is "Cancel"
+                this._exitQuestionMode();
                 return;
             }
             const currentFile = this.getCurrentFile();
             if (!currentFile) return;
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${currentFile.content}`;
+            this.toggleLoader(true);
+            this.showMessage("Contacting Gemini API...");
             const questions = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
+            this.toggleLoader(false);
             this.appendAiOutput("Suggested Questions", questions);
         });
 
-        // The "Ask" button's primary role
         this.elements.askBtn.addEventListener('click', async () => {
             if (this.state.isAskingMode) {
-                await this._submitQuestion(); // In ask mode, this button is "Submit"
+                await this._submitQuestion();
             } else {
                 this._enterQuestionMode();
             }
         });
 
-        // NEW: Handle Enter key in the new input field
         this.elements.askInput.addEventListener('keydown', async (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -291,17 +294,14 @@ const ChidiApp = {
         if (!this.getCurrentFile()) return;
         this.state.isAskingMode = true;
 
-        // Hide markdown, show input
         this.elements.markdownDisplay.classList.add('chidi-hidden');
         this.elements.askInputContainer.classList.remove('chidi-hidden');
         this.elements.askInput.value = '';
         this.elements.askInput.focus();
 
-        // Change button labels and functions
         this.elements.askBtn.textContent = 'Submit';
         this.elements.studyBtn.textContent = 'Cancel';
 
-        // Disable other buttons
         this.elements.summarizeBtn.disabled = true;
         this.elements.exportBtn.disabled = true;
         this.elements.prevBtn.disabled = true;
@@ -318,15 +318,12 @@ const ChidiApp = {
     _exitQuestionMode() {
         this.state.isAskingMode = false;
 
-        // Hide input, show markdown
         this.elements.askInputContainer.classList.add('chidi-hidden');
         this.elements.markdownDisplay.classList.remove('chidi-hidden');
 
-        // Revert button labels
         this.elements.askBtn.textContent = 'Ask';
         this.elements.studyBtn.textContent = 'Study';
 
-        // Re-enable buttons based on state
         this.updateUI();
 
         this.showMessage("Question mode cancelled.");
@@ -334,24 +331,53 @@ const ChidiApp = {
 
     /**
      * Submits the question from the input field to the AI.
+     * Iteratively summarizes each document, then asks the question based on the collected summaries.
      * @private
      */
     async _submitQuestion() {
         const userQuestion = this.elements.askInput.value.trim();
         if (!userQuestion) return;
 
-        let combinedContent = "You have access to the following documents:\n\n";
-        this.state.loadedFiles.forEach(file => {
-            combinedContent += `--- DOCUMENT: ${file.name} ---\n${file.content}\n\n`;
-        });
-
-        const prompt = `${combinedContent}Based on all the documents provided, please answer the following question: ${userQuestion}`;
-
-        // Exit question mode before awaiting the API call so the UI feels responsive
         this._exitQuestionMode();
+        this.toggleLoader(true);
+        this.showMessage(`Processing question for ${this.state.loadedFiles.length} files...`);
 
-        const answer = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
-        this.appendAiOutput(`Answer for "${userQuestion}"`, answer);
+        try {
+            const summaries = [];
+            for (let i = 0; i < this.state.loadedFiles.length; i++) {
+                const file = this.state.loadedFiles[i];
+                this.showMessage(`Summarizing ${file.name} (${i + 1}/${this.state.loadedFiles.length})...`);
+
+                const summaryPrompt = `Please provide a concise, one-paragraph summary of the following document:\n\n---\n\n${file.content}`;
+                const summary = await this.callGeminiApi([{ role: 'user', parts: [{ text: summaryPrompt }] }]);
+
+                if (summary) {
+                    summaries.push({ fileName: file.name, summary: summary });
+                } else {
+                    summaries.push({ fileName: file.name, summary: "Could not generate a summary for this document." });
+                    this.showMessage(`Could not summarize ${file.name}. Continuing...`);
+                }
+            }
+
+            this.showMessage("All summaries collected. Synthesizing final answer...");
+
+            let combinedSummaries = "You have access to the following document summaries:\n\n";
+            summaries.forEach(s => {
+                combinedSummaries += `--- SUMMARY OF: ${s.fileName} ---\n${s.summary}\n\n`;
+            });
+
+            const finalPrompt = `${combinedSummaries}Based on ALL the summaries provided, please provide a comprehensive answer to the following user question: "${userQuestion}"`;
+
+            const finalAnswer = await this.callGeminiApi([{ role: 'user', parts: [{ text: finalPrompt }] }]);
+
+            this.appendAiOutput(`Answer for "${userQuestion}"`, finalAnswer || "Could not generate a final answer based on the summaries.");
+
+        } catch (e) {
+            this.showMessage(`An unexpected error occurred: ${e.message}`);
+            this.appendAiOutput("Error", `An unexpected error occurred during processing: ${e.message}`);
+        } finally {
+            this.toggleLoader(false);
+        }
     },
 
     /**
@@ -359,7 +385,7 @@ const ChidiApp = {
      * @param {number} direction - -1 for previous, 1 for next.
      */
     navigate(direction) {
-        if (this.state.isAskingMode) this._exitQuestionMode(); // NEW
+        if (this.state.isAskingMode) this._exitQuestionMode();
 
         const newIndex = this.state.currentIndex + direction;
         if (newIndex >= 0 && newIndex < this.state.loadedFiles.length) {
@@ -486,12 +512,8 @@ const ChidiApp = {
      * @returns {Promise<string>} A promise that resolves to the model's text response.
      */
     async callGeminiApi(chatHistory) {
-        this.toggleLoader(true);
-        this.showMessage("Contacting Gemini API...");
-
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
         if (!apiKey) {
-            this.toggleLoader(false);
             const errorMsg = "API key not found. Please exit and run `chidi` again to set it.";
             this.showMessage(`Error: ${errorMsg}`);
             this.appendAiOutput("API Error", errorMsg);
@@ -510,8 +532,6 @@ const ChidiApp = {
                 headers: headers,
                 body: JSON.stringify(payload)
             });
-
-            this.toggleLoader(false);
 
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
@@ -555,7 +575,6 @@ const ChidiApp = {
                 return "";
             }
 
-            this.showMessage("Error: Invalid or empty response structure from API.");
             this.appendAiOutput("API Error", "The AI returned an empty or un-parsable response. The context might be too large or the query unsupported.");
             return "";
 
@@ -574,7 +593,6 @@ const ChidiApp = {
      * @returns {string} The HTML content as a string.
      */
     getHTML() {
-        // MODIFIED: Removed the nested modal and added a container for the "Ask" input field.
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
@@ -618,7 +636,6 @@ const ChidiApp = {
      * @returns {string} The CSS rules as a string.
      */
     getStyles() {
-        // MODIFIED: Added styles for the new 'ask' input area and removed old modal styles.
         return `
             #chidi-modal {
                 --panel-bg: #1a1a1d;
