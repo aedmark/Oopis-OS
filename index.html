@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="initial-scale=1.0" />
   <title>OopisOS</title>
   <script src="./scripts/marked.min.js"></script>
   <link rel="stylesheet" href="./style.css">
   <meta name="theme-color" content="#34d399">
 </head>
 <body class="bg-neutral-900 text-green-500 m-0 p-5 flex flex-col items-center justify-center min-h-screen overflow-x-hidden">
-<div id="terminal-bezel" class="bg-neutral-800 p-6 rounded-2xl terminal-bezel-shadow inline-block">
-  <div id="terminal" class="w-[90vw] max-w-[800px] h-[70vh] max-h-[600px] bg-neutral-950 border-2 border-neutral-900 rounded-lg p-5 overflow-x-hidden terminal-screen-glow flex flex-col" style="position: relative;">
+<div id="terminal-bezel" class="w-[80vw] h-[70vh] bg-neutral-800 p-6 rounded-2xl terminal-bezel-shadow flex items-center justify-center">
+  <div id="terminal" class="w-full h-full bg-neutral-950 border-2 border-neutral-900 rounded-lg p-5 overflow-x-hidden terminal-screen-glow flex flex-col" style="position: relative; aspect-ratio: 4 / 3;">
     <div id="output" class="flex-grow mb-2.5 overflow-x-hidden w-full min-w-0 overflow-y-auto"></div>
     <div class="input-line-container flex items-start w-full">
       <div class="prompt-container flex items-center leading-[1.2em] flex-shrink-0 whitespace-nowrap pt-[0.1em]">
