@@ -330,8 +330,7 @@ const ChidiApp = {
     },
 
     /**
-     * **[REVISED]**
-     * Submits the user's question. This new implementation first finds the most relevant
+     * Submits the user's question. This implementation first finds the most relevant
      * files using a local keyword search before sending a single, focused request to the AI.
      * @private
      */
@@ -344,9 +343,9 @@ const ChidiApp = {
         this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
 
         try {
-            // 1. Retrieval Phase: Find the most relevant files locally.
-            const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how']);
-            const questionKeywords = userQuestion.toLowerCase().split(/\s+/).filter(word => word.length > 2 && !stopWords.has(word));
+            // 1. Setup: Define keywords and get the currently active file.
+            const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how', 'and', 'or', 'but']);
+            const questionKeywords = userQuestion.toLowerCase().split(/[\s!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~]+/).filter(word => word.length > 2 && !stopWords.has(word));
 
             if (questionKeywords.length === 0) {
                 this.toggleLoader(false);
@@ -355,40 +354,51 @@ const ChidiApp = {
                 return;
             }
 
-            const scoredFiles = this.state.loadedFiles.map(file => {
+            const currentFile = this.getCurrentFile();
+            const otherFiles = this.state.loadedFiles.filter(file => file.path !== currentFile.path);
+
+            // 2. Retrieval Phase: Score and sort all *other* files.
+            const scoredFiles = otherFiles.map(file => {
                 let score = 0;
                 const contentLower = file.content.toLowerCase();
+                const nameLower = file.name.toLowerCase();
+
                 questionKeywords.forEach(keyword => {
                     score += (contentLower.match(new RegExp(keyword, 'g')) || []).length;
+                    if (nameLower.includes(keyword)) {
+                        score += 5;
+                    }
                 });
                 return { file, score };
             });
 
             scoredFiles.sort((a, b) => b.score - a.score);
 
-            const topN = 5; // We'll take the top 5 most relevant files
-            const relevantFiles = scoredFiles.slice(0, topN).filter(item => item.score > 0);
+            // 3. Assemble final context: current file + top N-1 other files.
+            const MAX_CONTEXT_FILES = 10;
+            const relevantFiles = [currentFile];
+            const uniquePaths = new Set([currentFile.path]);
 
-            if (relevantFiles.length === 0) {
-                this.toggleLoader(false);
-                this.showMessage("Could not find any relevant files for your question.");
-                this.appendAiOutput("No Relevant Files Found", "I could not find any files that seem relevant to your question.");
-                return;
-            }
+            scoredFiles.slice(0, MAX_CONTEXT_FILES - 1).forEach(item => {
+                if (item.score > 0 && !uniquePaths.has(item.file.path)) {
+                    relevantFiles.push(item.file);
+                    uniquePaths.add(item.file.path);
+                }
+            });
 
             this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
 
-            // 2. Augmentation & Generation Phase: Build the prompt and call the API once.
-            let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question.\n\n";
-            relevantFiles.forEach(item => {
-                promptContext += `--- START OF DOCUMENT: ${item.file.name} ---\n\n${item.file.content}\n\n--- END OF DOCUMENT: ${item.file.name} ---\n\n`;
+            // 4. Augmentation & Generation Phase
+            let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question. Prioritize information from the first document if it is relevant, but use all provided documents to form your answer.\n\n";
+            relevantFiles.forEach(file => {
+                promptContext += `--- START OF DOCUMENT: ${file.name} ---\n\n${file.content}\n\n--- END OF DOCUMENT: ${file.name} ---\n\n`;
             });
 
             const finalPrompt = `${promptContext}User's Question: "${userQuestion}"`;
 
             const finalAnswer = await this.callGeminiApi([{ role: 'user', parts: [{ text: finalPrompt }] }]);
 
-            const fileNames = relevantFiles.map(item => item.file.name).join(', ');
+            const fileNames = relevantFiles.map(item => item.name).join(', ');
             this.appendAiOutput(`Answer for "${userQuestion}" (based on: ${fileNames})`, finalAnswer || "Could not generate a final answer based on the provided documents.");
 
         } catch (e) {
@@ -458,7 +468,12 @@ const ChidiApp = {
         outputBlock.className = 'chidi-ai-output';
         outputBlock.innerHTML = marked.parse(`### ${title}\n\n${content}`);
         this.elements.markdownDisplay.appendChild(outputBlock);
-        this.elements.markdownDisplay.scrollTop = this.elements.markdownDisplay.scrollHeight;
+
+        // --- REVISION START ---
+        // Scroll the new block into view, aligning it to the top of the container.
+        outputBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // --- REVISION END ---
+
         this.showMessage(`AI Response received for "${title}".`);
     },
 
@@ -644,10 +659,10 @@ const ChidiApp = {
                 <footer class="chidi-status-readout">
                     <div id="chidi-fileCountDisplay" class="chidi-status-item">FILES: 0</div>
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>
-                    <div class="chidi-controls-container">
+                    <div class="chidi-control-group">
                         <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
                         <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
-                        </div>  
+                    </div>  
                 </footer>
             </div>
         `;
@@ -719,7 +734,9 @@ const ChidiApp = {
             .chidi-markdown-content::-webkit-scrollbar-track { background: var(--screen-bg); }
             .chidi-markdown-content::-webkit-scrollbar-thumb { background-color: var(--accent-green); border-radius: 4px; border: 2px solid var(--screen-bg); }
 
-            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--accent-blue); }
+            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--accent-blue); }
+            .chidi-markdown-content p { margin-bottom: 1rem; }
+            .chidi-markdown-content ul, .chidi-markdown-content ol, .chidi-markdown-content blockquote, .chidi-markdown-content pre { margin-bottom: 1rem; }
             .chidi-markdown-content a { color: var(--accent-green); text-decoration: none; }
             .chidi-markdown-content a:hover { text-decoration: underline; }
             .chidi-markdown-content code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
@@ -790,11 +807,28 @@ const ChidiApp = {
             }
 
             .chidi-status-readout {
-                display: flex; justify-content: space-between; border-top: 2px solid var(--border-color);
-                padding-top: 0.5rem; margin-top: 1rem;
-                font-size: 1.2rem; color: var(--text-secondary);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                border-top: 2px solid var(--border-color);
+                padding-top: 0.5rem;
+                margin-top: 1rem;
+                font-size: 1.2rem;
+                color: var(--text-secondary);
             }
-            .chidi-status-message { text-align: right; }
+            .chidi-status-readout > .chidi-status-item,
+            .chidi-status-readout > .chidi-control-group {
+                flex-shrink: 0;
+            }
+            .chidi-status-message {
+                flex-grow: 1;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 0;
+            }
             .chidi-loader {
                 width: 10px;
                 height: 18px;
