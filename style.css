@@ -4,9 +4,9 @@
 @layer theme {
   :root, :host {
     --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-      "Courier New", monospace;
+    "Courier New", monospace;
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-amber-400: oklch(82.8% 0.189 84.429);
     --color-lime-400: oklch(84.1% 0.238 128.85);
@@ -1374,6 +1374,9 @@ body {
   padding: 0.25rem 0.75rem;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .paint-tool:hover {
   background-color: #3f3f46;
@@ -1392,6 +1395,9 @@ body {
   width: 1.25em;
   height: 1.25em;
   vertical-align: middle;
+}
+.paint-tool.paint-tool-active svg {
+  color: #1e293b;
 }
 .paint-color-swatch {
   width: 1.5rem;
@@ -1473,6 +1479,41 @@ body {
 .paint-char-btn:hover {
   background-color: #3f3f46;
   transform: scale(1.1);
+}
+.paint-tool-dropdown {
+  position: relative;
+}
+.paint-dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 2px;
+  background-color: #27272a;
+  min-width: 40px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  padding: 4px;
+}
+.paint-dropdown-content button {
+  color: white;
+  padding: 8px 8px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+}
+.paint-dropdown-content button:hover {
+  background-color: #3f3f46;
+}
+.paint-dropdown-content.paint-dropdown-active {
+  display: block;
 }
 @property --tw-space-y-reverse {
   syntax: "*";
