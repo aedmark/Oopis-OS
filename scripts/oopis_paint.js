@@ -19,7 +19,7 @@ const PaintAppConfig = {
     DEFAULT_FG_COLOR: 'text-green-500',
     DEFAULT_BG_COLOR: 'bg-transparent',
     ERASER_CHAR: ' ',
-    ERASER_BG_COLOR: 'bg-neutral-950',
+    ERASER_BG_COLOR: 'bg-transparent',
     FILE_EXTENSION: 'oopic',
     ASCII_CHAR_RANGE: { START: 32, END: 126 },
     CSS_CLASSES: {

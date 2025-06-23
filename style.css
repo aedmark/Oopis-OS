@@ -1608,7 +1608,7 @@ body {
  */
 #terminal {
   /* Base size relative to viewport width. */
-  width: 90vw;
+  width: 65vw;
 
   /* Use max-height as the primary constraint for tall/portrait viewports. */
   max-height: 90vh;
