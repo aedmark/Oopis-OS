@@ -11,11 +11,11 @@
                     | $$                                          
                     |__/  A Browser-Based OS Simulation  
 ```
-# OopisOS v2.6: Open, Online, Persistent, Integrated System OS
+# OopisOS v2.7: Open, Online, Persistent, Integrated System OS
 
 # Table of Contents
 
-1. [Key Features (v2.6)](#key-features-v26)
+1. [Key Features (v2.7)](#key-features-v26)
     - [100% Client-Side Operation](#client-side-operation)
     - [Advanced Terminal Interface](#advanced-terminal-interface)
     - [Environment Variables](#environment-variables)
@@ -48,7 +48,7 @@
 
 It features a retro-style terminal, a persistent hierarchical file system with a full user/group permission model, a multi-user system with password authentication, an advanced text editor, a character-based paint program, a tool-using AI, an interactive text adventure engine, and a suite of command-line utilities with support for I/O redirection, piping, background processes, aliasing, and scripting.
 
-### Key Features (v2.6)
+### Key Features (v2.7)
 
 #### 100% Client-Side Operation
 
@@ -254,7 +254,7 @@ Automate tasks by writing shell scripts.
 - `chidi_app.js`: All logic for the Chidi Markdown analyzer.
 - `text_adventure.js`: All logic for the text adventure game engine.
 
-#### Adding a New Command (The v2.6 Way)
+#### Adding a New Command (The v2.7 Way)
 
 1. Create a new command file in `/scripts/commands/`.
 2. Register the command in `index.html` with a `<script>` tag.

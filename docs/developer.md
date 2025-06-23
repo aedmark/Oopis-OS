@@ -1,4 +1,4 @@
-# OopisOS v2.6 Developer Documentation
+# OopisOS v2.7 Developer Documentation
 
 - [1. Introduction](#1-introduction)
 - [2. Project Overview](#2-project-overview)
@@ -29,7 +29,7 @@
 
 ## 1. Introduction
 
-This documentation provides a comprehensive technical overview of the OopisOS v2.6 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.
+This documentation provides a comprehensive technical overview of the OopisOS v2.7 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.
 
 ## 2. Project Overview
 
@@ -187,7 +187,7 @@ The Chidi application (`chidi_app.js`) is a powerful tool for working with Markd
 
 ## 6. Adding New Commands
 
-The v2.6 architecture makes adding new commands simple and clean.
+The v2.7 architecture makes adding new commands simple and clean.
 
 **Step 1: Create the Command File**
 

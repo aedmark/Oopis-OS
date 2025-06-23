@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OopisOS v2.6 User Guide</title>
+    <title>OopisOS v2.7 User Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -226,7 +226,7 @@
     <main class="main-content flex-1 p-6 md:p-10 overflow-y-auto mt-16 md:mt-0">
         <section id="home" class="content-section active">
             <h1>Welcome to OopisOS!</h1>
-            <p class="text-lg mt-2 mb-6 text-zinc-400">The little browser-based Operating System that could. Now at Version 2.6 and more powerful than ever!</p>
+            <p class="text-lg mt-2 mb-6 text-zinc-400">The little browser-based Operating System that could. Now at Version 2.7 and more powerful than ever!</p>
 
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">set GREETING="Hello, world!" ; echo $GREETING</span><br>
@@ -234,7 +234,7 @@
             </div>
 
             <h2>What is this place?</h2>
-            <p>Glad you asked! OopisOS (v2.6) is a fully persistent, self-contained operating system simulation that runs entirely within your web browser. It's a love letter to the command-line interfaces of yore, but with a modern twist. Think of it as a digital terrarium where you can poke around, learn about OS concepts, and generally cause harmless digital mayhem without setting your actual computer on fire. It was lovingly crafted by Andrew Edmark and his trusty AI sidekick, Gemini.</p>
+            <p>Glad you asked! OopisOS (v2.7) is a fully persistent, self-contained operating system simulation that runs entirely within your web browser. It's a love letter to the command-line interfaces of yore, but with a modern twist. Think of it as a digital terrarium where you can poke around, learn about OS concepts, and generally cause harmless digital mayhem without setting your actual computer on fire. It was lovingly crafted by Andrew Edmark and his trusty AI sidekick, Gemini.</p>
             <p>The entire system is a showcase of what's possible with modern JavaScript and a dash of nostalgia. Your files, users, and even your command history will be here waiting for you the next time you visit, thanks to the magic of IndexedDB and localStorage.</p>
 
             <h2>Core Philosophy</h2>
@@ -246,7 +246,7 @@
                 <li><strong>UNIX-ish... ish:</strong> If you've used a Linux or Mac terminal, you'll feel right at home. The commands might not ask you for your papers, but they'll respect your authority.</li>
             </ul>
 
-            <h2>Key Features at a Glance (v2.6)</h2>
+            <h2>Key Features at a Glance (v2.7)</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>A File System That Remembers:</strong> Create, edit, and manage files and directories that actually stick around! Features a full suite of commands including the super-powered `find`, `ls`, `diff`, and the new `tree` command.</li>
                 <li><strong>A Command-Line for the Connoisseur:</strong> A beautiful retro terminal with history (up/down arrows), tab completion, command pipelining (`|`), I/O redirection (`>` for overwrite, `>>` for append), background processes (`&`), and command sequences (`;`).</li>
@@ -263,12 +263,12 @@
                 <li><strong>A Grab-Bag of Utilities:</strong> `echo`, `date`, `help`, `clear`, `history`, `export`, `upload`, `reboot`, `chmod`, `chown`, `chgrp`, `grep` (with `-R`!), and `printscreen` to save your terminal's glorious output to a file.</li>
                 <li><strong>It's a Video Game, Too! (`adventure`):</strong> Tired of being productive? Launch a text-based adventure game! Explore the 'Lost Key of Oopis' or load your own custom JSON-based adventures.</li>
             </ul>
-            <p>Go on, get your hands dirty. The world of OopisOS v2.6 awaits!</p>
+            <p>Go on, get your hands dirty. The world of OopisOS v2.7 awaits!</p>
         </section>
 
         <section id="user-guide" class="content-section">
-            <h1>OopisOS User Guide (v2.6)</h1>
-            <p>So, you've decided to venture forth. Excellent! You have selected the path of a true adventurer. This guide is your map and spellbook for the realm of OopisOS v2.6.</p>
+            <h1>OopisOS User Guide (v2.7)</h1>
+            <p>So, you've decided to venture forth. Excellent! You have selected the path of a true adventurer. This guide is your map and spellbook for the realm of OopisOS v2.7.</p>
 
             <h2>The Terminal Interface</h2>
             <p>This is your window into the soul of the machine. Your command center. Your... well, it's a terminal.</p>
@@ -443,7 +443,7 @@
         </section>
 
         <section id="advanced-topics" class="content-section">
-            <h1>OopisOS v2.6: Advanced Topics & Features</h1>
+            <h1>OopisOS v2.7: Advanced Topics & Features</h1>
             <p>You've mastered the basics. You feel the power coursing through your veins. Now, let's get dangerous.</p>
 
             <h2>The `find` Command: Your All-Seeing Eye</h2>
@@ -487,7 +487,7 @@
             </div>
 
             <h2>Managing Background Processes (`ps` & `kill`)</h2>
-            <p>Sent a long-running task to the background with `&` and now you regret it? Or maybe you just want to see what's still churning away. OopisOS v2.6 gives you the tools to be the master of your background jobs.</p>
+            <p>Sent a long-running task to the background with `&` and now you regret it? Or maybe you just want to see what's still churning away. OopisOS v2.7 gives you the tools to be the master of your background jobs.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><code>ps</code>: Stands for "Process Status". This command gives you a neat list of all the commands currently running in the background. Each job has a unique Process ID (PID) that you can use to interact with it.</li>
                 <li><code>kill [PID]</code>: The solution to a runaway process. Use this command with the PID from `ps` to terminate a background job immediately.</li>
@@ -571,7 +571,7 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
             </ul>
 
             <h2>Text Adventure Gaming (`adventure`)</h2>
-            <p>All work and no play makes Guest a dull user. OopisOS v2.6 includes a text adventure game engine to satisfy your inner Roberta Williams or Scott Adams.</p>
+            <p>All work and no play makes Guest a dull user. OopisOS v2.7 includes a text adventure game engine to satisfy your inner Roberta Williams or Scott Adams.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>Start Your Quest:</strong> Simply type `adventure` to begin the epic 'The Lost Key of Oopis.'</li>
                 <li><strong>Bring Your Own Adventure:</strong> Got a story to tell? Write it in the specified JSON format, `upload` it, and run it with `adventure /path/to/your_game.json`.</li>
@@ -580,10 +580,10 @@ echo "Mission file created for $1." > /kittens/secret_mission.txt
         </section>
 
         <section id="developer-docs" class="content-section">
-            <h1>OopisOS v2.6: Developer Documentation</h1>
+            <h1>OopisOS v2.7: Developer Documentation</h1>
 
             <h2>1. Introduction</h2>
-            <p>This documentation provides a comprehensive technical overview of the OopisOS v2.6 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.</p>
+            <p>This documentation provides a comprehensive technical overview of the OopisOS v2.7 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.</p>
 
             <h2>2. Project Overview</h2>
             <p>OopisOS is a self-contained, browser-based terminal environment. Key characteristics include:</p>
@@ -680,7 +680,7 @@ oopisOS/
             </code></pre>
 
             <h2>5. Adding New Commands</h2>
-            <p>The v2.6 architecture makes adding new commands simple and clean.</p>
+            <p>The v2.7 architecture makes adding new commands simple and clean.</p>
             <h3>Step 1: Create the Command File</h3>
             <p>Create a new JavaScript file in the <code>scripts/commands/</code> directory (e.g., <code>mycommand.js</code>).</p>
             <h3>Step 2: Define the Command</h3>
@@ -769,7 +769,7 @@ EXAMPLES
 
         <section id="testing-env" class="content-section">
             <h1>Testing & Showcase Environment</h1>
-            <p>OopisOS v2.6 comes with two powerful scripts, `inflate.sh` and `diag.sh`, to make life easier for testers and newcomers.</p>
+            <p>OopisOS v2.7 comes with two powerful scripts, `inflate.sh` and `diag.sh`, to make life easier for testers and newcomers.</p>
 
             <h2>The Showcase: `inflate.sh`</h2>
             <p>Want a fully furnished world to explore from the get-go? The `inflate.sh` script populates your file system with a rich set of examples. It's like a demo disk for OopisOS!</p>
@@ -806,8 +806,8 @@ EXAMPLES
 
         <section id="recent-changes" class="content-section">
             <h1>Recent Changes</h1>
-            <h2>Version 2.6 (Current)</h2>
-            <p>Version 2.6 represents a significant leap forward in functionality and architectural maturity, introducing major new applications and refining the core developer experience.</p>
+            <h2>Version 2.7 (Current)</h2>
+            <p>Version 2.7 represents a significant leap forward in functionality and architectural maturity, introducing major new applications and refining the core developer experience.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li>
                     <strong>The `paint` Application:</strong> A full-featured, character-based art studio is now integrated into OopisOS.
@@ -846,8 +846,8 @@ EXAMPLES
         </section>
 
         <section id="about" class="content-section">
-            <h1>About OopisOS (v2.6)</h1>
-            <p>OopisOS Version 2.6 is the latest and greatest evolution of our little browser-based world, packed with more features and even more personality.</p>
+            <h1>About OopisOS (v2.7)</h1>
+            <p>OopisOS Version 2.7 is the latest and greatest evolution of our little browser-based world, packed with more features and even more personality.</p>
 
             <h2>The Creators</h2>
             <p>This project is the result of a tireless, caffeine-fueled collaboration between:</p>
@@ -873,11 +873,11 @@ EXAMPLES
 
             <h2>The Future?</h2>
             <p>What's next for OopisOS? A graphical user interface? Simulated networking? A command to generate pictures of cats? The possibilities are as vast as your imagination. The modular architecture is ready for it.</p>
-            <p class="mt-6"><em>"OopisOS v2.6: Now with 26% more Oopis!"</em></p>
+            <p class="mt-6"><em>"OopisOS v2.7: Now with 26% more Oopis!"</em></p>
         </section>
 
         <footer class="footer text-center">
-            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.6).</p>
+            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.7).</p>
         </footer>
     </main>
 </div>
