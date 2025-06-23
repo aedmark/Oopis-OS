@@ -226,465 +226,344 @@
     <main class="main-content flex-1 p-6 md:p-10 overflow-y-auto mt-16 md:mt-0">
         <section id="home" class="content-section active">
             <h1>Welcome to OopisOS!</h1>
-            <p class="text-lg mt-2 mb-6 text-zinc-400">The little browser-based Operating System that could. Now at Version 2.7 and more powerful than ever!</p>
+            <p class="text-lg mt-2 mb-6 text-zinc-400">The Over-Engineered, Oddly-Persistent, Integrated System. Now at Version 2.7, because we can't stop adding features.</p>
 
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">set GREETING="Hello, world!" ; echo $GREETING</span><br>
-                <span class="output">Hello, world!</span>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">set GREETING="Welcome to the machine." ; echo $GREETING</span><br>
+                <span class="output">Welcome to the machine.</span>
             </div>
 
             <h2>What is this place?</h2>
-            <p>Glad you asked! OopisOS (v2.7) is a fully persistent, self-contained operating system simulation that runs entirely within your web browser. It's a love letter to the command-line interfaces of yore, but with a modern twist. Think of it as a digital terrarium where you can poke around, learn about OS concepts, and generally cause harmless digital mayhem without setting your actual computer on fire. It was lovingly crafted by Andrew Edmark and his trusty AI sidekick, Gemini.</p>
-            <p>The entire system is a showcase of what's possible with modern JavaScript and a dash of nostalgia. Your files, users, and even your command history will be here waiting for you the next time you visit, thanks to the magic of IndexedDB and localStorage.</p>
+            <p>You've stumbled into OopisOS, an entire operating system crammed into a browser tab through sheer force of will and questionable amounts of JavaScript. It's a lovingly crafted, fully persistent simulation where you can learn the ropes of a real command-line, build entire worlds of files, and even command an AI, all without the slightest risk of accidentally deleting your actual photos.</p>
+            <p>This digital realm is the brainchild of a human (Andrew Edmark) and an AI (Gemini), which probably explains a lot. Thanks to the arcane magic of your browser's local storage, everything you do here—every file, every user, every embarrassing command—is saved. It's a digital ghost that will haunt this browser tab until you command it otherwise with the `reset` command.</p>
 
             <h2>Core Philosophy</h2>
             <ul class="list-disc ml-6 space-y-2 my-4">
-                <li><strong>Look, Don't Touch (Your Real Stuff):</strong> A safe sandbox to learn and experiment. Your real files are safe. Probably.</li>
-                <li><strong>Meow-nificently Self-Contained:</strong> Everything runs on your machine. No servers, no cloud, just pure client-side goodness. You could run this on a spaceship to Xenon, no internet required.</li>
-                <li><strong>Learn & Laugh:</strong> It's an educational tool, but who said learning can't be fun? We have an AI and video games. Your move, calculus.</li>
-                <li><strong>More Modular Than a Space Station:</strong> Built with discrete components, making it easier for brave developers to add new features or, more likely, new and exciting bugs.</li>
-                <li><strong>UNIX-ish... ish:</strong> If you've used a Linux or Mac terminal, you'll feel right at home. The commands might not ask you for your papers, but they'll respect your authority.</li>
+                <li><strong>A Hermetically-Sealed Playground:</strong> What happens in OopisOS, stays in OopisOS. Your real computer won't even know we were here. Go on, `rm -rf /`. We dare you. (It's fine, we checked.)</li>
+                <li><strong>Zero Dependencies, Infinite Possibilities:</strong> No servers, no cloud, no monthly fees. Just you, this browser tab, and the faint hum of your computer's fan wondering what you're doing.</li>
+                <li><strong>Education Through Egregious Over-engineering:</strong> We built a multi-user OS with a character-based art program and a tool-using AI just to prove a point. The point is that learning shell commands can be way more fun than, say, doing your taxes.</li>
+                <li><strong>Built Like Interlocking, Potentially Explosive Blocks:</strong> The code is so modular you could probably replace the file system with a potato. We don't recommend it, but we admire the spirit. It also makes adding new, exciting bugs a breeze for any aspiring developer.</li>
+                <li><strong>Familiar, Yet Unsettlingly Different:</strong> If you've ever typed `ls -la`, you'll know your way around. We just added more color, more games, and an AI that might talk back.</li>
             </ul>
 
             <h2>Key Features at a Glance (v2.7)</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>A File System That Remembers:</strong> Create, edit, and manage files and directories that actually stick around! Features a full suite of commands including the super-powered `find`, `ls`, `diff`, and the new `tree` command.</li>
-                <li><strong>A Command-Line for the Connoisseur:</strong> A beautiful retro terminal with history (up/down arrows), tab completion, command pipelining (`|`), I/O redirection (`>` for overwrite, `>>` for append), background processes (`&`), and command sequences (`;`).</li>
-                <li><strong>Multi-User Mayhem with Groups:</strong> Register multiple users (`useradd`) with secure, hashed passwords, `login`, `logout`, switch users with `su` (including to the all-powerful `root`), and manage users with `whoami`, `listusers`, and `removeuser`. Now with user groups (`groupadd`, `usermod`, `groups`, `groupdel`) for fine-grained permissions!</li>
-                <li><strong>Command Your Commands (`alias`, `set`):</strong> Create your own command shortcuts with `alias` and session-specific variables with `set`/`unset`.</li>
-                <li><strong>Background Job Control (`ps`, `kill`):</strong> See what processes you've sent to the background with `ps` and terminate them with `kill`.</li>
-                <li><strong>Networking Utilities (`wget`, `curl`):</strong> Fetch content and download files from the web directly within the OS.</li>
-                <li><strong>The 'edit' Command - Now More Luxurious:</strong> A souped-up text editor that handles plain text, Markdown, and HTML with a live preview. Features include line numbers, a detailed status bar, toggleable word wrap, multiple view modes (`Ctrl+P`), an `Export to HTML` function, and a rich formatting toolbar with shortcuts.</li>
-                <li><strong>The 'paint' Command - An Artist's Studio:</strong> Unleash your inner artist with a character-based paint program. Supports multiple colors, undo/redo, and saves to a custom `.oopic` file format.</li>
-                <li><strong>The 'chidi' Command - Your Personal AI Librarian:</strong> An advanced Markdown reader that recursively finds all `.md` files in a path and lets you use AI to summarize, study, and ask questions about them, either individually or all at once.</li>
-                <li><strong>An AI in the Shell (`gemini`):</strong> Chat with the Gemini AI directly from your terminal. Ask it to write a poem, summarize a file, or start a new conversation with the `-n` flag. It can now use `tree` and other tools to better understand your files.</li>
-                <li><strong>Scripting for the Masses (`run`):</strong> Write your own command scripts! Supports comments (`#`), argument passing (`$1`, `$2`, `$@`, `$#`), and includes handy tools like `delay` and `check_fail` for crafting your own diagnostic epics.</li>
-                <li><strong>Save Your Progress! (No, really):</strong> Automatic session saving per user, plus manual `savestate`/`loadstate` and `backup`/`restore` commands. `clearfs` lets you clean your home directory, and `reset` is the big red button that nukes everything (don't worry, we'll ask first).</li>
-                <li><strong>A Grab-Bag of Utilities:</strong> `echo`, `date`, `help`, `clear`, `history`, `export`, `upload`, `reboot`, `chmod`, `chown`, `chgrp`, `grep` (with `-R`!), and `printscreen` to save your terminal's glorious output to a file.</li>
-                <li><strong>It's a Video Game, Too! (`adventure`):</strong> Tired of being productive? Launch a text-based adventure game! Explore the 'Lost Key of Oopis' or load your own custom JSON-based adventures.</li>
+                <li><strong>A File System That Clings to Life:</strong> Powered by IndexedDB, it will remember that embarrassing filename you created at 3 AM. Comes with all the tools you'd expect: `ls` (with more flags than a UN summit), `find`, `diff`, and the elegant `tree` command.</li>
+                <li><strong>A Command-Line Fit for a Digital Monarch:</strong> Full history, tab-completion that feels like magic, and the holy trinity of shell power: piping (`|`), redirection (`>`), and backgrounding (`&`).</li>
+                <li><strong>Multi-User Mayhem, Now with Cliques (Groups!):</strong> Create a whole society of users with `useradd`. Bow before `root` (pass: `mcgoopis`). Form exclusive clubs with `groupadd`. Enforce your will with a robust `chmod` permission model.</li>
+                <li><strong>Bend The System to Your Will:</strong> Use `alias` to turn `ls -laR --color=always` into `l`. Use `set` to create environment variables that the shell will dutifully remember.</li>
+                <li><strong>Master of Puppets (`ps`, `kill`):</strong> See what you've banished to the background with `ps` and mercilessly terminate it with `kill`.</li>
+                <li><strong>A Window to the World (`wget`, `curl`):</strong> Download files and API data from the actual internet directly into your virtual world. Subject to the whims of CORS.</li>
+                <li><strong>The `edit` Command, But Fancier:</strong> A full-screen text editor that's smarter than it has any right to be. It knows Markdown from HTML, gives you live previews, has a formatting toolbar for the lazy, and more keyboard shortcuts than you can shake a stick at.</li>
+                <li><strong>The `paint` Command & Your Inner Artist:</strong> A surprisingly robust character-based art studio. Create glorious ANSI/ASCII art, pick from a palette of colors, undo your mistakes, and save your masterpiece to a custom `.oopic` file.</li>
+                <li><strong>The `chidi` Command & The AI Librarian:</strong> Point this command at a directory of Markdown files and it will open a dedicated reading app where you can ask an AI to summarize, generate study questions, or answer complex queries across your entire body of notes.</li>
+                <li><strong>An AI with Agency (`gemini`):</strong> Chat with an AI that can use the OS's own tools (`ls`, `cat`, `tree`) to find information in your files before answering. It's like having a helpful (and very literal) intern.</li>
+                <li><strong>Become a Script God (`run`):</strong> Automate everything. The `run` command executes `.sh` files, complete with support for comments and argument passing (`$1`, `$@`, `$#`).</li>
+                <li><strong>Save Scumming for Your OS:</strong> We save your session automatically, but you can also create manual `savestate` snapshots, `backup` the entire OS to a downloadable file, and `restore` it later. For when you really, *really* mess up.</li>
+                <li><strong>A Cornucopia of Utilities:</strong> All the other classics are here: `echo`, `date`, `grep`, `history`, `export`, `upload`, `reboot`, and many more.</li>
+                <li><strong>Wait, There's a Game?:</strong> Yes. Type `adventure` and escape productivity. You're welcome.</li>
             </ul>
             <p>Go on, get your hands dirty. The world of OopisOS v2.7 awaits!</p>
         </section>
-
         <section id="user-guide" class="content-section">
             <h1>OopisOS User Guide (v2.7)</h1>
-            <p>So, you've decided to venture forth. Excellent! You have selected the path of a true adventurer. This guide is your map and spellbook for the realm of OopisOS v2.7.</p>
+            <p>Alright, you've read the marketing material. You're suitably impressed. Let's get to the buttons and levers. This guide is your instruction manual for operating this magnificent, over-engineered beast.</p>
 
             <h2>The Terminal Interface</h2>
-            <p>This is your window into the soul of the machine. Your command center. Your... well, it's a terminal.</p>
+            <p>This is your window into the soul of the machine. Your command center. Your digital cockpit. It has three main parts:</p>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">_</span>
             </div>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>The Prompt:</strong> This tells you who you are, where you are, and that the system is ready for your brilliant commands. It follows the format: `username@hostname:current_path>`.</li>
-                <li><strong>The Input Area:</strong> The blinking cursor is your cue. Type your incantations here.</li>
-                <li><strong>The Output Area:</strong> The results of your digital wizardry (and the occasional error message) will appear here.</li>
+                <li><strong>The Prompt:</strong> A judgmental status report telling you who you are (`Guest`), what machine you're on (`OopisOs`), and where you are (`/`). The `>` means "I'm ready for your next brilliant/terrible idea."</li>
+                <li><strong>The Input Area:</strong> Where you type your digital incantations. The blinking cursor is the system holding its breath in anticipation.</li>
+                <li><strong>The Output Area:</strong> The glorious results (or pathetic error messages) of your commands will appear here. Scroll up, it remembers everything.</li>
             </ul>
 
             <h2>Essential Commands</h2>
-            <p>These are the fundamental spells in your arsenal. For a full grimoire, type <code>help</code>. For the nitty-gritty on a single command, type <code>man [command_name]</code>.</p>
+            <p>These are the fundamental spells in your arsenal. For a quick list of all commands, type <code>help</code>. For a ridiculously detailed page on a single command, type <code>man [command_name]</code>.</p>
             <table class="min-w-full divide-y divide-zinc-700">
                 <thead>
                 <tr>
                     <th class="px-4 py-2">Command & Key Flags</th>
-                    <th class="px-4 py-2">What It Does (In Plain English)</th>
+                    <th class="px-4 py-2">What It Does (The Gory Details)</th>
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-800">
-                <tr><td><code>help [cmd]</code></td><td>Your friendly neighborhood guide. Ask it about other commands.</td></tr>
-                <tr><td><code>ls [-l -a -R -r -t -S -X -U -d]</code></td><td>"Look." Shows directory contents. Use flags for: <b>-l</b>ong, <b>-a</b>ll, <b>-R</b>ecursive, <b>-r</b>everse sort, sorT by <b>-t</b>ime, <b>-S</b>ize, e<b>-X</b>tension, <b>-U</b>nsorted, or list <b>-d</b>irectories themselves.</td></tr>
-                <tr><td><code>cd [directory]</code></td><td>Change directory. Or, "Go north."</td></tr>
-                <tr><td><code>pwd</code></td><td>"Where am I?!" Prints your current location.</td></tr>
-                <tr><td><code>mkdir [-p] [dir_name]</code></td><td>Creates a directory. Use <b>-p</b> to make parent directories as needed.</td></tr>
-                <tr><td><code>tree [-L level] [-d]</code></td><td>Shows directory contents in a beautiful tree format. <b>-L</b> for depth, <b>-d</b> for directories only.</td></tr>
-                <tr><td><code>cat [file...]</code></td><td>Reads file contents to the screen. Can read multiple files.</td></tr>
-                <tr><td><code>echo [text]</code></td><td>Repeats text. Primarily used with redirection to write to files.</td></tr>
-                <tr><td><code>edit [file]</code></td><td>Opens the powerful text editor. Your gateway to creating masterpieces.</td></tr>
-                <tr><td><code>paint [file.oopic]</code></td><td>Unleash your inner artist! Opens the character-based art editor.</td></tr>
-                <tr><td><code>chidi [path]</code></td><td>Opens the advanced Markdown reader and AI analysis tool.</td></tr>
-                <tr><td><code>touch [-c] [file]</code></td><td>Creates an empty file or updates its timestamp. Use <b>-c</b> to not create.</td></tr>
-                <tr><td><code>rm [-r -f -i] [item]</code></td><td>Removes things. Permanently. Use <b>-r</b> for directories, <b>-f</b> to be forceful, and <b>-i</b> to be asked first.</td></tr>
-                <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>Copies files. Flags for: <b>-r</b>ecursive, <b>-f</b>orce, <b>-p</b>reserve metadata, <b>-i</b>nteractive.</td></tr>
-                <tr><td><code>mv [-f -i] [src] [dest]</code></td><td>Moves or renames files. Flags for: <b>-f</b>orce, <b>-i</b>nteractive.</td></tr>
-                <tr><td><code>diff [file1] [file2]</code></td><td>Compares two files and shows the differences.</td></tr>
-                <tr><td><code>grep [-i -v -n -c -R] [pat] [file]</code></td><td>Finds text in files. Flags for: case-<b>i</b>nsensitive, in<b>-v</b>ert, line <b>-n</b>umber, <b>-c</b>ount, <b>-R</b>ecursive.</td></tr>
-                <tr><td><code>find [path] [expr]</code></td><td>A powerful detective to find files by name, type, permissions, and more.</td></tr>
-                <tr><td><code>printscreen [file]</code></td><td>Saves everything you see on the terminal screen to a file.</td></tr>
-                <tr><td><code>run [script] [args...]</code></td><td>Executes a script file. Can pass arguments to the script.</td></tr>
-                <tr><td><code>alias [name='value']</code></td><td>Create your own command shortcuts. Type `alias` to see them all.</td></tr>
-                <tr><td><code>unalias [name]</code></td><td>Remove a command shortcut.</td></tr>
-                <tr><td><code>set [VAR="val"]</code></td><td>Set a temporary environment variable. Type `set` to see them all.</td></tr>
-                <tr><td><code>unset [VAR]</code></td><td>Remove an environment variable.</td></tr>
-                <tr><td><code>ps</code></td><td>List your background processes (jobs).</td></tr>
-                <tr><td><code>kill [job_id]</code></td><td>Stop a running background process.</td></tr>
-                <tr><td><code>wget [-O file] [url]</code></td><td>Downloads a file from a URL. Use <b>-O</b> to specify the output filename.</td></tr>
-                <tr><td><code>curl [-o file] [url]</code></td><td>Transfers data from a URL, printing to screen. Use <b>-o</b> to save to a file.</td></tr>
-                <tr><td><code>adventure [file.json]</code></td><td>Time for a break! Starts a text adventure. Can load custom games.</td></tr>
-                <tr><td><code>gemini [-n] "[prompt]"</code></td><td>Consult the oracle (Gemini AI). Use <b>-n</b> to start a new conversation.</td></tr>
-                <tr><td><code>useradd, login, logout</code></td><td>Manage user accounts. `useradd` creates one, `login` signs in, `logout` signs out.</td></tr>
-                <tr><td><code>whoami, listusers, removeuser</code></td><td>See who you are, list all users, or remove a user (requires confirmation).</td></tr>
-                <tr><td><code>su [username]</code></td><td>"Substitute User." Become someone else (defaults to `root`).</td></tr>
-                <tr><td><code>chmod, chown, chgrp</code></td><td>Manage file permissions (`chmod 755 file`), ownership (`chown guest file`), and group (`chgrp staff file`).</td></tr>
-                <tr><td><code>groups, groupadd, groupdel, usermod</code></td><td>Manage user groups. See who belongs to what, create/delete groups, and add users to groups.</td></tr>
-                <tr><td><code>upload [-f], export</code></td><td>`upload` files from your computer (<b>-f</b>orce overwrite), `export` files back out.</td></tr>
-                <tr><td><code>backup, restore</code></td><td>Create a full JSON `backup` of the OS state, or `restore` from one.</td></tr>
-                <tr><td><code>savestate, loadstate</code></td><td>Manually `savestate` your current user's session, and `loadstate` to bring it back.</td></tr>
-                <tr><td><code>clearfs, reset, reboot</code></td><td>Drastic measures! `clearfs` wipes your home dir, `reset` nukes the OS, and `reboot` reloads the page.</td></tr>
-                <tr><td><code>clear, history, date</code></td><td>`clear` the screen, view command `history` (or `history -c` to clear it), see the current `date`.</td></tr>
+                <tr><td><code>help [cmd]</code></td><td>Your friendly neighborhood guide. Use it when you're lost. Or bored.</td></tr>
+                <tr><td><code>ls [-l -a -R -r -t -S -X -U -d]</code></td><td>The digital equivalent of turning on the lights and seeing what scurries away. Shows directory contents.</td></tr>
+                <tr><td><code>cd [directory]</code></td><td>Change Directory. The system's only mode of transport.</td></tr>
+                <tr><td><code>pwd</code></td><td>"Where on earth am I?!" Prints your current location in the file system maze.</td></tr>
+                <tr><td><code>mkdir [-p] [dir_name]</code></td><td>Make a new, empty box to put your files in. Use <b>-p</b> to make a box, inside a box, inside another box.</td></tr>
+                <tr><td><code>tree [-L level] [-d]</code></td><td>Like `ls`, but with ASCII art. Displays your files and directories in a majestic tree structure.</td></tr>
+                <tr><td><code>cat [file...]</code></td><td>Blast the entire contents of a file onto the screen. Not for the faint of heart with large files.</td></tr>
+                <tr><td><code>echo [text]</code></td><td>The system's parrot. Repeats whatever you tell it. Mostly used to stuff text into files.</td></tr>
+                <tr><td><code>edit [file]</code></td><td>Opens the surprisingly powerful text editor. Your gateway to creating digital masterpieces or horribly broken code.</td></tr>
+                <tr><td><code>paint [file.oopic]</code></td><td>For when words fail. Opens MS Paint's weird, text-based cousin.</td></tr>
+                <tr><td><code>chidi [path]</code></td><td>Summon the AI Librarian to read all your notes and tell you what you *should* have understood.</td></tr>
+                <tr><td><code>touch [-c] [file]</code></td><td>Pokes a file to update its timestamp. If the file doesn't exist, this magic poke creates it out of thin air.</td></tr>
+                <tr><td><code>rm [-r -f -i] [item]</code></td><td>The 'make-it-go-away' stick. Be careful where you point it. There is no 'un-disintegrate' button.</td></tr>
+                <tr><td><code>cp [-r -f -p -i] [src] [dest]</code></td><td>The copy machine. Makes a duplicate of a file or directory.</td></tr>
+                <tr><td><code>mv [-f -i] [src] [dest]</code></td><td>Moves a file or directory. Can also be used to rename things, which is like moving it to a new name. Think about it.</td></tr>
+                <tr><td><code>diff [file1] [file2]</code></td><td>Settles arguments by showing you *exactly* what's different between two files.</td></tr>
+                <tr><td><code>grep [-i -v -n -c -R] [pat] [file]</code></td><td>Your digital bloodhound. Sniffs through files to find lines of text that match a pattern.</td></tr>
+                <tr><td><code>find [path] [expr]</code></td><td>A terrifyingly powerful detective that can find any file, anywhere, based on almost any criteria.</td></tr>
+                <tr><td><code>printscreen [file]</code></td><td>Takes a "screenshot" of your terminal, saving all the visible text to a file for evidence.</td></tr>
+                <tr><td><code>run [script] [args...]</code></td><td>Unleash the power of automation! Executes a script file full of commands.</td></tr>
+                <tr><td><code>alias [name='value']</code></td><td>Tired of typing long commands? Teach the system a shorter nickname for them.</td></tr>
+                <tr><td><code>unalias [name]</code></td><td>Makes the system forget the nickname you taught it. Cold, but necessary.</td></tr>
+                <tr><td><code>set [VAR="val"]</code></td><td>Teach the shell a new word (environment variable) and what it means.</td></tr>
+                <tr><td><code>unset [VAR]</code>"</td><td>Give the shell amnesia regarding a specific variable.</td></tr>
+                <tr><td><code>ps</code></td><td>"Process Status." See what jobs you've banished to the background.</td></tr>
+                <tr><td><code>kill [job_id]</code></td><td>Mercilessly terminate one of those background jobs.</td></tr>
+                <tr><td><code>wget [-O file] [url]</code></td><td>The "Web-Get-er." Downloads a file from the actual internet into your virtual world.</td></tr>
+                <tr><td><code>curl [-o file] [url]</code></td><td>Talk to servers. Grabs data from a URL and splashes it on your screen.</td></tr>
+                <tr><td><code>adventure [file.json]</code></td><td>Productivity is overrated. Play a text adventure game.</td></tr>
+                <tr><td><code>gemini [-n] "[prompt]"</code></td><td>Consult the resident AI oracle. It's surprisingly helpful and can use the other commands to find things.</td></tr>
+                <tr><td><code>useradd, login, logout</code></td><td>The life cycle of a user. Create them, become them, and then abandon them.</td></tr>
+                <tr><td><code>whoami, listusers, removeuser</code></td><td>Existential crisis commands. Find out who you are, see who else is here, and... remove them.</td></tr>
+                <tr><td><code>su [username]</code></td><td>"Superuser." Become `root` and wield ultimate power. Or become another user to see what they're up to.</td></tr>
+                <tr><td><code>chmod, chown, chgrp</code></td><td>The bouncers. Control who can read, write, or even look at your files and directories.</td></tr>
+                <tr><td><code>groups, groupadd, groupdel, usermod</code></td><td>Create and manage the exclusive social clubs (groups) of your user society.</td></tr>
+                <tr><td><code>upload [-f], export</code></td><td>The bridges to the real world. Move files in and out of OopisOS.</td></tr>
+                <tr><td><code>backup, restore</code></td><td>Create a perfect snapshot of your entire OopisOS world in a single file, or restore from one.</td></tr>
+                <tr><td><code>savestate, loadstate</code></td><td>For when you want to save your game, but the "game" is your entire operating system session.</td></tr>
+                <tr><td><code>clearfs, reset, reboot</code></td><td>The panic buttons. `clearfs` tidies your home, `reboot` turns it off and on again, and `reset` burns it all to the ground.</td></tr>
+                <tr><td><code>clear, history, date</code></td><td>Housekeeping. `clear` the screen, view your past mistakes with `history`, and check if it's lunchtime with `date`.</td></tr>
                 </tbody>
             </table>
 
             <h2>The File System</h2>
-            <p>OopisOS has a file system not unlike the ones you know. It's a tree, and you're a digital squirrel.</p>
+            <p>Behold, the Great Digital Yggdrasil. The file system is a tree, you are a digital woodpecker, and everything hangs off the single, mighty root directory, <code>/</code>.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>The very top is the root directory, <code>/</code>.</li>
-                <li>Paths are your branches, separated by <code>/</code>.</li>
-                <li><code>.</code> means "right here."</li>
-                <li><code>..</code> means "go back one branch."</li>
-                <li>Files starting with a <code>.</code> are shy; use <code>ls -a</code> to see them.</li>
+                <li>Paths are the branches you climb, like <code>/home/Guest/documents</code>.</li>
+                <li><code>.</code> is the branch you're currently on.</li>
+                <li><code>..</code> is the branch you just came from (the parent).</li>
+                <li>Some files are shy and start with a <code>.</code>. They hide from a normal `ls`. Use <code>ls -a</code> to expose their secrets.</li>
             </ul>
 
             <h2>The Editor (`edit` command)</h2>
-            <p>The `edit` command is your passage to a world of creation. It's more than a notepad; it's a multi-tool for text.</p>
+            <p>This isn't your grandpa's notepad. The `edit` command opens a surprisingly competent creative suite, ready to handle anything from a simple grocery list to your magnum opus in HTML.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>File Types:</strong> It understands plain text, Markdown (`.md`), and HTML (`.html`). Give it a recognized file extension, and it'll unlock special features.</li>
-                <li><strong>Live Preview:</strong> For Markdown and HTML, a magical preview pane shows you what your code looks like, updated in real time.</li>
-                <li><strong>Formatting Toolbar:</strong> For `.md` and `.html` files, a toolbar appears! Click to add bold, italics, links, quotes, code blocks, and lists, saving you from remembering the syntax.</li>
-                <li><strong>Status Bar:</strong> A handy bar at the bottom shows cursor position (line, column), total lines, word count, and character count.</li>
-                <li><strong>Word Wrap:</strong> Toggle it on for prose, off for code. Your preference is saved for next time.</li>
-                <li><strong>Export to HTML:</strong> Click the "Export" button to download a fully rendered HTML file of your Markdown/HTML preview.</li>
-                <li>
-                    <strong>Shortcuts to Glory:</strong>
-                    <ul>
-                        <li><code>Ctrl+S</code>: Save & Exit. The hero's exit.</li>
-                        <li><code>Ctrl+O</code>: Exit. If you haven't saved, we'll ask before you discard your genius.</li>
-                        <li><code>Ctrl+P</code>: Toggle Preview. Cycle through split-screen, code-only, and preview-only views.</li>
-                        <li><code>Ctrl+B</code> / <code>Ctrl+I</code>: Make text **bold** or *italic* in compatible files.</li>
-                        <li><code>Tab</code>: Indent your code like a pro.</li>
-                    </ul>
-                </li>
+                <li><strong>Context-Aware:</strong> It knows a <code>.md</code> file from a <code>.html</code> file and unlocks special features accordingly. It's smarter than it looks.</li>
+                <li><strong>Live Preview:</strong> For when you want to see how your code breaks the layout *before* you even save it. Toggle with `Ctrl+P`.</li>
+                <li><strong>Formatting Toolbar:</strong> For Markdown and HTML, a glorious toolbar appears. Why remember syntax when you can just click a button?</li>
+                <li><strong>Over-Informative Status Bar:</strong> It will tell you your exact line and column, your word count, and your character count. Everything you need to know, and more.</li>
+                <li><strong>Word Wrap:</strong> For prose, turn it on. For code, turn it off. The editor will remember your choice, judging you silently.</li>
             </ul>
 
             <h2>The ASCII Art Studio (`paint` command)</h2>
-            <p>For when text is not enough, OopisOS includes a surprisingly powerful character-based art editor. The <code>paint</code> command opens a dedicated, full-screen canvas where you can create ASCII and ANSI art.</p>
+            <p>For when text is not enough. The <code>paint</code> command opens a portal to 1992, presenting you with a full-screen, character-based canvas to create the ASCII/ANSI art of your dreams.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Canvas & Tools:</strong> The editor features an 80x24 character canvas. Use the Pencil tool to draw with a selected character and color, or the Eraser tool to clear cells.</li>
-                <li><strong>Color Palette:</strong> Add a splash of color to your creations with a 6-color ANSI palette (green, red, sky, amber, lime, neutral).</li>
-                <li><strong>File Format:</strong> Your masterpieces are saved to a custom <code>.oopic</code> file format, which stores character, color, and canvas dimension data in a JSON structure.</li>
-                <li>
-                    <strong>Keyboard-First Workflow:</strong>
-                    <ul>
-                        <li><code>P</code> / <code>E</code>: Switch between Pencil and Eraser tools.</li>
-                        <li><code>1-6</code>: Select a color from the palette.</li>
-                        <li>Any other character key: Sets the character to be used by the pencil.</li>
-                        <li><code>Ctrl+S</code>: Save & Exit.</li>
-                        <li><code>Ctrl+O</code>: Exit without saving (will prompt if there are unsaved changes).</li>
-                        <li><code>Ctrl+Z</code> / <code>Ctrl+Y</code>: Undo and Redo your strokes.</li>
-                    </ul>
-                </li>
+                <li><strong>Your Digital Canvas:</strong> An 80x24 grid awaits your genius. Use the Pencil, Eraser, and various shape tools to bring your vision to life.</li>
+                <li><strong>A Dazzling Palette:</strong> Choose from a stunning array of six (6!) predefined colors, or mix your own from a grid of even more colors.</li>
+                <li><strong>The `.oopic` Format:</strong> Your masterpieces are saved in our bespoke `.oopic` format, a marvel of JSON engineering.</li>
+                <li><strong>Keyboard is King:</strong> While the mouse works, true power users will use `P`/`E` to swap tools, number keys to pick colors, and `Ctrl+Z` to undo the monstrosity you just created.</li>
             </ul>
 
             <h2>The AI Librarian (`chidi` command)</h2>
-            <p>The `chidi` command launches a powerful Markdown reader and analysis tool. When you run `chidi` on a file or directory, it finds all `.md` files and loads them into a dedicated reading interface.</p>
+            <p>Drowning in a sea of your own notes? The `chidi` command is your lifeboat. Point it at a directory of Markdown files and it launches a dedicated reading application.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Focused Reading:</strong> Presents a clean, rendered view of your Markdown files, free from terminal distractions.</li>
-                <li><strong>Multi-File Navigation:</strong> If you target a directory, you can easily navigate between all found `.md` files using PREV/NEXT buttons or a file selector dropdown menu.</li>
-                <li><strong>AI Integration:</strong> Chidi uses the Gemini AI to provide powerful analysis tools for your documents. You can summarize the current document, ask for study questions, or even ask a question across all loaded documents at once.</li>
-                <li><strong>Export View:</strong> You can export the current view, including any AI-generated summaries or answers, as a single, self-contained HTML file for easy sharing or archiving.</li>
+                <li><strong>Distraction-Free Reading:</strong> It rips your documents out of the terminal and presents them in a clean, readable format.</li>
+                <li><strong>AI Analysis:</strong> This is the good part. You can ask the AI to summarize a document you're too lazy to read, generate study questions, or—most powerfully—ask a single question across *all* the loaded documents to find that one coherent thought you had last week.</li>
             </ul>
 
-            <h2>Users, Groups, and Permissions</h2>
-            <p>OopisOS isn't a free-for-all. It's a sophisticated society of users with rules, groups, and private property. Passwords are securely hashed, never stored in plain text.</p>
+            <h2>Users, Groups, and Permissions (Or, How to Play God)</h2>
+            <p>This isn't some single-player game. OopisOS is a bustling metropolis of users, and you are the architect. Passwords are, of course, securely hashed. We're not monsters.</p>
 
             <h3>User Accounts & The Superuser (`root`)</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>
-                    <strong>Default Population:</strong> OopisOS comes with a few residents:
-                    <ul>
-                        <li><code>Guest</code>: Your default identity. No password needed. Every user is in their own primary group by default (e.g., user 'Guest' is in group 'Guest').</li>
-                        <li><code>root</code>: The system administrator. The superuser. The big cheese. The `root` user can do anything. The default password is <code>mcgoopis</code>.</li>
-                        <li><code>userDiag</code>: A special user for running tests, with the password <code>pantload</code>.</li>
-                    </ul>
-                </li>
-                <li><code>useradd [username]</code>: Create a new user. You'll be prompted to create a password in a secure, obscured input field. A primary group with the same name is also created.</li>
-                <li><code>login [username]</code>: Log in as someone else. If a password is required, you'll be prompted securely.</li>
-                <li><code>logout</code>: Return to the previous user in the session stack.</li>
-                <li><code>su [username]</code>: Switch to another user, assuming you know their password (or you're `root`). Defaults to `root`.</li>
+                <li><strong>Default Population:</strong> You start with <code>Guest</code> (no password), `userDiag` (pass: `pantload`), and the almighty <code>root` (pass: `mcgoopis`). The `root` user can do anything. Anything.</li>
+                <li>Use `useradd`, `login`, and `logout` to manage your population. Use `su` to instantly become someone else, which is great for "inspecting" their files.</li>
             </ul>
 
             <h3>Permissions and Ownership (`chmod`, `chown`, `chgrp`)</h3>
-            <p>Use <code>ls -l</code> to view permissions like <code>-rwxr-x---</code>. This string represents: [type][owner permissions][group permissions][other permissions].</p>
+            <p>Use <code>chmod</code> to teach your files who they're allowed to talk to. The 3-digit octal code (`755`, `640`, etc.) is a rite of passage. Learn it. Live it. Use `chown` and `chgrp` to decide who owns what.</p>
             <div class="terminal-example">
-                <span class="prompt">root@OopisOs:/&gt;</span> <span class="command">touch newfile.txt ; ls -l newfile.txt</span><br>
-                <span class="output">-rw-r--r--  1 root    root        0 Jun 21 11:34 newfile.txt</span>
+                <span class="prompt">root@OopisOs:/&gt;</span> <span class="command">chmod 700 /vault/secrets.txt</span><br>
+                <span class="output"># Now only the owner of secrets.txt can read, write, or execute it. Spooky.</span>
             </div>
-            <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>
-                    <code>chmod [mode] [path]</code>: Change a file's permissions. Mode is a 3-digit octal number (0-7). The digits represent Owner, Group, and Other. Permissions are: 4 (read), 2 (write), 1 (execute). Add them up for the desired combination!
-                    <ul>
-                        <li><code>chmod 755 myfile</code>: Owner gets 7 (4+2+1 -> rwx), group gets 5 (4+0+1 -> r-x), others get 5 (r-x).</li>
-                        <li><code>chmod 640 myfile</code>: Owner gets 6 (4+2+0 -> rw-), group gets 4 (4+0+0 -> r--), others get 0 (---).</li>
-                    </ul>
-                </li>
-                <li><code>chown [new_owner] [path]</code>: Change who owns a file. Only `root` can do this.</li>
-                <li><code>chgrp [new_group] [path]</code>: Change a file's group. Only the owner or `root` can do this.</li>
-            </ul>
 
-            <h2>Pipes, Redirection, Sequences, and Environment Variables</h2>
-            <p>Chain your commands together for ultimate power!</p>
+            <h2>Pipes, Redirection, and Other Black Magic</h2>
+            <p>This is where you stop using commands and start conducting symphonies of digital mayhem. Chain commands together to perform complex tasks in a single, beautiful, incomprehensible line.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Pipes <code>|</code></strong>: Take the output of the command on the left and "pipe" it as the input for the command on the right. <br>Example: `history | grep "sudo"`</li>
-                <li><strong>Output Redirection <code>></code></strong>: Send a command's output into a file, overwriting whatever was there. <br>Example: `ls -l > file_list.txt`</li>
-                <li><strong>Append Output <code>>></code></strong>: Add a command's output to the end of a file. <br>Example: `echo "A new event happened!" >> activity.log`</li>
-                <li><strong>Command Separator <code>;</code></strong>: Run several commands, one after the other, on a single line. <br>Example: `cd / ; ls ; pwd`</li>
-                <li><strong>Background Process <code>&</code></strong>: Run a command in the background and continue working. <br>Example: `delay 5000 &`</li>
-                <li><strong>Environment Variables <code>$VAR</code></strong>: Use <code>set VAR="value"</code> to create session-specific variables, and use them with a `$` prefix (e.g., `echo $VAR`).</li>
+                <li><strong>Pipes <code>|</code></strong>: Take the output from one command and ram it into the input of the next. Example: `history | grep "fail"`</li>
+                <li><strong>Redirection <code>></code> and <code>&gt;&gt;</code></strong>: Hijack a command's output and stuff it into a file. <code>></code> overwrites, <code>&gt;&gt;</code> appends. Example: `echo "It was the best of times..." > tale.txt`</li>
+                <li><strong>Sequencing <code>;</code></strong>: Line up commands like dominoes and watch them fall. Example: `cd /; ls; date`</li>
+                <li><strong>Backgrounding <code>&</code></strong>: Tell a command to run in the background so you can continue your important work. Example: `delay 9001 &`</li>
+                <li><strong>Variables <code>$VAR</code></strong>: Use <code>set</code> to create variables, then use them in other commands by putting a `$` in front. Example: `set planet="Earth" ; echo "Hello, $planet"`</li>
             </ul>
         </section>
-
         <section id="advanced-topics" class="content-section">
             <h1>OopisOS v2.7: Advanced Topics & Features</h1>
-            <p>You've mastered the basics. You feel the power coursing through your veins. Now, let's get dangerous.</p>
+            <p>So, you've mastered the pleasantries. You think you know this place. Cute. Let's peel back the wallpaper and look at the wiring. This is where the real power lies.</p>
 
-            <h2>The `find` Command: Your All-Seeing Eye</h2>
-            <p>The <code>find</code> command is one of the most powerful tools in OopisOS. It recursively searches for files and directories based on a wide range of criteria and can even perform actions on the results.</p>
+            <h2>The `find` Command: Your Digital Private Eye</h2>
+            <p>The <code>find</code> command is less of a tool and more of a relentless private investigator you can unleash on your own file system. It can find a needle in a digital haystack, then set the haystack on fire if you ask it to.</p>
             <h4>Usage: <code>find [path...] [expression...]</code></h4>
-            <p>An expression is made up of tests, operators, and actions.</p>
+            <p>You give it a place to start looking and a series of tests and actions. It does the rest. No warrant required.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li>
-                    <strong>Tests:</strong>
+                    <strong>The Tests (The Clues):</strong>
                     <ul>
-                        <li><code>-name [pattern]</code>: Find files by name (e.g., "*.txt").</li>
-                        <li><code>-type [f|d]</code>: Find by type (<b>f</b>ile or <b>d</b>irectory).</li>
-                        <li><code>-user [username]</code>: Find files owned by a specific user.</li>
-                        <li><code>-perm [mode]</code>: Find by exact permission mode (e.g., 755).</li>
-                        <li><code>-mtime [+N|-N|N]</code>: Find by modification time in days (e.g., `+7` for older than 7 days, `-2` for newer than 2 days).</li>
-                        <li><code>-newermt [date_string]</code>: Find files modified more recently than the given date string (e.g., "1 day ago", "2025-01-01").</li>
+                        <li><code>-name "*.sh"</code>: Find by name, with wildcards.</li>
+                        <li><code>-type d</code>: Find only directories (or `f` for files).</li>
+                        <li><code>-user root</code>: Find things owned by the almighty `root`.</li>
+                        <li><code>-perm 755</code>: Find by exact permission code.</li>
+                        <li><code>-mtime -7</code>: Find things modified less than 7 days ago.</li>
+                        <li><code>-newermt "2 days ago"</code>: Find files newer than a specific time.</li>
                     </ul>
                 </li>
                 <li>
-                    <strong>Operators:</strong>
+                    <strong>The Logic (Connecting the Dots):</strong>
                     <ul>
-                        <li><code>-not</code> or <code>!</code>: Inverts the next test (e.g., `find . -not -name "*.txt"`).</li>
-                        <li><code>-o</code> or <code>-or</code>: Logical OR between tests.</li>
-                        <li>(Implicit AND): Tests are ANDed together by default.</li>
+                        <li><code>-not</code> or <code>!</code>: Inverts the next test. "Find everything that is NOT a text file."</li>
+                        <li><code>-o</code> or <code>-or</code>: An OR condition. "Find files owned by Guest OR root."</li>
+                        <li>(Implicit AND): By default, all tests are joined by AND. "Find .txt files AND owned by Guest."</li>
                     </ul>
                 </li>
                 <li>
-                    <strong>Actions:</strong>
+                    <strong>The Actions (The Consequences):</strong>
                     <ul>
-                        <li><code>-print</code>: The default action. Prints the path of the found item.</li>
-                        <li><code>-delete</code>: Deletes the found item. Use with extreme caution!</li>
-                        <li><code>-exec [command] {} ;</code>: Executes a command on the found file. <code>{}</code> is replaced with the file path. The command must end with a semicolon <code>;</code>.</li>
+                        <li><code>-print</code>: The default. Just shows you what it found.</li>
+                        <li><code>-delete</code>: The nuclear option. Deletes what it finds. There is no undo. You have been warned.</li>
+                        <li><code>-exec chmod 777 {} ;</code>: The fun one. Executes a command on every found file. The `{}` is where the filename goes.</li>
                     </ul>
                 </li>
             </ul>
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Find all .log files modified in the last day and delete them</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">find /data/logs -name "*.log" -mtime -1 -delete</span><br><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Change permissions on all shell scripts in your home directory</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Find every .log file older than a week and delete it.</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">find / -name "*.log" -mtime +7 -delete</span><br><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Make every shell script in your home directory executable.</span><br>
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">find . -name "*.sh" -exec chmod 755 {} ;</span>
             </div>
 
-            <h2>Managing Background Processes (`ps` & `kill`)</h2>
-            <p>Sent a long-running task to the background with `&` and now you regret it? Or maybe you just want to see what's still churning away. OopisOS v2.7 gives you the tools to be the master of your background jobs.</p>
+            <h2>Job Control: Become the Master of Puppets</h2>
+            <p>For when you've told a command to "go think about what it's done" in the background with <code>&</code>. This isn't anarchy; you're still in control.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><code>ps</code>: Stands for "Process Status". This command gives you a neat list of all the commands currently running in the background. Each job has a unique Process ID (PID) that you can use to interact with it.</li>
-                <li><code>kill [PID]</code>: The solution to a runaway process. Use this command with the PID from `ps` to terminate a background job immediately.</li>
+                <li><code>ps</code>: "Process Status." Shows you the list of disobedient children you've sent to the background. Each has a unique Process ID (PID).</li>
+                <li><code>kill [PID]</code>: You're tired of waiting. Use this with the PID from `ps` to tell a background job that its "thinking time" is permanently over.</li>
             </ul>
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">delay 10000 &</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">delay 10000 &amp;</span><br>
                 <span class="output">[1] Backgrounded.</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">delay 20000 &</span><br>
-                <span class="output">[2] Backgrounded.</span><br>
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">ps</span><br>
                 <span class="output">
-                        PID   COMMAND
-                        1     delay 10000
-                        2     delay 20000
-                    </span><br>
+                PID   COMMAND
+                1     delay 10000
+            </span><br>
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">kill 1</span><br>
-                <span class="output">Signal sent to terminate job 1.</span><br>
-                <span class="output">[Job 1 finished with error: delay: Operation cancelled. (Reason: Killed by user command.)]</span>
+                <span class="output">Signal sent to terminate job 1.</span>
             </div>
 
             <h2>Connecting to the World: `wget` & `curl`</h2>
-            <p>OopisOS can now reach beyond its digital borders! The `wget` and `curl` commands allow you to interact with the real-world internet, downloading files and fetching data directly into your virtual environment. Please note that these commands are subject to the browser's Cross-Origin Resource Sharing (CORS) policies, so they may not work with all websites.</p>
+            <p>Tired of living in this beautiful, isolated box? Use <code>wget</code> and <code>curl</code> to punch a hole in the simulation and talk to the real internet. (Note: The Great Firewall of CORS is a universal law, and even OopisOS must obey it. Some sites may refuse your connection.)</p>
             <h4><code>wget [-O file] [url]</code></h4>
-            <p>The "web get" command. Its primary purpose is to download files. By default, it saves the file with its original name from the URL.</p>
+            <p>Your loyal data-retriever. Point it at a file on the internet, and it will download it into your current directory.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><code>-O [file]</code>: Use this flag to specify a different output filename.</li>
+                <li><code>-O [file]</code>: Tell the retriever to drop the file with a different name.</li>
             </ul>
-            <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Download the OopisOS license and save it locally as 'LICENSE.txt'</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt</span><br>
-                <span class="output">...</span><br>
-                <span class="output">'LICENSE.txt' saved [1132 bytes]</span>
-            </div>
             <h4><code>curl [-o file] [url]</code></h4>
-            <p>A versatile data transfer tool. By default, `curl` fetches the content from a URL and prints it directly to your terminal screen. This is great for quickly viewing data from APIs or reading simple text files without saving them.</p>
+            <p>A more of a conversationalist than a retriever. It fetches data from a URL and whispers its contents directly onto your terminal. Perfect for quick peeks at APIs.</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><code>-o [file]</code>: Use this flag to redirect the output to a file instead of the screen.</li>
+                <li><code>-o [file]</code>: Convinces `curl` to write the data to a file instead of talking your ear off.</li>
             </ul>
-            <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command"># Get a piece of wisdom from the GitHub Zen API</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">curl https://api.github.com/zen</span><br>
-                <span class="output">Mind your words, they are important.</span>
-            </div>
-            <h2>Scripting with `run`</h2>
-            <p>Why type commands one by one like a peasant? Automate your reign with the <code>run</code> command. Create a text file ending in <code>.sh</code> and fill it with your orders.</p>
+
+            <h2>Scripting with `run`: Become a Sorcerer</h2>
+            <p>Why type commands one by one like a mere mortal? With <code>run</code>, you can chain your will into unstoppable scripts. Write your commands in a <code>.sh</code> file, grant it the sacred rites of execution with <code>chmod 755</code>, and unleash automation upon your world.</p>
             <pre><code class="language-bash">
-# Example: /scripts/myscript.sh
-#!/bin/oopis_shell # This is just for show, but it looks cool, right?
+# Example: /home/Guest/world_domination.sh
 
-# This is a comment, where I hide my secrets.
-echo "Greetings, agent $1. Your mission involves $# operatives."
-echo "All operatives: $@"
-
-mkdir /kittens
-echo "Mission file created for $1." > /kittens/secret_mission.txt
-                </code></pre>
-            <p>To unleash it upon your system (make it executable first!):</p>
+# A very important script.
+echo "Initializing plan for agent $1."
+echo "Deploying $# assets..."
+echo "All assets: $@"
+mkdir /secret_lair
+echo "Agent $1's plan stored." > /secret_lair/plan.txt
+    </code></pre>
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">chmod 755 /scripts/myscript.sh</span><br>
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /scripts/myscript.sh AgentK "Mr. Bigglesworth" "The Janitor"</span>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">chmod 755 ./world_domination.sh</span><br>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run ./world_domination.sh "The Platypus" "Rubber Ducky" "That weird squirrel"</span>
             </div>
 
-            <h3>Scripting Superpowers:</h3>
+            <h3>Your Spellbook's Ingredients:</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>
-                    <strong>Argument Passing:</strong>
-                    <ul>
-                        <li><code>$1</code>, <code>$2</code>, ...: Use the arguments you passed to the script.</li>
-                        <li><code>$@</code>: All the arguments as a single string.</li>
-                        <li><code>$#</code>: The number of arguments.</li>
-                    </ul>
-                </li>
-                <li><strong>Error Handling:</strong> If a command fails, the script stops. No questions asked.</li>
-                <li>
-                    <strong>Scripting Tools:</strong>
-                    <ul>
-                        <li><code>delay [milliseconds]</code>: For dramatic pauses.</li>
-                        <li><code>check_fail "[command]"</code>: A special tool for testing. It succeeds only if the command inside it *fails*.</li>
-                    </ul>
-                </li>
+                <li><strong>Arguments:</strong> Access passed-in arguments with <code>$1</code>, <code>$2</code>, etc. See them all with <code>$@</code>, or count them with <code>$#</code>.</li>
+                <li><strong>Error Handling:</strong> If any command fails, the script immediately gives up in a dramatic huff.</li>
+                <li><strong>Special Tools:</strong> Use <code>delay [ms]</code> for dramatic pauses and <code>check_fail "[command]"</code> to ensure your intentionally broken commands fail as expected.</li>
             </ul>
 
-            <h2>Text Adventure Gaming (`adventure`)</h2>
-            <p>All work and no play makes Guest a dull user. OopisOS v2.7 includes a text adventure game engine to satisfy your inner Roberta Williams or Scott Adams.</p>
-            <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Start Your Quest:</strong> Simply type `adventure` to begin the epic 'The Lost Key of Oopis.'</li>
-                <li><strong>Bring Your Own Adventure:</strong> Got a story to tell? Write it in the specified JSON format, `upload` it, and run it with `adventure /path/to/your_game.json`.</li>
-                <li><strong>Immersive Interface:</strong> The game runs in a dedicated modal window, freeing you from the distractions of the terminal.</li>
-            </ul>
+            <h2>`adventure`: The Emergency Escape Hatch</h2>
+            <p>Because even digital gods need a coffee break. When productivity becomes a burden, type <code>adventure</code> to be whisked away to a world of danger, puzzles, and questionable grammar. You can even <code>upload</code> and play your own custom JSON-based adventures if you fancy yourself a game master.</p>
         </section>
-
         <section id="developer-docs" class="content-section">
             <h1>OopisOS v2.7: Developer Documentation</h1>
+            <p>So, you want to look under the hood? Pop the bonnet? See how the sausage is made? Fine. But don't say we didn't warn you. This is the official guide for those brave enough to want to understand, modify, or extend the glorious machine that is OopisOS.</p>
 
-            <h2>1. Introduction</h2>
-            <p>This documentation provides a comprehensive technical overview of the OopisOS v2.7 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.</p>
-
-            <h2>2. Project Overview</h2>
-            <p>OopisOS is a self-contained, browser-based terminal environment. Key characteristics include:</p>
+            <h2>2. Project Overview (The 10,000-Foot View)</h2>
+            <p>Before you start tinkering, you should know what you're tinkering with. OopisOS is, at its heart, a beautiful lie. It's a simulated OS, but one with surprising depth and a few core principles:</p>
             <ul>
-                <li><strong>100% Client-Side:</strong> The application runs entirely in the browser, with no backend server dependency.</li>
-                <li><strong>Persistent State:</strong> Data, including the file system, user credentials, and session information, is persisted locally using <code>IndexedDB</code> and <code>localStorage</code>.</li>
-                <li><strong>Modular Architecture:</strong> The system is composed of discrete manager modules and a file-based command registration system, promoting maintainability and extensibility.</li>
-                <li><strong>Rich Feature Set:</strong> Includes a hierarchical file system, a multi-user model with groups and permissions, a suite of ~60 commands, I/O redirection and piping, background job control, and several full-screen applications (<code>edit</code>, <code>paint</code>, <code>chidi</code>, <code>adventure</code>).</li>
+                <li><strong>It Lives and Dies in This Tab:</strong> The entire OS is 100% client-side. No backend, no safety net. Just pure, unadulterated JavaScript wrestling with your browser for control.</li>
+                <li><strong>A Digital Ghost in the Machine:</strong> The system is stubbornly persistent. It uses `IndexedDB` for the "heavy" file system and `localStorage` for everything else (users, sessions, your questionable command aliases). Close the tab, come back tomorrow; it will be waiting for you.</li>
+                <li><strong>Built Like Fancy Plastic Bricks:</strong> The architecture is aggressively modular. Everything is a "manager" or a self-contained command. This makes it easy to add new features or figure out which specific part you just broke.</li>
+                <li><strong>All The Toys Included:</strong> This isn't just a terminal. It's a multi-user environment with a full permission model, a suite of ~60 commands, I/O piping and redirection, background jobs, and several surprisingly full-featured applications (`edit`, `paint`, `chidi`, `adventure`).</li>
             </ul>
 
-            <h2>3. Architecture</h2>
-            <p>OopisOS is built on a modular architecture where different concerns are handled by specialized manager objects.</p>
+            <h2>3. Architecture (The Guts of the Beast)</h2>
+            <p>OopisOS isn't a monolith; it's a society of specialized JavaScript modules that have reluctantly agreed to work together. Here's the chain of command:</p>
             <ol>
-                <li><strong>Core System & Entry Point</strong>
+                <li><strong>The Spark of Life (Core System & Entry Point)</strong>
                     <ul>
-                        <li><code>index.html</code>: The main entry point. It defines the basic DOM structure and is responsible for loading all necessary JavaScript modules in the correct order.</li>
-                        <li><code>main.js</code>: Handles the OS boot sequence (<code>window.onload</code>), caching essential DOM elements, initializing all managers, and setting up the primary terminal event listeners.</li>
-                        <li><code>config.js</code>: A central module providing system-wide configuration constants, from API endpoints to default file permissions and UI message strings.</li>
-                        <li><code>utils.js</code>: A collection of globally accessible, stateless utility functions for tasks like DOM element creation, string formatting, and data validation.</li>
+                        <li><code>index.html</code>: The stage. It sets up the basic DOM and summons the scripts.</li>
+                        <li><code>main.js</code>: The bootloader. On `window.onload`, it wakes everyone else up and kicks off the OS.</li>
+                        <li><code>config.js</code>: The system's DNA. Contains all the magic numbers and unchangeable truths.</li>
+                        <li><code>utils.js</code>: A bag of holding full of handy, stateless functions that everyone borrows from.</li>
                     </ul>
                 </li>
-                <li><strong>Command Processing Layer</strong>
+                <li><strong>The Brains of the Operation (Command Processing)</strong>
                     <ul>
-                        <li><code>lexpar.js</code>: Contains the <strong>Lexer</strong> and <strong>Parser</strong>. The Lexer transforms the raw command string into a sequence of tokens (e.g., <code>WORD</code>, <code>OPERATOR_PIPE</code>). The Parser then consumes this token stream to build a structured, executable representation of command pipelines.</li>
-                        <li><code>commexec.js</code>: The <strong>CommandExecutor</strong> is the central orchestrator for all command execution. It does <em>not</em> contain command logic itself. Instead, it processes the parsed pipelines, manages I/O between piped commands, handles output redirection (<code>&gt;</code>/<code>&gt;&gt;</code>), and launches/manages background processes (<code>&amp;</code>).</li>
-                        <li><code>scripts/commands/registry.js</code>: The <strong>CommandRegistry</strong> provides a central <code>register</code> function. Each individual command file calls this function to make the <code>CommandExecutor</code> aware of its existence, definition, and help text.</li>
-                        <li><code>scripts/commands/*.js</code>: Each file in this directory defines a single command, its validation rules, and its core logic. This modular approach keeps command logic isolated and maintainable.</li>
+                        <li><code>lexpar.js</code>: The **Lexer** reads your command like a string of gibberish and breaks it into understandable "tokens." The **Parser** then arranges those tokens into a sensible plan of action (a "pipeline").</li>
+                        <li><code>commexec.js</code>: The **CommandExecutor**. The general. It takes the Parser's plan and makes it happen. It doesn't know *how* `ls` works, it just tells `ls` when it's time to do its thing. It also manages the flow of data through pipes (`|`).</li>
+                        <li><code>scripts/commands/registry.js</code>: The **CommandRegistry**. The maître d'. Every command announces its presence here, so the Executor knows who to call on.</li>
+                        <li><code>scripts/commands/*.js</code>: The grunts. Each file is a single command, living in its own little world, waiting to be called into action.</li>
                     </ul>
                 </li>
-                <li><strong>State & Persistence Layer</strong>
+                <li><strong>The Soul of the Machine (State & Persistence)</strong>
                     <ul>
-                        <li><code>storage.js</code>: Implements the <code>StorageManager</code> (a robust wrapper for <code>localStorage</code>) and the <code>IndexedDBManager</code> (which handles the database connection for the file system).</li>
-                        <li><code>fs_manager.js</code>: The <strong>FileSystemManager</strong> controls the in-memory representation of the virtual file system (<code>fsData</code>) and orchestrates saving it to and loading it from <code>IndexedDB</code>.</li>
-                        <li><code>user_manager.js</code>: The <strong>UserManager</strong> and <strong>GroupManager</strong> handle user accounts, authentication (password hashing, login/su flow), and group memberships.</li>
-                        <li><code>session_manager.js</code>: Contains the <strong>SessionManager</strong> (which manages the user stack for <code>su</code>/<code>logout</code> and manual/automatic session state snapshots) and the <strong>EnvironmentManager</strong> (which handles session-specific variables like <code>$USER</code> and <code>$PATH</code>).</li>
-                    </ul>
-                </li>
-                <li><strong>UI & Interaction Layer</strong>
-                    <ul>
-                        <li><code>terminal_ui.js</code>: Manages all interactive components of the terminal, including the prompt, the user input line, tab completion logic (<code>TabCompletionManager</code>), and modal dialogs (<code>ModalManager</code>, <code>ModalInputManager</code>).</li>
-                        <li><code>output_manager.js</code>: The sole conduit for displaying text on the terminal screen. It handles formatting, styling, and console overrides.</li>
-                    </ul>
-                </li>
-                <li><strong>Applications</strong>
-                    <ul>
-                        <li><code>editor.js</code>: The full-screen text editor application (<code>edit</code>).</li>
-                        <li><code>oopis_paint.js</code>: The character-based art studio application (<code>paint</code>).</li>
-                        <li><code>chidi_app.js</code>: The AI-powered Markdown analyzer (<code>chidi</code>).</li>
-                        <li><code>text_adventure.js</code>: The text adventure game engine (<code>adventure</code>).</li>
+                        <li><code>storage.js</code>: The librarians. `StorageManager` handles the quick-and-easy `localStorage`, while `IndexedDBManager` manages the heavy-duty database for the file system.</li>
+                        <li><code>fs_manager.js</code>: The all-powerful **FileSystemManager**. It holds the entire file system in its memory and is responsible for everything from permission checks to path resolution.</li>
+                        <li><code>user_manager.js</code> & <code>session_manager.js</code>: The bureaucrats. They manage users, groups, passwords, and who's currently logged in. The `EnvironmentManager` (part of `session_manager.js`) keeps track of temporary variables like `$PATH`.</li>
                     </ul>
                 </li>
             </ol>
 
-            <h2>4. Setup and Installation</h2>
+            <h2>4. Setup and Installation (The Pre-Flight Checklist)</h2>
             <h3>Prerequisites</h3>
-            <p>A modern web browser that supports ES6+ JavaScript, <code>IndexedDB</code>, and the Web Crypto API. For local development, a simple web server is required to handle file loading without running into CORS issues.</p>
-            <h3>Development Setup</h3>
-            <ol>
-                <li>Clone or download the project repository.</li>
-                <li>Navigate to the project's root directory in your local terminal.</li>
-                <li>Start a local web server. A simple one can be run with Python: <code>python -m http.server</code>.</li>
-                <li>Open your browser and navigate to the local server's address (e.g., <code>http://localhost:8000</code>).</li>
-            </ol>
+            <p>You need a web browser from this millennium and a local web server (Python's `http.server` works great) to avoid the wrath of CORS.</p>
             <h3>Project Structure</h3>
+            <p>This is the map. Don't get lost.</p>
             <pre><code>
 oopisOS/
-├── docs/                 # Documentation files (guide.html, zine.html, etc.)
-├── extras/               # Helper scripts (diag.sh, inflate.sh)
+├── docs/                 # Documentation files (like this one)
+├── extras/               # Helper scripts for testing and showcase
 ├── scripts/
-│   ├── commands/         # <-- All individual command definitions reside here
+│   ├── commands/         # <-- THIS IS THE FUN ZONE. All commands live here.
 │   │   ├── ls.js
-│   │   ├── cat.js
-│   │   └── ... (60+ command files)
-│   ├── chidi_app.js
-│   ├── commexec.js       # Command Executor
-│   ├── config.js
-│   ├── editor.js
-│   ├── fs_manager.js
-│   ├── lexpar.js
-│   ├── main.js           # Main boot sequence
-│   ├── marked.min.js     # Markdown parsing library
-│   ├── oopis_paint.js
-│   ├── output_manager.js
-│   ├── registry.js       # Command Registry
-│   ├── session_manager.js
-│   ├── storage.js
-│   ├── terminal_ui.js
-│   ├── text_adventure.js
-│   ├── user_manager.js
-│   └── utils.js
-├── style.css             # Unified stylesheet
-├── index.html            # Main application entry point
-└── LICENSE.txt
-            </code></pre>
+│   │   └── ... (many more)
+│   ├── commexec.js       # The Command Executor
+│   ├── main.js           # The Bootloader
+│   ├── registry.js       # The Command Registry
+│   └── ... (all the other managers)
+├── style.css             # The single stylesheet to rule them all
+└── index.html            # The main application entry point
+    </code></pre>
 
-            <h2>5. Adding New Commands</h2>
-            <p>The v2.7 architecture makes adding new commands simple and clean.</p>
-            <h3>Step 1: Create the Command File</h3>
-            <p>Create a new JavaScript file in the <code>scripts/commands/</code> directory (e.g., <code>mycommand.js</code>).</p>
-            <h3>Step 2: Define the Command</h3>
-            <p>Inside your new file, create an IIFE and define your command using the declarative object pattern. Register it with the <code>CommandRegistry</code>.</p>
+            <h2>5. Forging a New Command (The Fun Part)</h2>
+            <p>The v2.7 architecture makes adding new commands shockingly pleasant. The framework does all the boring validation for you.</p>
+            <h3>Step 1: Stake Your Claim</h3>
+            <p>Create a new file in the <code>scripts/commands/</code> directory. Let's call it <code>mycommand.js</code>.</p>
+            <h3>Step 2: Write the Incantation</h3>
+            <p>Use our declarative pattern. You define what your command needs, and the `CommandExecutor` will handle the tedious error checking before your logic ever runs.</p>
             <pre><code class="language-javascript">
 // scripts/commands/mycommand.js
 (() => {
@@ -702,58 +581,47 @@ oopisOS/
         },
         pathValidation: [
             {
-                argIndex: 0, // Validate the first argument (at index 0) as a path.
-                options: { expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE }
+                argIndex: 0, // Check the first argument...
+                options: { expectedType: 'file' } // ...and demand it be a file.
             }
         ],
         permissionChecks: [
             {
                 pathArgIndex: 0,
-                permissions: ["read"]
+                permissions: ["read"] // And demand we can read it.
             }
         ],
-        // 2. Write the core logic. It only runs if all the above checks pass.
+        // 2. THIS IS YOUR PART. The core logic. It only runs if all the above checks pass.
         coreLogic: async (context) => {
             // The context object contains everything you need, fully validated.
-            const { args, flags, currentUser, validatedPaths } = context;
+            const { flags, validatedPaths } = context;
 
-            // validatedPaths[0] is guaranteed to be a valid, readable file path object.
+            // We know this exists, is a file, and is readable. No need for if-checks.
             const pathInfo = validatedPaths[0];
+            const content = pathInfo.node.content;
 
             if (flags.verbose) {
-                await OutputManager.appendToOutput(`Verbose mode ON for user ${currentUser}`);
+                await OutputManager.appendToOutput(`Processing ${pathInfo.resolvedPath} verbosely!`);
             }
-
-            // Command implementation goes here...
-            const content = pathInfo.node.content;
 
             return {
                 success: true,
-                output: `Successfully processed ${pathInfo.resolvedPath}. Content length: ${content.length}.`
+                output: `Successfully processed file of size ${content.length}.`
             };
         }
     };
 
-    // 3. Define the help texts for 'help' and 'man'.
-    const myCommandDescription = "A brief, one-line description for the 'help' command.";
-    const myCommandHelpText = `Usage: mycommand [OPTIONS] &lt;path&gt;
+    // 3. Define the help texts for 'help' and 'man'. Don't be lazy.
+    const description = "A brief, one-line summary for 'help'.";
+    const helpText = `Usage: mycommand [OPTIONS] &lt;path&gt; ... (Full manual page text here)`;
 
-A detailed explanation of the command, its purpose, and how to use it.
-This text is used by the 'man' command.
-
-OPTIONS
-  -v, --verbose    Enable verbose output.
-
-EXAMPLES
-  mycommand /home/Guest/README.md       An example of how to use the command.`;
-
-    // 4. Register the command with the system.
-    CommandRegistry.register("mycommand", myCommandDefinition, myCommandDescription, myCommandHelpText);
+    // 4. Register your glorious creation with the system.
+    CommandRegistry.register("mycommand", myCommandDefinition, description, helpText);
 })();
-            </code></pre>
+    </code></pre>
 
-            <h3>Step 3: Register the Script in `index.html`</h3>
-            <p>Open <code>index.html</code> and add a <code>&lt;script&gt;</code> tag for your new command file. It must be placed after <code>scripts/commands/registry.js</code> but before <code>scripts/commexec.js</code>.</p>
+            <h3>Step 3: Tell the OS It Exists</h3>
+            <p>Open <code>index.html</code> and add a <code>&lt;script&gt;</code> tag for your new command file. The order matters! It must come after `registry.js` but before `commexec.js`.</p>
             <pre><code class="language-html">
 ...
 &lt;script src="./scripts/commands/registry.js"&gt;&lt;/script&gt;
@@ -763,119 +631,121 @@ EXAMPLES
 ...
 &lt;script src="./scripts/commexec.js"&gt;&lt;/script&gt;
 ...
-            </code></pre>
-            <p>The <code>CommandExecutor</code> will automatically discover and integrate your command upon the next page load.</p>
+    </code></pre>
+            <p>Refresh the page, and your command is now a living part of OopisOS. Welcome to the club.</p>
         </section>
-
         <section id="testing-env" class="content-section">
             <h1>Testing & Showcase Environment</h1>
-            <p>OopisOS v2.7 comes with two powerful scripts, `inflate.sh` and `diag.sh`, to make life easier for testers and newcomers.</p>
+            <p>A brand new OS can feel... empty. Echoes bounce off the vacant directories. To combat this digital loneliness and give you something to immediately play with, we've included two very special scripts.</p>
 
-            <h2>The Showcase: `inflate.sh`</h2>
-            <p>Want a fully furnished world to explore from the get-go? The `inflate.sh` script populates your file system with a rich set of examples. It's like a demo disk for OopisOS!</p>
-            <p>Just run this command to set it all up:</p>
+            <h2>The World-Builder: `inflate.sh`</h2>
+            <p>Think of this as the ultimate demo disk. A single command that terraforms your empty home directory into a bustling ecosystem of files, directories, and secrets, all designed for you to test, abuse, and explore.</p>
+            <p>Just run this command to create your new world:</p>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /inflate.sh</span>
             </div>
-            <h3>What's in the box?</h3>
+            <h3>So, what's in the box?</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>A `README.md` file to get you started.</li>
-                <li>Directories like `/docs`, `/src`, `/data`, `/reports`, `/games`, and `/vault`, all filled with tasty sample files.</li>
-                <li>Content specifically designed for practicing with `grep`, `find`, `gemini`, and `adventure`.</li>
-                <li>A restricted `/vault` directory and a world-writable `/shared_for_guest` directory to test permissions.</li>
-                <li>Secret hidden files for you to discover with `ls -a`.</li>
+                <li>A `README.md` file, because every self-respecting project has one.</li>
+                <li>A whole city of directories (`/docs`, `/src`, `/data`, `/reports`, `/games`...) filled with sample files, logs, and reports.</li>
+                <li>Bait for our most powerful commands. There are logs perfect for `grep`, a complex structure for `find`, reports begging to be summarized by `gemini`, and even a custom game for `adventure`.</li>
+                <li>A top-secret `/vault` you can't get into and a public `/shared_for_guest` graffiti wall, perfect for testing the permission system.</li>
+                <li>Hidden files and conspiracies for you to uncover with `ls -a`.</li>
             </ul>
 
             <h2>The Gauntlet: `diag.sh`</h2>
-            <p>This is the ultimate test of OopisOS's core strength. The `diag.sh` script is a non-interactive test suite that runs a barrage of commands to ensure everything is working exactly as it should. It's the developer's best friend for catching bugs before they creep out of the woodwork.</p>
-            <h3>Key Test Phases:</h3>
+            <p>This is our quality assurance department, packed into a single script. It's a relentless stress test that runs a barrage of commands to ensure the OS doesn't melt into a puddle of ones and zeros under pressure. It's the best way to see a whirlwind tour of what OopisOS is truly capable of.</p>
+            <h3>Key Test Phases Include:</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Login and Setup:</strong> Logs in as the `userDiag` user (password: `pantload`) and prepares a clean workspace.</li>
-                <li><strong>Core FS Commands:</strong> Brutally tests `mkdir`, `touch`, `ls`, `pwd`, and `cd`.</li>
-                <li><strong>Content & Redirection:</strong> Verifies that `echo`, `cat`, pipes (`|`), and redirection (`>`, `>>`) are all behaving.</li>
-                <li><strong>Permissions & Users:</strong> A complex dance of `chmod`, `chown`, `chgrp`, `login`, `logout`, and `su` to ensure the security model is sound.</li>
-                <li><strong>File Management:</strong> Puts `rm`, `cp`, and `mv` through their paces.</li>
-                <li><strong>Advanced Commands:</strong> Verifies that `find`, `run`, `alias`, `ps`, `kill`, and various flags are working correctly.</li>
-                <li><strong>Cleanup:</strong> Switches to `root` and cleans up after itself, leaving the system tidy.</li>
+                <li><strong>High-Speed Setup:</strong> A rapid-fire sequence of logins, user creation, directory setup, and permission changes to prepare the arena.</li>
+                <li><strong>The Parser Interrogation:</strong> A thorough test of the command parser's ability to handle complex quoting and escape characters.</li>
+                <li><strong>A Brutal FS Workout:</strong> Puts `mkdir`, `touch`, `ls` (with all its sorting flags), `pwd`, and `tree` through their paces.</li>
+                <li><strong>The Permission Ballet:</strong> A dizzying dance of user creation, group assignments, `chmod` incantations, and permission checks to ensure the security model is actually secure.</li>
+                <li><strong>Scripted Interaction:</strong> Proves the OS is clever enough to answer its own interactive prompts from within a script, testing commands like `rm -i` and `cp -i`.</li>
+                <li><strong>The Grand Finale:</strong> Tests advanced features like the `find` command's `-exec` and `-delete` actions, the adventure game engine, and finally, cleans up after itself like a considerate houseguest.</li>
             </ul>
-            <p>Running `diag.sh` is a fantastic way to see a whirlwind tour of OopisOS features.</p>
+            <p>Unleash the gauntlet and watch the system prove its worth:</p>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /diag.sh</span>
             </div>
         </section>
-
         <section id="recent-changes" class="content-section">
-            <h1>Recent Changes</h1>
-            <h2>Version 2.7 (Current)</h2>
-            <p>Version 2.7 represents a significant leap forward in functionality and architectural maturity, introducing major new applications and refining the core developer experience.</p>
+            <h1>System Update & Patch Notes</h1>
+            <h2>Version 2.7 (The Quantum Leap)</h2>
+            <p>Version 2.7 isn't just an update; it's a paradigm shift. We've bolted on major new applications, supercharged existing tools, and fundamentally rebuilt the system's architecture for a brighter, more modular future. Here's what's new on the bleeding edge:</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li>
-                    <strong>The `paint` Application:</strong> A full-featured, character-based art studio is now integrated into OopisOS.
+                    <strong>Unleash Your Inner Pixel-Artist with `paint`:</strong> A glorious, full-featured, character-based art studio is now a core part of OopisOS.
                     <ul>
-                        <li>Launched with the `paint [filename.oopic]` command, it opens a dedicated modal for creating ASCII and ANSI art on an 80x24 canvas.</li>
-                        <li>Features a complete toolbar with a Pencil, Eraser, Undo/Redo, and a Grid Toggle.</li>
-                        <li>Includes a 6-color palette and a character selector for all printable ASCII characters.</li>
-                        <li>Artwork is saved to a custom `.oopic` JSON file format, preserving character, color, and canvas data.</li>
+                        <li>Launched with <code>paint [filename.oopic]</code>, it opens a dedicated modal for creating ASCII and ANSI art on a classic 80x24 canvas.</li>
+                        <li>Comes equipped with a full toolbar including a Pencil, Eraser, shape tools, Undo/Redo functionality, and a Grid Toggle.</li>
+                        <li>Includes a default 6-color palette and a full custom color picker. You can select any printable ASCII character as your "brush."</li>
+                        <li>Your masterpieces are saved to the custom <code>.oopic</code> JSON file format, preserving every character and color for posterity.</li>
                     </ul>
                 </li>
                 <li>
-                    <strong>The `chidi` AI Librarian:</strong> A powerful new application for deep document analysis.
+                    <strong>Tame Your Knowledge-Base with `chidi`:</strong> The `chidi` command summons a powerful AI Librarian to help you make sense of your own notes.
                     <ul>
-                        <li>Launched via `chidi <path>`, it opens a modal application to view and analyze Markdown (`.md`) files.</li>
-                        <li>Recursively finds all `.md` files from a given directory to create a cohesive knowledge base, or "corpus," for analysis.</li>
-                        <li>Integrates a Gemini AI toolkit to **Summarize** documents, generate **Study** questions, or **Ask** a natural language question across the entire document set.</li>
-                        <li>Employs an efficient Retrieval-Augmented Generation (RAG) strategy, finding relevant files locally before making a focused query to the Gemini API.</li>
+                        <li>Point it at a file or directory (`chidi /docs`), and it opens a focused reading app, recursively finding and loading all Markdown (`.md`) files.</li>
+                        <li>Its killer feature: Use the integrated AI toolkit to **Summarize** documents, generate **Study** questions, or **Ask** a natural language question across the *entire set* of loaded documents at once.</li>
+                        <li>It's smart. It uses a Retrieval-Augmented Generation (RAG) strategy, meaning its clever brain finds the most relevant documents in your collection *before* bothering the Gemini API, giving you faster, more accurate answers.</li>
                     </ul>
                 </li>
                 <li>
-                    <strong>Environment Variables:</strong> Added a full environment variable system. Use `set` to create/view variables, `unset` to remove them, and `$VAR` or `${VAR}` in any command for shell expansion. Default variables include `$USER`, `$HOME`, `$HOST`, and `$PATH`.
+                    <strong>A More Personal Shell with Environment Variables:</strong> The shell is no longer a one-size-fits-all affair. You can now define your own environment variables.
+                    <ul>
+                        <li>Use <code>set VAR="value"</code> to create variables, <code>set</code> to see them all, and <code>unset VAR</code> to make the shell forget.</li>
+                        <li>Use your variables in any command with the familiar <code>$VAR</code> or <code>${VAR}</code> syntax for shell expansion.</li>
+                        <li>Comes with the standard defaults you'd expect: <code>$USER</code>, <code>$HOME</code>, <code>$HOST</code>, and <code>$PATH</code>.</li>
+                    </ul>
                 </li>
                 <li>
-                    <strong>`tree` Command:</strong> A new utility to list directory contents in a tree-like format, with flags for controlling depth (`-L`) and listing directories only (`-d`).
-                </li>
+                    <strong>Admire Your Creations with `tree`:</strong> Due to popular demand (from us), the `tree` command has arrived. It provides a beautiful, bird's-eye view of your directory structures. Supports flags for depth (`-L`) and listing directories only (`-d`).</li>
                 <li>
-                    <strong>Architectural Overhaul:</strong> Commands have been moved to individual files in `scripts/commands/`, registering themselves with a central `CommandRegistry`. This greatly improves system modularity, maintainability, and makes it significantly easier for developers to add new commands.
-                </li>
+                    <strong>A Revolution Under the Hood (For the Nerds):</strong> This might not seem like a flashy feature, but it's the most important one. We tore the monolithic command executor apart and gave every single command its own file in the <code>scripts/commands/</code> directory. For developers, this means adding new commands is no longer a Sisyphean task. For users, it means the system is more stable and robust. You're welcome.</li>
             </ul>
 
-            <h2>Version 2.5</h2>
+            <h2>Version 2.5 (The Humble Beginnings)</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>Initial public release version.</li>
-                <li>Features included the core file system, multi-user support with permissions, a rich text editor, and the `gemini` command.</li>
+                <li>This was the initial public release. The foundation upon which this glorious v2.7 empire was built.</li>
+                <li>Core features included the persistent file system, the multi-user and permission model, the first iteration of the `edit` command, and the `gemini` command.</li>
             </ul>
         </section>
-
         <section id="about" class="content-section">
-            <h1>About OopisOS (v2.7)</h1>
-            <p>OopisOS Version 2.7 is the latest and greatest evolution of our little browser-based world, packed with more features and even more personality.</p>
+            <h1>About the Project (And Other Mysteries)</h1>
+            <p>You've reached the end of the manual. If you're still reading, you're either a developer, a completionist, or hopelessly lost. In any case, here's the story behind the machine and the legal fine print that gives it its soul.</p>
 
             <h2>The Creators</h2>
-            <p>This project is the result of a tireless, caffeine-fueled collaboration between:</p>
+            <p>OopisOS is the unlikely result of a caffeine-and-code-fueled fever dream, a collaboration between:</p>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>Andrew Edmark</strong> (The Human Element)</li>
-                <li><strong>Gemini</strong> (The AI Assistant, and your humble narrator)</li>
+                <li><strong>Andrew Edmark</strong> (The Human Element, Chief Architect)</li>
+                <li><strong>Gemini</strong> (The AI Assistant, Humble Narrator, and Primary Cause of Bugs-Turned-Features)</li>
             </ul>
-            <p>Together, we navigated the treacherous dungeons of JavaScript, debugged the fiercest of race conditions, and documented our journey for all to see. The copyright notice `Copyright (c) 2025 Andrew Edmark` reflects this grand alliance.</p>
+            <p>Together, we navigated the treacherous dungeons of JavaScript, debugged the fiercest of race conditions, and documented our journey for all to see. The resulting alliance is forever enshrined in the copyright notice, a testament to what happens when you give an AI a compiler.</p>
 
-            <h2>License Information: MIT License (AI Assisted) - OopisOS License Agreement</h2>
+            <h2>The Social Contract (aka The Boring Legal Bit)</h2>
+            <p>Yes, even a simulated OS in a browser tab needs a license. This one is special. It's an MIT license at its core, but with an extended preamble to acknowledge the beautiful weirdness of its creation. Here is the spirit of the agreement:</p>
+
             <h3>Preamble</h3>
             <p>This Software, OopisOS, represents a collaborative endeavor between human direction and artificial intelligence.</p>
             <p><strong>Copyright (c) 2025 Andrew Edmark (hereinafter referred to as the "Curator")</strong></p>
+
             <h3>Authorship and Contribution Acknowledgment</h3>
-            <p>This Software was developed by the Curator through a process of interactive collaboration with Google's Gemini, an artificial intelligence language model (hereinafter referred to as the "AI Assistant"). The Curator provided the initial concepts, creative direction, iterative prompts, critical review, testing, and the selection of the final form of the Software. The AI Assistant, under the explicit direction and oversight of the Curator, contributed to the generation, drafting, and composition of portions of the code and associated documentation.</p>
+            <p>This Software was developed by the Curator through a process of interactive collaboration with Google's Gemini, an artificial intelligence language model (the "AI Assistant"). The Curator provided the initial concepts, creative direction, iterative prompts, critical review, testing, and the selection of the final form of the Software. The AI Assistant, under the explicit direction and oversight of the Curator, contributed to the generation, drafting, and composition of portions of the code and associated documentation.</p>
+
             <h3>License Grant</h3>
             <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
             <ul class="list-disc ml-6 my-2">
                 <li>The above copyright notice, the Authorship and Contribution Acknowledgment, and this permission notice shall be included in all copies or substantial portions of the Software.</li>
             </ul>
-            <h3>Disclaimer of Warranty</h3>
-            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS (INCLUDING THE CURATOR) OR COPYRIGHT HOLDERS (TO THE EXTENT APPLICABLE UNDER LAW REGARDING AI-ASSISTED WORKS) BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
-            <h2>The Future?</h2>
-            <p>What's next for OopisOS? A graphical user interface? Simulated networking? A command to generate pictures of cats? The possibilities are as vast as your imagination. The modular architecture is ready for it.</p>
+            <h3>Disclaimer of Warranty</h3>
+            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS (INCLUDING THE CURATOR) OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+            <h2>What's Next? (More Madness, Probably)</h2>
+            <p>Now that the v2.7 architecture is a sleek, modular machine, the possibilities are endless. A graphical user interface? A peer-to-peer virtual file system? A command that generates ASCII art of cats? Who knows. The foundation is laid. The future is unwritten. And probably buggy.</p>
             <p class="mt-6"><em>"OopisOS v2.7: Now with 26% more Oopis!"</em></p>
         </section>
-
         <footer class="footer text-center">
             <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.7).</p>
         </footer>
