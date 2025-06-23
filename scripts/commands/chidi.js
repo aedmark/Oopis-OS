@@ -59,26 +59,33 @@
     const chidiCommandDefinition = {
         commandName: "chidi",
         argValidation: {
-            exact: 1,
-            error: "Usage: chidi <path_to_file_or_directory>"
+            max: 1, // Allows 0 or 1 arguments.
+            error: "Usage: chidi [path_to_file_or_directory]"
         },
-        pathValidation: [
-            {
-                argIndex: 0,
-                options: { allowMissing: false }
+        pathValidation: [{
+            argIndex: 0,
+            optional: true, // Path argument is now optional.
+            options: {
+                allowMissing: false
             }
-        ],
-        permissionChecks: [
-            {
-                pathArgIndex: 0,
-                permissions: ["read"]
-            }
-        ],
+        }],
+        permissionChecks: [{
+            pathArgIndex: 0,
+            permissions: ["read"]
+        }],
         coreLogic: async (context) => {
-            const { args, currentUser, validatedPaths, options } = context;
+            const {
+                args,
+                currentUser,
+                validatedPaths,
+                options
+            } = context;
 
             if (!options.isInteractive) {
-                return { success: false, error: "chidi: Can only be run in interactive mode." };
+                return {
+                    success: false,
+                    error: "chidi: Can only be run in interactive mode."
+                };
             }
 
             // --- NEW: API Key Check ---
@@ -89,15 +96,26 @@
                         "A Gemini API key is required for Chidi. Please enter your key:",
                         (providedKey) => {
                             if (!providedKey || providedKey.trim() === "") {
-                                resolve({ success: false, error: "API key entry cancelled or empty." });
+                                resolve({
+                                    success: false,
+                                    error: "API key entry cancelled or empty."
+                                });
                                 return;
                             }
                             StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, providedKey, "Gemini API Key");
-                            OutputManager.appendToOutput("API Key saved. Launching Chidi...", { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
-                            resolve({ success: true, key: providedKey });
+                            OutputManager.appendToOutput("API Key saved. Launching Chidi...", {
+                                typeClass: Config.CSS_CLASSES.SUCCESS_MSG
+                            });
+                            resolve({
+                                success: true,
+                                key: providedKey
+                            });
                         },
                         () => {
-                            resolve({ success: false, error: "API key entry cancelled." });
+                            resolve({
+                                success: false,
+                                error: "API key entry cancelled."
+                            });
                         },
                         false, // isObscured
                         options
@@ -105,15 +123,37 @@
                 });
 
                 if (!keyResult.success) {
-                    return { success: false, error: `chidi: ${keyResult.error}` };
+                    return {
+                        success: false,
+                        error: `chidi: ${keyResult.error}`
+                    };
                 }
                 apiKey = keyResult.key;
             }
             // --- END: API Key Check ---
 
-            const pathInfo = validatedPaths[0];
-            const startNode = pathInfo.node;
-            const startPath = pathInfo.resolvedPath;
+            let startPath;
+            let startNode;
+            let pathForMsgs;
+
+            if (args.length === 0) {
+                // No arguments provided, use CWD.
+                pathForMsgs = "the current directory";
+                startPath = FileSystemManager.getCurrentPath();
+                startNode = FileSystemManager.getNodeByPath(startPath);
+                if (!startNode) {
+                    return {
+                        success: false,
+                        error: "chidi: Critical error - cannot access current working directory."
+                    };
+                }
+            } else {
+                // One argument provided, use existing logic.
+                pathForMsgs = `'${args[0]}'`;
+                const pathInfo = validatedPaths[0];
+                startNode = pathInfo.node;
+                startPath = pathInfo.resolvedPath;
+            }
 
             try {
                 return new Promise(async (resolve, reject) => {
@@ -123,14 +163,17 @@
                         if (files.length === 0) {
                             return resolve({
                                 success: true,
-                                output: `No markdown (.md) files found at '${args[0]}'.`
+                                output: `No markdown (.md) files found in ${pathForMsgs}.`
                             });
                         }
 
                         const onExit = () => {
                             TerminalUI.setInputState(true);
                             TerminalUI.focusInput();
-                            resolve({ success: true, output: "" });
+                            resolve({
+                                success: true,
+                                output: ""
+                            });
                         };
 
                         TerminalUI.setInputState(false);
@@ -143,7 +186,10 @@
                     }
                 });
             } catch (error) {
-                return { success: false, error: error.message };
+                return {
+                    success: false,
+                    error: error.message
+                };
             }
         }
     };

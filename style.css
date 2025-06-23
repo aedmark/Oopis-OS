@@ -1356,6 +1356,8 @@ body {
   background-color: #1f1f22;
   border-bottom: 1px solid #3a3a3d;
   flex-shrink: 0;
+  flex-wrap: wrap; /* <-- ADD: Allows tool groups to drop to a new line. */
+  gap: 0.5rem;     /* <-- ADD: Ensures consistent spacing between tool groups when they wrap. */
 }
 .paint-toolbar-group {
   display: flex;
@@ -1584,50 +1586,42 @@ body {
     }
   }
 }
-/* --- START: Responsive Terminal Scaling Architecture --- */
+/* --- START: CORRECTED Responsive Terminal Scaling Architecture --- */
 
 /*
- * The Terminal Bezel: This component will now define the flexible
- * boundary box for the screen. It will occupy most of the viewport,
- * leaving a pleasant margin, and will center the screen within it.
+ * The Terminal Bezel:
+ * By removing explicit width and height, the bezel will now derive its
+ * dimensions from its child, the #terminal. It becomes a true, form-fitting
+ * frame, while the parent body's flex properties handle centering.
  */
 #terminal-bezel {
-  width: 60vw;
-  height: 90vh;
+  /* These properties remain to center the terminal screen within the bezel's padding. */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 /*
- * The Terminal Screen: CORRECTED ARCHITECTURE
- * This version resolves the aspect ratio conflict by giving the browser
- * clearer instructions on how to scale the element within its flex container.
+ * The Terminal Screen:
+ * This component is now the single source of truth for its own dimensions.
+ * It sizes itself based on the viewport, and the bezel wraps it.
  */
 #terminal {
-  /* The core constraint remains unchanged. */
+  /* Base size relative to viewport width. */
+  width: 90vw;
+
+  /* Use max-height as the primary constraint for tall/portrait viewports. */
+  max-height: 90vh;
+
+  /* Add a reasonable max-width to prevent excessive size on ultrawide monitors. */
+  max-width: 1600px;
+
+  /* The core 4:3 constraint remains paramount. */
   aspect-ratio: 4 / 3;
 
-  /*
-   * Set a primary dimension (width) and let the height be calculated
-   * automatically by the aspect-ratio property. This is more reliable
-   * than setting both width and height to 100%.
-   */
-  width: auto;
-  height: 100%;
-
-  /*
-   * Fluidity Constraint: Now, max-width and max-height will act as
-   * proper boundaries. In a wide container, max-height will become the
-   * limiting factor, which will then cause the browser to shrink the width
-   * proportionally to maintain the aspect ratio.
-   */
-  max-width: 1280px;
-  max-height: 960px;
-
-  /* The minimum size constraints are still crucial and correct. */
+  /* The minimum size constraints are unchanged and still crucial. */
   min-width: 640px;
   min-height: 480px;
 }
 
-/* --- END: Responsive Terminal Scaling Architecture --- */
+/* --- END: CORRECTED Responsive Terminal Scaling Architecture --- */
