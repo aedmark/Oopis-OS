@@ -1,5 +1,5 @@
-```
-/$$$$$$                      /$$            /$$$$$$   /$$$$$$   
+```  
+   /$$$$$$                      /$$            /$$$$$$   /$$$$$$   
  /$$__  $$                    |__/           /$$__  $$ /$$__  $$  
 | $$  \ $$  /$$$$$$   /$$$$$$  /$$  /$$$$$$$| $$  \ $$| $$  \__/  
 | $$  | $$ /$$__  $$ /$$__  $$| $$ /$$_____/| $$  | $$|  $$$$$$   
@@ -11,254 +11,128 @@
                     | $$                                          
                     |__/  A Browser-Based OS Simulation  
 ```
+
 # OopisOS v2.7: Open, Online, Persistent, Integrated System OS
 
-# Table of Contents
+Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
 
-1. [Key Features (v2.7)](#key-features-v26)
-    - [100% Client-Side Operation](#client-side-operation)
-    - [Advanced Terminal Interface](#advanced-terminal-interface)
-    - [Environment Variables](#environment-variables)
-    - [Persistent Hierarchical File System](#persistent-hierarchical-file-system)
-    - [Multi-User System with Groups & Permissions](#multi-user-system-with-groups--permissions)
-    - [Comprehensive Session Management](#comprehensive-session-management)
-    - [Enhanced Built-in Text Editor (`edit`)](#enhanced-built-in-text-editor-edit)
-    - [ASCII/ANSI Art Editor (`paint`)](#asciiansi-art-editor-paint)
-    - [The AI Librarian (`chidi`)](#the-ai-librarian-chidi)
-    - [Tool-Using AI Integration (`gemini`)](#tool-using-ai-integration-gemini)
-    - [Job Control (`ps`, `kill`)](#job-control-ps-kill)
-    - [Networking Utilities (`wget`, `curl`)](#networking-utilities-wget-curl)
-    - [Interactive Text Adventure Game (`adventure`)](#interactive-text-adventure-game-adventure)
-    - [Scripting Engine (`run`)](#scripting-engine-run)
-    - [Common Utilities](#common-utilities)
-2. [Getting Started](#getting-started)
-    - [Download and Setup](#download)
-    - [First Commands to Try](#first-commands-to-try)
-3. [Core Concepts](#core-concepts)
-    - [The Terminal Interface](#the-terminal-interface)
-        * [Piping](#piping-)
-        * [Redirection](#redirection-)
-        * [Sequencing](#sequencing-)
-        * [Backgrounding](#backgrounding-)
-        * [Aliasing](#aliasing-)
-        * [Environment Variables](#environment-variables-1)
-    - [User and Permission Model](#user-and-permission-model)
+## Getting Started: The 60-Second Experience
 
-**Welcome to OopisOS**, a sophisticated, fully client-side OS simulation that runs entirely in your browser, featuring a rich command line, a persistent file system, and an integrated, tool-using AI.
+1. **Open:** Simply open `index.html` in any modern web browser.
+2. **Inflate:** You are logged in as "Guest". To see the system's potential, populate your home directory with a full suite of example files by running this command:
+    
+    Bash
+    
+    ```
+    run /extras/inflate.sh
+    ```
+    
+3. **Explore:** Now, explore the new files and directories that have been created:
+    
+    Bash
+    
+    ```
+    tree /home/Guest/docs
+    ```
+    
 
-It features a retro-style terminal, a persistent hierarchical file system with a full user/group permission model, a multi-user system with password authentication, an advanced text editor, a character-based paint program, a tool-using AI, an interactive text adventure engine, and a suite of command-line utilities with support for I/O redirection, piping, background processes, aliasing, and scripting.
+Intrigued? Read on to discover the depth of what you can do in your new OS.
 
-### Key Features (v2.7)
+## Key Features Overview
 
-#### 100% Client-Side Operation
+OopisOS is equipped with a wide array of features, organized into several key areas:
 
-- **100% Client-Side:** Runs entirely in the browser with no server-side dependencies. All user data is stored locally and persistently using IndexedDB and LocalStorage. Your world remains your own.
+#### Core Shell Experience
 
-#### Advanced Terminal Interface
+- **Advanced Terminal:** An interactive command-line with history, tab completion, and background processes (`&`).
+- **Piping & Redirection:** Chain commands together with the pipe (`|`) or redirect output to files with `>` and `>>`.
+- **Sequencing & Aliasing:** Execute multiple commands with `;` and create shortcuts for longer commands with `alias`.
+- **Environment Variables:** Manage session-specific variables with `set`, `unset`, and `$VAR` expansion.
 
-- **Advanced Terminal Interface:** An interactive command-line interface with history, tab completion, command aliasing (`alias`), command sequencing (`;`), background processes (`&`), and I/O redirection (`>` and `>>`).
+#### Persistent File System
 
-#### Environment Variables
+- **Hierarchical VFS:** A robust virtual file system managed via IndexedDB that persists between sessions.
+- **File Management:** A comprehensive suite of commands including `ls` (with numerous flags), `find` (with advanced predicates), `tree`, `diff`, `mkdir`, `cp`, `mv`, and `rm`.
+- **File Content:** View files with `cat`, search inside them with `grep`, and edit them with a built-in editor.
 
-- **Environment Variables:** Use `set`, `unset`, and shell expansion (`$VAR`, `${VAR}`) to manage session-specific variables.
+#### Multi-User Security Model
 
-#### Persistent Hierarchical File System
+- **User & Group Management:** Create users (`useradd`), groups (`groupadd`), and manage group memberships (`usermod -aG`).
+- **Authentication:** A full login/logout system (`login`, `logout`, `su`) with secure, hashed password prompts.
+- **Unix-like Permissions:** Use `chmod` with 3-digit octal modes (e.g., `755`) to control read, write, and execute permissions for the owner, group, and others.
+- **Ownership Control:** Change file ownership with `chown` and `chgrp`.
 
-- **Persistent Hierarchical File System:** A robust VFS managed via IndexedDB. Features a comprehensive suite of file management commands:
-  - `ls`: Supports flags -l, -a, -R, -r, -t, -S (size), -X (extension), -U (unsorted), -d (directories only).
-  - `find`: Supports predicates like -name, -type, -user, -perm, -mtime, -newermt and actions like -print, -exec, -delete.
-  - `tree`: Display directory contents in a tree-like format.
-  - `diff`: Compare two files line by line.
-  - Standard commands: `mkdir`, `cd`, `touch`, `cat`, `cp` (with -p to preserve metadata), `mv`, `rm`, `pwd`.
+#### Built-in Applications
 
-#### Multi-User System with Groups & Permissions
+- **Text Editor (`edit`):** A full-screen editor for plain text, Markdown, and HTML with live preview, a formatting toolbar, and keyboard shortcuts.
+- **ASCII/ANSI Art Editor (`paint`):** A dedicated paint program to create character-based art with multiple colors and tools, saved in a custom `.oopic` format.
+- **AI Librarian (`chidi`):** An advanced Markdown reader that uses AI to help you summarize, study, and ask questions about your documents.
+- **Text Adventure Game (`adventure`):** An engine to play interactive, text-based adventure games.
 
-- **Multi-User System with Groups & Permissions:**
-  - Register users (`useradd`) with secure, hashed password prompts. A primary group is created for each user.
-  - Login/logout (`login`, `logout`) and switch users (`su`), including to a `root` user with full system privileges (default password: `mcgoopis`).
-  - Full user group management: `groupadd`, `groupdel`, `groups`, `usermod -aG`.
-  - Unix-like permissions: `chmod` with 3-digit octal modes (e.g., 755) for owner, group, and other.
-  - Ownership management: `chown`, `chgrp`.
+#### Advanced Capabilities
 
-#### Comprehensive Session Management
+- **Tool-Using AI (`gemini`):** An integrated Gemini AI that can use OopisOS commands like `find` and `cat` to explore the file system and answer your questions with context.
+- **Scripting Engine (`run`):** Write and execute your own shell scripts with support for comments and arguments (`$1`, `$@`).
+- **Networking Utilities:** Fetch content from the web directly into the OS using `wget` to download files or `curl` to display data in the terminal.
 
-- **Comprehensive Session Management:** Automatic session saving per user, manual `savestate`/`loadstate`, full file system `backup`/`restore` via JSON, and system/home directory `reset`/`clearfs` capabilities.
+## Core Architectural Concepts
 
-#### Enhanced Built-in Text Editor (`edit`)
+OopisOS is built on several foundational principles that ensure it is secure, modular, and persistent.
 
-- **Enhanced Built-in Text Editor (`edit`):**
-  - Full-screen editor for plain text, Markdown, and HTML with live preview.
-  - Features include line numbers, toggleable word wrap, multiple view modes (Ctrl+P), a detailed status bar, and an "Export to HTML" function.
-  - For Markdown/HTML, a formatting toolbar provides quick access to insert bold, italics, links, quotes, code, and lists.
-  - Keyboard shortcuts: Ctrl+S (save/exit), Ctrl+O (exit/confirm), Ctrl+P (toggle preview), Ctrl+B/I (format).
+#### The Persistence Layer: A Self-Contained World
 
-#### ASCII/ANSI Art Editor (`paint`)
+The entire state of OopisOS is stored locally and persistently within your browser, requiring no server interaction. This is achieved through a two-pronged storage strategy:
 
-- **ASCII/ANSI Art Editor (`paint`):** Create and edit character-based art with a dedicated paint program. Supports multiple colors, tools (pencil, eraser), undo/redo, and saves to the custom `.oopic` file format.
+- **IndexedDB:** Provides the robust, transactional database needed to manage the entire hierarchical file system. Every directory, file, and its contents are stored here.
+- **LocalStorage:** Acts as a faster key-value store for session-critical data, including the list of registered users, command history, aliases, and other user-specific preferences.
 
-#### The AI Librarian (`chidi`)
+This separation ensures that the file system is durable and well-structured, while session data is loaded quickly. Your entire digital world is self-contained and will be waiting for you when you return.
 
-- **The AI Librarian (`chidi`):** An advanced Markdown reader that recursively finds all `.md` files in a path and lets you use AI to summarize, study, and ask questions about them, either individually or all at once.
+#### The Security Model: Control and Privacy
 
-#### Tool-Using AI Integration (`gemini`)
+Security and multi-user capabilities are not an afterthought; they are central to the OS design.
 
-- **Tool-Using AI Integration (`gemini`):** Send a prompt to a Gemini AI model. The AI can now use OopisOS commands like `ls`, `cat`, `find`, and `tree` to explore the file system and gather information to provide more accurate, context-aware answers.
+- **User Roles:** The system includes a "superuser" (`root`) with full privileges, alongside standard users who are subject to permission checks. This allows for safe system administration and protected user spaces. The default `root` password is `mcgoopis`.
+- **Password Hashing:** User passwords are not stored in plain text. They are securely hashed, meaning that even direct inspection of the stored data will not reveal a user's password.
+- **Permission System:** The `chmod` command implements the standard Unix-like octal permission model. Each digit represents a set of permissions (Read=4, Write=2, Execute=1) for the User, Group, and Other, respectively. For example, `chmod 751` on a script grants full control to the owner (`rwx`), read/execute to the group (`r-x`), and execute-only to everyone else (`--x`).
 
-#### Job Control (`ps`, `kill`)
+#### The Command Execution Pipeline: A Modular Engine
 
-- **Job Control (`ps`, `kill`):** Run processes in the background with `&`, view them with `ps`, and terminate them with `kill`.
+Every command you type follows a structured, modular path from input to execution. This design promotes stability and makes the system easy to extend.
 
-#### Networking Utilities (`wget`, `curl`)
+- **Lexing and Parsing (`lexpar.js`):** The input string is first broken down into a sequence of tokens and then parsed into a structured command, complete with arguments, flags, and redirection/piping instructions.
+- **Command Execution (`commexec.js`):** The parsed command is passed to the executor, which validates permissions and runs the corresponding function. This is also where background processes (`&`) are managed, allowing the OS to handle long-running tasks without freezing the terminal. You can view and manage these tasks with `ps` and `kill`.
 
-- **Networking Utilities (`wget`, `curl`):** Fetch content from the web directly within the OS. `wget` downloads files, while `curl` displays data in the terminal.
-
-#### Interactive Text Adventure Game (`adventure`)
-
-- **Interactive Text Adventure Game (`adventure`):** Launch and play text-based adventure games within a dedicated modal window. Supports loading custom adventures from JSON files.
-
-#### Scripting Engine (`run`)
-
-- **Scripting Engine (`run`):** Execute sequences of OopisOS commands from script files. Supports comments (`#`) and argument passing (`$1`, `$@`, `$#`).
-
-#### Common Utilities
-
-- **Common Utilities:** `echo`, `date`, `help`, `clear`, `history`, `alias`, `unalias`, `export`, `upload`, `grep` (with -i, -v, -n, -c, -R), and `printscreen`.
-
-### Getting Started
-
-1. **Download:** Obtain `index.html`, all `.js` files, and `style.css`.
-2. **Open:** Open `index.html` in any modern web browser.
-3. **Interact:** The OopisOS terminal will load. You are logged in as "Guest". Start by typing `help` to see a list of available commands.
-
-#### First Commands to Try:
-
-```bash
-# To get a feel for the system, populate the Guest home directory with a set of example files.
-run /inflate.sh
-
-# Explore the newly created files and directories with the 'tree' command
-tree /home/Guest/docs
-
-# Use the new 'chidi' command to analyze all the markdown files in the docs directory
-chidi /home/Guest/docs
-
-# Create your own command shortcut
-alias ll="ls -la"
-ll /home
-
-# Create a new user and a new group
-login root mcgoopis
-useradd mydev
-groupadd projects
-usermod -aG projects mydev
-logout
-login mydev
-
-# Create a project and an executable script with arguments
-mkdir my_project && cd my_project
-chgrp projects .
-edit my_script.sh
-# Inside editor: type 'echo "My script works for $1!" && adventure', then Ctrl+S
-chmod 770 my_script.sh
-run ./my_script.sh "the best user"
-````
-
-### Core Concepts
-
-#### The Terminal Interface
-
-OopisOS provides a standard command-line interface with advanced shell features:
-
-- **Piping (`|`):** Send the output of one command to the input of another. `history | grep "ls"`
-- **Redirection (`>`, `>>`):** Write command output to a file (overwrite with `>` or append with `>>`). `date >> /data/logs/system.log`
-- **Sequencing (`;`):** Execute multiple commands on a single line. `cd / && ls -a`
-- **Backgrounding (`&`):** Run a command asynchronously. See active jobs with `ps` and terminate with `kill [job_id]`. `delay 5000 &`
-- **Aliasing (`alias`):** Create shortcuts for longer commands. `alias ll="ls -l"`
-- **Environment Variables (`set`, `unset`):** Create session-specific variables with `set VAR="value"` and use them in commands with `$VAR`.
-
-#### User and Permission Model
-
-OopisOS features a multi-user environment with a Unix-like permission system.
-
-- **Default Users:**
-  - `Guest`: The initial user. Has no password. Primary group is `Guest`.
-  - `root`: The "superuser." Can bypass all file permission checks. Default password is `mcgoopis`. Primary group is `root`.
-  - `userDiag`: A special user for testing with the password `pantload`. Primary group is `userDiag`.
-- **Authentication:** `login` and `su` will prompt for a password if the target account has one. Passwords are case-sensitive and securely hashed.
-- **Permissions (`chmod`):** The `chmod` command uses a three-digit octal mode. The first digit is for the owner, the second for the group, and the third for others. Each is a sum of Read (4), Write (2), and Execute (1). Example: `chmod 750 script.sh` gives `rwx` to the owner, `r-x` to the group, and no permissions to others.
-- **Ownership (`chown`, `chgrp`):** Only the `root` user can change a file's owner (`chown`). The owner or `root` can change the group (`chgrp`).
-- **Groups (`groupadd`, `usermod`):** Create new groups with `groupadd` and add users to them with `usermod -aG [group] [user]`.
-
-#### The Text Editor (`edit`)
-
-A powerful, full-screen text editor with features for both developers and writers.
-
-- **Modes:** Auto-detects plain text, Markdown, and HTML files for special features.
-- **Live Preview:** Renders Markdown and HTML in a toggleable preview pane (Ctrl+P).
-- **Formatting Toolbar:** For Markdown/HTML, provides quick access to common formatting actions like bold, italics, lists, and code blocks.
-- **Export:** Rendered Markdown or HTML can be exported to a downloadable `.html` file with a single click.
-- **Key Shortcuts:** Ctrl+S (Save & Exit), Ctrl+O (Exit/Confirm Discard), Ctrl+P (Toggle Preview), Ctrl+B/I (Format Bold/Italic).
-
-#### The ASCII Art Studio (`paint`)
-
-For when text is not enough, OopisOS includes a surprisingly powerful character-based art editor. The `paint` command opens a dedicated, full-screen canvas where you can create ASCII and ANSI art.
-
-- **Canvas & Tools:** Features an 80x24 character canvas. Use the Pencil tool to draw with a selected character and color, or the Eraser tool to clear cells.
-- **Color Palette:** Add a splash of color to your creations with a 6-color ANSI palette.
-- **File Format:** Your masterpieces are saved to a custom `.oopic` file format.
-- **Keyboard-First Workflow:** Use keyboard shortcuts like `P`/`E` for tools, `1-6` for colors, `Ctrl+S` to save, and `Ctrl+Z`/`Ctrl+Y` for undo/redo.
-
-#### The AI Librarian (`chidi`)
-
-The `chidi` command launches a powerful Markdown reader and analysis tool. When you run `chidi` on a file or directory, it finds all `.md` files and loads them into a dedicated reading interface.
-
-- **Focused Reading:** Presents a clean, rendered view of your Markdown files, free from terminal distractions.
-- **Multi-File Navigation:** If you target a directory, you can easily navigate between all found `.md` files.
-- **AI Integration:** Chidi uses the Gemini AI to provide powerful analysis tools for your documents. You can summarize the current document, ask for study questions, or even ask a question across all loaded documents at once.
-
-#### AI Agency (`gemini`)
-
-Interact with a Gemini AI model that can use OopisOS commands to answer your questions.
-
-- **Syntax:** `gemini [-n] "<prompt>"`
-- **Functionality:** Ask a question. Gemini can run commands like `ls`, `cat`, `find`, and `tree` to explore the file system for context, then synthesize an answer based on the results. Use `-n` to start a new, memory-free conversation.
-
-#### Scripting Engine (`run`)
-
-Automate tasks by writing shell scripts.
-
-- Create a text file containing a sequence of OopisOS commands (conventionally with a `.sh` extension).
-- **Features:** Supports comments (`#`) and argument passing (`$1`, `$@`, `$#`).
-- **Execution:** Make the script executable (`chmod 700 your_script.sh`) then run it with `run ./your_script.sh arg1 arg2`.
-
-#### Utility Scripts: `inflate` & `diag`
-
-- **inflate.sh:** Run this script (`run /inflate.sh`) to populate the `/home/Guest` directory with a diverse set of example files and directories. This is perfect for creating a "showcase" environment to explore.
-- **diag.sh:** This is a comprehensive, non-interactive diagnostic test suite (`run /diag.sh`) that verifies the core functionality of most commands, their flags, error handling, and interaction with the permission and group systems.
+## For Developers: Contributing to OopisOS
 
 #### Project Structure
 
-- `main.js`: Main entry point, event listeners.
-- `config.js`: Central configuration for the entire OS.
-- `utils.js`: Helper and utility functions.
-- `storage.js`: Manages LocalStorage and IndexedDB interactions.
-- `fs_manager.js`: Core logic for the virtual file system.
-- `user_manager.js`: Handles users, groups, and authentication.
-- `session_manager.js`: Manages saving and loading of user sessions.
-- `output_manager.js`: Controls all output to the terminal screen.
-- `terminal_ui.js`: Manages terminal UI state and interactions (prompt, input, etc.).
-- `lexpar.js`: Lexer and Parser for command-line input.
-- `commexec.js`: Command Executor and definitions for all built-in commands.
-- `editor.js`: All logic for the text editor.
-- `oopis_paint.js`: All logic for the ASCII/ANSI art editor.
-- `chidi_app.js`: All logic for the Chidi Markdown analyzer.
-- `text_adventure.js`: All logic for the text adventure game engine.
+The codebase is organized into modular files, each with a clear responsibility.
+
+- `main.js`: Main entry point, glues the system together and handles top-level event listeners.
+- `config.js`: Centralized configuration for OS-wide settings.
+- `storage.js`: An abstraction layer that manages all interactions with `IndexedDB` and `LocalStorage`.
+- `fs_manager.js`: The heart of the VFS, translating file operations into `storage.js` calls.
+- `user_manager.js`: Handles all logic for users, groups, permissions, and authentication.
+- `session_manager.js`: Manages saving and loading user sessions and system state.
+- `output_manager.js`: Controls all output rendering to the terminal screen.
+- `terminal_ui.js`: Manages the terminal's UI state (prompt, input field, history navigation).
+- `lexpar.js`: The Lexer and Parser for all command-line input.
+- `commexec.js`: The Command Executor and registry for all built-in command definitions.
+- `editor.js`: All logic for the `edit` text editor application.
+- `oopis_paint.js`: All logic for the `paint` ASCII/ANSI art editor application.
+- `chidi_app.js`: All logic for the `chidi` Markdown analyzer application.
+- `text_adventure.js`: The engine for the `adventure` game application.
 
 #### Adding a New Command (The v2.7 Way)
 
+Adding a new command is a declarative process designed to be simple and secure.
+
 1. Create a new command file in `/scripts/commands/`.
 2. Register the command in `index.html` with a `<script>` tag.
-3. Use the declarative `CommandRegistry.register` pattern to define the command, its validation rules, and its core logic.
+3. Use the `CommandRegistry.register` pattern to define the command, its validation rules, and its core logic.
+
+JavaScript
 
 ```
 // In /scripts/commands/mycmd.js:
@@ -281,16 +155,15 @@ Automate tasks by writing shell scripts.
 
     const description = "A one-line summary for the 'help' command.";
     const helpText = "Usage: mycmd [file]\n\nExplain your command in detail here.";
-    
+
     // 3. Register it with the system
     CommandRegistry.register("mycmd", myNewCmdDefinition, description, helpText);
 })();
 ```
 
-### Technology Stack
+## Further Documentation
 
-- **Frontend & Logic:** HTML5, CSS3, Vanilla JavaScript (ES6+).
-- **UI Styling:** Tailwind CSS (pre-compiled).
-- **Markdown Parsing:** Marked.js.
-- **AI Interaction:** Google Gemini API.
-- **Persistent Storage:** IndexedDB (for the file system) and LocalStorage (for session states, user list, editor preferences, aliases).
+To keep this document focused on core concepts, more detailed information has been moved to separate files.
+
+- **`/docs/command_reference.md`:** An exhaustive reference for every command, including all flags and usage examples.
+- **`/docs/tutorial.md`:**  A collection of guided tutorials for more complex tasks, like writing shell scripts and managing project permissions.

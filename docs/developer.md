@@ -1,201 +1,93 @@
-# OopisOS v2.7 Developer Documentation
+# OopisOS v2.7 Architectural Documentation
 
-- [1. Introduction](#1-introduction)
-- [2. Project Overview](#2-project-overview)
-- [3. Architecture](#3-architecture)
-    - [Core System & Entry Point](#3-architecture)
-    - [Command Processing Layer](#3-architecture)
-    - [State & Persistence Layer](#3-architecture)
-    - [UI & Interaction Layer](#3-architecture)
-    - [Applications](#3-architecture)
+## 1. Design Philosophy & Core Principles
 
-- [4. Setup and Installation](#4-setup-and-installation)
-    - [Prerequisites](#prerequisites)
-    - [Development Setup](#development-setup)
-    - [Project Structure](#project-structure)
+This document provides a comprehensive architectural overview of the OopisOS v2.7 project. It is intended for developers who will build upon, extend, or maintain the system. To contribute effectively, it is essential to first understand the philosophical underpinnings of the architecture.
 
-- [5. Core Components](#5-core-components)
-    - [Command System](#command-system)
-    - [File System](#file-system)
-    - [User & Group Management](#user--group-management)
-    - [Session & State Management](#session--state-management)
-    - [Terminal UI & Output](#terminal-ui--output)
-    - [The Editor Application (`edit`)](#the-editor-application-edit)
-    - [The Paint Application (`paint`)](#the-paint-application-paint)
-    - [The Chidi.md Reader & Analyzer (`chidi`)](#the-chidimd-reader--analyzer-chidi)
+OopisOS is more than a simulated operating system; it is an exploration of a fully self-contained, secure, and persistent client-side application paradigm. Its design is governed by five foundational pillars. Every component and decision must be weighed against these principles.
 
-- [6. Adding New Commands](#6-adding-new-commands)
+1. **Radical Self-Reliance:** The system is 100% client-side. It has no dependency on a backend server for its core logic, state, or execution. This principle dictates that all functionality, from command execution to data storage, must be achievable within the confines of a modern web browser.
+2. **Architected Persistence:** The system state is not ephemeral. The virtual file system, user credentials, session data, and command history are all meticulously persisted locally. This ensures a continuous, reliable user experience across sessions and makes the user the sole custodian of their data.
+3. **Enforced Modularity:** The system is composed of discrete, specialized components with well-defined responsibilities and interfaces. This is not merely for organization; it is a critical strategy for security, maintainability, and extensibility. Logic is never intermingled; it is orchestrated.
+4. **Security by Design:** Security is not a feature or an afterthought; it is a foundational requirement woven into the fabric of the architecture. This is manifested through a strict permission model, sandboxed execution for untrusted content, robust input validation, and secure credential handling. We operate on the principle of least privilege.
+5. **Contained & Orchestrated Execution:** All operations flow through specific, controlled channels. The Command Executor is the central orchestrator for command processing, and the Output Manager is the sole conduit for display. This containment ensures predictability, simplifies debugging, and prevents unintended side effects.
 
+## 2. System Architecture
 
-## 1. Introduction
+The architecture is layered, ensuring a clear separation of concerns. Each layer communicates through well-defined APIs provided by the manager modules.
 
-This documentation provides a comprehensive technical overview of the OopisOS v2.7 project. It is intended for developers who wish to understand, modify, or extend the system. OopisOS is a sophisticated, client-side web application that simulates a Unix-like operating system, emphasizing modularity, extensibility, and modern JavaScript practices.
+#### **Layer 1: The System Bootstrap & Core Plane**
 
-## 2. Project Overview
+This is the foundational layer that brings the OS to life.
 
-OopisOS is a self-contained, browser-based terminal environment. Key characteristics include:
+- `index.html`: The vessel. Defines the minimal DOM structure required for the system to attach to. Its primary responsibility is loading all JavaScript modules in a precise, deterministic order, which is critical for ensuring dependencies are met before initialization.
+- `main.js`: The "ignition sequence." On `window.onload`, it initiates the boot process, caches essential DOM elements for performance, and systematically initializes all manager modules. It establishes the primary connection between the user and the system by setting up the core terminal event listeners.
+- `config.js`: The system's constitution. A centralized, immutable source of truth for system-wide constants. This includes everything from default permission modes to UI message strings. Centralizing configuration prevents magic strings and numbers, making the system more maintainable and predictable.
+- `utils.js`: A toolkit of pure, stateless functions. These are globally accessible utilities for common, repetitive tasks (DOM creation, string manipulation, etc.). Their stateless nature makes them safe, predictable, and highly reusable.
 
-- **100% Client-Side:** The application runs entirely in the browser, with no backend server dependency.
-- **Persistent State:** Data, including the file system, user credentials, and session information, is persisted locally using `IndexedDB` and `localStorage`.
-- **Modular Architecture:** The system is composed of discrete manager modules and a file-based command registration system, promoting maintainability and extensibility.
-- **Rich Feature Set:** Includes a hierarchical file system, a multi-user model with groups and permissions, a suite of ~60 commands, I/O redirection and piping, background job control, and several full-screen applications (`edit`, `paint`, `chidi`, `adventure`).
+#### **Layer 2: The Command Lifecycle & Execution Engine**
 
-## 3. Architecture
+This layer is responsible for translating user input into secure, executable actions. The multi-stage pipeline is a classic, robust design pattern chosen specifically to isolate and secure each phase of command processing.
 
-OopisOS is built on a modular architecture where different concerns are handled by specialized manager objects.
+- `lexpar.js`: Contains the **Lexer** and **Parser**. The Lexer deconstructs the raw command string into a sequence of well-defined tokens (e.g., `WORD`, `OPERATOR_PIPE`), neutralizing the ambiguity of raw text. The Parser then constructs an abstract syntax tree—a structured, executable representation of command pipelines—from this token stream. This structured representation is vital for the executor to understand the user's intent without ambiguity.
+- `commexec.js`: The **CommandExecutor** is the heart of the system's logic, acting as a central processing unit. It does **not** contain any command-specific logic itself. Its sole purpose is to orchestrate the execution pipeline: managing I/O between piped commands, handling file redirection (`>`/`>>`), and managing background processes (`&`). This separation is a key security feature, preventing command-level logic from influencing the execution environment itself.
+- `scripts/commands/registry.js`: The **CommandRegistry** serves as the system's central service locator for commands. Each command file registers itself, its definition, and its help text. This allows for a completely decoupled, file-based command system where new commands can be added without modifying the core executor.
+- `scripts/commands/*.js`: Each file is a self-contained, modular command definition. This design ensures that command logic is isolated, easy to maintain, and can be tested independently.
 
-1. **Core System & Entry Point**
+#### **Layer 3: The State & Persistence Core**
 
-    - `index.html`: The main entry point. It defines the basic DOM structure and is responsible for loading all necessary JavaScript modules in the correct order.
-    - `main.js`: Handles the OS boot sequence (`window.onload`), caching essential DOM elements, initializing all managers, and setting up the primary terminal event listeners.
-    - `config.js`: A central module providing system-wide configuration constants, from API endpoints to default file permissions and UI message strings.
-    - `utils.js`: A collection of globally accessible, stateless utility functions for tasks like DOM element creation, string formatting, and data validation.
-2. **Command Processing Layer**
+This layer manages the system's "memory"—both short-term (session) and long-term (disk).
 
-    - `lexpar.js`: Contains the **Lexer** and **Parser**. The Lexer transforms the raw command string into a sequence of tokens (e.g., `WORD`, `OPERATOR_PIPE`). The Parser then consumes this token stream to build a structured, executable representation of command pipelines.
-    - `commexec.js`: The **CommandExecutor** is the central orchestrator for all command execution. It does _not_ contain command logic itself. Instead, it processes the parsed pipelines, manages I/O between piped commands, handles output redirection (`>`/`>>`), and launches/manages background processes (`&`).
-    - `scripts/commands/registry.js`: The **CommandRegistry** provides a central `register` function. Each individual command file calls this function to make the `CommandExecutor` aware of its existence, definition, and help text.
-    - `scripts/commands/*.js`: Each file in this directory defines a single command, its validation rules, and its core logic. This modular approach keeps command logic isolated and maintainable.
-3. **State & Persistence Layer**
+- `storage.js`: A low-level abstraction layer. The `StorageManager` provides a robust, standardized interface for `localStorage`, while the `IndexedDBManager` handles the more complex, asynchronous operations required for the file system database. This abstraction allows us to change the underlying storage mechanism in the future without refactoring the entire system.
+- `fs_manager.js`: The **FileSystemManager** is the gatekeeper for the entire virtual file system. It manages the in-memory representation (`fsData`) and orchestrates its persistence to `IndexedDB`. The choice of `IndexedDB` is deliberate: it provides transactional, asynchronous storage suitable for the complex, object-based nature of a file system.
+- `user_manager.js`: The **UserManager** and **GroupManager** control all aspects of identity and authentication. They are the sole authorities on user accounts, password validation (using the Web Crypto API for secure hashing), and group memberships.
+- `session_manager.js`: The **SessionManager** and **EnvironmentManager** handle the ephemeral state of a user's session. This includes the user stack for `su`/`logout`, environment variables (`$USER`, `$PATH`), and the crucial logic for creating and restoring session snapshots.
 
-    - `storage.js`: Implements the `StorageManager` (a robust wrapper for `localStorage`) and the `IndexedDBManager` (which handles the database connection for the file system).
-    - `fs_manager.js`: The **FileSystemManager** controls the in-memory representation of the virtual file system (`fsData`) and orchestrates saving it to and loading it from `IndexedDB`.
-    - `user_manager.js`: The **UserManager** and **GroupManager** handle user accounts, authentication (password hashing, login/su flow), and group memberships.
-    - `session_manager.js`: Contains the **SessionManager** (which manages the user stack for `su`/`logout` and manual/automatic session state snapshots) and the **EnvironmentManager** (which handles session-specific variables like `$USER` and `$PATH`).
-4. **UI & Interaction Layer**
+#### **Layer 4: The Human-Interface Bridge**
 
-    - `terminal_ui.js`: Manages all interactive components of the terminal, including the prompt, the user input line, tab completion logic (`TabCompletionManager`), and modal dialogs (`ModalManager`, `ModalInputManager`).
-    - `output_manager.js`: The sole conduit for displaying text on the terminal screen. It handles formatting, styling, and console overrides.
-5. **Applications**
+This layer abstracts all user interaction, ensuring that the core system remains independent of the presentation layer.
 
-    - `editor.js`: The full-screen text editor application (`edit`).
-    - `oopis_paint.js`: The character-based art studio application (`paint`).
-    - `chidi_app.js`: The AI-powered Markdown analyzer (`chidi`).
-    - `text_adventure.js`: The text adventure game engine (`adventure`).
+- `terminal_ui.js`: Manages the interactive surface of the terminal. This includes the command prompt, user input line, sophisticated tab completion, and modal dialogs. Its components are designed to be script-aware, a critical feature for testing and automation.
+- `output_manager.js`: The single, disciplined channel for all terminal display output. By forcing all output through the `OutputManager`, we ensure consistent formatting, proper handling of output streams, and the ability to suppress or redirect output when full-screen applications are active.
 
-## 4. Setup and Installation
+## 3. Core Component Deep Dive
 
-### Prerequisites
+Here, we analyze key components through the lens of our architectural principles.
 
-- A modern web browser that supports ES6+ JavaScript, `IndexedDB`, and the Web Crypto API.
-- For local development, a simple web server is required to handle file loading without running into CORS issues.
+### The Command System: Secure by Process
 
-### Development Setup
+The command execution flow is a direct implementation of our **Security by Design** and **Contained Execution** principles.
 
-1. Clone or download the project repository.
-2. Navigate to the project's root directory in your local terminal.
-3. Start a local web server. A simple one can be run with Python: `python -m http.server`.
-4. Open your browser and navigate to the local server's address (e.g., `http://localhost:8000`).
+1. **Input & Expansion:** The `CommandExecutor` first performs environment variable and alias expansion. This happens _before_ tokenization.
+2. **Tokenization (Lexer):** The command string is converted into a safe, predictable sequence of tokens. This step neutralizes potentially malicious input by transforming it into a structured format.
+3. **Parsing (Parser):** The token stream is built into an Abstract Syntax Tree. This creates a formal, unambiguous execution plan. At this stage, a malformed command is simply a parsing error, not a potential security exploit.
+4. **Execution (Executor):** The `CommandExecutor` traverses the execution plan. It looks up the requested command in the `CommandRegistry` and invokes it, passing a **secure, pre-validated context object**. The command's `coreLogic` only receives what the executor has deemed safe and valid.
 
-### Project Structure
+### The File System: A Bastion of State
 
-Plaintext
+- **Structure & Persistence:** The VFS is a single, coherent JavaScript object (`fsData`), a design that allows for atomic updates and simple serialization. Using `IndexedDB` (via `FileSystemManager`) ensures **Architected Persistence** with transactional integrity, preventing data corruption.
+- **Security Gateway:** The `hasPermission` function in `FileSystemManager` is the **single source of truth** for all access control. All file operations, without exception, must pass through this gateway. It rigorously checks user/group ownership against a node's octal `mode`. This centralization is a cornerstone of our security model. The `root` user's ability to bypass these checks is an explicit, and carefully managed, exception.
 
-```
-oopisOS/
-├── docs/                 # Documentation files (guide.html, zine.html, etc.)
-├── extras/               # Helper scripts (diag.sh, inflate.sh)
-├── scripts/
-│   ├── commands/         # <-- All individual command definitions reside here
-│   │   ├── ls.js
-│   │   ├── cat.js
-│   │   └── ... (60+ command files)
-│   ├── chidi_app.js
-│   ├── commexec.js       # Command Executor
-│   ├── config.js
-│   ├── editor.js
-│   ├── fs_manager.js
-│   ├── lexpar.js
-│   ├── main.js           # Main boot sequence
-│   ├── marked.min.js     # Markdown parsing library
-│   ├── oopis_paint.js
-│   ├── output_manager.js
-│   ├── registry.js       # Command Registry
-│   ├── session_manager.js
-│   ├── storage.js
-│   ├── terminal_ui.js
-│   ├── text_adventure.js
-│   ├── user_manager.js
-│   └── utils.js
-├── style.css             # Unified stylesheet
-├── index.html            # Main application entry point
-└── LICENSE.txt
-```
+### User & Credential Management: The Keys to the Kingdom
 
-## 5. Core Components
+- **Secure Storage:** We use the browser's built-in **Web Crypto API** to perform one-way SHA-256 hashing of passwords before they are stored. Plaintext passwords never touch our persistent storage. This is a non-negotiable implementation of **Security by Design**.
+- **Centralized Authentication:** All authentication logic is centralized in the `UserManager`. This prevents the proliferation of disparate, potentially insecure login flows. When interactive password entry is required, the `ModalInputManager` is used to provide a secure, dedicated input channel, preventing password leakage into command history or the screen.
 
-### Command System
+### Full-Screen Applications: Contained Ecosystems
 
-The command system is the heart of OopisOS's interactivity. The execution flow is as follows:
+Our full-screen applications (`edit`, `paint`, `chidi`) are not just features; they are case studies in applying our architectural principles.
 
-1. **Input:** The user types a command in the terminal UI.
-2. **Environment Variable Expansion:** The `CommandExecutor` first scans the raw string for `$VAR` or `${VAR}` patterns and replaces them with values from the `EnvironmentManager`.
-3. **Alias Expansion:** The first word of the command is checked against the `AliasManager`. If it's an alias, it's expanded (recursively, with a depth limit to prevent loops).
-4. **Tokenization:** The resulting command string is passed to the `Lexer`, which breaks it into a flat array of `Token` objects (e.g., `WORD`, `OPERATOR_PIPE`).
-5. **Parsing:** The `Parser` consumes the token stream and builds an array of `ParsedPipeline` objects. Each pipeline contains segments (the commands) and metadata for redirection or backgrounding.
-6. **Execution:** The `CommandExecutor` iterates through the pipelines. For each command segment, it looks up the command handler in the `commands` object (populated at boot time from the `CommandRegistry`). It then calls this handler, passing a context object with parsed arguments, flags, and options.
+- **`edit` (The Editor):** Demonstrates the separation of concerns. The `EditorUI` handles only rendering, while the `EditorManager` manages state (content, dirty status, undo/redo stacks). The live HTML preview is rendered in a **sandboxed `<iframe>`**. This is a critical security measure to prevent style conflicts and, more importantly, to block execution of potentially malicious scripts within a user's document, perfectly exemplifying **Security by Design**.
+- **`paint` (The Art Studio):** The canvas is an abstract data model (a 2D array of objects), completely decoupled from the DOM. `PaintUI`'s only job is to render this model. Saved `.oopic` files are a clean JSON serialization of this model, embodying **Architected Persistence** in a portable format.
+- **`chidi` (The Analyzer):** The "Ask" feature's use of a Retrieval-Augmented Generation (RAG) strategy is a prime example of **Radical Self-Reliance** and intelligent design. By pre-filtering for relevant files locally before constructing a focused prompt for the Gemini API, the application conserves external resources, improves accuracy, and operates efficiently within the constraints of the client environment.
 
-### File System
+## 4. Extending the System: Adding New Commands
 
-- **Data Structure:** The entire file system is a single JavaScript object stored in `fsData`. Directories are nodes with a `children` property. Files are nodes with `content`, `owner`, `group`, and `mode` properties.
-- **Persistence:** The `FileSystemManager` uses the `IndexedDBManager` to save the `fsData` object. This provides a transactional, asynchronous, and robust storage mechanism suitable for larger data sets.
-- **Permissions:** The `hasPermission` function in `FileSystemManager` is the single source of truth for all access control. It checks a user's name and group memberships against a node's owner, group, and 3-digit octal `mode`. The `root` user bypasses all checks.
+The process for adding new commands is designed to be simple, secure, and consistent with our principle of **Enforced Modularity**.
 
-### User & Group Management
+**Step 1: Create the Command File** Create a new file in `scripts/commands/` (e.g., `mycommand.js`). The file itself is the module.
 
-- **Credentials:** Usernames, securely hashed passwords (SHA-256 via the Web Crypto API), and primary group assignments are stored in a single object in `localStorage`.
-- **Groups:** A separate `localStorage` object maps group names to arrays of member usernames.
-- **Authentication Flow:** The `UserManager` centralizes the authentication logic. It first attempts to authenticate with a command-line-provided password. If that fails or isn't provided, and the user account requires a password, it uses the `ModalInputManager` to securely prompt the user.
-
-### Session & State Management
-
-- **Session Stack:** A simple array, `userSessionStack`, tracks the active user. `su` pushes a user onto the stack; `logout` pops from it.
-- **Automatic State:** Before a user switch (`su` or `login`), the current session (terminal output, history, environment variables) is saved to a user-specific key in `localStorage`. This state is restored when the user's session becomes active again.
-- **Manual Snapshots (`savestate`):** This saves the current session state _and_ a complete, deep-copied snapshot of the entire file system to `localStorage`.
-- **Full Backup (`backup`):** This command gathers all `localStorage` data (users, groups, all session states) and the current file system snapshot into a single JSON object that is then offered to the user as a downloadable file.
-
-### Terminal UI & Output
-
-- **Modularity:** The UI is managed by a set of distinct modules within `terminal_ui.js`:
-    - `ModalManager`: Handles graphical and terminal-based (Y/N) confirmation dialogs. Crucially, it is script-aware and will consume input from a running script instead of prompting a real user.
-    - `ModalInputManager`: Manages single-line, dedicated input for things like passwords, with support for obscured input.
-    - `TabCompletionManager`: Provides context-aware completion for commands, paths, and users.
-- **Single Output Channel:** All terminal output is routed through `OutputManager.appendToOutput`. This ensures that output is correctly handled, styled, and suppressed when full-screen applications are active.
-
-### The Editor Application (`edit`)
-
-The editor (`editor.js`) is a modal application with a clear separation of concerns.
-
-- **`EditorUI`:** Manages all DOM elements. It builds the layout, updates the status bar, renders line numbers, and handles view mode changes. It receives instructions from the `EditorManager`.
-- **`EditorManager`:** Manages the application's state, including the file path, content, dirty status, undo/redo stacks, and current view mode. It processes all user input (keyboard shortcuts, button clicks) and orchestrates UI updates and file system interactions via the `FileSystemManager`.
-- **Live Preview:** For HTML, the preview is rendered in a sandboxed `<iframe>` to prevent style conflicts and execution of malicious scripts. For Markdown, the `marked.js` library is used to convert the text to HTML, which is then injected into the preview pane.
-
-### The Paint Application (`paint`)
-
-The paint application (`oopis_paint.js`) provides a character-based art studio.
-
-- **Data Model:** The canvas is a 2D array, where each cell is an object: `{ char, fg, bg }`. All drawing operations manipulate this data model, which is then rendered to the DOM by `PaintUI`.
-- **File Format:** Saved `.oopic` files are JSON serializations of the canvas data model, including width and height metadata. This makes them portable and easy to parse.
-- **Undo/Redo:** Like the editor, it uses an undo/redo stack, saving the entire `canvasData` state after each drawing action (debounced for performance).
-
-### The Chidi.md Reader & Analyzer (`chidi`)
-
-The Chidi application (`chidi_app.js`) is a powerful tool for working with Markdown files.
-
-- **Recursive File Gathering:** The `chidi` command recursively traverses the specified directory to find all `.md` files, respecting read and execute permissions.
-- **RAG Strategy:** The "Ask" feature uses a **Retrieval-Augmented Generation** approach. To answer a question across all loaded documents, it first performs a local keyword search to identify the most relevant files. It then constructs a single, focused prompt for the Gemini API containing only the content of those relevant files. This improves accuracy, reduces API token usage, and allows it to handle a larger corpus of documents than would fit in a single prompt.
-
-## 6. Adding New Commands
-
-The v2.7 architecture makes adding new commands simple and clean.
-
-**Step 1: Create the Command File**
-
-Create a new JavaScript file in the `scripts/commands/` directory (e.g., `mycommand.js`).
-
-**Step 2: Define the Command**
-
-Inside your new file, create an IIFE and define your command using the declarative object pattern. Register it with the `CommandRegistry`.
+**Step 2: Define the Command Contract** Inside the file, use an IIFE to prevent global scope pollution. Define your command using the declarative object pattern. This pattern is not for convenience; it is a **security contract**. You are declaring the command's requirements to the executor.
 
 JavaScript
 
@@ -204,41 +96,47 @@ JavaScript
 (() => {
     "use strict";
 
-    // 1. Define the command's behavior and requirements.
+    // The command's formal definition and contract with the CommandExecutor.
     const myCommandDefinition = {
         commandName: "mycommand",
+        // Declare all flags. The executor will parse them for you.
         flagDefinitions: [
             { name: "verbose", short: "-v", long: "--verbose" }
         ],
+        // Declare argument cardinality. The executor enforces this.
         argValidation: {
             min: 1,
             error: "Usage: mycommand [-v] <path>"
         },
+        // Declare which arguments are paths and their expected type.
+        // The executor validates existence and type.
         pathValidation: [
             {
-                argIndex: 0, // Validate the first argument (at index 0) as a path.
+                argIndex: 0,
                 options: { expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE }
             }
         ],
+        // Declare required permissions. The executor performs the check
+        // using the FileSystemManager's security gateway.
         permissionChecks: [
             {
                 pathArgIndex: 0,
                 permissions: ["read"]
             }
         ],
-        // 2. Write the core logic. It only runs if all the above checks pass.
+        // The core logic only executes if every single one of the
+        // above declarations is satisfied by the executor.
         coreLogic: async (context) => {
-            // The context object contains everything you need, fully validated.
+            // 'context' is a secure, pre-validated object. You can trust its contents.
             const { args, flags, currentUser, validatedPaths } = context;
             
-            // validatedPaths[0] is guaranteed to be a valid, readable file path object.
+            // Thanks to the contract, this path is guaranteed to exist and be readable.
             const pathInfo = validatedPaths[0];
             
             if (flags.verbose) {
                 await OutputManager.appendToOutput(`Verbose mode ON for user ${currentUser}`);
             }
 
-            // Command implementation goes here...
             const content = pathInfo.node.content;
             
             return {
@@ -248,64 +146,30 @@ JavaScript
         }
     };
 
-    // 3. Define the help texts for 'help' and 'man'.
-    const myCommandDescription = "A brief, one-line description for the 'help' command.";
+    // Human-readable documentation for the 'help' and 'man' commands.
+    const myCommandDescription = "A brief, one-line description of the command.";
     const myCommandHelpText = `Usage: mycommand [OPTIONS] <path>
 
-A detailed explanation of the command, its purpose, and how to use it.
-This text is used by the 'man' command.
+A detailed explanation of the command, its purpose, and its behavior.
+This text is the foundation of our user-facing documentation.
 
 OPTIONS
-  -v, --verbose    Enable verbose output.
+  -v, --verbose    Enable verbose, detailed output.`;
 
-EXAMPLES
-  mycommand /home/Guest/README.md       An example of how to use the command.`;
-
-    // 4. Register the command with the system.
+    // Register the command, its contract, and its documentation with the system.
     CommandRegistry.register("mycommand", myCommandDefinition, myCommandDescription, myCommandHelpText);
 })();
-
 ```
 
-**Step 3: Register the Script in `index.html`**
+**Step 3: Register the Script in `index.html`** Add a `<script>` tag for your new file in `index.html`. The load order is critical: it must be placed _after_ `registry.js` but _before_ `commexec.js`.
 
-Open `index.html` and add a `<script>` tag for your new command file. It must be placed after `scripts/commands/registry.js` but before `scripts/commexec.js`.
+The `CommandExecutor` will discover and integrate your command on the next system boot, with no further configuration needed.
 
-HTML
+## 5. Architectural Mandates for Contributors
 
-```
-...
-<script src="./scripts/commands/registry.js"></script>
-<script src="./scripts/commands/ls.js"></script>
-<script src="./scripts/commands/mycommand.js"></script> <script src="./scripts/commands/pwd.js"></script>
-...
-<script src="./scripts/commexec.js"></script>
-...
-```
+When developing for OopisOS, adhere to these tenets:
 
-The `CommandExecutor` will automatically discover and integrate your command upon the next page load.
-
-## 7. APIs and Extension Points
-
-The primary way to extend OopisOS is by adding new commands, but you can also interact with the core managers:
-
-- **`CommandRegistry`**: Use `register()` to add new commands.
-- **`FileSystemManager`**: Provides a robust API for all VFS interactions: `getNodeByPath`, `createOrUpdateFile`, `deleteNodeRecursive`, `hasPermission`, etc.
-- **`UserManager` & `GroupManager`**: Manage users and groups programmatically.
-- **`TerminalUI` & `OutputManager`**: Control the terminal display, request user input, and manage modal dialogs.
-
-## 8. Best Practices
-
-- **Leverage the Framework:** Use the declarative command definition pattern (`argValidation`, `pathValidation`, `permissionChecks`) to let the `CommandExecutor` handle common validation and error-checking tasks.
-- **Use the Managers:** Interact with the file system, users, and terminal UI through their respective manager APIs. Avoid direct DOM manipulation outside of dedicated UI modules like `EditorUI`.
-- **Provide User Feedback:** For long-running or destructive operations, use the `ModalManager` to request confirmation. Provide clear success and error messages via the `OutputManager`.
-- **Document Your Work:** For any new command, provide a clear `description` and comprehensive `helpText` upon registration.
-
-## 9. Troubleshooting
-
-- **Command Not Found:**
-    1. Verify the `<script>` tag for your command exists in `index.html`.
-    2. Check the browser's developer console for any syntax errors in your command file that might prevent it from loading.
-    3. Ensure the `commandName` in your definition object matches what you're typing.
-- **Permission Denied:** Use `ls -l` and `groups` to verify the active user's permissions for the target file or directory. Remember that you need write permission on a directory to create or delete files within it.
-- **Unexpected Behavior:** Use `console.log` within your command's `coreLogic` to inspect the `context` object you receive. Check that arguments, flags, and validated paths are what you expect. Use the `diag.sh` script to test for regressions in core functionality.
+- **Embrace the Declarative Pattern:** Use the command definition contract (`argValidation`, `pathValidation`, `permissionChecks`) to its fullest. Do not replicate this validation logic inside `coreLogic`. Trust the executor.
+- **Communicate Through Managers:** Never interact directly with the DOM (outside of dedicated UI modules), `localStorage`, or `IndexedDB`. All interactions must go through the appropriate manager (`OutputManager`, `FileSystemManager`, etc.). This enforces our architectural layers.
+- **Provide Clear Feedback:** For any operation that is slow, destructive, or requires confirmation, use the `ModalManager`. All user-facing messages must be clear, concise, and routed through the `OutputManager`.
+- **Document Thoroughly:** Every new command is incomplete without a clear `description` and a comprehensive `helpText`. Documentation is a feature.
