@@ -3,251 +3,377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The OopisOS v2.7 Compendium - A ComputerWorld Special Investigation</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <title>The OopisOS v2.7 Compendium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Cutive+Mono&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        html, body {
+        :root {
+            --paper-bg: #f3f2e9;
+            --text-color: #333;
+            --header-font: 'Press Start 2P', cursive;
+            --body-font: 'Cutive Mono', monospace;
+            --crt-font: 'VT323', monospace;
+            --accent-red: #d94545;
+            --accent-blue: #4a7a9e;
+            --crt-bg: #1a1a1a;
+            --crt-text-green: #33ff33;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: #e0e0e0;
+            color: var(--text-color);
+            line-height: 1.8;
+            font-size: 16px;
             margin: 0;
-            background-color: #2c3e50;
-            font-family: 'Oswald', sans-serif;
-            box-sizing: border-box;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-        .presentation-container {
-            width: 100%;
+
+        .magazine-container {
+            background-color: var(--paper-bg);
             max-width: 1200px;
-            margin: 2rem auto;
-            background-color: #1a1a1a;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            overflow: hidden;
+            width: 100%;
+            padding: 3rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
         }
-        .article-content {
-            padding: 4% 9%;
-            background-color: #ffffff;
-            color: #1a1a1a;
-            position: relative;
-            box-sizing: border-box;
+
+        /* --- HEADER & MASTHEAD --- */
+        .masthead {
+            text-align: center;
+            border-bottom: 5px double var(--accent-red);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
-        .headline {
-            font-family: 'Oswald', sans-serif;
-            font-weight: 700;
-            text-transform: uppercase;
+
+        .magazine-title {
+            font-family: var(--header-font);
+            font-size: 2rem;
+            color: var(--accent-red);
             letter-spacing: 2px;
-            color: #c0392b; /* Retro red */
-            border-bottom: 4px solid #c0392b;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin: 0;
+            text-shadow: 2px 2px #000;
+        }
+
+        .masthead p {
+            font-family: var(--body-font);
+            font-size: 0.9rem;
+            margin: 0.5rem 0 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .article-title {
+            font-family: var(--header-font);
+            font-size: 2.5rem;
+            color: #222;
+            text-align: center;
+            margin: 2rem 0 0.5rem;
+            line-height: 1.2;
+        }
+
+        .byline {
+            font-family: var(--body-font);
+            font-style: italic;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        /* --- SPECIAL BOXES --- */
+        .special-box {
+            background-color: #e6e5d8;
+            border: 1px solid #c9c8bd;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            font-size: 0.95rem;
+        }
+
+        .special-box h3 {
+            font-family: var(--header-font);
+            font-size: 1rem;
+            color: #000;
+            margin: 0 0 1rem;
+            text-transform: uppercase;
+        }
+
+        .pull-quote {
+            font-family: var(--body-font);
+            font-size: 1.25rem;
+            font-style: italic;
+            text-align: center;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 70%;
+            border-top: 2px solid var(--accent-blue);
+            border-bottom: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            line-height: 1.6;
+        }
+
+        /* --- LAYOUT & TYPOGRAPHY --- */
+        .content-body {
+            column-count: 2;
+            column-gap: 3rem;
+            column-rule: 1px solid #ddd;
+        }
+
+        /* A bit of responsive design for smaller screens */
+        @media (max-width: 900px) {
+            .content-body {
+                column-count: 1;
+            }
+            .pull-quote {
+                max-width: 90%;
+            }
+        }
+
+        .content-body h2 {
+            font-family: var(--header-font);
+            font-size: 1.5rem;
+            color: #000;
+            margin: 2.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-blue);
+            /* Make header span both columns */
+            column-span: all;
+        }
+
+        .content-body h3 {
+            font-family: var(--body-font);
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            color: #444;
+            margin-top: 2rem;
+            letter-spacing: 1px;
+        }
+
+        .content-body p, .content-body li {
+            text-align: justify;
+        }
+
+        strong {
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* --- CODE BLOCKS (CRT EFFECT) --- */
+        .code-block {
+            background-color: var(--crt-bg);
+            color: var(--crt-text-green);
+            font-family: var(--crt-font);
+            font-size: 1.2rem;
+            padding: 1.5rem;
+            border: 2px solid #444;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            /* Make code blocks span both columns */
+            column-span: all;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
+            position: relative;
+        }
+        /* Scanline effect */
+        .code-block::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .code-block code {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* --- TABLES --- */
+        table {
+            column-span: all;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            font-size: 0.9rem;
+            border: 2px solid #555;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th {
+            background-color: #ddd;
+            font-family: var(--header-font);
+            font-size: 0.8rem;
+            color: #000;
             text-align: center;
         }
-        .sub-headline {
-            font-family: 'Oswald', sans-serif;
-            font-weight: 400;
-            font-size: clamp(1.5rem, 4vw, 2rem);
-            color: #2c3e50;
-            margin-top: 3rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 2px solid #bdc3c7;
-            padding-bottom: 8px;
-        }
-        .author-line { font-style: italic; color: #7f8c8d; text-align: center; margin-bottom: 3rem; }
-
-        .article-content p:not(.pull-quote) {
-            margin-bottom: 1.25rem;
-            line-height: 1.75;
-            font-family: Georgia, 'Times New Roman', Times, serif;
-        }
-
-        .screenshot {
-            display: block; /* Ensure it's a block element for centering */
-            width: 90%; /* Responsive width */
-            max-width: 720px; /* Max width to prevent it from getting too large */
-            margin: 25px auto 45px auto; /* Center it horizontally */
-            background-color: #0d0d0d;
-            border: 10px solid #2c3e50;
-            border-radius: 8px;
-            padding: 10px; /* Reduced padding */
-            font-family: 'VT323', monospace;
-            color: #00ff00;
-            white-space: pre-wrap;
-            font-size: 14px;
-            line-height: 1.4;
-            box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.15), 0 5px 15px rgba(0,0,0,0.3);
-            position: relative;
-            aspect-ratio: 4 / 3; /* Enforce 4:3 aspect ratio */
-            overflow-y: auto; /* Allow scrolling inside if content is too tall */
-            /* Themed scrollbar for webkit browsers */
-            scrollbar-width: thin;
-            scrollbar-color: #00ff00 #0d0d0d;
-        }
-        .screenshot::-webkit-scrollbar {
-            width: 8px;
-        }
-        .screenshot::-webkit-scrollbar-track {
-            background: #0d0d0d;
-        }
-        .screenshot::-webkit-scrollbar-thumb {
-            background-color: #00ff00;
-            border-radius: 4px;
-            border: 2px solid #0d0d0d;
-        }
-
-        .screenshot::before {
-            content: 'POWER'; position: absolute; bottom: -30px; right: 5px;
-            font-family: 'Oswald', sans-serif; font-size: 10px; color: #c0392b;
-        }
-        .screenshot .prompt { color: #3498db; }
-        .screenshot .command { color: #f1c40f; }
-        .screenshot .output { color: #2ecc71; }
-        .pull-quote {
-            border-left: 5px solid #c0392b; padding-left: 20px;
-            font-size: clamp(1.2rem, 3vw, 1.75rem);
-            font-style: italic; margin: 30px 0; color: #2c3e50;
-        }
-        .feature-box {
-            background-color: #ecf0f1; border: 1px solid #bdc3c7;
-            padding: 20px; margin: 25px 0; border-radius: 5px;
-        }
-        .feature-box h3 {
-            color: #2980b9; font-family: 'Oswald', sans-serif;
-            text-transform: uppercase; border-bottom: 2px solid #2980b9;
-            padding-bottom: 5px; margin-bottom: 15px; font-size: 1.25rem;
-        }
-        code {
-            font-family: 'VT323', monospace;
-            background-color: #dfe4ea;
-            color: #c0392b;
-            padding: 0.125rem 0.3rem;
-            border-radius: 0.25rem;
-            font-size: 0.95em;
-        }
-        .screenshot code { background-color: transparent; padding: 0; }
-        .command-table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
-        .command-table th, .command-table td { border: 1px solid #bdc3c7; padding: 12px; text-align: left; }
-        .command-table th { background-color: #34495e; color: #ecf0f1; font-family: 'Oswald', sans-serif; }
-        .command-table td code { font-size: 1.1em; }
     </style>
 </head>
 <body>
 
-<div class="presentation-container">
-    <div class="article-content">
+<div class="magazine-container">
+    <header class="masthead">
+        <h1 class="magazine-title">COMPUTERWORLD</h1>
+        <p>The Magazine for the Serious Computing Hobbyist</p>
+    </header>
 
-        <div class="text-right text-xs text-gray-500 mb-4">A COMPUTERWORLD SPECIAL INVESTIGATION</div>
-        <h1 class="headline">The OopisOS v2.7 Compendium</h1>
-        <p class="author-line">An Exhaustive Deep-Dive by Chip Sterling, Senior Editor</p>
+    <section class="article-header">
+        <h1 class="article-title">The OopisOS v2.7 Compendium</h1>
+        <p class="byline">An Exhaustive Deep-Dive by Chip Sterling, Senior Editor</p>
+    </section>
 
-        <p><strong>Editor's Note:</strong> When we first encountered OopisOS, we called it a "remarkable anomaly." With the release of version 2.7, the human-AI duo of Andrew Edmark and Gemini have moved beyond anomaly and into artistry. They haven't just added features; they've polished a gem into a crown jewel, creating a simulated OS that feels more robust, more intuitive, and more alive than ever. This isn't just an update; it's a statement about what a dedicated, focused development cycle can produce. Once again, we were granted unparalleled access. This is your guide to the new state of the art.</p>
-
-        <h2 class="sub-headline">Chapter 1: The Lay of the Land</h2>
-        <p>To truly appreciate OopisOS, one must understand its foundational promise: to provide a complete, powerful, and persistent computing environment that respects the sanctity of your actual machine. Every file you create, every user account you register, every line of your command history is meticulously managed within the browser's own storage capabilities. This is accomplished through a clever combination of IndexedDB for the file system data and LocalStorage for user sessions and preferences, ensuring your digital world is waiting for you each time you return. This makes OopisOS the ultimate digital terrarium—a perfectly isolated sandbox where curiosity can run wild without any risk to your host system.</p>
-        <p>The primary interface is the command line, or "shell," which is your portal into this world. Its design is a deliberate nod to the legendary UNIX systems that form the backbone of modern computing, but with a modern, user-friendly implementation. The prompt itself is a dynamic status report, generated by the `TerminalUI.updatePrompt` function, that tells you everything you need to know at a glance. The `Guest@OopisOs:/>` format breaks down into `username@hostname:current_path>`, followed by the prompt character, which can even be configured in the `/etc/oopis.conf` file. It’s a small detail, but it’s part of a design philosophy that prioritizes clarity and control, inviting you to take command from your very first keystroke.</p>
-
-        <h2 class="sub-headline">Chapter 2: The Core Lexicon - Navigating the World</h2>
-        <p>While the "Holy Trinity" of `pwd`, `ls`, and `cd` are your primary tools for navigation, their implementation in OopisOS v2.7 reveals a deeper sophistication. The `pwd` command is a simple, direct call to `FileSystemManager.getCurrentPath()`, giving you an immediate and accurate sense of place. The `cd` command, however, is smarter than it looks; it understands that you can't change directory into a file, and more importantly, it respects the file system's permissions. If a directory doesn't have the "execute" bit set for your user, the `cd` command will politely refuse entry, enforcing the security model at a fundamental level.</p>
-        <p>The `ls` command has been truly supercharged in this version. Beyond the standard long format (`-l`) and showing all files (`-a`), it now includes a host of sorting options that allow you to organize your view of the file system precisely how you want. You can sort by modification time with `-t`, by file size with `-S`, alphabetically by file extension with `-X`, or even see items in their raw, unsorted directory order with `-U`. The long-listing format (`-l`) itself is a masterclass in information density, meticulously constructed by the `formatLongListItem` function to show you a file's type and permissions, its owner and group, its size, its last modification time, and its name—all in one clean line. It transforms a simple directory listing into a detailed system diagnostic.</p>
-        <div class="feature-box">
-            <h3>The Holy Trinity of Navigation</h3>
-            <ul>
-                <li><strong><code>pwd</code> (Print Working Directory):</strong> The "You Are Here" map. It tells you your exact location in the file system's hierarchy.</li>
-                <li><strong><code>ls</code> (List):</strong> Shows you the contents of your current location. This is the most versatile tool for exploration, with powerful flags like <code>-l</code> for a detailed long-form view, <code>-a</code> to see hidden files (those starting with a '.'), <code>-R</code> to recursively list all subdirectories, and multiple sorting options (<code>-t</code> by time, <code>-S</code> by size, <code>-X</code> by extension, <code>-U</code> for unsorted).</li>
-                <li><strong><code>cd [directory]</code> (Change Directory):</strong> Your method of transport. Use it to move into other directories. `cd ..` takes you up one level.</li>
-            </ul>
-        </div>
-        <div class="screenshot">
-            <div class="text-xs text-gray-500 mb-2">// Using `ls` with the `-la` flags to inspect the root directory.</div>
-            <span class="prompt">Guest@OopisOs:/></span> <span class="command">ls -la</span>
-            <div class="output mt-2">total 6
-                drwxr-xr-x  2 root      root          4096 Jun 17 20:50 .
-                drwxr-xr-x  2 root      root          4096 Jun 17 20:50 ..
-                drwxr-xr-x  2 root      root          4096 Jun 17 20:50 etc
-                drwxr-xr-x  4 root      root          4096 Jun 17 20:50 home
-                -rw-r--r--  1 root      root          1204 Jun 17 20:50 diag.sh
-                -rwxr-xr-x  1 root      root           950 Jun 17 20:50 inflate.sh</div>
-        </div>
-        <p>The output of <code>ls -l</code> is packed with information. From left to right: the file type and permissions (e.g., `drwxr-xr-x`), link count, owner, group, size, modification date, and name. This single command tells you almost everything you need to know about your digital surroundings.</p>
-
-        <h2 class="sub-headline">Chapter 3: The Spark of Creation</h2>
-        <p>Creation in OopisOS is a multi-faceted process, ranging from the instantaneous to the deeply considered. Simple commands like `mkdir -p` allow for the rapid scaffolding of complex project structures in a single line, while `touch` can create an empty file or simply update an existing one's timestamp. The combination of `echo` with the redirection operators (`>` and `>>`) provides a powerful, script-friendly method for creating and appending to files directly from the command line, as demonstrated in the screenshot. Furthermore, new analytical tools like `tree` give you a beautiful, top-down view of your creations, and `diff` lets you compare them with surgical precision.</p>
-        <p>The undisputed crown jewel of creation, however, is the `edit` command. This is far more than a simple text pad; it's a context-aware creative suite. The `EditorManager` intelligently determines the file mode—plain text, Markdown, or HTML—based on the file's extension. This transforms the user experience. For `.md` and `.html` files, a live preview pane appears, and a rich formatting toolbar provides one-click access to bold, italics, lists, and more. Productivity is further enhanced by a suite of keyboard shortcuts, including the essential `Ctrl+S` to save and exit, `Ctrl+O` to exit without saving (after a confirmation for unsaved work), and `Ctrl+P` to cycle through editor-only, preview-only, and split-view modes. This single command encapsulates the OopisOS philosophy: providing powerful, sophisticated tools in an accessible and self-contained package.</p>
-        <table class="command-table">
-            <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
-            <tbody>
-            <tr><td><code>mkdir [name]</code></td><td>Create a new, empty directory. Use the <code>-p</code> flag to create a whole path at once.</td></tr>
-            <tr><td><code>touch [filename]</code></td><td>Creates a new, empty file or, if it already exists, updates its "last touched" timestamp.</td></tr>
-            <tr><td><code>echo "[text]"</code></td><td>Prints text to the screen. Combine this with redirection to easily create files with content.</td></tr>
-            <tr><td><code>cat [filename]</code></td><td>Displays the entire contents of a file on the screen.</td></tr>
-            <tr><td><code>tree [path]</code></td><td>Lists the contents of a directory in a visually pleasing tree-like format.</td></tr>
-            <tr><td><code>diff [file1] [file2]</code></td><td>Compares two files and shows you exactly what's different.</td></tr>
-            <tr><td><code>edit [filename]</code></td><td>Opens the powerful built-in text editor, the system's crown jewel.</td></tr>
-            </tbody>
-        </table>
-        <p class="pull-quote">"The `edit` command is not just an application, it's a statement. It proves that powerful, context-aware productivity tools can thrive in a simulated environment."</p>
-        <div class="screenshot">
-            <div class="text-xs text-gray-500 mb-2">// Using `echo` with the `>` redirection operator to create and write to a file in one step.</div>
-            <span class="prompt">Guest@OopisOs:/home/Guest></span> <span class="command">echo "My new project ideas:" > ideas.txt</span>
-            <div class="output mt-2"></div>
-            <span class="prompt">Guest@OopisOs:/home/Guest></span> <span class="command">cat ideas.txt</span>
-            <div class="output mt-2">My new project ideas:</div>
-        </div>
-
-        <h2 class="sub-headline">Chapter 4: The Power of the Shell</h2>
-        <p>The OopisOS shell is where simple commands are forged into complex, powerful workflows. The `lexpar.js` module first tokenizes your input, then the `CommandExecutor`'s `_executePipeline` function masterfully orchestrates the flow of data. The pipe (`|`) operator is the heart of this system, taking the output of one command and seamlessly feeding it as the input to the next, allowing for on-the-fly filtering and processing. Redirection (`>` and `>>`) works in tandem, giving you ultimate control over where the final output lands, either by overwriting a file or appending to it.</p>
-        <p>Version 2.7 introduces two major enhancements to the shell's power: aliasing and environment variables. The `alias` command allows you to create your own shortcuts, which are resolved by the `AliasManager` before any other processing occurs. The new `set` and `unset` commands manage session-specific variables, which can be expanded in any command using `$VAR` syntax. Both aliases and environment variables are saved and persist across sessions, tailoring the OS to your personal workflow. Concurrently, the ampersand (`&`) operator allows you to run long processes in the background without tying up your terminal. These backgrounded jobs are not lost to the ether; they are tracked in an `activeJobs` list, which can be viewed with the `ps` command and terminated with the `kill` command, giving you full control over your multitasking environment.</p>
-        <ul style="list-style-type: square; margin-left: 2rem;">
-            <li><strong>Pipes <code>|</code>:</strong> The soul of the shell. The pipe takes the output of the command on its left and uses it as the input for the command on its right.</li>
-            <li><strong>Redirection <code>></code> and <code>>></code>:</strong> Control where your output goes. <code>></code> will send output to a file, overwriting its contents. <code>>></code> will append the output to the end of a file.</li>
-            <li><strong>Sequencing <code>;</code>:</strong> String multiple commands together on a single line to be executed one after another.</li>
-            <li><strong>Backgrounding <code>&</code>:</strong> Add an ampersand to the end of a command to run it in the background. Manage these jobs with <code>ps</code> (list) and <code>kill</code> (terminate).</li>
-            <li><strong>Aliasing with <code>alias</code>:</strong> Create your own command shortcuts! For example, <code>alias ll='ls -la'</code> makes typing `ll` equivalent to `ls -la`.</li>
-            <li><strong>Environment Variables with <code>set</code> and <code>unset</code>:</strong> Create temporary variables like <code>set NAME="Chip"</code> and use them later with <code>echo "Hello, $NAME"</code>.</li>
-        </ul>
-        <div class="screenshot">
-            <div class="text-xs text-gray-500 mb-2">// A pipeline in action: Get command history, find lines with 'edit', then count them.</div>
-            <span class="prompt">Guest@OopisOs:/></span> <span class="command">history | grep -c "edit"</span>
-            <div class="output mt-2">1</div>
-        </div>
-
-        <h2 class="sub-headline">Chapter 5: The System and the Self</h2>
-        <p>OopisOS v2.7 elevates system management from a simple utility to a core feature, offering deep control over both your digital identity and the environment itself. The user and group system is a cornerstone of this design. When you `useradd` a new account, the system not only prompts for a password that is then securely hashed, but it also creates a primary group for that user and a private, protected home directory. This security model is built on a 3-digit octal permission system, familiar to any UNIX veteran. `chmod` is used to set read (4), write (2), and execute (1) permissions for the file's owner, its group, and all other users. This allows for the creation of sophisticated collaboration schemes, such as a shared project directory where members of the "developers" group can write files, while others can only read them.</p>
-        <p>This robust user model is complemented by a suite of powerful, system-aware utilities. The `find` command is a developer's dream, capable of scouring the entire file system for files matching specific criteria—from name and type to permissions and modification time—and then executing another command upon them with `-exec`. This chapter introduces the system's new AI applications and networking tools that bridge the gap between this virtual world and the real one.</p>
-
-        <div class="feature-box">
-            <h3>The AI Librarian: `chidi`</h3>
-            <p>While `gemini` is your conversationalist, `chidi` is your focused research assistant. Point it at a directory, and it launches a dedicated application that recursively finds all Markdown (`.md`) files and loads them into a clean reading interface. From there, you can ask the AI to summarize the current document, generate study questions, or—its most powerful feature—ask a complex question across the *entire set* of loaded documents. It's smart enough to find the most relevant text before answering, giving you fast, context-rich insights into your own notes and projects.</p>
-        </div>
-
-        <div class="feature-box">
-            <h3>An AI in the Shell: `gemini`</h3>
-            <p>OopisOS v2.7 integrates the Gemini AI directly into the terminal. But this is no simple chatbot. Ask it a question like <code>gemini "summarize my project readme and list the scripts"</code>, and it can use the built-in commands (`ls`, `cat`, `find`, `tree`) to explore your file system, gather information, and provide a truly context-aware answer. It's like having a helpful digital librarian living inside your machine.</p>
-        </div>
-
-        <div class="feature-box">
-            <h3>A Bridge to the Real World: `wget` & `curl`</h3>
-            <p>OopisOS can now reach beyond its digital borders. The `wget` and `curl` commands allow you to interact with the real-world internet, downloading files and fetching data directly into your virtual environment. Note: Due to browser security restrictions, these commands are subject to Cross-Origin Resource Sharing (CORS) policies.</p>
-        </div>
-
-        <div class="feature-box">
-            <h3>Creative Pursuits: `adventure` and `paint`</h3>
-            <p>All work and no play makes for a dull OS. The `adventure` command launches a full-featured text adventure game. For the more visually inclined, the new `paint` command opens a character-based art studio, complete with a color palette, multiple tools, undo/redo, and a keyboard-driven workflow. Your masterpieces are saved in the custom `.oopic` format. Both are testaments to the system's versatility and provide delightful digital distractions.</p>
-        </div>
-
-        <h2 class="sub-headline">Your First Steps into the System</h2>
-        <div class="feature-box">
-            <h3>Inflate Your World</h3>
-            <p>The OopisOS environment starts as a blank slate. To get a feel for the system, you can immediately populate it with a rich set of example files, directories, scripts, and documentation. This is the perfect way to have a world ready-made for testing commands like `grep`, `tree`, `chidi`, and `find`.</p>
-            <p>Simply run the following command:</p>
-            <div class="screenshot">
-                <div class="text-xs text-gray-500 mb-2">// Run this command to populate your home directory.</div>
-                <span class="prompt">Guest@OopisOs:/></span> <span class="command">run /inflate.sh</span>
-            </div>
-            <p>After the script finishes, try `ls -R` or `tree` to see what's new!</p>
-        </div>
-
-        <h2 class="sub-headline">Epilogue: The Soul of the New Machine</h2>
-        <p>After weeks of intensive use, we can confidently say that OopisOS v2.7 is a triumph. It is a powerful, educational, and deeply engaging piece of software that captures the spirit of classic computing while pushing the boundaries of what's possible in a web browser. It is a testament to the collaborative power of human ingenuity and artificial intelligence. Whether you are a seasoned developer, a student of computer science, or simply a curious adventurer, OopisOS has something to offer you. It is a world waiting to be explored, shaped, and mastered. Go forth and compute.</p>
+    <div class="special-box">
+        <h3>Editor's Note:</h3>
+        <p>When we first encountered OopisOS, we called it a "remarkable anomaly." With the release of version 2.7, the human-AI duo of Andrew Edmark and Gemini have moved beyond anomaly and into artistry. They haven't just added features; they've polished a gem into a crown jewel, creating a simulated OS that feels more robust, more intuitive, and more alive than ever. This isn't just an update; it's a statement about what a dedicated, focused development cycle can produce. Once again, we were granted unparalleled access. This is your guide to the new state of the art.</p>
     </div>
+
+    <div class="content-body">
+        <h2>Chapter 1: The Lay of the Land</h2>
+        <p>To truly appreciate OopisOS, one must understand its foundational promise: to provide a complete, powerful, and persistent computing environment that respects the sanctity of your actual machine. It is a world unto itself, a digital terrarium where curiosity can run wild without consequence. This chapter will explore the three pillars that uphold this promise: the "Sandbox" philosophy that guarantees security, the clever persistence layer that gives the world memory, and the command-line interface that serves as your gateway.</p>
+
+        <h3>The Sandbox Philosophy: A Secure and Isolated World</h3>
+        <p>The single most important concept in OopisOS is its absolute separation from your host computer. The browser itself creates a formidable security boundary, and OopisOS is designed to live entirely within it. The simulation has no access to your local files, your running processes, or any part of your computer outside of the browser tab it occupies. This isn't just a feature; it's a covenant with the user. It allows for fearless experimentation—you can create, delete, and even simulate catastrophic system failures with the calm assurance that your actual work and data remain untouched. This design transforms the act of learning command-line operations from a source of anxiety into a joyful exploration.</p>
+
+        <h3>The Persistence Layer: A World with Memory</h3>
+        <p>A world that forgets is no world at all. The genius of OopisOS is how it creates a persistent state, making your work and customizations last between sessions. This is achieved through a modular approach, using two distinct browser storage technologies, each chosen for its specific strengths.</p>
+        <p><strong>The File System: Built on IndexedDB.</strong> The entire file system, from the root directory `/` to the last byte of your most complex script, resides within IndexedDB. This is not a simple key-value store; it's a transactional database built into modern browsers. Its scalability, performance, and integrity make it ideal for simulating a robust file system.</p>
+        <p><strong>User Sessions and Preferences: Managed by LocalStorage.</strong> For smaller, more immediate data—like your current session information, command history, and system settings—OopisOS uses LocalStorage. This division of labor is a hallmark of its thoughtful, modular architecture.</p>
+
+        <h3>The Gateway: Your Command Line</h3>
+        <p>The primary interface is the command line, or "shell," which is your portal into this world. Its design is a deliberate nod to the legendary UNIX systems but with a modern, user-friendly implementation. The prompt itself is a dynamic status report, generated by the `TerminalUI.updatePrompt` function, that tells you everything you need to know at a glance: `Guest@OopisOs:/>`.</p>
+
+        <h2>Chapter 2: The Core Lexicon - Navigating Your World</h2>
+        <h3>`pwd` — Your Sense of Place</h3>
+        <p>The `pwd` (Print Working Directory) command is your digital compass. Its function is simple and singular: to tell you exactly where you are in the file system hierarchy. It is the definitive "You Are Here" map for your journey.</p>
+
+        <h3>`cd` — Your Method of Transport</h3>
+        <p>If `pwd` tells you where you are, `cd [directory]` (Change Directory) is how you get somewhere else. Its implementation is deceptively intelligent, serving as a frontline guardian of the file system's rules by validating path types and enforcing execute permissions.</p>
+
+        <h3>`ls` — Your Eyes on the World</h3>
+        <p>The `ls` (List) command has been truly supercharged in v2.7. Basic filtering is handled by flags like `-a` (all files) and `-R` (recursive). Where `ls` truly shines is in its advanced sorting (`-t` for time, `-S` for size) and the long-format listing (`-l`), which provides a rich profile of each file.</p>
+    </div>
+
+    <div class="code-block">
+        <code>Guest@OopisOs:/> ls -la
+
+            total 6
+            drwxr-xr-x 2 root root 4096 Jun 22 23:59 .
+            drwxr-xr-x 2 root root 4096 Jun 22 23:59 ..
+            drwxr-xr-x 2 root root 4096 Jun 17 20:50 etc
+            drwxr-xr-x 4 root root 4096 Jun 17 20:50 home
+            -rw-r--r-- 1 root root 1204 Jun 17 20:50 diag.sh
+            -rwxr-xr-x 1 root root  950 Jun 17 20:50 inflate.sh</code>
+    </div>
+
+    <div class="content-body">
+        <p>This dense output tells a complete story for each item: Type & Permissions, Link Count, Owner, Group, Size, Last Modified Date, and Name. With a single command, `ls` provides a nearly complete overview of your digital surroundings.</p>
+
+        <h2>Chapter 3: The Spark of Creation</h2>
+        <p>Creation in OopisOS is a spectrum of possibilities. The system provides two primary methods: a suite of rapid, scriptable command-line tools for foundational work, and a powerful, application-level editor for more complex content.</p>
+
+        <h3>Command-Line Creation and Analysis</h3>
+        <p>For automation and scripting, the command line is paramount. You can instantly create a deep directory structure with `mkdir -p`, or create an empty file with `touch`. The combination of `echo` with redirection operators (`>` to create/overwrite, `>>` to append) is a powerful method for getting content into files.</p>
+    </div>
+
+    <div class="pull-quote">
+        "The `edit` command is not just an application, it's a statement. It proves that powerful, context-aware productivity tools can thrive in a simulated environment."
+    </div>
+
+    <div class="content-body">
+        <h3>The Crown Jewel: The `edit` Command</h3>
+        <p>While the command line is for construction, the `edit` command is for artistry. This is far more than a simple text pad; it is a context-aware creative suite. The `EditorManager` automatically detects the file type and dynamically adjusts the UI, offering a live preview pane for Markdown and HTML, a formatting toolbar, and essential keyboard shortcuts (`Ctrl+S` to save, `Ctrl+O` to exit without saving).</p>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Command</th>
+            <th>Purpose</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><code>mkdir [name]</code></td>
+            <td>Create a new, empty directory. Use the <code>-p</code> flag to create a whole path at once.</td>
+        </tr>
+        <tr>
+            <td><code>touch [filename]</code></td>
+            <td>Creates a new, empty file or, if it already exists, updates its "last touched" timestamp.</td>
+        </tr>
+        <tr>
+            <td><code>echo "[text]"</code></td>
+            <td>Prints text to the screen. Combine this with redirection to easily create files.</td>
+        </tr>
+        <tr>
+            <td><code>cat [filename]</code></td>
+            <td>Displays the entire contents of a file on the screen.</td>
+        </tr>
+        <tr>
+            <td><code>tree [path]</code></td>
+            <td>Lists the contents of a directory in a visually pleasing tree-like format.</td>
+        </tr>
+        <tr>
+            <td><code>diff [file1] [file2]</code></td>
+            <td>Compares two files and shows you exactly what's different.</td>
+        </tr>
+        <tr>
+            <td><code>edit [filename]</code></td>
+            <td>Opens the powerful built-in text editor, the system's crown jewel.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="content-body">
+        <h2>Chapter 5: The System and the Self</h2>
+        <p>OopisOS v2.7 marks a significant evolution in the relationship between the operating system and its user, introducing features for identity, AI augmentation, and creativity.</p>
+
+        <h3>The Social Fabric: User and Permission Management</h3>
+        <p>Access control is managed by the `chmod` command and a 3-digit octal permission system. Each digit represents permissions for the user, group, and others, respectively. The permissions are additive: read (4) + write (2) + execute (1). For example, `chmod 750 project.sh` gives the owner full control, the group read/execute access, and others no access.</p>
+
+        <h3>An AI-Augmented Self: `gemini` and `chidi`</h3>
+        <p>The `gemini` command provides a conversational AI that lives in your terminal and can use other OopisOS commands as tools. Where `gemini` is a generalist, `chidi` is a focused research assistant, able to summarize and answer questions across a whole set of Markdown documents.</p>
+
+        <h3>A Bridge to the World: Networking</h3>
+        <p>The inclusion of `wget` and `curl` allows you to interact with the real-world internet from within the simulation, downloading files and fetching data from APIs (subject to browser CORS security policies).</p>
+
+        <h3>The Creative Self: Digital Diversions</h3>
+        <p>`adventure` launches a full-featured, interactive text adventure game, while `paint` opens a surprisingly robust character-based art studio with a full-color palette and multiple drawing tools.</p>
+
+        <h2>Getting Started: Your First Steps</h2>
+        <p>To get a feel for the system's capabilities, your first step should be to populate your environment with a rich set of example files by running the `inflate.sh` script. This tool builds a world ready-made for you to explore.</p>
+    </div>
+
+    <div class="code-block">
+        <code>// Run this command to populate your home directory.
+            Guest@OopisOs:/> sh /inflate.sh
+
+            Inflating your world...
+            ...
+            ...Done.
+        </code>
+    </div>
+
+    <div class="content-body">
+        <h3>Explore Your New World</h3>
+        <p>Once the script finishes, your file system is ready for exploration. This is the perfect way to test the powerful commands detailed in this compendium. Try running `tree` to see the new structure, `cd` into a directory and use `ls -la`, `cat` a new file, and test the `chidi` and `gemini` AI tools.</p>
+
+        <h2>Epilogue: The Soul of the New Machine</h2>
+        <p>After weeks of intensive use and deep architectural analysis, we can confidently say that OopisOS v2.7 is a triumph. It is a powerful, educational, and deeply engaging piece of software that captures the spirit of classic computing while pushing the boundaries of what is possible within a web browser. It succeeds in its foundational promise: to provide a complete, persistent, and perfectly isolated sandbox where curiosity can run wild without consequence. Whether you are a seasoned developer, a student, or simply a curious adventurer, OopisOS has something profound to offer. It is a world waiting to be explored, shaped, and mastered.</p>
+        <p style="text-align: center; font-weight: bold; column-span: all; margin-top: 2rem;">Go forth and compute.</p>
+    </div>
+
 </div>
 
 </body>
