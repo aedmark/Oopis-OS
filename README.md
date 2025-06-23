@@ -11,7 +11,7 @@
                     | $$                                          
                     |__/  A Browser-Based OS Simulation  
 ```
-![alt text]([https://placebear.com/300/300](https://img.itch.zone/aW1hZ2UvMzY0MjMwOS8yMTc5MjgxNi5wbmc=/original/xXB3J6.png))
+!(https://img.itch.zone/aW1hZ2UvMzY0MjMwOS8yMTc5MjgxNi5wbmc=/original/xXB3J6.png)
 # OopisOS v2.7: Open, Online, Persistent, Integrated System OS
 
 Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
