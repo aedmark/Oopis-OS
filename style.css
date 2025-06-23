@@ -1226,6 +1226,7 @@ body {
   padding: 1rem;
   font-family: 'VT323', monospace;
   color: #00FF00;
+  overflow: hidden;
 }
 #adventure-header {
   display: flex;
@@ -1449,6 +1450,7 @@ body {
   max-height: 90%;
   display: flex;
   flex-direction: column;
+  overflow: auto;
 }
 #paint-char-select-title {
   font-size: 1.25rem;
@@ -1582,3 +1584,50 @@ body {
     }
   }
 }
+/* --- START: Responsive Terminal Scaling Architecture --- */
+
+/*
+ * The Terminal Bezel: This component will now define the flexible
+ * boundary box for the screen. It will occupy most of the viewport,
+ * leaving a pleasant margin, and will center the screen within it.
+ */
+#terminal-bezel {
+  width: 60vw;
+  height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * The Terminal Screen: CORRECTED ARCHITECTURE
+ * This version resolves the aspect ratio conflict by giving the browser
+ * clearer instructions on how to scale the element within its flex container.
+ */
+#terminal {
+  /* The core constraint remains unchanged. */
+  aspect-ratio: 4 / 3;
+
+  /*
+   * Set a primary dimension (width) and let the height be calculated
+   * automatically by the aspect-ratio property. This is more reliable
+   * than setting both width and height to 100%.
+   */
+  width: auto;
+  height: 100%;
+
+  /*
+   * Fluidity Constraint: Now, max-width and max-height will act as
+   * proper boundaries. In a wide container, max-height will become the
+   * limiting factor, which will then cause the browser to shrink the width
+   * proportionally to maintain the aspect ratio.
+   */
+  max-width: 1280px;
+  max-height: 960px;
+
+  /* The minimum size constraints are still crucial and correct. */
+  min-width: 640px;
+  min-height: 480px;
+}
+
+/* --- END: Responsive Terminal Scaling Architecture --- */

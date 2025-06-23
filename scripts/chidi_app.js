@@ -698,6 +698,7 @@ const ChidiApp = {
                 box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.4);
                 display: flex; flex-direction: column;
                 padding: 1rem; color: var(--text-primary);
+                overflow: auto;
             }
             .chidi-console-header {
                 display: grid;

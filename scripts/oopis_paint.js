@@ -312,6 +312,14 @@ const PaintUI = (() => {
     }
 
     /**
+     * Public resize handler. Recalculates grid metrics.
+     */
+    function handleResize() {
+        if (!isInitialized) return;
+        _calculateGridMetrics();
+    }
+
+    /**
      * Converts mouse pixel coordinates to canvas grid coordinates, accounting for CSS offsets.
      * @param {number} pixelX - The clientX coordinate from a mouse event.
      * @param {number} pixelY - The clientY coordinate from a mouse event.
@@ -457,7 +465,7 @@ const PaintUI = (() => {
         isInitialized = false;
     }
 
-    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect };
+    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, handleResize };
 })();
 
 /**
