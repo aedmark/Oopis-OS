@@ -39,8 +39,22 @@ const PaintAppConfig = {
     EDITOR: {
         DEBOUNCE_DELAY_MS: 300,
         MAX_UNDO_STATES: 50,
-    }
-};
+    },
+    // --- ADD THIS NEW ARRAY ---
+    CUSTOM_COLOR_GRID: [
+        '#ffffff', '#f2f2f2', '#e6e6e6', '#d9d9d9', '#cccccc', '#bfbfbf', '#b3b3b3', '#a6a6a6',
+        '#999999', '#8c8c8c', '#808080', '#737373', '#666666', '#595959', '#4d4d4d', '#404040',
+        '#fed7d7', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d',
+        '#fee2d5', '#fdbb7d', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12',
+        '#fef3c7', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12',
+        '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#14532d',
+        '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46',
+        '#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#155e75',
+        '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af',
+        '#e0e7ff', '#c7d2fe', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca', '#3730a3'
+    ]
+}
+
 
 /**
  * @module PaintUI
@@ -74,7 +88,7 @@ const PaintUI = (() => {
         elements.charSelectModal = document.getElementById('paint-char-select-modal');
         elements.charSelectGrid = document.getElementById('paint-char-select-grid');
         elements.colorSelectModal = document.getElementById('paint-color-select-modal');
-        elements.colorInput = document.getElementById('paint-color-input');
+        elements.colorSelectGrid = document.getElementById('paint-color-select-grid');
 
         if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar || !elements.charSelectModal || !elements.charSelectGrid) {
             console.error("PaintUI: Critical UI elements missing!");
@@ -177,9 +191,6 @@ const PaintUI = (() => {
                 hideColorSelect();
             }
         });
-        elements.colorInput.addEventListener('change', (e) => {
-            eventCallbacks.onColorChange(e.target.value);
-        });
 
         isInitialized = true;
         return true;
@@ -229,14 +240,30 @@ const PaintUI = (() => {
     }
 
     /**
-     * Shows the color selection modal.
+     * Populates the color selection grid with a palette of colors and shows the modal.
+     * @param {function(string): void} onSelectCallback - The callback to execute when a color is chosen.
      */
-    function showColorSelect() {
-        console.log("Attempting to show color select modal.");
-        console.log(elements.colorSelectModal);
-        if (elements.colorSelectModal) {
-            elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
-        }
+    function populateAndShowColorSelect(onSelectCallback) {
+        if (!elements.colorSelectGrid || !elements.colorSelectModal) return;
+
+        elements.colorSelectGrid.innerHTML = ''; // Clear previous grid
+        elements.colorSelectGrid.className = 'paint-color-select-grid'; // Add a class for styling
+
+        const fragment = document.createDocumentFragment();
+        PaintAppConfig.CUSTOM_COLOR_GRID.forEach(colorValue => {
+            const btn = Utils.createElement('button', {
+                className: 'paint-color-swatch', // Reuse existing swatch style
+                style: { backgroundColor: colorValue },
+                title: colorValue,
+                eventListeners: {
+                    click: () => onSelectCallback(colorValue)
+                }
+            });
+            fragment.appendChild(btn);
+        });
+
+        elements.colorSelectGrid.appendChild(fragment);
+        elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
     }
 
     /**
@@ -430,7 +457,7 @@ const PaintUI = (() => {
         isInitialized = false;
     }
 
-    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, showColorSelect, hideColorSelect };
+    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect };
 })();
 
 /**
@@ -674,7 +701,7 @@ const PaintManager = (() => {
      * @private
      */
     function _openColorSelect() {
-        PaintUI.showColorSelect();
+        PaintUI.populateAndShowColorSelect(_setColor);
     }
 
     /**

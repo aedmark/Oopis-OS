@@ -1457,6 +1457,27 @@ body {
   margin: 0 0 1rem 0;
   flex-shrink: 0;
 }
+#paint-color-select-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 1000; /* This ensures it appears on top of the main paint modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#paint-color-select-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr); /* We'll make it 8 columns wide */
+  gap: 8px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background-color: #1f1f22;
+  border-radius: 0.25rem;
+}
 #paint-char-select-grid {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
