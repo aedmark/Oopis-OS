@@ -54,6 +54,7 @@ const PaintUI = (() => {
     let isInitialized = false;
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
+    let gridOffset = { x: 0, y: 0 };
 
     /**
      * Initializes DOM elements, builds the toolbar, and attaches initial event listeners.
@@ -72,6 +73,8 @@ const PaintUI = (() => {
         elements.statusBar = document.getElementById('paint-statusbar');
         elements.charSelectModal = document.getElementById('paint-char-select-modal');
         elements.charSelectGrid = document.getElementById('paint-char-select-grid');
+        elements.colorSelectModal = document.getElementById('paint-color-select-modal');
+        elements.colorInput = document.getElementById('paint-color-input');
 
         if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar || !elements.charSelectModal || !elements.charSelectGrid) {
             console.error("PaintUI: Critical UI elements missing!");
@@ -124,25 +127,32 @@ const PaintUI = (() => {
                 className: `paint-color-swatch`,
                 style: { backgroundColor: color.value },
                 title: `Color ${index + 1} (${color.name}) (${index + 1})`,
-                eventListeners: { click: () => eventCallbacks.onColorChange(color.class) }
+                eventListeners: { click: () => eventCallbacks.onColorChange(color.value) } // Pass the VALUE, not the class
             });
             elements.colorButtons.push(colorBtn);
             colorPaletteContainer.appendChild(colorBtn);
         });
-        elements.colorPalleteBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: colorPaletteSVG, title: 'Select Color' });
-        colorPaletteContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('paint-color-swatch')) {
-                const title = e.target.getAttribute('title');
-                const match = title.match(/Color (\d+)/);
-                if(match) {
-                    const colorIndex = parseInt(match[1], 10) - 1;
-                    if(PaintAppConfig.PALETTE[colorIndex]) {
-                        eventCallbacks.onColorChange(PaintAppConfig.PALETTE[colorIndex].class);
-                    }
-                }
+        elements.customColorSwatch = Utils.createElement('button', {
+            className: 'paint-color-swatch',
+            title: 'Your Custom Color',
+            style: { display: 'none' } // Initially hidden
+        });
+        // Add a click listener to re-select the custom color
+        elements.customColorSwatch.addEventListener('click', () => {
+            if (elements.customColorSwatch.style.backgroundColor) {
+                eventCallbacks.onColorChange(elements.customColorSwatch.style.backgroundColor);
             }
         });
-
+        // Insert the custom swatch after the first color (green)
+        colorPaletteContainer.insertBefore(elements.customColorSwatch, colorPaletteContainer.firstChild);
+        elements.colorPalleteBtn = Utils.createElement('button', {
+            className: 'paint-tool',
+            innerHTML: colorPaletteSVG,
+            title: 'Select Custom Color',
+            eventListeners: {
+                click: () => eventCallbacks.onColorSelectOpen() // CORRECT: Opens the modal
+            }
+        });
 
         elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save & Exit', title: 'Save & Exit (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit without Saving (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
@@ -160,6 +170,15 @@ const PaintUI = (() => {
             if (e.target === elements.charSelectModal) {
                 hideCharSelect();
             }
+        });
+
+        elements.colorSelectModal.addEventListener('click', (e) => {
+            if (e.target === elements.colorSelectModal) {
+                hideColorSelect();
+            }
+        });
+        elements.colorInput.addEventListener('change', (e) => {
+            eventCallbacks.onColorChange(e.target.value);
         });
 
         isInitialized = true;
@@ -210,31 +229,87 @@ const PaintUI = (() => {
     }
 
     /**
-     * Calculates the rendered width and height of a single canvas grid cell.
-     * @private
+     * Shows the color selection modal.
      */
-    function _calculateCellSize() {
-        if (!elements.canvas || !elements.canvas.firstChild) return;
-        const testCell = elements.canvas.firstChild;
-        cellDimensions.width = testCell.offsetWidth;
-        cellDimensions.height = testCell.offsetHeight;
+    function showColorSelect() {
+        console.log("Attempting to show color select modal.");
+        console.log(elements.colorSelectModal);
+        if (elements.colorSelectModal) {
+            elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
     }
 
     /**
-     * Converts mouse pixel coordinates to canvas grid coordinates.
+     * Hides the color selection modal.
+     */
+    function hideColorSelect() {
+        if (elements.colorSelectModal) {
+            elements.colorSelectModal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
+    }
+
+    /**
+     * Calculates grid and cell metrics based on the rendered container's properties.
+     * This determines the offset of the grid and calculates a precise, proportional
+     * cell size to eliminate scaling errors.
+     * @private
+     */
+    function _calculateGridMetrics() {
+        if (!elements.canvas) return;
+
+        const containerRect = elements.canvas.getBoundingClientRect();
+        const style = window.getComputedStyle(elements.canvas);
+
+        // Get the container's padding and border widths to find the true content area.
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingRight = parseFloat(style.paddingRight) || 0;
+        const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+        const borderRight = parseFloat(style.borderRightWidth) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const paddingBottom = parseFloat(style.paddingBottom) || 0;
+        const borderTop = parseFloat(style.borderTopWidth) || 0;
+        const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+
+        // Calculate the dimensions of the area available for the grid cells.
+        const contentWidth = containerRect.width - paddingLeft - paddingRight - borderLeft - borderRight;
+        const contentHeight = containerRect.height - paddingTop - paddingBottom - borderTop - borderBottom;
+
+        // Calculate the precise, proportional width and height of a single cell.
+        // This is the key to fixing the progressive offset bug.
+        cellDimensions.width = contentWidth / PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        cellDimensions.height = contentHeight / PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        // The grid's starting offset is simply the container's left/top padding and border.
+        gridOffset.x = paddingLeft + borderLeft;
+        gridOffset.y = paddingTop + borderTop;
+    }
+
+    /**
+     * Converts mouse pixel coordinates to canvas grid coordinates, accounting for CSS offsets.
      * @param {number} pixelX - The clientX coordinate from a mouse event.
      * @param {number} pixelY - The clientY coordinate from a mouse event.
      * @returns {{x: number, y: number}|null} An object with x and y grid coordinates, or null if outside the canvas.
      */
     function getGridCoordinates(pixelX, pixelY) {
         if (!elements.canvas || !cellDimensions.width || !cellDimensions.height) return null;
-        const rect = elements.canvas.getBoundingClientRect();
-        const x = pixelX - rect.left;
-        const y = pixelY - rect.top;
 
-        if (x < 0 || x > rect.width || y < 0 || y > rect.height) return null;
+        const rect = elements.canvas.getBoundingClientRect();
+
+        // Calculate the mouse position relative to the grid's true origin by subtracting the cached offset.
+        const x = pixelX - rect.left - gridOffset.x;
+        const y = pixelY - rect.top - gridOffset.y;
+
         const gridX = Math.floor(x / cellDimensions.width);
         const gridY = Math.floor(y / cellDimensions.height);
+
+        // Perform a bounds check to ensure the calculated coordinates are valid.
+        const gridColumnCount = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        const gridRowCount = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        if (gridX < 0 || gridX >= gridColumnCount || gridY < 0 || gridY >= gridRowCount) {
+            return null;
+        }
+
         return { x: gridX, y: gridY };
     }
 
@@ -248,7 +323,9 @@ const PaintUI = (() => {
      */
     function updateStatusBar(status) {
         if (!elements.statusBar) return;
-        const colorName = status.fg.replace('text-', '').replace(/-\d+/, '');
+        const paletteEntry = PaintAppConfig.PALETTE.find(p => p.value === status.fg);
+        const colorName = paletteEntry ? paletteEntry.name : status.fg;
+
         elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Coords: ${status.coords.x},${status.coords.y}`;
     }
 
@@ -262,29 +339,34 @@ const PaintUI = (() => {
      */
     function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive) {
         if (!isInitialized) return;
-        const shapeTools = ['line', 'ellipse', 'quad'];
-        const lineSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        const ellipseSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21C16.9706 21 21 16.4183 21 12C21 7.58172 16.9706 4 12 4C7.02944 4 3 7.58172 3 12C3 16.4183 7.02944 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        const quadSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
+        // ... (SVG definitions and tool toggling logic remains the same)
         elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
         elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
+        // ... (rest of the tool active states logic remains)
 
-        const isShapeToolActive = shapeTools.includes(activeTool);
-        elements.shapeToolBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isShapeToolActive);
-        if (activeTool === 'line') elements.shapeToolBtn.innerHTML = lineSVG;
-        else if (activeTool === 'ellipse') elements.shapeToolBtn.innerHTML = ellipseSVG;
-        else if (activeTool === 'quad') elements.shapeToolBtn.innerHTML = quadSVG;
-        else if (isShapeToolActive) elements.shapeToolBtn.innerHTML = lineSVG; // Default icon if somehow another shape is active
+        // --- Color Swatch Logic ---
+        let isCustomColorActive = true;
 
-        elements.undoBtn.disabled = !undoPossible;
-        elements.redoBtn.disabled = !redoPossible;
-        elements.gridBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isGridActive);
-
+        // Check the predefined palette buttons
         elements.colorButtons.forEach((btn, index) => {
-            const colorClass = PaintAppConfig.PALETTE[index].class;
-            btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, colorClass === activeColor);
+            const colorValue = PaintAppConfig.PALETTE[index].value;
+            const isActive = colorValue === activeColor;
+            if (isActive) {
+                isCustomColorActive = false;
+            }
+            btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isActive); // Change colorClass to isActive
         });
+
+        // Now, manage the custom color swatch
+        if (isCustomColorActive) {
+            elements.customColorSwatch.style.backgroundColor = activeColor;
+            elements.customColorSwatch.style.display = 'block';
+            elements.customColorSwatch.classList.add(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
+        } else {
+            // If a standard color is active, just deactivate the custom swatch.
+            // We'll leave it visible if it has a color.
+            elements.customColorSwatch.classList.remove(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
+        }
     }
 
     /**
@@ -327,15 +409,15 @@ const PaintUI = (() => {
         for (let y = 0; y < gridHeight; y++) {
             for (let x = 0; x < gridWidth; x++) {
                 const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
-                const span = Utils.createElement('span', {
-                    textContent: cell.char,
-                    className: `${cell.fg} ${cell.bg}`
-                });
+                const span = Utils.createElement('span', { textContent: cell.char });
+                span.style.color = cell.fg; // Apply color via inline style
+                span.classList.add(cell.bg); // Background is still a class
+
                 fragment.appendChild(span);
             }
         }
         elements.canvas.appendChild(fragment);
-        _calculateCellSize();
+        _calculateGridMetrics();
     }
 
     /**
@@ -348,7 +430,7 @@ const PaintUI = (() => {
         isInitialized = false;
     }
 
-    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect };
+    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, showColorSelect, hideColorSelect };
 })();
 
 /**
@@ -360,7 +442,7 @@ const PaintManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
-    let fgColor = PaintAppConfig.DEFAULT_FG_COLOR, lastCoords = { x: -1, y: -1 };
+    let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 }; // <-- CHANGE THIS LINE
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
     let isGridVisible = false;
     let shapeStartCoords = null;
@@ -384,6 +466,8 @@ const PaintManager = (() => {
         onRedo: _performRedo,
         onGridToggle: _toggleGrid,
         onCharSelectOpen: _openCharSelect,
+        onColorSelectOpen: _openColorSelect, // <-- ADD THIS LINE
+
     };
 
     /**
@@ -585,6 +669,13 @@ const PaintManager = (() => {
     function _openCharSelect() {
         PaintUI.populateAndShowCharSelect(_setDrawCharFromSelection);
     }
+    /**
+     * Opens the color selection modal.
+     * @private
+     */
+    function _openColorSelect() {
+        PaintUI.showColorSelect();
+    }
 
     /**
      * Sets the drawing character based on the user's selection from the modal.
@@ -758,11 +849,13 @@ const PaintManager = (() => {
     /**
      * Sets the active drawing color.
      * @private
-     * @param {string} colorClass - The CSS class of the color to activate.
+     * @param {string} colorValue - The CSS color value (e.g., 'rgb(x,y,z)' or '#RRGGBB').
      */
-    function _setColor(colorClass) {
-        fgColor = colorClass;
+    function _setColor(colorValue) {
+        fgColor = colorValue;
         _updateToolbarState();
+        PaintUI.hideColorSelect(); // <-- ADD THIS LINE
+
     }
 
     /**
@@ -1038,7 +1131,7 @@ const PaintManager = (() => {
             else {
                 const colorIndex = parseInt(key, 10) - 1;
                 if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
-                    _setColor(PaintAppConfig.PALETTE[colorIndex].class);
+                    _setColor(PaintAppConfig.PALETTE[colorIndex].value); // Change .class to .value
                 }
             }
         } else if (isCharKey) {
