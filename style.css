@@ -5,6 +5,27 @@ base,
 components,
 utilities;
 
+/*
+================================================================================
+|                                                                              |
+|                             OopisOS Stylesheet                               |
+|                                                                              |
+================================================================================
+|
+| This file contains all styles for the OopisOS project.
+| It is structured with TailwindCSS base layers followed by custom styles
+| for the core terminal and its integrated applications.
+|
+| Sections:
+| 1. Font Definitions
+| 2. Core & Terminal Styles
+| 3. Editor Styles
+| 4. Paint Application Styles
+| 5. Adventure Game Styles
+|
+|------------------------------------------------------------------------------
+*/
+
 @layer theme {
 
   :root,
@@ -753,6 +774,11 @@ utilities;
     font-family: 'VT323';
   }
 
+  .font-semibold {
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+
   .text-4xl {
     font-size: var(--text-4xl);
     line-height: var(--tw-leading, var(--text-4xl--line-height));
@@ -781,11 +807,6 @@ utilities;
   .leading-\[1\.2em\] {
     --tw-leading: 1.2em;
     line-height: 1.2em;
-  }
-
-  .font-semibold {
-    --tw-font-weight: var(--font-weight-semibold);
-    font-weight: var(--font-weight-semibold);
   }
 
   .break-words {
@@ -923,6 +944,9 @@ utilities;
   }
 }
 
+/* --- FONT DEFINITIONS --- */
+/* To make the project fully self-contained, fonts should be hosted locally */
+/* and loaded via @font-face rules like this one. */
 @font-face {
   font-family: 'VT323';
   font-style: normal;
@@ -931,6 +955,7 @@ utilities;
   src: url(./fonts/vt323.ttf) format('truetype');
 }
 
+/* --- CORE & TERMINAL --- */
 :root {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
@@ -1363,6 +1388,7 @@ body {
   caret-color: #00ff00;
 }
 
+/* --- EDITOR STYLES --- */
 .btn-editor,
 .btn-adventure {
   background-color: #3f3f46;
@@ -1568,6 +1594,7 @@ body {
   outline-offset: 1px;
 }
 
+/* --- ADVENTURE GAME STYLES --- */
 #adventure-modal {
   position: absolute;
   top: 0;
@@ -1679,6 +1706,8 @@ body {
   display: none !important;
 }
 
+
+/* --- PAINT APPLICATION STYLES --- */
 #paint-modal {
   position: absolute;
   top: 0;
@@ -2016,24 +2045,6 @@ body {
   initial-value: solid;
 }
 
-@layer properties {
-  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
-
-    *,
-    ::before,
-    ::after,
-    ::backdrop {
-      --tw-space-y-reverse: 0;
-      --tw-space-x-reverse: 0;
-      --tw-divide-y-reverse: 0;
-      --tw-border-style: solid;
-      --tw-leading: initial;
-      --tw-font-weight: initial;
-      --tw-outline-style: solid;
-    }
-  }
-}
-
 .paint-modal-content-container {
   background-color: #101010;
   border: 1px solid #60a5fa;
@@ -2106,7 +2117,6 @@ body {
   background-color: #52525b;
 }
 
-/* ARCHITECTURAL FIX: This is the missing CSS rule. */
 .paint-button-group button.paint-tool-active {
   background-color: #60a5fa;
   color: #1e293b;
@@ -2153,6 +2163,7 @@ body {
   border-radius: 50%;
 }
 
+/* --- RESPONSIVENESS --- */
 #terminal-bezel {
   display: flex;
   align-items: center;
