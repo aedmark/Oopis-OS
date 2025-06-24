@@ -900,10 +900,19 @@ const PaintManager = (() => {
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
         redoStack = [];
         PaintUI.show(paintEventCallbacks);
-        PaintUI.renderCanvas(canvasData);
-        PaintUI.toggleGrid(isGridVisible);
-        _updateToolbarState();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: brushSize, brushShape: brushShape });
+
+        // --- FIX START ---
+        // Defer the initial render and metric calculation to allow the browser to paint the modal first.
+        // This prevents a race condition where getBoundingClientRect() returns 0x0 dimensions.
+        setTimeout(() => {
+            if (!isActiveState) return; // Check if the user exited before the timeout.
+            PaintUI.renderCanvas(canvasData);
+            PaintUI.toggleGrid(isGridVisible);
+            _updateToolbarState();
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: brushSize, brushShape: brushShape });
+        }, 0);
+        // --- FIX END ---
+
         document.addEventListener('keydown', handleKeyDown);
     }
 

@@ -1328,25 +1328,39 @@ body {
   height: 95%;
   max-height: 100%;
   background-color: #0A0A0A;
-  border: 2px solid #00FF00;
+  border: 2px solid #60a5fa;
   border-radius: 0.75rem;
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: 0.5rem;
   font-family: 'VT323', monospace;
-  color: #00FF00;
-  overflow: hidden;
-
+  color: #a3a3a3;
+  /* REMOVE overflow: hidden; from here */
 }
+
+/* NEW: Wrapper for the canvas to handle scrolling */
+#paint-canvas-wrapper {
+  flex-grow: 1;
+  min-height: 0;
+  display: grid; /* Use grid to easily center the canvas */
+  place-items: center;
+  overflow: auto; /* Allow scrollbars if canvas is larger than wrapper */
+  padding: 0.5rem;
+  background-color: #0c0c0c; /* Slightly different background for the scroll area */
+  border-radius: 4px;
+}
+
 #paint-canvas {
-  aspect-ratio: 4 / 3;
+  max-width: 100%;
+  max-height: 100%;
+  /* CORRECTED: Aspect ratio based on 80x24 character grid */
+  aspect-ratio: 80 / 24;
   overflow: hidden;
   display: grid;
   background-color: #101010;
   cursor: crosshair;
-  flex-grow: 1;
-  min-height: 0;
+  /* REMOVED flex-grow and min-height, as the wrapper now handles this */
 }
 #paint-canvas span {
   display: inline-block;
