@@ -206,10 +206,10 @@ const EditorUI = (() => {
 
   /**
    * Builds the entire editor layout and injects it into the DOM.
-   * @param {HTMLElement} containerElement - The parent element to build the editor within.
    * @param {Object.<string, Function>} callbacks - An object containing callback functions for UI events.
+   * @returns {HTMLElement} The root element of the editor UI.
    */
-  function buildLayout(containerElement, callbacks) {
+  function buildLayout(callbacks) {
     eventCallbacks = callbacks;
     elements.filenameDisplay = Utils.createElement("span", {
       id: "editor-filename-display",
@@ -400,15 +400,28 @@ const EditorUI = (() => {
       className: "pt-2 pb-0.5 text-sm text-center text-neutral-400 flex-shrink-0 border-t border-neutral-700 mt-1",
       textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview | Ctrl+Z: Undo | Ctrl+Y/Ctrl+Shift+Z: Redo`,
     });
+
+    // --- DEFINITIVE FIX START ---
+    // The editor container is now built with explicit inline styles to ensure it behaves
+    // like a proper modal panel, respecting viewport boundaries.
     elements.editorContainer = Utils.createElement("div", {
       id: "editor-container",
-      className: "flex-grow flex flex-col w-full h-full",
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        width: '95%',
+        height: '95%',
+        maxWidth: '1200px',
+        backgroundColor: '#1a1a1d',
+        border: '2px solid #52525b',
+        borderRadius: '8px',
+        padding: '1rem',
+        boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.4)',
+      },
     }, elements.controlsDiv, elements.mainArea, elements.statusBar, elements.instructionsFooter);
-    if (containerElement && DOM.inputLineContainerDiv) {
-      containerElement.insertBefore(elements.editorContainer, DOM.inputLineContainerDiv);
-    } else {
-      console.error("EditorUI.buildLayout: ContainerElement or DOM.inputLineContainerDiv not found in DOM when trying to insert editor.");
-    }
+    // --- DEFINITIVE FIX END ---
+
+    return elements.editorContainer;
   }
 
   /**
@@ -1083,7 +1096,9 @@ const EditorManager = (() => {
 
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     document.addEventListener('keydown', handleKeyDown);
-    EditorUI.buildLayout(DOM.terminalDiv, {
+
+    // --- MODIFICATION START: Decouple UI creation from DOM insertion ---
+    const editorCallbacks = {
       onInput: _handleEditorInput.bind(this),
       onScroll: _handleEditorScroll.bind(this),
       onSelectionChange: _handleEditorSelectionChange.bind(this),
@@ -1101,8 +1116,12 @@ const EditorManager = (() => {
       onFormatOl: () => _applyTextManipulation('ol'),
       onUndo: _performUndo.bind(this),
       onRedo: _performRedo.bind(this)
-    });
-    AppLayerManager.show(EditorUI.elements.editorContainer);
+    };
+
+    const editorElement = EditorUI.buildLayout(editorCallbacks);
+    AppLayerManager.show(editorElement);
+    // --- MODIFICATION END ---
+
     EditorUI.setGutterVisibility(!isWordWrapActive);
     currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
     EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
@@ -1123,11 +1142,7 @@ const EditorManager = (() => {
    */
   async function _performExitActions() {
     document.removeEventListener('keydown', handleKeyDown);
-    // NEW: Use AppLayerManager to hide the editor
-    // This replaces the manual hiding/showing of terminal components.
     AppLayerManager.hide();
-    // The call to EditorUI.destroyLayout() should still happen
-    // but we no longer need to manually un-hide terminal elements here.
     EditorUI.destroyLayout();
     isActiveState = false;
     currentFilePath = null;

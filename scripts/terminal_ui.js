@@ -904,6 +904,12 @@ const AppLayerManager = (() => {
             return;
         }
 
+        // --- MODIFICATION START ---
+        // Apply classes to make the app layer a centering modal overlay.
+        appLayer.className = 'w-full h-full absolute top-0 left-0 bg-neutral-950/80 flex items-center justify-center z-10';
+        // --- MODIFICATION END ---
+
+
         // Hide terminal UI
         if (terminalOutput) terminalOutput.classList.add('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
@@ -922,12 +928,21 @@ const AppLayerManager = (() => {
         _cacheDOM();
         if (!isActive || !appLayer) return;
 
+        // --- MODIFICATION START ---
+        // Clear the classes when hiding to ensure it's a blank slate for next time.
+        appLayer.className = '';
+        // --- MODIFICATION END ---
+
         // Hide app layer and remove the app's element
         appLayer.classList.add('hidden');
         if (currentAppContainer) {
-            appLayer.removeChild(currentAppContainer);
+            // Check if the parentNode exists before trying to remove
+            if (appLayer.contains(currentAppContainer)) {
+                appLayer.removeChild(currentAppContainer);
+            }
             currentAppContainer = null;
         }
+
 
         // Restore terminal UI
         if (terminalOutput) terminalOutput.classList.remove('hidden');
