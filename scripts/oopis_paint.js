@@ -113,11 +113,35 @@ const PaintUI = (() => {
         const gridSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 9.33333V6C20 4.89543 19.1046 4 18 4H14.6667M20 9.33333H14.6667M20 9.33333V14.6667M4 9.33333V6C4 4.89543 4.89543 4 6 4H9.33333M4 9.33333H9.33333M4 9.33333V14.6667M14.6667 9.33333H9.33333M14.6667 9.33333V4M14.6667 9.33333V14.6667M9.33333 9.33333V4M9.33333 9.33333V14.6667M20 14.6667V18C20 19.1046 19.1046 20 18 20H14.6667M20 14.6667H14.6667M4 14.6667V18C4 19.1046 4.89543 20 6 20H9.33333M4 14.6667H9.33333M14.6667 14.6667H9.33333M14.6667 14.6667V20M9.33333 14.6667V20M9.33333 4H14.6667M9.33333 20H14.6667" stroke="#fafafa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
         const charSelectSVG = '<svg fill="#ffffff" height="200px" width="200px" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 197.974 197.974" xml:space="preserve" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M1.64,0l21.735,197.974l53.912-67.637l85.473-13.261L1.64,0z M69.205,116.411l-34.889,43.771L20.25,32.064l104.267,75.766 L69.205,116.411z M131.334,136.462h65v17.541h-15v-2.541h-10v28.82h7.334v15H149v-15h7.334v-28.82h-10v2.541h-15V136.462z"></path> </g></svg>';
         const colorPaletteSVG = '<svg fill="#ffffff" height="200px" width="200px" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 297 297" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M254.141,53.244C224.508,18.909,185.299,0,143.736,0c-35.062,0-68.197,13.458-93.302,37.9 C10.383,76.892-2.822,123.282,14.207,165.178c13.868,34.122,45.625,57.954,77.227,57.954c0.841,0,1.671-0.016,2.508-0.053 c4.705-0.194,9.249-0.586,13.646-0.966c5.309-0.462,10.325-0.895,14.77-0.895c10.54,0,19.645,0,19.645,26.846 c0,28.811,17.538,48.934,42.65,48.936c0.002,0,0.002,0,0.004,0c17.864,0,37.651-10.342,57.215-29.903 c25.882-25.88,43.099-62.198,47.234-99.64C293.762,125.326,281.343,84.763,254.141,53.244z M227.315,252.54 c-15.397,15.398-30.55,23.877-42.66,23.875c-16.288,0-22.064-15.274-22.064-28.352c0-32.357-12.786-47.43-40.232-47.43 c-5.333,0-10.778,0.472-16.545,0.969c-4.169,0.359-8.481,0.733-12.724,0.909c-0.553,0.024-1.102,0.034-1.655,0.034 c-23.07,0-47.529-18.975-58.156-45.118c-13.714-33.738-2.225-71.927,31.519-104.779c21.239-20.676,49.272-32.063,78.939-32.063 c35.485,0,69.159,16.373,94.82,46.107C289.187,125.359,272.6,207.256,227.315,252.54z"></path> <path d="M192.654,165.877c0,17.213,13.918,31.217,31.026,31.217c17.107,0,31.025-14.004,31.025-31.217 c0-17.215-13.918-31.219-31.025-31.219C206.572,134.658,192.654,148.662,192.654,165.877z M234.118,165.877 c0,5.861-4.682,10.633-10.438,10.633c-5.756,0-10.438-4.771-10.438-10.633c0-5.863,4.683-10.633,10.438-10.633 C229.436,155.244,234.118,160.014,234.118,165.877z"></path> <path d="M226.914,93.489c0-17.215-13.917-31.219-31.025-31.219c-17.107,0-31.025,14.004-31.025,31.219 c0,17.211,13.918,31.218,31.025,31.218C212.997,124.707,226.914,110.7,226.914,93.489z M185.45,93.489 c0-5.865,4.684-10.632,10.439-10.632c5.756,0,10.438,4.767,10.438,10.632c0,5.86-4.683,10.633-10.438,10.633 C190.133,104.122,185.45,99.35,185.45,93.489z"></path> <path d="M124.863,39.627c-17.107,0-31.025,14.004-31.025,31.217c0,17.213,13.918,31.217,31.025,31.217s31.025-14.004,31.025-31.217 C155.888,53.631,141.97,39.627,124.863,39.627z M124.863,81.478c-5.756,0-10.438-4.771-10.438-10.634 c0-5.863,4.682-10.633,10.438-10.633c5.756,0,10.438,4.77,10.438,10.633C135.3,76.707,130.619,81.478,124.863,81.478z"></path> <path d="M70.821,92.809c-17.107,0-31.026,14.004-31.026,31.217c0,17.214,13.919,31.219,31.026,31.219s31.024-14.005,31.024-31.219 C101.845,106.813,87.928,92.809,70.821,92.809z M70.821,134.658c-5.757,0-10.439-4.77-10.439-10.633 c0-5.861,4.683-10.63,10.439-10.63c5.755,0,10.438,4.769,10.438,10.63C81.259,129.889,76.576,134.658,70.821,134.658z"></path> </g> </g></svg>';
+        const brushSVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M12 21.75C10.0716 21.75 8.18657 21.1782 6.58319 20.1068C4.97981 19.0355 3.73013 17.5127 2.99217 15.7312C2.25422 13.9496 2.06113 11.9892 2.43734 10.0979C2.81355 8.20655 3.74214 6.46927 5.10571 5.10571C6.46927 3.74214 8.20655 2.81355 10.0979 2.43734C11.9892 2.06113 13.9496 2.25422 15.7312 2.99217C17.5127 3.73013 19.0355 4.97981 20.1068 6.58319C21.1782 8.18657 21.75 10.0716 21.75 12C21.7473 14.585 20.7193 17.0635 18.8914 18.8914C17.0635 20.7193 14.585 21.7473 12 21.75ZM12 3.75C10.3683 3.75 8.77325 4.23385 7.41654 5.14037C6.05984 6.04689 5.00241 7.33537 4.37799 8.84286C3.75357 10.3503 3.59019 12.0091 3.90852 13.6095C4.22685 15.2098 5.01258 16.6798 6.16637 17.8336C7.32015 18.9874 8.79016 19.7731 10.3905 20.0915C11.9908 20.4098 13.6496 20.2464 15.1571 19.622C16.6646 18.9976 17.9531 17.9402 18.8596 16.5835C19.7661 15.2267 20.25 13.6317 20.25 12C20.2474 9.81277 19.3773 7.71589 17.8307 6.16929C16.2841 4.62269 14.1872 3.75264 12 3.75Z" fill="#ffffff"></path> <path d="M12 9.25C11.8019 9.24741 11.6126 9.16756 11.4725 9.02747C11.3324 8.88737 11.2526 8.69811 11.25 8.5V3.5C11.25 3.30109 11.329 3.11032 11.4697 2.96967C11.6103 2.82902 11.8011 2.75 12 2.75C12.1989 2.75 12.3897 2.82902 12.5303 2.96967C12.671 3.11032 12.75 3.30109 12.75 3.5V8.5C12.7474 8.69811 12.6676 8.88737 12.5275 9.02747C12.3874 9.16756 12.1981 9.24741 12 9.25Z" fill="#ffffff"></path> <path d="M12 21.25C11.8019 21.2474 11.6126 21.1676 11.4725 21.0275C11.3324 20.8874 11.2526 20.6981 11.25 20.5V15.5C11.25 15.3011 11.329 15.1103 11.4697 14.9697C11.6103 14.829 11.8011 14.75 12 14.75C12.1989 14.75 12.3897 14.829 12.5303 14.9697C12.671 15.1103 12.75 15.3011 12.75 15.5V20.5C12.7474 20.6981 12.6676 20.8874 12.5275 21.0275C12.3874 21.1676 12.1981 21.2474 12 21.25Z" fill="#ffffff"></path> <path d="M8.5 12.75H3.5C3.30109 12.75 3.11032 12.671 2.96967 12.5303C2.82902 12.3897 2.75 12.1989 2.75 12C2.75 11.8011 2.82902 11.6103 2.96967 11.4697C3.11032 11.329 3.30109 11.25 3.5 11.25H8.5C8.69891 11.25 8.88968 11.329 9.03033 11.4697C9.17098 11.6103 9.25 11.8011 9.25 12C9.25 12.1989 9.17098 12.3897 9.03033 12.5303C8.88968 12.671 8.69891 12.75 8.5 12.75Z" fill="#ffffff"></path> <path d="M20.5 12.75H15.5C15.3011 12.75 15.1103 12.671 14.9697 12.5303C14.829 12.3897 14.75 12.1989 14.75 12C14.75 11.8011 14.829 11.6103 14.9697 11.4697C15.1103 11.329 15.3011 11.25 15.5 11.25H20.5C20.6989 11.25 20.8897 11.329 21.0303 11.4697C21.171 11.6103 21.25 11.8011 21.25 12C21.25 12.1989 21.171 12.3897 21.0303 12.5303C20.8897 12.671 20.6989 12.75 20.5 12.75Z" fill="#ffffff"></path></svg>';
+        const shapeSVG = '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M9.072 15.25h13.855c0.69-0 1.249-0.56 1.249-1.25 0-0.23-0.062-0.446-0.171-0.631l0.003 0.006-6.927-12c-0.237-0.352-0.633-0.58-1.083-0.58s-0.846 0.228-1.080 0.575l-0.003 0.005-6.928 12c-0.105 0.179-0.167 0.395-0.167 0.625 0 0.69 0.56 1.25 1.25 1.25 0 0 0 0 0.001 0h-0zM16 4.5l4.764 8.25h-9.526zM7.838 16.75c-0.048-0.001-0.104-0.002-0.161-0.002-4.005 0-7.252 3.247-7.252 7.252s3.247 7.252 7.252 7.252c0.056 0 0.113-0.001 0.169-0.002l-0.008 0c0.048 0.001 0.104 0.002 0.161 0.002 4.005 0 7.252-3.247 7.252-7.252s-3.247-7.252-7.252-7.252c-0.056 0-0.113 0.001-0.169 0.002l0.008-0zM7.838 28.75c-0.048 0.002-0.103 0.003-0.16 0.003-2.625 0-4.753-2.128-4.753-4.753s2.128-4.753 4.753-4.753c0.056 0 0.112 0.001 0.168 0.003l-0.008-0c0.048-0.002 0.103-0.003 0.16-0.003 2.625 0 4.753 2.128 4.753 4.753s-2.128 4.753-4.753 4.753c-0.056 0-0.112-0.001-0.168-0.003l0.008 0zM28 16.75h-8c-1.794 0.001-3.249 1.456-3.25 3.25v8c0.001 1.794 1.456 3.249 3.25 3.25h8c1.794-0.001 3.249-1.456 3.25-3.25v-8c-0.001-1.794-1.456-3.249-3.25-3.25h-0zM28.75 28c-0 0.414-0.336 0.75-0.75 0.75h-8c-0.414-0-0.75-0.336-0.75-0.75v0-8c0-0.414 0.336-0.75 0.75-0.75h8c0.414 0 0.75 0.336 0.75 0.75v0z"></path></svg>';
+        const dropdownArrowSVG = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:0.8em; height:0.8em; margin-left:4px;"><path d="M7 10l5 5 5-5z"></path></svg>';
+
 
         elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
         elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
         elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
         elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
+
+        // --- START RE-ARCHITECTED SHAPE TOOLS ---
+        elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' });
+        elements.shapeSelectBtn = Utils.createElement('button', {
+            className: 'paint-tool',
+            innerHTML: shapeSVG + dropdownArrowSVG,
+            title: 'Shape Tools (L)',
+            eventListeners: { click: (e) => { e.stopPropagation(); eventCallbacks.onShapeSelectToggle(); } }
+        });
+        elements.shapeDropdown = Utils.createElement('div', { id: 'paint-shape-modal', className: 'paint-dropdown-content' });
+
+        const shapeToolButtons = Utils.createElement('div', { className: 'paint-button-group' });
+        elements.lineBtn = Utils.createElement('button', { innerHTML: lineSVG, title: 'Line Tool', eventListeners: { click: () => eventCallbacks.onToolChange('line') } });
+        elements.quadBtn = Utils.createElement('button', { innerHTML: quadSVG, title: 'Rectangle Tool', eventListeners: { click: () => eventCallbacks.onToolChange('quad') } });
+        elements.ellipseBtn = Utils.createElement('button', { innerHTML: ellipseSVG, title: 'Ellipse Tool', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } });
+
+        shapeToolButtons.append(elements.lineBtn, elements.quadBtn, elements.ellipseBtn);
+        elements.shapeDropdown.append(shapeToolButtons);
+        elements.shapeToolContainer.append(elements.shapeSelectBtn, elements.shapeDropdown);
+        // --- END RE-ARCHITECTED SHAPE TOOLS ---
 
         // Create brush tool dropdown
         elements.brushToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' });
@@ -205,6 +229,7 @@ const PaintUI = (() => {
             elements.pencilBtn,
             elements.eraserBtn,
             elements.brushToolContainer,
+            elements.shapeToolContainer, // Added shape tools here
             elements.gridBtn,
             elements.charSelectBtn
         );
@@ -258,6 +283,13 @@ const PaintUI = (() => {
         elements.eraserBtn.classList.toggle(ACTIVE_TOOL, activeTool === 'eraser');
         elements.gridBtn.classList.toggle(ACTIVE_TOOL, isGridActive);
 
+        // Update shape tools
+        const isShapeToolActive = ['line', 'quad', 'ellipse'].includes(activeTool);
+        elements.shapeSelectBtn.classList.toggle(ACTIVE_TOOL, isShapeToolActive);
+        elements.lineBtn.classList.toggle(ACTIVE_TOOL, activeTool === 'line');
+        elements.quadBtn.classList.toggle(ACTIVE_TOOL, activeTool === 'quad');
+        elements.ellipseBtn.classList.toggle(ACTIVE_TOOL, activeTool === 'ellipse');
+
         updateBrushUI(brushShape, brushSize);
 
         let isCustomColorActive = true;
@@ -293,6 +325,7 @@ const PaintUI = (() => {
         hideCharSelect();
         hideColorSelect();
         if (elements.brushModal) elements.brushModal.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        if (elements.shapeDropdown) elements.shapeDropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
         OutputManager.setEditorActive(false);
     }
 
@@ -470,7 +503,8 @@ const PaintManager = (() => {
         onColorSelectOpen: _openColorSelect,
         onBrushSelectToggle: _toggleBrushModal,
         onBrushSizeChange: _setBrushSize,
-        onBrushShapeChange: _setBrushShape
+        onBrushShapeChange: _setBrushShape,
+        onShapeSelectToggle: _toggleShapeModal
     };
 
     function _getLinePoints(x0, y0, x1, y1) {
@@ -492,10 +526,21 @@ const PaintManager = (() => {
 
     function _getRectanglePoints(x0, y0, x1, y1) {
         const points = new Set();
-        _getLinePoints(x0, y0, x1, y0).forEach(p => points.add(`${p.x},${p.y}`));
-        _getLinePoints(x1, y0, x1, y1).forEach(p => points.add(`${p.x},${p.y}`));
-        _getLinePoints(x1, y1, x0, y1).forEach(p => points.add(`${p.x},${p.y}`));
-        _getLinePoints(x0, y1, x0, y0).forEach(p => points.add(`${p.x},${p.y}`));
+        const startX = Math.min(x0, x1);
+        const endX = Math.max(x0, x1);
+        const startY = Math.min(y0, y1);
+        const endY = Math.max(y0, y1);
+
+        // Top and bottom edges
+        for (let x = startX; x <= endX; x++) {
+            points.add(`${x},${startY}`);
+            points.add(`${x},${endY}`);
+        }
+        // Left and right edges
+        for (let y = startY; y <= endY; y++) {
+            points.add(`${startX},${y}`);
+            points.add(`${endX},${y}`);
+        }
         return Array.from(points).map(p => { const [x, y] = p.split(',').map(Number); return { x, y }; });
     }
 
@@ -670,10 +715,12 @@ const PaintManager = (() => {
             if (currentTool === 'line') points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y);
             else if (currentTool === 'quad') points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y);
             else if (currentTool === 'ellipse') {
-                let rx = Math.abs(coords.x - shapeStartCoords.x);
-                let ry = Math.abs(coords.y - shapeStartCoords.y);
+                const cx = Math.round((shapeStartCoords.x + coords.x) / 2);
+                const cy = Math.round((shapeStartCoords.y + coords.y) / 2);
+                let rx = Math.abs(coords.x - shapeStartCoords.x) / 2;
+                let ry = Math.abs(coords.y - shapeStartCoords.y) / 2;
                 if (e.shiftKey) rx = ry = Math.max(rx, ry);
-                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
+                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, Math.round(rx), Math.round(ry));
             }
             points.forEach(p => _paintCell(p.x, p.y, tempCanvasData));
             PaintUI.renderCanvas(tempCanvasData);
@@ -689,10 +736,10 @@ const PaintManager = (() => {
             if (currentTool === 'line') points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y);
             else if (currentTool === 'quad') points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y);
             else if (currentTool === 'ellipse') {
-                let rx = Math.abs(endCoords.x - shapeStartCoords.x);
-                let ry = Math.abs(endCoords.y - shapeStartCoords.y);
+                let rx = Math.abs(endCoords.x - shapeStartCoords.x) / 2;
+                let ry = Math.abs(endCoords.y - shapeStartCoords.y) / 2;
                 if (e.shiftKey) rx = ry = Math.max(rx, ry);
-                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
+                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, Math.round(rx), Math.round(ry));
             }
             points.forEach(p => _paintCell(p.x, p.y, tempCanvasData));
             canvasData = tempCanvasData;
@@ -714,11 +761,19 @@ const PaintManager = (() => {
         _updateToolbarState();
     }
 
+    function _toggleShapeModal() {
+        const modal = document.getElementById('paint-shape-modal');
+        if (modal) modal.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        _updateToolbarState();
+    }
+
     function _setBrushSize(size) {
         brushSize = parseInt(size, 10);
         _updateToolbarState();
         _saveSettings();
     }
+
+
 
     function _setBrushShape(shape) {
         brushShape = shape;
@@ -729,9 +784,11 @@ const PaintManager = (() => {
     function _setTool(toolName) {
         currentTool = toolName;
         _updateToolbarState();
-        const dropdown = document.querySelector('.paint-dropdown-content.' + PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
-        if (dropdown) dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        // Close all dropdowns when a tool is selected
+        const activeDropdowns = document.querySelectorAll('.paint-dropdown-content.' + PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        activeDropdowns.forEach(dropdown => dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE));
     }
+
 
     function _setColor(colorValue) {
         fgColor = colorValue;
