@@ -1646,6 +1646,103 @@ body {
   border-radius: 0.25rem;
   margin-bottom: 0.5rem;
 }
+
+.paint-dropdown-content {
+  display: none;
+  position: absolute;
+  top: 110%; /* Give it a little space from the button */
+  left: 50%;
+  transform: translateX(-50%); /* Center the dropdown */
+  background-color: #27272a;
+  min-width: 160px; /* Give it a reasonable default width */
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+  z-index: 1001; /* Ensure it's on top */
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.paint-dropdown-content.paint-dropdown-active {
+  display: block;
+}
+
+/* Styles for the sections within our new dropdown */
+.paint-dropdown-section {
+  margin-bottom: 0.75rem;
+}
+.paint-dropdown-section:last-child {
+  margin-bottom: 0;
+}
+.paint-dropdown-section label {
+  display: block;
+  font-size: 0.875rem;
+  color: #a1a1aa;
+  margin-bottom: 0.25rem;
+}
+
+/* Styles for the Round/Square button group */
+.paint-button-group {
+  display: flex;
+  gap: 0.25rem;
+}
+.paint-button-group button {
+  flex-grow: 1;
+  background-color: #3f3f46;
+  color: #e4e4e7;
+  border: 1px solid #52525b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.paint-button-group button:hover {
+  background-color: #52525b;
+}
+.paint-button-group button.paint-tool-active {
+  background-color: #60a5fa;
+  color: #1e293b;
+  border-color: #93c5fd;
+}
+
+/* Styles for the size slider label */
+.paint-slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Style for the slider itself */
+#paint-brush-size {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #3f3f46;
+  outline: none;
+  opacity: 0.9;
+  transition: opacity .2s;
+  border-radius: 4px;
+}
+#paint-brush-size:hover {
+  opacity: 1;
+}
+#paint-brush-size::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #60a5fa;
+  cursor: pointer;
+  border-radius: 50%;
+}
+#paint-brush-size::-moz-range-thumb {
+  width: 16px;
+  height: 16.px;
+  background: #60a5fa;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
 /* --- START: CORRECTED Responsive Terminal Scaling Architecture --- */
 
 /*
