@@ -1473,14 +1473,15 @@ body {
   align-items: center;
   justify-content: center;
 }
-#paint-color-select-grid {
+.paint-color-select-grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr); /* We'll make it 8 columns wide */
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+  gap: 4px;
   overflow-y: auto;
   padding: 0.5rem;
   background-color: #1f1f22;
   border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 #paint-char-select-grid {
   display: grid;
@@ -1540,6 +1541,29 @@ body {
 .paint-dropdown-content.paint-dropdown-active {
   display: block;
 }
+.paint-custom-hex-container {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+.paint-hex-input {
+  flex-grow: 1;
+  background-color: #27272a;
+  border: 1px solid #52525b;
+  color: #e4e4e7;
+  font-family: 'VT323', monospace;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  outline: none;
+}
+.paint-hex-set-btn {
+  background-color: #3f3f46;
+  color: #a7f3d0;
+  border: 1px solid #52525b;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
 @property --tw-space-y-reverse {
   syntax: "*";
   inherits: false;
@@ -1586,20 +1610,53 @@ body {
     }
   }
 }
+
+.paint-modal-content-container {
+  background-color: #101010;
+  border: 1px solid #60a5fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+#paint-color-select-container {
+  width: 600px;
+}
+
+#paint-char-select-title, #paint-color-select-title { /* Apply title styles to both */
+  font-size: 1.25rem;
+  color: #60a5fa;
+  text-align: center;
+  margin: 0 0 1rem 0;
+  flex-shrink: 0;
+}
+
+/* FIX: Changed from auto-fill to a fixed 16 columns for a predictable wide layout */
+.paint-color-select-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background-color: #1f1f22;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+}
 /* --- START: CORRECTED Responsive Terminal Scaling Architecture --- */
 
 /*
  * The Terminal Bezel:
  * By removing explicit width and height, the bezel will now derive its
  * dimensions from its child, the #terminal. It becomes a true, form-fitting
- * frame, while the parent body's flex properties handle centering.
- */
-#terminal-bezel {
-  /* These properties remain to center the terminal screen within the bezel's padding. */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+ * frame, while the parent body's flex properties handle centering. */#terminal-bezel {  /* These properties remain to center the terminal screen within the bezel's padding. */
+                                                                        display: flex;
+                                                                        align-items: center;
+                                                                        justify-content: center;
+                                                                      }
 
 /*
  * The Terminal Screen:

@@ -16,7 +16,7 @@ const PaintAppConfig = {
         DEFAULT_HEIGHT: 24,
     },
     DEFAULT_CHAR: '#',
-    DEFAULT_FG_COLOR: 'text-green-500',
+    DEFAULT_FG_COLOR: '#22c55e',
     DEFAULT_BG_COLOR: 'bg-transparent',
     ERASER_CHAR: ' ',
     ERASER_BG_COLOR: 'bg-transparent',
@@ -29,39 +29,48 @@ const PaintAppConfig = {
         DROPDOWN_ACTIVE: 'paint-dropdown-active',
     },
     PALETTE: [
-        { name: 'green',   class: 'text-green-500',   value: 'rgb(34, 197, 94)' },
-        { name: 'red',     class: 'text-red-500',     value: 'rgb(239, 68, 68)' },
-        { name: 'sky',     class: 'text-sky-400',     value: 'rgb(56, 189, 248)' },
-        { name: 'amber',   class: 'text-amber-400',   value: 'rgb(251, 191, 36)' },
-        { name: 'lime',    class: 'text-lime-400',    value: 'rgb(163, 230, 53)' },
-        { name: 'neutral', class: 'text-neutral-300', value: 'rgb(212, 212, 212)' }
+        { name: 'green',   value: '#22c55e' },
+        { name: 'red',     value: '#ef4444' },
+        { name: 'sky',     value: '#38bdf8' },
+        { name: 'amber',   value: '#fbb724' },
+        { name: 'lime',    value: '#a3e635' },
+        { name: 'neutral', value: '#d4d4d4' }
     ],
     EDITOR: {
         DEBOUNCE_DELAY_MS: 300,
         MAX_UNDO_STATES: 50,
     },
-    // --- ADD THIS NEW ARRAY ---
+    // REFACTORED: Replaced the blocky palette with a more vibrant, chromatic rainbow.
     CUSTOM_COLOR_GRID: [
-        '#ffffff', '#f2f2f2', '#e6e6e6', '#d9d9d9', '#cccccc', '#bfbfbf', '#b3b3b3', '#a6a6a6',
-        '#999999', '#8c8c8c', '#808080', '#737373', '#666666', '#595959', '#4d4d4d', '#404040',
-        '#fed7d7', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d',
-        '#fee2d5', '#fdbb7d', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12',
-        '#fef3c7', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12',
-        '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#14532d',
-        '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46',
-        '#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#155e75',
-        '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af',
-        '#e0e7ff', '#c7d2fe', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca', '#3730a3'
+        // Greyscale Ramp
+        '#ffffff', '#f0f0f0', '#e0e0e0', '#cfcfcf', '#bfbfbf', '#afafaf', '#9f9f9f', '#8f8f8f',
+        '#7f7f7f', '#6f6f6f', '#5f5f5f', '#4f4f4f', '#3f3f3f', '#2f2f2f', '#1f1f1f', '#000000',
+        // Reds -> Pinks
+        '#ffcdd2', '#ef9a9a', '#e57373', '#ef5350', '#f44336', '#d32f2f', '#b71c1c', '#880e4f',
+        '#f8bbd0', '#f48fb1', '#f06292', '#ec407a', '#e91e63', '#d81b60', '#c2185b', '#ad1457',
+        // Oranges -> Browns
+        '#ffccbc', '#ffab91', '#ff8a65', '#ff7043', '#ff5722', '#e64a19', '#bf360c', '#8d6e63',
+        '#ffe0b2', '#ffcc80', '#ffb74d', '#ffa726', '#ff9800', '#fb8c00', '#f57c00', '#795548',
+        // Yellows
+        '#fff9c4', '#fff59d', '#fff176', '#ffee58', '#ffeb3b', '#fdd835', '#fbc02d', '#f57f17',
+        // Greens
+        '#dcedc8', '#c5e1a5', '#aed581', '#9ccc65', '#8bc34a', '#7cb342', '#689f38', '#33691e',
+        '#c8e6c9', '#a5d6a7', '#81c784', '#66bb6a', '#4caf50', '#43a047', '#388e3c', '#1b5e20',
+        // Blues & Teals
+        '#b2dfdb', '#80cbc4', '#4db6ac', '#26a69a', '#009688', '#00796b', '#004d40', '#01579b',
+        '#b3e5fc', '#81d4fa', '#4fc3f7', '#29b6f6', '#03a9f4', '#0288d1', '#0277bd', '#01579b',
+        // Purples & Indigos
+        '#d1c4e9', '#b39ddb', '#9575cd', '#7e57c2', '#673ab7', '#5e35b1', '#512da8', '#311b92',
+        '#c5cae9', '#9fa8da', '#7986cb', '#5c6bc0', '#3f51b5', '#3949ab', '#303f9f', '#1a237e'
     ]
-}
-
+};
 
 /**
- * @module PaintUI
- * @description Manages all DOM manipulations for the paint editor. This includes building the UI,
- * handling display updates, and calculating coordinates. It is a pure UI controller
- * that receives its instructions and data from the PaintManager.
- */
+* @module PaintUI
+* @description Manages all DOM manipulations for the paint editor. This includes building the UI,
+* handling display updates, and calculating coordinates. It is a pure UI controller
+* that receives its instructions and data from the PaintManager.
+*/
 const PaintUI = (() => {
     "use strict";
     let elements = {};
@@ -88,9 +97,10 @@ const PaintUI = (() => {
         elements.charSelectModal = document.getElementById('paint-char-select-modal');
         elements.charSelectGrid = document.getElementById('paint-char-select-grid');
         elements.colorSelectModal = document.getElementById('paint-color-select-modal');
-        elements.colorSelectGrid = document.getElementById('paint-color-select-grid');
+        // REFACTORED: The color select container now holds the grid and the new custom input.
+        elements.colorSelectContainer = document.getElementById('paint-color-select-container');
 
-        if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar || !elements.charSelectModal || !elements.charSelectGrid) {
+        if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar || !elements.charSelectModal || !elements.colorSelectContainer) {
             console.error("PaintUI: Critical UI elements missing!");
             return false;
         }
@@ -164,7 +174,7 @@ const PaintUI = (() => {
             innerHTML: colorPaletteSVG,
             title: 'Select Custom Color',
             eventListeners: {
-                click: () => eventCallbacks.onColorSelectOpen() // CORRECT: Opens the modal
+                click: () => eventCallbacks.onColorSelectOpen()
             }
         });
 
@@ -241,18 +251,20 @@ const PaintUI = (() => {
 
     /**
      * Populates the color selection grid with a palette of colors and shows the modal.
+     * Also creates and manages the custom hex code input field.
      * @param {function(string): void} onSelectCallback - The callback to execute when a color is chosen.
      */
     function populateAndShowColorSelect(onSelectCallback) {
-        if (!elements.colorSelectGrid || !elements.colorSelectModal) return;
+        if (!elements.colorSelectContainer || !elements.colorSelectModal) return;
 
-        elements.colorSelectGrid.innerHTML = ''; // Clear previous grid
-        elements.colorSelectGrid.className = 'paint-color-select-grid'; // Add a class for styling
+        elements.colorSelectContainer.innerHTML = ''; // Clear previous content
 
+        // --- 1. Create the color grid ---
+        const grid = Utils.createElement('div', { className: 'paint-color-select-grid' });
         const fragment = document.createDocumentFragment();
         PaintAppConfig.CUSTOM_COLOR_GRID.forEach(colorValue => {
             const btn = Utils.createElement('button', {
-                className: 'paint-color-swatch', // Reuse existing swatch style
+                className: 'paint-color-swatch',
                 style: { backgroundColor: colorValue },
                 title: colorValue,
                 eventListeners: {
@@ -261,9 +273,48 @@ const PaintUI = (() => {
             });
             fragment.appendChild(btn);
         });
+        grid.appendChild(fragment);
 
-        elements.colorSelectGrid.appendChild(fragment);
+        // --- 2. Create the custom hex input ---
+        const customInputContainer = Utils.createElement('div', { className: 'paint-custom-hex-container' });
+        const hexInput = Utils.createElement('input', {
+            type: 'text',
+            className: 'paint-hex-input',
+            placeholder: '#RRGGBB',
+            maxLength: 7
+        });
+        const setButton = Utils.createElement('button', {
+            className: 'paint-hex-set-btn',
+            textContent: 'Set'
+        });
+
+        // Event listener for the "Set" button
+        setButton.addEventListener('click', () => {
+            const inputValue = hexInput.value.trim();
+            if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(inputValue)) {
+                onSelectCallback(inputValue);
+            } else {
+                hexInput.style.borderColor = 'red';
+                setTimeout(() => { hexInput.style.borderColor = ''; }, 1000);
+            }
+        });
+
+        hexInput.addEventListener('keydown', (e) => {
+            // FIX: Stop the event from bubbling up to the global keydown listener
+            // in PaintManager, which would otherwise hijack the input.
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                setButton.click();
+            }
+        });
+
+        customInputContainer.append(hexInput, setButton);
+
+        // --- 3. Append both to the main container ---
+        elements.colorSelectContainer.append(grid, customInputContainer);
         elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        hexInput.focus(); // Set focus to the input field when the modal opens.
     }
 
     /**
@@ -374,12 +425,11 @@ const PaintUI = (() => {
      */
     function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive) {
         if (!isInitialized) return;
-        // ... (SVG definitions and tool toggling logic remains the same)
+
         elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
         elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
-        // ... (rest of the tool active states logic remains)
 
-        // --- Color Swatch Logic ---
+        // Color Swatch Logic
         let isCustomColorActive = true;
 
         // Check the predefined palette buttons
@@ -389,17 +439,15 @@ const PaintUI = (() => {
             if (isActive) {
                 isCustomColorActive = false;
             }
-            btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isActive); // Change colorClass to isActive
+            btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isActive);
         });
 
-        // Now, manage the custom color swatch
+        // Manage the custom color swatch
         if (isCustomColorActive) {
             elements.customColorSwatch.style.backgroundColor = activeColor;
             elements.customColorSwatch.style.display = 'block';
             elements.customColorSwatch.classList.add(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
         } else {
-            // If a standard color is active, just deactivate the custom swatch.
-            // We'll leave it visible if it has a color.
             elements.customColorSwatch.classList.remove(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
         }
     }
@@ -477,7 +525,7 @@ const PaintManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
-    let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 }; // <-- CHANGE THIS LINE
+    let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 };
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
     let isGridVisible = false;
     let shapeStartCoords = null;
@@ -501,7 +549,7 @@ const PaintManager = (() => {
         onRedo: _performRedo,
         onGridToggle: _toggleGrid,
         onCharSelectOpen: _openCharSelect,
-        onColorSelectOpen: _openColorSelect, // <-- ADD THIS LINE
+        onColorSelectOpen: _openColorSelect,
 
     };
 
@@ -541,6 +589,11 @@ const PaintManager = (() => {
     /**
      * Gets points for a rectangle.
      * @private
+     * @param {number} x0 - Start X coordinate.
+     * @param {number} y0 - Start Y coordinate.
+     * @param {number} x1 - End X coordinate.
+     * @param {number} y1 - End Y coordinate.
+     * @returns {Array<{x: number, y: number}>} An array of point objects.
      */
     function _getRectanglePoints(x0, y0, x1, y1) {
         const points = new Set();
@@ -557,6 +610,11 @@ const PaintManager = (() => {
     /**
      * Gets points for a ellipse using the Midpoint Ellipse Algorithm.
      * @private
+     * @param {number} cx - Center X coordinate.
+     * @param {number} cy - Center Y coordinate.
+     * @param {number} rx - Radius on the X-axis.
+     * @param {number} ry - Radius on the Y-axis.
+     * @returns {Array<{x: number, y: number}>} An array of point objects.
      */
     function _getEllipsePoints(cx, cy, rx, ry) {
         if (rx < 0 || ry < 0) return [];
@@ -612,7 +670,6 @@ const PaintManager = (() => {
             return { x: px, y: py };
         });
     }
-
 
     /**
      * Creates a new, empty 2D array to represent a blank canvas.
@@ -729,10 +786,11 @@ const PaintManager = (() => {
      * @param {number} x - The x-coordinate of the cell to draw on.
      * @param {number} y - The y-coordinate of the cell to draw on.
      * @param {object|null} targetCanvas - The canvas data to draw on. If null, uses the main canvasData.
+     * @returns {boolean} - True if a change was made, false otherwise.
      */
     function _drawOnCanvas(x, y, targetCanvas = null) {
         const canvas = targetCanvas || canvasData;
-        if (y < 0 || y >= canvas.length || x < 0 || x >= canvas[0].length) return;
+        if (y < 0 || y >= canvas.length || x < 0 || x >= canvas[0].length) return false;
 
         const cell = canvas[y][x];
         let changed = false;
@@ -759,7 +817,6 @@ const PaintManager = (() => {
         }
         return changed;
     }
-
 
     /**
      * Handles the mousedown event on the canvas to begin a drawing action.
@@ -797,7 +854,8 @@ const PaintManager = (() => {
 
         if (currentTool === 'pencil' || currentTool === 'eraser') {
             if (coords.x === lastCoords.x && coords.y === lastCoords.y) return;
-            _drawOnCanvas(coords.x, coords.y);
+            const points = _getLinePoints(lastCoords.x, lastCoords.y, coords.x, coords.y);
+            points.forEach(p => _drawOnCanvas(p.x, p.y));
             lastCoords = coords;
         } else if (shapeStartCoords) {
             let tempCanvasData = JSON.parse(JSON.stringify(shapePreviewBaseState));
@@ -856,10 +914,10 @@ const PaintManager = (() => {
         shapePreviewBaseState = null;
     }
 
-
     /**
      * Handles the mouseleave event to end a drawing action if the mouse leaves the canvas.
      * @private
+     * @param {MouseEvent} e - The mouse event.
      */
     function _handleMouseLeave(e) {
         if (isDrawing) {
@@ -889,8 +947,7 @@ const PaintManager = (() => {
     function _setColor(colorValue) {
         fgColor = colorValue;
         _updateToolbarState();
-        PaintUI.hideColorSelect(); // <-- ADD THIS LINE
-
+        PaintUI.hideColorSelect();
     }
 
     /**
@@ -986,7 +1043,7 @@ const PaintManager = (() => {
         isDirty = false;
         currentTool = 'pencil';
         drawChar = PaintAppConfig.DEFAULT_CHAR;
-        fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
+        fgColor = PaintAppConfig.PALETTE[0].value;
         isGridVisible = false;
 
         if (fileContent) {
@@ -1129,6 +1186,14 @@ const PaintManager = (() => {
     function handleKeyDown(event) {
         if (!isActiveState) return;
 
+        // --- FIX: Check if the event target is the hex input field. ---
+        // If the user is typing in the custom color input, we must not
+        // hijack their input for global shortcuts.
+        const target = event.target;
+        if (target && target.classList.contains('paint-hex-input')) {
+            return; // Let the input field handle the event exclusively.
+        }
+
         if (event.ctrlKey || event.metaKey) {
             const key = event.key.toLowerCase();
             if (key === 'z') {
@@ -1166,7 +1231,7 @@ const PaintManager = (() => {
             else {
                 const colorIndex = parseInt(key, 10) - 1;
                 if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
-                    _setColor(PaintAppConfig.PALETTE[colorIndex].value); // Change .class to .value
+                    _setColor(PaintAppConfig.PALETTE[colorIndex].value);
                 }
             }
         } else if (isCharKey) {
