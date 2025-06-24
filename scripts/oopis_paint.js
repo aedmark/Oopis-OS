@@ -470,18 +470,10 @@ const PaintUI = (() => {
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
 
-        // *** NEW LOGIC START ***
-        const containerRect = elements.canvas.getBoundingClientRect();
-        // Calculate the size of a single cell based on the container's dimensions
-        const cellWidth = containerRect.width / gridWidth;
-        const cellHeight = containerRect.height / gridHeight;
-        // Use the smaller of the two dimensions to ensure everything fits.
-        // This size will dictate our font-size and line-height.
-        const optimalSize = Math.floor(Math.min(cellWidth, cellHeight));
-
-        elements.canvas.style.fontSize = `${optimalSize}px`;
-        elements.canvas.style.lineHeight = `${optimalSize}px`;
-        // *** NEW LOGIC END ***
+        // This calculation is now removed. The CSS aspect-ratio property handles scaling.
+        // We can set a base font-size, but it's often better to let it be inherited
+        // or set to a relative unit so the browser can optimize rendering within the grid cells.
+        // For simplicity, we will remove the manual style settings from JS.
 
         elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
         elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;

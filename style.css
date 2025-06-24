@@ -1336,13 +1336,13 @@ body {
   color: #a3a3a3;
 }
 #paint-canvas {
-  flex-grow: 1;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 80 / 48;
   overflow: hidden;
   display: grid;
   background-color: #101010;
   cursor: crosshair;
-  place-content: center;
-  place-items: center;
 }
 #paint-canvas span {
   display: inline-block;

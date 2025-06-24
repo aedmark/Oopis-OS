@@ -872,3 +872,74 @@ const TabCompletionManager = (() => {
         resetCycle,
     };
 })();
+
+/**
+ * @module AppLayerManager
+ * @description Manages the display layer for full-screen applications like edit, paint, and chidi.
+ * It ensures only one app is active at a time and handles showing/hiding the terminal UI.
+ */
+const AppLayerManager = (() => {
+    "use strict";
+    let appLayer = null;
+    let terminalOutput = null;
+    let terminalInputContainer = null;
+    let isActive = false;
+    let currentAppContainer = null;
+
+    // Cache DOM elements on first use
+    function _cacheDOM() {
+        if (!appLayer) appLayer = document.getElementById('app-layer');
+        if (!terminalOutput) terminalOutput = document.getElementById('output');
+        if (!terminalInputContainer) terminalInputContainer = document.querySelector('.input-line-container');
+    }
+
+    /**
+     * Displays a full-screen application, hiding the standard terminal UI.
+     * @param {HTMLElement} appContainerElement - The main container element of the application to display.
+     */
+    function show(appContainerElement) {
+        _cacheDOM();
+        if (isActive || !appLayer || !appContainerElement) {
+            console.warn("AppLayerManager: Cannot show new app, one is already active or elements are missing.");
+            return;
+        }
+
+        // Hide terminal UI
+        if (terminalOutput) terminalOutput.classList.add('hidden');
+        if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
+
+        // Show app layer and append the app's main element
+        currentAppContainer = appContainerElement;
+        appLayer.appendChild(currentAppContainer);
+        appLayer.classList.remove('hidden');
+        isActive = true;
+    }
+
+    /**
+     * Hides the currently active application and restores the standard terminal UI.
+     */
+    function hide() {
+        _cacheDOM();
+        if (!isActive || !appLayer) return;
+
+        // Hide app layer and remove the app's element
+        appLayer.classList.add('hidden');
+        if (currentAppContainer) {
+            appLayer.removeChild(currentAppContainer);
+            currentAppContainer = null;
+        }
+
+        // Restore terminal UI
+        if (terminalOutput) terminalOutput.classList.remove('hidden');
+        if (terminalInputContainer) terminalInputContainer.classList.remove('hidden');
+
+        TerminalUI.focusInput();
+        isActive = false;
+    }
+
+    return {
+        show,
+        hide,
+        isActive: () => isActive,
+    };
+})();

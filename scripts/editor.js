@@ -1102,6 +1102,7 @@ const EditorManager = (() => {
       onUndo: _performUndo.bind(this),
       onRedo: _performRedo.bind(this)
     });
+    AppLayerManager.show(EditorUI.elements.editorContainer);
     EditorUI.setGutterVisibility(!isWordWrapActive);
     currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
     EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
@@ -1122,6 +1123,11 @@ const EditorManager = (() => {
    */
   async function _performExitActions() {
     document.removeEventListener('keydown', handleKeyDown);
+    // NEW: Use AppLayerManager to hide the editor
+    // This replaces the manual hiding/showing of terminal components.
+    AppLayerManager.hide();
+    // The call to EditorUI.destroyLayout() should still happen
+    // but we no longer need to manually un-hide terminal elements here.
     EditorUI.destroyLayout();
     isActiveState = false;
     currentFilePath = null;
