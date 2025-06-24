@@ -22,20 +22,6 @@ function initializeTerminalEventListeners() {
     console.error(
         "Terminal event listeners cannot be initialized: Core DOM elements not found."
     );
-    const resizeObserver = new ResizeObserver(entries => {
-      // Check if the PaintManager module exists and is active
-      if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
-        // Notify the PaintUI to handle the resize
-        if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
-          PaintUI.handleResize(); // <<< ADD THIS LINE
-        }
-      }
-    });
-
-    // Begin observing the terminal screen for any resize events.
-    if (DOM.terminalDiv) {
-      resizeObserver.observe(DOM.terminalDiv);
-    }
     return;
   }
 
@@ -252,6 +238,25 @@ window.onload = async () => {
     console.log(
         `${Config.OS.NAME} v.${Config.OS.VERSION} loaded successfully!`
     );
+
+    // --- ARCHITECTURAL FIX: MOVED RESIZE OBSERVER HERE ---
+    // This observer must be initialized during a normal boot sequence.
+    const resizeObserver = new ResizeObserver(entries => {
+      // Check if the PaintManager module exists and is active
+      if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
+        // Notify the PaintUI to handle the resize
+        if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
+          PaintUI.handleResize();
+        }
+      }
+    });
+
+    // Begin observing the terminal screen for any resize events.
+    if (DOM.terminalDiv) {
+      resizeObserver.observe(DOM.terminalDiv);
+    }
+    // --- END ARCHITECTURAL FIX ---
+
   } catch (error) {
     // Catch any fatal errors during initialization and display them.
     console.error(
