@@ -27,7 +27,7 @@ function initializeTerminalEventListeners() {
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
         // Notify the PaintUI to handle the resize
         if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
-          PaintUI.handleResize();
+          PaintUI.handleResize(); // <<< ADD THIS LINE
         }
       }
     });

@@ -223,19 +223,31 @@ const PaintUI = (() => {
         elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save & Exit', title: 'Save & Exit (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit without Saving (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'},
+        const leftGroup = Utils.createElement('div', { className: 'paint-toolbar-group' },
             elements.undoBtn,
             elements.redoBtn,
             elements.pencilBtn,
             elements.eraserBtn,
             elements.brushToolContainer,
-            elements.shapeToolContainer, // Added shape tools here
+            elements.shapeToolContainer,
             elements.gridBtn,
             elements.charSelectBtn
         );
-        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveExitBtn, elements.exitBtn);
 
-        elements.toolbar.append(leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
+// Component 2: Unified Color Tools
+        const colorToolsGroup = Utils.createElement('div', { className: 'paint-toolbar-group color-tools' }, // Added a 'color-tools' class for CSS targeting
+            elements.colorPalleteBtn,
+            colorPaletteContainer
+        );
+
+// Component 3: Session Tools
+        const rightGroup = Utils.createElement('div', { className: 'paint-toolbar-group' },
+            elements.saveExitBtn,
+            elements.exitBtn
+        );
+
+// Append the logical groups to the main toolbar
+        elements.toolbar.append(leftGroup, colorToolsGroup, rightGroup);
 
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
@@ -401,6 +413,8 @@ const PaintUI = (() => {
     function _calculateGridMetrics() {
         if (!elements.canvas) return;
         const containerRect = elements.canvas.getBoundingClientRect();
+
+        // Calculate the available content area, respecting padding and borders.
         const style = window.getComputedStyle(elements.canvas);
         const paddingLeft = parseFloat(style.paddingLeft) || 0;
         const paddingRight = parseFloat(style.paddingRight) || 0;
@@ -410,10 +424,15 @@ const PaintUI = (() => {
         const paddingBottom = parseFloat(style.paddingBottom) || 0;
         const borderTop = parseFloat(style.borderTopWidth) || 0;
         const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+
         const contentWidth = containerRect.width - paddingLeft - paddingRight - borderLeft - borderRight;
         const contentHeight = containerRect.height - paddingTop - paddingBottom - borderTop - borderBottom;
+
+        // Determine the size of each cell based on the limiting dimension.
         cellDimensions.width = contentWidth / PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         cellDimensions.height = contentHeight / PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        // Store the top-left offset of the grid content area.
         gridOffset.x = paddingLeft + borderLeft;
         gridOffset.y = paddingTop + borderTop;
     }
@@ -447,10 +466,26 @@ const PaintUI = (() => {
         if (!elements.canvas) return;
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
+
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        // *** NEW LOGIC START ***
+        const containerRect = elements.canvas.getBoundingClientRect();
+        // Calculate the size of a single cell based on the container's dimensions
+        const cellWidth = containerRect.width / gridWidth;
+        const cellHeight = containerRect.height / gridHeight;
+        // Use the smaller of the two dimensions to ensure everything fits.
+        // This size will dictate our font-size and line-height.
+        const optimalSize = Math.floor(Math.min(cellWidth, cellHeight));
+
+        elements.canvas.style.fontSize = `${optimalSize}px`;
+        elements.canvas.style.lineHeight = `${optimalSize}px`;
+        // *** NEW LOGIC END ***
+
         elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
         elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
+
         for (let y = 0; y < gridHeight; y++) {
             for (let x = 0; x < gridWidth; x++) {
                 const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
@@ -461,7 +496,7 @@ const PaintUI = (() => {
             }
         }
         elements.canvas.appendChild(fragment);
-        _calculateGridMetrics();
+        _calculateGridMetrics(); // Recalculate metrics after rendering
     }
 
     function reset() {
