@@ -15,10 +15,12 @@
      */
     const paintCommandDefinition = {
         commandName: "paint",
-        argValidation: { max: 1 }, // Accepts at most one argument (optional filename).
+        argValidation: {
+            exact: 1,
+            error: "a filename is required. Usage: paint <filename.oopic>"
+        }, // Accepts at most one argument (optional filename).
         pathValidation: [{
             argIndex: 0,
-            optional: true, // File path is optional (can open a new, unsaved file).
             options: {
                 allowMissing: true, // If file doesn't exist, it can be created upon saving.
                 expectedType: 'file' // If it exists, it should be a file.
