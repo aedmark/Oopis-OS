@@ -749,7 +749,7 @@ const PaintManager = (() => {
         } else {
             isTempFile = true;
             const tempName = `temp_paint_${Date.now()}.${PaintAppConfig.FILE_EXTENSION}`;
-            currentFilePath = FileSystemManager.getAbsolutePath(tempName);
+            currentFilePath = FileSystemManager.getAbsolutePath(tempName, FileSystemManager.getCurrentPath());
             const currentUser = UserManager.getCurrentUser().name;
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
             const blankCanvasData = { version: "1.1", width: PaintAppConfig.CANVAS.DEFAULT_WIDTH, height: PaintAppConfig.CANVAS.DEFAULT_HEIGHT, cells: _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT) };
