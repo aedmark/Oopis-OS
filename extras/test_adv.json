@@ -1,0 +1,29 @@
+{
+  "title": "The Test Chamber",
+  "startingRoomId": "hallway",
+  "winCondition": {"type": "itemInRoom", "itemId": "trophy", "roomId": "throne_room"},
+  "winMessage": "You place the trophy on the throne. You have won the test!",
+  "rooms": {
+    "hallway": {
+      "id": "hallway", "name": "Stone Hallway",
+      "description": "A dusty hallway. A heavy oak door is to the north.",
+      "exits": {"north": "oak_door"}
+    },
+    "throne_room": {
+      "id": "throne_room", "name": "Throne Room",
+      "description": "A grand room with a single throne.",
+      "exits": {}
+    }
+  },
+  "items": {
+    "rusty_key": {
+      "id": "rusty_key", "name": "rusty key", "location": "hallway"
+    },
+    "oak_door": {
+      "id": "oak_door", "name": "oak door", "location": "hallway",
+      "isOpenable": true, "state": "locked", "unlocksWith": "rusty_key",
+      "leadsTo": "throne_room", "canTake": false
+    },
+    "trophy": { "id": "trophy", "name": "shiny trophy", "location": "player" }
+  }
+}

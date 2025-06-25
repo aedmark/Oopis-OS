@@ -81,6 +81,31 @@ DESCRIPTION
        The sudoers file controls which users can run commands as root.
        Incorrect syntax in this file can lock all users out of sudo.
 
+SYNTAX
+       The /etc/sudoers file uses a simple, space-separated format.
+       Lines starting with '#' are comments.
+
+       RULE FORMAT:
+       <who>    <permission>
+
+       <who>:
+           A username (e.g., guest)
+           A group name, prefixed with '%' (e.g., %developers)
+
+       <permission>:
+           ALL             - The user/group can run all commands.
+           (command_name)  - The user/group can only run the specified command.
+
+       EXAMPLES
+           # Give the user 'admin' full root privileges
+           admin    ALL
+
+           # Allow anyone in the 'testers' group to run the 'reboot' command
+           %testers reboot
+
+           # Set the password timeout to 30 minutes (0 to always ask)
+           Defaults timestamp_timeout=30
+
 PERMISSIONS
        Only the superuser (root) can run visudo.`;
 

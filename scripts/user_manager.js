@@ -319,6 +319,7 @@ const UserManager = (() => {
         }
 
         SessionManager.saveAutomaticState(oldUser);
+        SudoManager.clearUserTimestamp(oldUser); // Clear sudo timestamp on logout.
         SessionManager.popUserFromStack();
         const newUsername = SessionManager.getCurrentUserFromStack();
         currentUser = { name: newUsername };

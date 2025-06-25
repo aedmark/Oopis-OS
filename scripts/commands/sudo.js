@@ -47,7 +47,11 @@ const SudoManager = (() => {
             }
 
             const parts = line.split(/\s+/);
-            if (parts.length < 2) return;
+            if (parts.length < 2) {
+                // Resilience enhancement: Log a warning for malformed lines.
+                console.warn(`SudoManager: Malformed line in /etc/sudoers: "${line}". Ignoring.`);
+                return;
+            }
 
             const entity = parts[0];
             const permissions = parts.slice(1).join(' ');
@@ -107,6 +111,16 @@ const SudoManager = (() => {
     }
 
     /**
+     * Clears the sudo timestamp for a specific user, typically on logout.
+     * @param {string} username - The user whose timestamp should be cleared.
+     */
+    function clearUserTimestamp(username) {
+        if (userSudoTimestamps[username]) {
+            delete userSudoTimestamps[username];
+        }
+    }
+
+    /**
      * Determines if a user has permission to run a specific command via sudo.
      * @param {string} username - The user attempting to run the command.
      * @param {string} commandToRun - The command the user wants to execute.
@@ -140,6 +154,7 @@ const SudoManager = (() => {
         invalidateSudoersCache,
         isUserTimestampValid,
         updateUserTimestamp,
+        clearUserTimestamp, // Expose the new function
         canUserRunCommand
     };
 })();

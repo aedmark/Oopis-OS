@@ -5,21 +5,33 @@
 (() => {
     "use strict";
 
+    const MAX_EXTRACTION_DEPTH = 100; // Define a safe recursion limit.
+
     /**
      * Recursively creates files and directories from an archive object.
      * @private
      * @param {object} archiveObject - The current object from the parsed archive JSON.
      * @param {string} destinationPath - The path to extract the current object into.
      * @param {object} extractionContext - Contains currentUser and primaryGroup for new files.
+     * @param {string} baseExtractionPath - The original, top-level destination path to prevent traversal.
+     * @param {number} currentDepth - The current recursion depth.
      * @returns {Promise<{success: boolean, error?: string}>}
      */
-    async function _extractFromArchive(archiveObject, destinationPath, extractionContext) {
+    async function _extractFromArchive(archiveObject, destinationPath, extractionContext, baseExtractionPath, currentDepth) {
+        if (currentDepth > MAX_EXTRACTION_DEPTH) {
+            return { success: false, error: "Archive nesting level exceeds maximum depth." };
+        }
+
         if (!archiveObject || typeof archiveObject !== 'object') {
             return { success: false, error: "Invalid archive format." };
         }
 
         // Handle case where archive represents a single file
         if (archiveObject.type === 'file') {
+            // Path Traversal Check
+            if (!destinationPath.startsWith(baseExtractionPath)) {
+                return { success: false, error: `Path traversal attempt detected. Cannot extract to '${destinationPath}'.` };
+            }
             const saveResult = await FileSystemManager.createOrUpdateFile(
                 destinationPath,
                 archiveObject.content,
@@ -33,6 +45,11 @@
             const childNode = archiveObject.children[name];
             const newPath = FileSystemManager.getAbsolutePath(name, destinationPath);
 
+            // Path Traversal Check
+            if (!newPath.startsWith(baseExtractionPath)) {
+                return { success: false, error: `Path traversal attempt detected. Cannot extract '${name}' outside of the destination.` };
+            }
+
             if (childNode.type === 'file') {
                 const saveResult = await FileSystemManager.createOrUpdateFile(
                     newPath,
@@ -45,7 +62,7 @@
                 if (!mkdirResult.success) {
                     return { success: false, error: `Could not create directory ${newPath}: ${mkdirResult.error}` };
                 }
-                const recursiveResult = await _extractFromArchive(childNode, newPath, extractionContext);
+                const recursiveResult = await _extractFromArchive(childNode, newPath, extractionContext, baseExtractionPath, currentDepth + 1);
                 if (!recursiveResult.success) return recursiveResult;
             }
         }
@@ -77,7 +94,8 @@
             try {
                 archiveContent = JSON.parse(archiveNode.content);
             } catch (e) {
-                return { success: false, error: `unzip: failed to parse archive file '${archivePathArg}'. Not a valid zip file.` };
+                // Improved error message for corrupted archives.
+                return { success: false, error: `unzip: Archive is corrupted or not a valid .zip file.` };
             }
 
             const destValidation = FileSystemManager.validatePath("unzip", destinationPathArg, {
@@ -92,8 +110,10 @@
                 return { success: false, error: `unzip: destination '${destinationPathArg}' is not a directory.`};
             }
 
+            const resolvedDestPath = destValidation.resolvedPath;
+
             if (!destValidation.node) {
-                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${destValidation.resolvedPath}"`, false);
+                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${resolvedDestPath}"`, false);
                 if (!mkdirResult.success) {
                     return { success: false, error: `unzip: could not create destination directory: ${mkdirResult.error}` };
                 }
@@ -106,7 +126,8 @@
                 primaryGroup: UserManager.getPrimaryGroupForUser(currentUser)
             };
 
-            const extractResult = await _extractFromArchive(archiveContent, destValidation.resolvedPath, extractionContext);
+            // Pass the resolved destination path as the base path for traversal checks.
+            const extractResult = await _extractFromArchive(archiveContent, resolvedDestPath, extractionContext, resolvedDestPath, 0);
 
             if (!extractResult.success) {
                 return { success: false, error: `unzip: extraction failed. ${extractResult.error}` };
@@ -116,7 +137,7 @@
                 return { success: false, error: "unzip: Failed to save file system changes." };
             }
 
-            return { success: true, output: `Archive '${archivePathArg}' successfully extracted to '${destValidation.resolvedPath}'.` };
+            return { success: true, output: `Archive '${archivePathArg}' successfully extracted to '${resolvedDestPath}'.` };
         }
     };
 

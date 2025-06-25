@@ -1,0 +1,9 @@
+{
+  "version": "1.1",
+  "width": 3,
+  "height": 2,
+  "cells": [
+    [{"char":"O","fg":"text-sky-400","bg":"bg-transparent"},{"char":"_","fg":"text-sky-400","bg":"bg-transparent"},{"char":"O","fg":"text-sky-400","bg":"bg-transparent"}],
+    [{"char":" ","fg":"text-green-500","bg":"bg-neutral-950"},{"char":"U","fg":"text-amber-400","bg":"bg-transparent"},{"char":" ","fg":"text-green-500","bg":"bg-neutral-950"}]
+  ]
+}
