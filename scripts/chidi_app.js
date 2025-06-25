@@ -42,8 +42,12 @@ const ChidiApp = {
         this.onExit = onExit;
 
         this.injectStyles();
-        this.createModal();
-        this.cacheDOMElements();
+
+        // REFACTORED: Use AppLayerManager
+        const chidiElement = this.createModal();
+        AppLayerManager.show(chidiElement);
+
+        this.cacheDOMElements(); // Must be called after element is in DOM
         this._populateFileDropdown();
         this.setupEventListeners();
 
@@ -57,7 +61,7 @@ const ChidiApp = {
     close() {
         if (!this.state.isModalOpen) return;
 
-        this.elements.modal.remove();
+        AppLayerManager.hide(); // REFACTORED: Use AppLayerManager to hide
         this.elements.styleTag.remove();
 
         // Reset state
@@ -91,20 +95,13 @@ const ChidiApp = {
      * Creates and appends the main modal structure to the terminal div.
      */
     createModal() {
-        if (!DOM.terminalDiv) {
-            console.error("ChidiApp Error: Cannot create modal, DOM.terminalDiv not found.");
-            if (this.onExit) {
-                this.onExit();
-            }
-            return;
-        }
-
-        const modal = document.createElement('div');
-        modal.id = 'chidi-modal';
-        modal.className = 'chidi-modal-overlay';
-        modal.innerHTML = this.getHTML();
-        DOM.terminalDiv.appendChild(modal);
-        this.elements.modal = modal;
+        // This is a new wrapper function to create the main app container
+        // without appending it to the DOM.
+        const appContainer = document.createElement('div');
+        appContainer.id = 'chidi-console-panel'; // The root element from getHTML()
+        appContainer.innerHTML = this.getHTML();
+        // We now return the element instead of appending it.
+        return appContainer;
     },
 
     /**

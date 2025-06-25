@@ -243,7 +243,7 @@ EXAMPLES
        Suppose you have a file named 'greet.sh' with the following content:
        #!/bin/oopis_shell
        # This is a simple greeting script
-       echo "Hello, $1! You provided $# argument(s)."
+       echo "Welcome to OopisOS, $1! You provided $# argument(s)."
 
        First, make the script executable:
        chmod 755 greet.sh
@@ -252,7 +252,7 @@ EXAMPLES
        run ./greet.sh "Brave User"
 
        This will output:
-       Hello, Brave User! You provided 1 argument(s).`;
+       Welcome to OopisOS, Developer!`;
 
     CommandRegistry.register("run", runCommandDefinition, runDescription, runHelpText);
 })();
