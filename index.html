@@ -11,7 +11,7 @@
 <body class="bg-neutral-900 text-green-500 m-0 p-5 flex flex-col items-center justify-center min-h-screen overflow-x-hidden">
 <div id="terminal-bezel" class="bg-neutral-800 p-6 rounded-2xl terminal-bezel-shadow flex items-center justify-center">
   <div id="terminal" class="w-full h-full bg-neutral-950 border-2 border-neutral-900 rounded-lg p-5 overflow-x-hidden terminal-screen-glow flex flex-col relative">
-    <div id="output" class="flex-grow mb-2.5 overflow-x-hidden w-full min-w-0 overflow-y-auto"></div>
+    <div id="output" class="flex-grow mb-2.5 overflow-x-hidden w-full min-w-0 overflow-y-auto min-h-0"></div>
     <div id="app-layer" class="hidden absolute top-0 left-0 w-full h-full bg-neutral-950 z-10"></div>
     <div class="input-line-container flex items-start w-full">
       <div class="prompt-container flex items-center leading-[1.2em] flex-shrink-0 whitespace-nowrap pt-[0.1em]">
@@ -100,7 +100,6 @@
 <script src="./scripts/commands/reboot.js"></script>
 <script src="./scripts/commands/removeuser.js"></script>
 <script src="./scripts/commands/reset.js"></script>
-<script src="./scripts/commands/restore.js"></script>
 <script src="./scripts/commands/rm.js"></script>
 <script src="./scripts/commands/run.js"></script>
 <script src="./scripts/commands/savefs.js"></script>
