@@ -34,12 +34,7 @@ const PaintAppConfig = {
         DROPDOWN_ACTIVE: 'paint-dropdown-active',
     },
     PALETTE: [
-        { name: 'green',   value: '#22c55e' },
-        { name: 'red',     value: '#ef4444' },
-        { name: 'sky',     value: '#38bdf8' },
-        { name: 'amber',   value: '#fbb724' },
-        { name: 'lime',    value: '#a3e635' },
-        { name: 'neutral', value: '#d4d4d4' }
+        { name: 'green',   value: '#22c55e' }
     ],
     EDITOR: {
         DEBOUNCE_DELAY_MS: 300,
