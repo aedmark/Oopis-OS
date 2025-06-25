@@ -27,7 +27,8 @@ function initializeTerminalEventListeners() {
 
   // Focus the input area when the terminal is clicked, unless text is being selected.
   DOM.terminalDiv.addEventListener("click", (e) => {
-    if (EditorManager.isActive()) return;
+    // REFACTORED: Added PaintManager.isActive() check
+    if (EditorManager.isActive() || (typeof PaintManager !== 'undefined' && PaintManager.isActive())) return;
     const selection = window.getSelection();
     if (selection && selection.toString().length > 0) {
       return;
@@ -43,7 +44,6 @@ function initializeTerminalEventListeners() {
 
   // Main keyboard input handler for the entire document.
   document.addEventListener("keydown", async (e) => {
-    // --- START REORDERED LOGIC ---
     // HIGHEST PRIORITY: Check if a modal input is actively waiting for an Enter key.
     if (ModalInputManager.isAwaiting()) {
       if (e.key === 'Enter') {
@@ -56,17 +56,17 @@ function initializeTerminalEventListeners() {
             e.key.length === 1 ? e.key : null
         );
       }
-      // If a modal is active, we stop further key processing here.
       return;
     }
 
     // SECOND PRIORITY: If a full-screen app is running, let it handle its own keys.
-    // FIX: Removed "PaintManager.isActive()" from this condition.
-    if (EditorManager.isActive() || TextAdventureModal.isActive() || (typeof ChidiApp !== 'undefined' && ChidiApp.isActive())) {
-      console.log('Main keydown listener ignored due to active modal app.'); // Diagnostic Log
-      return;
+    // DIRECTIVE 3.3: Add PaintManager.isActive() to the check.
+    if (EditorManager.isActive() ||
+        TextAdventureModal.isActive() ||
+        (typeof ChidiApp !== 'undefined' && ChidiApp.isActive()) ||
+        (typeof PaintManager !== 'undefined' && PaintManager.isActive())) {
+      return; // Let the active app handle its own keyboard events.
     }
-    // --- END REORDERED LOGIC ---
 
     // Ignore key events not targeting the main input div.
     if (e.target !== DOM.editableInputDiv) {
@@ -240,26 +240,20 @@ window.onload = async () => {
         `${Config.OS.NAME} v.${Config.OS.VERSION} loaded successfully!`
     );
 
-    // --- ARCHITECTURAL FIX: MOVED RESIZE OBSERVER HERE ---
-    // This observer must be initialized during a normal boot sequence.
     const resizeObserver = new ResizeObserver(entries => {
-      // Check if the PaintManager module exists and is active
+      // UPDATED: Check for PaintManager and its UI resize handler
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
-        // Notify the PaintUI to handle the resize
         if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
           PaintUI.handleResize();
         }
       }
     });
 
-    // Begin observing the terminal screen for any resize events.
     if (DOM.terminalDiv) {
       resizeObserver.observe(DOM.terminalDiv);
     }
-    // --- END ARCHITECTURAL FIX ---
 
   } catch (error) {
-    // Catch any fatal errors during initialization and display them.
     console.error(
         "Failed to initialize OopisOs on window.onload:",
         error,

@@ -1308,27 +1308,20 @@ body {
 .hidden {
   display: none !important;
 }
-#paint-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
-  z-index: 998;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
-  box-sizing: border-box;
-}
+
+/* REFACTORED: Paint Application Styles */
+
+/*
+  Directive 1.4: Refine CSS for #paint-container.
+  - Removed position, top, left, and absolute width/height.
+  - The container is now designed to be a flexible box centered by the AppLayerManager.
+*/
 #paint-container {
   width: 95%;
-  max-width: 100%;
+  max-width: 1280px; /* Limit max size on large screens */
   height: 95%;
-  max-height: 100%;
   background-color: #0A0A0A;
-  border: 2px solid #60a5fa;
+  border: 2px solid #60a5fa; /* Blueish border for paint app */
   border-radius: 0.75rem;
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
   display: flex;
@@ -1336,39 +1329,42 @@ body {
   padding: 0.5rem;
   font-family: 'VT323', monospace;
   color: #a3a3a3;
-  /* REMOVE overflow: hidden; from here */
+  overflow: hidden; /* Prevent inner content from spilling out */
 }
 
-/* NEW: Wrapper for the canvas to handle scrolling */
 #paint-canvas-wrapper {
   flex-grow: 1;
-  min-height: 0;
-  display: grid; /* Use grid to easily center the canvas */
+  min-height: 0; /* Important for flex-grow to work in a flex column */
+  display: grid;
   place-items: center;
-  overflow: auto; /* Allow scrollbars if canvas is larger than wrapper */
+  overflow: auto; /* Allow scrolling if canvas becomes larger than wrapper */
   padding: 0.5rem;
-  background-color: #0c0c0c; /* Slightly different background for the scroll area */
+  background-color: #101010;
   border-radius: 4px;
 }
 
 #paint-canvas {
-  max-width: 100%;
-  max-height: 100%;
-  /* CORRECTED: Aspect ratio based on 80x24 character grid */
-  aspect-ratio: 80 / 24;
-  overflow: hidden;
+  font-family: 'VT323', monospace;
+  line-height: 1;
+  font-size: 16px; /* Adjust for best fit */
   display: grid;
-  background-color: #101010;
+  background-color: #1a1a1a;
   cursor: crosshair;
-  /* REMOVED flex-grow and min-height, as the wrapper now handles this */
+  user-select: none;
+  /* Let the wrapper handle sizing */
+  width: 100%;
+  height: 100%;
 }
+
 #paint-canvas span {
   display: inline-block;
   text-align: center;
+  vertical-align: middle;
   width: 100%;
   height: 100%;
   user-select: none;
 }
+
 #paint-statusbar {
   flex-shrink: 0;
   padding: 0.25rem 0.5rem;
@@ -1376,28 +1372,33 @@ body {
   font-size: 1rem;
   text-align: center;
   background-color: #1f1f22;
+  color: #a3a3a3;
 }
+
 #paint-toolbar {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem;
   background-color: #1f1f22;
   border-bottom: 1px solid #3a3a3d;
   flex-shrink: 0;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
 .paint-toolbar-group {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
+
 .paint-palette {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
+
 .paint-tool {
   background-color: #27272a;
   color: #a1a1aa;
@@ -1409,287 +1410,55 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 2rem; /* Consistent height */
 }
+
 .paint-tool:hover {
   background-color: #3f3f46;
   color: #e4e4e7;
 }
-.paint-tool:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+
 .paint-tool.paint-tool-active {
   background-color: #60a5fa;
   color: #1e293b;
   border-color: #93c5fd;
 }
+
 .paint-tool svg {
   width: 1.25em;
   height: 1.25em;
-  vertical-align: middle;
 }
-.paint-tool.paint-tool-active svg {
-  color: #1e293b;
-}
+
 .paint-color-swatch {
   width: 1.5rem;
   height: 1.5rem;
   border: 2px solid #52525b;
   border-radius: 4px;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform 0.1s, border-color 0.1s;
 }
+
 .paint-color-swatch:hover {
   transform: scale(1.1);
 }
+
 .paint-color-swatch.paint-tool-active {
   border-color: #fafafa;
   transform: scale(1.1);
   box-shadow: 0 0 5px #fafafa;
 }
+
 .paint-exit-btn {
   background-color: #3f1212;
   color: #fca5a5;
   border-color: #ef4444;
-  font-family: 'VT323', monospace;
 }
+
 .paint-exit-btn:hover {
   background-color: #5b2121;
   color: #fecaca;
 }
-.paint-grid-active span {
-  box-shadow: inset 0 0 0 1px rgba(68, 68, 68, 0.5);
-}
-#paint-char-select-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#paint-char-select-container {
-  background-color: #101010;
-  border: 1px solid #60a5fa;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  max-width: 90%;
-  max-height: 90%;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-}
-#paint-char-select-title {
-  font-size: 1.25rem;
-  color: #60a5fa;
-  text-align: center;
-  margin: 0 0 1rem 0;
-  flex-shrink: 0;
-}
-#paint-color-select-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.paint-color-select-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
-  gap: 4px;
-  overflow-y: auto;
-  padding: 0.5rem;
-  background-color: #1f1f22;
-  border-radius: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-#paint-char-select-grid {
-  display: grid;
-  grid-template-columns: repeat(16, 1fr);
-  gap: 4px;
-  overflow-y: auto;
-  padding: 0.5rem;
-  background-color: #1f1f22;
-  border-radius: 0.25rem;
-}
-.paint-char-btn {
-  background-color: #27272a;
-  color: #e4e4e7;
-  border: 1px solid #52525b;
-  font-family: 'VT323', monospace;
-  font-size: 1.5rem;
-  aspect-ratio: 1 / 1;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-}
-.paint-char-btn:hover {
-  background-color: #3f3f46;
-  transform: scale(1.1);
-}
-.paint-tool-dropdown {
-  position: relative;
-}
-.paint-dropdown-content {
-  display: none;
-  position: absolute;
-  top: 110%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #27272a;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.4);
-  z-index: 1001;
-  border: 1px solid #52525b;
-  border-radius: 4px;
-  padding: 0.5rem;
-}
-.paint-dropdown-content.paint-dropdown-active {
-  display: block;
-}
-.paint-custom-hex-container {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.25rem;
-}
-.paint-hex-input {
-  flex-grow: 1;
-  background-color: #27272a;
-  border: 1px solid #52525b;
-  color: #e4e4e7;
-  font-family: 'VT323', monospace;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  outline: none;
-}
-.paint-hex-set-btn {
-  background-color: #3f3f46;
-  color: #a7f3d0;
-  border: 1px solid #52525b;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.paint-modal-content-container {
-  background-color: #101010;
-  border: 1px solid #60a5fa;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  max-width: 90%;
-  max-height: 90%;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-}
-#paint-color-select-container {
-  width: 90%;
-  max-width: 600px;
-}
-#paint-char-select-title, #paint-color-select-title {
-  font-size: 1.25rem;
-  color: #60a5fa;
-  text-align: center;
-  margin: 0 0 1rem 0;
-  flex-shrink: 0;
-}
-.paint-color-select-grid {
-  display: grid;
-  grid-template-columns: repeat(16, 1fr);
-  gap: 4px;
-  overflow-y: auto;
-  padding: 0.5rem;
-  background-color: #1f1f22;
-  border-radius: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-.paint-dropdown-section {
-  margin-bottom: 0.75rem;
-}
-.paint-dropdown-section:last-child {
-  margin-bottom: 0;
-}
-.paint-dropdown-section label {
-  display: block;
-  font-size: 0.875rem;
-  color: #a1a1aa;
-  margin-bottom: 0.25rem;
-}
-.paint-button-group {
-  display: flex;
-  gap: 0.25rem;
-}
-.paint-button-group button {
-  flex-grow: 1;
-  background-color: #3f3f46;
-  color: #e4e4e7;
-  border: 1px solid #52525b;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.paint-button-group button:hover {
-  background-color: #52525b;
-}
-.paint-button-group button.paint-tool-active {
-  background-color: #60a5fa;
-  color: #1e293b;
-  border-color: #93c5fd;
-}
-.paint-slider-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-#paint-brush-size {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  background: #3f3f46;
-  outline: none;
-  opacity: 0.9;
-  transition: opacity .2s;
-  border-radius: 4px;
-}
-#paint-brush-size:hover {
-  opacity: 1;
-}
-#paint-brush-size::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #60a5fa;
-  cursor: pointer;
-  border-radius: 50%;
-}
-#paint-brush-size::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: #60a5fa;
-  cursor: pointer;
-  border-radius: 50%;
-}
-#paint-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.color-tools {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+
 @property --tw-space-y-reverse {
   syntax: "*";
   inherits: false;
@@ -1735,5 +1504,4 @@ body {
       --tw-outline-style: solid;
     }
   }
-}
 }
