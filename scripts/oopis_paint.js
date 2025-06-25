@@ -168,25 +168,34 @@ const PaintUI = (() => {
         elements.saveBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'X', title: 'Exit (Ctrl+Q)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        // MODIFIED: Append all tools to the toolbar in a single block, with separators
-        const separator = () => Utils.createElement('div', { className: 'paint-toolbar-separator' });
+        // REFACTORED: Append all tools to the toolbar in logical groups
+        const historyGroup = Utils.createElement('div', { className: 'paint-toolbar-group' });
+        historyGroup.append(elements.undoBtn, elements.redoBtn);
 
-        elements.toolbar.append(
-            elements.undoBtn,
-            elements.redoBtn,
-            separator(),
+        const toolsGroup = Utils.createElement('div', { className: 'paint-toolbar-group' });
+        toolsGroup.append(
             elements.pencilBtn,
             elements.eraserBtn,
             elements.brushToolContainer,
             elements.shapeToolContainer,
-            elements.gridBtn,
-            separator(),
+            elements.gridBtn
+        );
+
+        const attributesGroup = Utils.createElement('div', { className: 'paint-toolbar-group' });
+        attributesGroup.append(
             elements.charSelectBtn,
             elements.colorPaletteBtn,
-            colorPaletteContainer,
-            separator(),
-            elements.saveBtn,
-            elements.exitBtn
+            colorPaletteContainer
+        );
+
+        const sessionGroup = Utils.createElement('div', { className: 'paint-toolbar-group paint-session-group' });
+        sessionGroup.append(elements.saveBtn, elements.exitBtn);
+
+        elements.toolbar.append(
+            historyGroup,
+            toolsGroup,
+            attributesGroup,
+            sessionGroup
         );
 
         // Assemble layout
