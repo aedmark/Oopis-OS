@@ -714,14 +714,17 @@ const PaintManager = (() => {
         const saveResult = await _performSave(savePath);
 
         if (saveResult.success) {
+            // If we were saving a temp file and the new path is different, delete the old temp file.
             if (oldPathIfTemp && oldPathIfTemp !== savePath) {
                 await FileSystemManager.deleteNodeRecursive(oldPathIfTemp, { force: true, currentUser: UserManager.getCurrentUser().name });
                 await FileSystemManager.save();
             }
+
+            // CRITICAL FIX: Update the internal state to match the new file path.
             currentFilePath = savePath;
-            isTempFile = false;
-            isDirty = false;
-            _updateStatus(lastCoords);
+            isTempFile = false; // It's a real, saved file now.
+            isDirty = false;    // The buffer is no longer "dirty" relative to the new file.
+            _updateStatus(lastCoords); // Update the status bar with the new filename.
         }
     }
 
