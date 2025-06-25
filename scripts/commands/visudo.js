@@ -1,3 +1,9 @@
+/**
+ * @file Defines the 'visudo' command for safely editing the sudoers file.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
 
@@ -19,7 +25,7 @@
                 return { success: false, error: "visudo: can only be run in interactive mode." };
             }
 
-            const sudoersPath = '/etc/sudoers';
+            const sudoersPath = Config.SUDO.SUDOERS_PATH;
             let sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
 
             // Create the sudoers file if it doesn't exist

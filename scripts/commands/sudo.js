@@ -1,5 +1,5 @@
 /**
- * @file Manages sudo (superuser do) functionality and defines the 'sudo' and 'visudo' commands.
+ * @file Manages sudo (superuser do) functionality and defines the 'sudo' command.
  * This system allows authorized users to execute commands with the privileges of another user, typically root.
  * @author Andrew Edmark
  * @author Gemini
@@ -18,23 +18,21 @@ const SudoManager = (() => {
     // Stores timestamps of the last successful sudo authentication for each user.
     let userSudoTimestamps = {};
 
-    const SUDOERS_PATH = '/etc/sudoers';
-
     /**
      * Parses the content of the /etc/sudoers file into a structured object.
      * This function is the single source of truth for sudo rules.
      * @private
      */
     function _parseSudoers() {
-        const sudoersNode = FileSystemManager.getNodeByPath(SUDOERS_PATH);
+        const sudoersNode = FileSystemManager.getNodeByPath(Config.SUDO.SUDOERS_PATH);
         if (!sudoersNode || sudoersNode.type !== 'file') {
-            sudoersConfig = { users: {}, groups: {}, timeout: 15 }; // Default fallback
+            sudoersConfig = { users: {}, groups: {}, timeout: Config.SUDO.DEFAULT_TIMEOUT }; // Default fallback
             return;
         }
 
         const content = sudoersNode.content || '';
         const lines = content.split('\n');
-        const config = { users: {}, groups: {}, timeout: 15 };
+        const config = { users: {}, groups: {}, timeout: Config.SUDO.DEFAULT_TIMEOUT };
 
         lines.forEach(line => {
             line = line.trim();
@@ -55,10 +53,8 @@ const SudoManager = (() => {
             const permissions = parts.slice(1).join(' ');
 
             if (entity.startsWith('%')) {
-                // It's a group permission
                 config.groups[entity.substring(1)] = permissions;
             } else {
-                // It's a user permission
                 config.users[entity] = permissions;
             }
         });
@@ -94,7 +90,7 @@ const SudoManager = (() => {
 
         const config = getSudoersConfig();
         const timeoutMinutes = config.timeout || 0;
-        if (timeoutMinutes <= 0) return false; // Timeout of 0 or less means always re-authenticate.
+        if (timeoutMinutes <= 0) return false;
 
         const now = new Date().getTime();
         const elapsedMinutes = (now - timestamp) / (1000 * 60);
@@ -122,7 +118,6 @@ const SudoManager = (() => {
         const config = getSudoersConfig();
         let userPermissions = config.users[username];
 
-        // Check group permissions if no specific user rule is found
         if (!userPermissions) {
             const userGroups = GroupManager.getGroupsForUser(username);
             for (const group of userGroups) {
@@ -136,7 +131,6 @@ const SudoManager = (() => {
         if (!userPermissions) return false;
         if (userPermissions.trim() === 'ALL') return true;
 
-        // Simple command matching (can be expanded with globbing later)
         const allowedCommands = userPermissions.split(',').map(cmd => cmd.trim());
         return allowedCommands.includes(commandToRun);
     }
@@ -163,15 +157,12 @@ const SudoManager = (() => {
         coreLogic: async (context) => {
             const { args, currentUser, options } = context;
             const commandToRun = args[0];
-            const commandArgs = args.slice(1);
             const fullCommandStr = args.join(' ');
 
-            // Root doesn't need sudo
             if (currentUser === 'root') {
                 return await CommandExecutor.processSingleCommand(fullCommandStr, options.isInteractive);
             }
 
-            // Check if user has permission to run this command via sudo
             if (!SudoManager.canUserRunCommand(currentUser, commandToRun) && !SudoManager.canUserRunCommand(currentUser, 'ALL')) {
                 return {
                     success: false,
@@ -179,32 +170,27 @@ const SudoManager = (() => {
                 };
             }
 
-            // Check if the user has an active sudo timestamp
             if (SudoManager.isUserTimestampValid(currentUser)) {
                 return await UserManager.sudoExecute(fullCommandStr, options);
             }
 
-            // If no valid timestamp, prompt for password
             return new Promise(resolve => {
                 ModalInputManager.requestInput(
                     `[sudo] password for ${currentUser}:`,
                     async (password) => {
-                        // We need a way to verify password without changing the user session.
-                        // This requires a new method in UserManager.
                         const authResult = await UserManager.verifyPassword(currentUser, password);
 
                         if (authResult.success) {
                             SudoManager.updateUserTimestamp(currentUser);
-                            // Execute command as root
                             resolve(await UserManager.sudoExecute(fullCommandStr, options));
                         } else {
-                            setTimeout(() => { // Delay to simulate real sudo behavior
+                            setTimeout(() => {
                                 resolve({ success: false, error: "sudo: Sorry, try again." });
                             }, 1000);
                         }
                     },
-                    () => resolve({ success: true, output: "" }), // Cancellation
-                    true, // Obscured input
+                    () => resolve({ success: true, output: "" }),
+                    true,
                     options
                 );
             });
