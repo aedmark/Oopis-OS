@@ -43,20 +43,23 @@
                 sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
             }
 
-            // Set specific, secure permissions
-            sudoersNode.mode = 0o440;
-            sudoersNode.owner = 'root';
-            sudoersNode.group = 'root';
-            await FileSystemManager.save();
+            // Define the post-save callback to secure the file
+            const onSudoersSave = async (filePath) => {
+                const node = FileSystemManager.getNodeByPath(filePath);
+                if (node) {
+                    node.mode = 0o440;
+                    node.owner = 'root';
+                    node.group = 'root';
+                    await FileSystemManager.save();
+                    SudoManager.invalidateSudoersCache();
+                    await OutputManager.appendToOutput("visudo: /etc/sudoers secured and cache invalidated.", {typeClass: Config.CSS_CLASSES.SUCCESS_MSG});
+                } else {
+                    await OutputManager.appendToOutput("visudo: CRITICAL - Could not find sudoers file after save to apply security.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+                }
+            };
 
-
-            // Open the file in the editor
-            EditorManager.enter(sudoersPath, sudoersNode.content);
-
-            // Invalidate the cache after editing is complete
-            // This is a simplified approach; a more robust one would use a callback from the editor.
-            // For now, we'll invalidate it immediately. A user saving the file will have the new rules applied on the next sudo command.
-            SudoManager.invalidateSudoersCache();
+            // Open the file in the editor, passing the on-save callback.
+            EditorManager.enter(sudoersPath, sudoersNode.content, onSudoersSave);
 
             return {
                 success: true,

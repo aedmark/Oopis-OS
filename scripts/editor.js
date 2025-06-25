@@ -742,6 +742,8 @@ const EditorManager = (() => {
   const MAX_UNDO_STATES = 100;
   /** @private @type {?number} */
   let saveUndoStateTimeout = null;
+  /** @private @type {?function} */
+  let onSaveCallback = null;
 
   /**
    * Loads the word wrap setting from local storage.
@@ -1069,8 +1071,9 @@ const EditorManager = (() => {
    * Enters the editor mode, initializing the UI and state.
    * @param {string} filePath - The path of the file to edit.
    * @param {string} content - The initial content of the file.
+   * @param {function(string): Promise<void> | null} [callback=null] - An optional async callback to run after a successful save.
    */
-  function enter(filePath, content) {
+  function enter(filePath, content, callback = null) {
     if(isActiveState) {
       void OutputManager.appendToOutput("Editor already active.", {
         typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
@@ -1089,6 +1092,7 @@ const EditorManager = (() => {
     currentFileMode = EditorUtils.determineMode(filePath);
     originalContent = content;
     isDirty = false;
+    onSaveCallback = callback; // Store the on-save callback
 
     undoStack = [];
     redoStack = [];
@@ -1149,6 +1153,7 @@ const EditorManager = (() => {
     currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
     isDirty = false;
     originalContent = "";
+    onSaveCallback = null; // Reset the on-save callback
 
     undoStack = [];
     redoStack = [];
@@ -1230,6 +1235,9 @@ const EditorManager = (() => {
           });
           saveSuccess = false;
         } else {
+          if (onSaveCallback) {
+            await onSaveCallback(currentFilePath);
+          }
           terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
           terminalMessageClass = Config.CSS_CLASSES.SUCCESS_MSG;
           originalContent = newContent;
