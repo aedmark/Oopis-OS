@@ -673,10 +673,8 @@ const PaintManager = (() => {
         const saveResult = await FileSystemManager.createOrUpdateFile(filePath, jsonContent, { currentUser, primaryGroup });
         if (saveResult.success) {
             await FileSystemManager.save();
-            await OutputManager.appendToOutput(`Art saved to '${filePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
             return { success: true };
         } else {
-            await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
             return { success: false, error: saveResult.error };
         }
     }
@@ -684,16 +682,21 @@ const PaintManager = (() => {
     async function _handleSave(isSaveAs = false) {
         if (!isActiveState) return;
 
-        const oldPathIfTemp = isTempFile ? currentFilePath : null;
-        let savePath = (isSaveAs || isTempFile) ? null : currentFilePath;
+        let savePath;
 
-        if (!savePath) {
+        // If "Save As" is requested, or if the current file is a temporary one (i.e., untitled),
+        // we must prompt the user for a filename.
+        if (isSaveAs || isTempFile) {
+            const promptTitle = isSaveAs ? "Save As:" : "Save:";
+            const placeholder = isSaveAs && currentFilePath ? currentFilePath.split('/').pop() : "my-art.oopic";
+            const confirmText = isSaveAs ? "Save Copy" : "Save";
+
             const newFilename = await new Promise(resolve => {
                 ModalManager.request({
                     context: 'graphical-input',
-                    messageLines: [isSaveAs ? "Save As:" : "Save:"],
-                    placeholder: "my-art.oopic",
-                    confirmText: "Save",
+                    messageLines: [promptTitle],
+                    placeholder: placeholder,
+                    confirmText: confirmText,
                     cancelText: "Cancel",
                     onConfirm: (value) => resolve(value.trim() || null),
                     onCancel: () => resolve(null)
@@ -705,26 +708,38 @@ const PaintManager = (() => {
                 return;
             }
             savePath = FileSystemManager.getAbsolutePath(newFilename);
+        } else {
+            // This is a standard save for an existing file.
+            savePath = currentFilePath;
         }
 
+        // Ensure the filename has the correct extension.
         if (!savePath.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
             savePath += `.${PaintAppConfig.FILE_EXTENSION}`;
         }
 
+        // Perform the save operation.
         const saveResult = await _performSave(savePath);
 
         if (saveResult.success) {
-            // If we were saving a temp file and the new path is different, delete the old temp file.
+            // If the save was successful, we need to update the application's state.
+            const oldPathIfTemp = isTempFile ? currentFilePath : null;
+
+            // If a temporary file was just saved to a real path, delete the temporary file.
             if (oldPathIfTemp && oldPathIfTemp !== savePath) {
                 await FileSystemManager.deleteNodeRecursive(oldPathIfTemp, { force: true, currentUser: UserManager.getCurrentUser().name });
                 await FileSystemManager.save();
             }
 
-            // CRITICAL FIX: Update the internal state to match the new file path.
+            // Update the internal state to reflect the new file path and clean state.
             currentFilePath = savePath;
-            isTempFile = false; // It's a real, saved file now.
-            isDirty = false;    // The buffer is no longer "dirty" relative to the new file.
+            isTempFile = false;
+            isDirty = false;
+
+            await OutputManager.appendToOutput(`Art saved to '${savePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
             _updateStatus(lastCoords); // Update the status bar with the new filename.
+        } else {
+            await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
         }
     }
 

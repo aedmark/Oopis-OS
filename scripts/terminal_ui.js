@@ -127,13 +127,15 @@ const ModalManager = (() => {
 
         const handleConfirm = () => {
             const value = inputField.value;
-            removeModal();
+            // *** FIX: Call the callback BEFORE removing the modal from the DOM ***
             if (onConfirm) onConfirm(value);
+            removeModal();
         };
 
         const handleCancel = () => {
-            removeModal();
+            // *** FIX: Call the callback BEFORE removing the modal from the DOM ***
             if (onCancel) onCancel();
+            removeModal();
         };
 
         confirmButton.addEventListener('click', handleConfirm);
