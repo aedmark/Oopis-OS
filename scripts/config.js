@@ -61,7 +61,7 @@ const Config = (() => {
             EDITOR_MSG: "text-sky-400",
             DIR_ITEM: "text-sky-400 font-semibold",
             FILE_ITEM: "text-green-500",
-            OUTPUT_LINE: "whitespace-pre-wrap break-words overflow-x-hidden min-h-[1.2em] leading-[1.2em]",
+            OUTPUT_LINE: "whitespace-pre min-h-[1.2em] leading-[1.2em]",
             HIDDEN: "hidden",
         },
         /** File system constants and default values. */
