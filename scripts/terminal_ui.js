@@ -18,14 +18,8 @@ const ModalManager = (() => {
     let activeModalContext = null;
 
     /**
-     * Renders a graphical modal dialog, typically used by full-screen applications like the editor.
+     * Renders a graphical modal dialog for confirmation.
      * @private
-     * @param {object} options - Configuration for the modal.
-     * @param {string[]} options.messageLines - The lines of text to display in the modal.
-     * @param {function} options.onConfirm - Callback to execute when the confirm button is clicked.
-     * @param {function} options.onCancel - Callback to execute when the cancel button is clicked.
-     * @param {string} [options.confirmText="OK"] - Text for the confirm button.
-     * @param {string} [options.cancelText="Cancel"] - Text for the cancel button.
      */
     function _renderGraphicalModal(options) {
         const {
@@ -49,113 +43,150 @@ const ModalManager = (() => {
         }
         const removeModal = () => {
             const modal = document.getElementById("editor-modal-dialog");
-            if (modal && modal.parentNode) {
-                modal.parentNode.removeChild(modal);
-            }
+            if (modal) modal.remove();
             parentContainer.style.position = originalParentPosition;
         };
         const confirmButton = Utils.createElement("button", {
             className: "btn-editor-modal btn-confirm",
             textContent: confirmText,
-            eventListeners: {
-                click: () => {
-                    removeModal();
-                    if (onConfirm) onConfirm();
-                },
-            },
         });
         const cancelButton = Utils.createElement("button", {
             className: "btn-editor-modal btn-cancel",
             textContent: cancelText,
-            eventListeners: {
-                click: () => {
-                    removeModal();
-                    if (onCancel) onCancel();
-                },
-            },
         });
-        const buttonContainer = Utils.createElement(
-            "div",
-            {
-                className: "editor-modal-buttons",
-            },
-            [confirmButton, cancelButton]
-        );
+
+        const confirmHandler = () => {
+            removeModal();
+            if (onConfirm) onConfirm();
+        };
+
+        const cancelHandler = () => {
+            removeModal();
+            if (onCancel) onCancel();
+        };
+
+        confirmButton.addEventListener('click', confirmHandler);
+        cancelButton.addEventListener('click', cancelHandler);
+
+        const buttonContainer = Utils.createElement("div", { className: "editor-modal-buttons" }, [confirmButton, cancelButton]);
         const messageContainer = Utils.createElement("div");
         messageLines.forEach((line) => {
-            messageContainer.appendChild(
-                Utils.createElement("p", {
-                    textContent: line,
-                })
-            );
+            messageContainer.appendChild(Utils.createElement("p", { textContent: line }));
         });
-        const modalDialog = Utils.createElement(
-            "div",
-            {
-                id: "editor-modal-dialog",
-            },
-            [messageContainer, buttonContainer]
-        );
+        const modalDialog = Utils.createElement("div", { id: "editor-modal-dialog" }, [messageContainer, buttonContainer]);
         parentContainer.appendChild(modalDialog);
+    }
+
+    /**
+     * Renders a graphical modal with a text input field.
+     * @private
+     */
+    function _renderGraphicalInputModal(options) {
+        const {
+            messageLines,
+            onConfirm,
+            onCancel,
+            confirmText = "OK",
+            cancelText = "Cancel",
+            placeholder = ""
+        } = options;
+
+        const parentContainer = DOM.terminalBezel;
+        if (!parentContainer) {
+            if (onCancel) onCancel();
+            return;
+        }
+
+        const originalParentPosition = parentContainer.style.position;
+        if (window.getComputedStyle(parentContainer).position === "static") {
+            parentContainer.style.position = "relative";
+        }
+
+        const removeModal = () => {
+            const modal = document.getElementById("editor-modal-dialog");
+            if (modal) modal.remove();
+            parentContainer.style.position = originalParentPosition;
+        };
+
+        const inputField = Utils.createElement('input', {
+            type: 'text',
+            placeholder: placeholder,
+            id: 'graphical-modal-input',
+            className: 'graphical-modal-input-field'
+        });
+
+        const confirmButton = Utils.createElement("button", {
+            className: "btn-editor-modal btn-confirm",
+            textContent: confirmText
+        });
+
+        const cancelButton = Utils.createElement("button", {
+            className: "btn-editor-modal btn-cancel",
+            textContent: cancelText
+        });
+
+        const handleConfirm = () => {
+            const value = inputField.value;
+            removeModal();
+            if (onConfirm) onConfirm(value);
+        };
+
+        const handleCancel = () => {
+            removeModal();
+            if (onCancel) onCancel();
+        };
+
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+
+        inputField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleConfirm();
+            } else if (e.key === 'Escape') {
+                handleCancel();
+            }
+        });
+
+        const buttonContainer = Utils.createElement("div", { className: "editor-modal-buttons" }, [confirmButton, cancelButton]);
+        const messageContainer = Utils.createElement("div");
+        messageLines.forEach(line => {
+            messageContainer.appendChild(Utils.createElement("p", { textContent: line }));
+        });
+
+        const modalDialog = Utils.createElement("div", { id: "editor-modal-dialog" }, [messageContainer, inputField, buttonContainer]);
+
+        parentContainer.appendChild(modalDialog);
+        inputField.focus();
     }
 
     /**
      * Renders a text-based confirmation prompt in the terminal output.
      * @private
-     * @param {object} options - Configuration for the prompt.
      */
     function _renderTerminalPrompt(options) {
         if (isAwaitingTerminalInput) {
-            void OutputManager.appendToOutput(
-                "ModalManager: Another terminal prompt is already active.",
-                {
-                    typeClass: Config.CSS_CLASSES.WARNING_MSG,
-                }
-            );
             if (options.onCancel) options.onCancel();
             return;
         }
         isAwaitingTerminalInput = true;
-        activeModalContext = {
-            onConfirm: options.onConfirm,
-            onCancel: options.onCancel,
-            data: options.data || {},
-        };
-        options.messageLines.forEach((line) => {
-            void OutputManager.appendToOutput(line, {
-                typeClass: Config.CSS_CLASSES.WARNING_MSG,
-            });
-        });
-        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, {
-            typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-        });
-        if (DOM.inputLineContainerDiv) {
-            DOM.inputLineContainerDiv.classList.remove(Config.CSS_CLASSES.HIDDEN);
-        }
+        activeModalContext = { onConfirm: options.onConfirm, onCancel: options.onCancel, data: options.data || {} };
+        options.messageLines.forEach((line) => void OutputManager.appendToOutput(line, { typeClass: Config.CSS_CLASSES.WARNING_MSG }));
+        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+        if (DOM.inputLineContainerDiv) DOM.inputLineContainerDiv.classList.remove(Config.CSS_CLASSES.HIDDEN);
         TerminalUI.setInputState(true);
         TerminalUI.focusInput();
         TerminalUI.clearInput();
-        if (DOM.outputDiv) {
-            DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
-        }
+        if (DOM.outputDiv) DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
     }
 
     /**
-     * The main entry point for requesting a confirmation modal. It intelligently handles
-     * scripted, graphical, and terminal-based requests.
+     * The main entry point for requesting a modal.
      * @param {object} options - The options for the modal request.
-     * @param {'graphical'|'terminal'} options.context - The type of modal to display.
-     * @param {string[]} options.messageLines - The message to display.
-     * @param {function} options.onConfirm - The callback for confirmation.
-     * @param {function} options.onCancel - The callback for cancellation.
-     * @param {object} [options.data] - Extra data to pass to the callbacks.
-     * @param {object} [options.options] - Nested options from the command context, which may contain a `scriptingContext`.
+     * @param {'graphical'|'graphical-input'|'terminal'} options.context - The type of modal to display.
      */
     function request(options) {
-        // Handle automated input from a script (`run` command).
-        if (options.options && options.options.scriptingContext && options.options.scriptingContext.isScripting) {
+        if (options.options?.scriptingContext?.isScripting) {
             const scriptContext = options.options.scriptingContext;
-
             let inputLine = null;
             let nextLineIndex = scriptContext.currentLineIndex + 1;
             while (nextLineIndex < scriptContext.lines.length) {
@@ -173,7 +204,6 @@ const ModalManager = (() => {
                 void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
                 const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
-
                 if (inputLine.toUpperCase() === 'YES') {
                     if (options.onConfirm) options.onConfirm(options.data);
                 } else {
@@ -185,11 +215,15 @@ const ModalManager = (() => {
             return;
         }
 
-        // Handle interactive requests from a real user.
-        if (options.context === "graphical") {
-            _renderGraphicalModal(options);
-        } else {
-            _renderTerminalPrompt(options);
+        switch (options.context) {
+            case 'graphical':
+                _renderGraphicalModal(options);
+                break;
+            case 'graphical-input':
+                _renderGraphicalInputModal(options);
+                break;
+            default:
+                _renderTerminalPrompt(options);
         }
     }
 
@@ -209,12 +243,7 @@ const ModalManager = (() => {
             if (typeof activeModalContext.onCancel === "function") {
                 await activeModalContext.onCancel(activeModalContext.data);
             } else {
-                await OutputManager.appendToOutput(
-                    Config.MESSAGES.OPERATION_CANCELLED,
-                    {
-                        typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-                    }
-                );
+                await OutputManager.appendToOutput(Config.MESSAGES.OPERATION_CANCELLED, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
         }
         isAwaitingTerminalInput = false;
@@ -222,24 +251,10 @@ const ModalManager = (() => {
         return true;
     }
 
-    /**
-     * Checks if the ModalManager is currently waiting for a terminal input.
-     * @returns {boolean}
-     */
-    function isAwaiting() {
-        return isAwaitingTerminalInput;
-    }
-    return {
-        request,
-        handleTerminalInput,
-        isAwaiting,
-    };
+    return { request, handleTerminalInput, isAwaiting: () => isAwaitingTerminalInput };
 })();
 
-/**
- * @module TerminalUI
- * @description Manages the state and appearance of the core terminal UI, including the prompt and the input line.
- */
+// ... (The rest of terminal_ui.js remains unchanged) ...
 const TerminalUI = (() => {
     "use strict";
     /** @private @type {boolean} */
@@ -570,7 +585,6 @@ const ModalInputManager = (() => {
 
     /**
      * Manually updates the input state when in obscured (password) mode.
-     * This is needed because the visual input is just asterisks, while the actual input is stored internally.
      * @param {string} key - The `key` property from the KeyboardEvent (e.g., 'Backspace').
      * @param {string|null} rawChar - The character to add, or null for non-character keys.
      */

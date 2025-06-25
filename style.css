@@ -1684,3 +1684,19 @@ body {
   }
 }
 }
+#editor-modal-dialog .graphical-modal-input-field {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  background-color: #2a2a2e;
+  border: 1px solid #64d000;
+  color: #F3F4F6;
+  border-radius: 4px;
+  font-family: 'VT323', monospace;
+  font-size: 1.1em;
+}
+#editor-modal-dialog .graphical-modal-input-field:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(100, 208, 0, 0.5);
+}
