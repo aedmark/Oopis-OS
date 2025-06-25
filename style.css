@@ -1311,17 +1311,13 @@ body {
 
 /* REFACTORED: Paint Application Styles */
 
-/*
-  Directive 1.4: Refine CSS for #paint-container.
-  - Removed position, top, left, and absolute width/height.
-  - The container is now designed to be a flexible box centered by the AppLayerManager.
-*/
 #paint-container {
+  position: relative;
   width: 95%;
-  max-width: 1280px; /* Limit max size on large screens */
+  max-width: 1280px;
   height: 95%;
   background-color: #0A0A0A;
-  border: 2px solid #60a5fa; /* Blueish border for paint app */
+  border: 2px solid #60a5fa;
   border-radius: 0.75rem;
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
   display: flex;
@@ -1329,32 +1325,43 @@ body {
   padding: 0.5rem;
   font-family: 'VT323', monospace;
   color: #a3a3a3;
-  overflow: hidden; /* Prevent inner content from spilling out */
+  overflow: hidden;
 }
 
 #paint-canvas-wrapper {
   flex-grow: 1;
-  min-height: 0; /* Important for flex-grow to work in a flex column */
+  min-height: 0;
   display: grid;
   place-items: center;
-  overflow: auto; /* Allow scrolling if canvas becomes larger than wrapper */
+  overflow: auto;
   padding: 0.5rem;
   background-color: #101010;
   border-radius: 4px;
+  position: relative;
 }
 
 #paint-canvas {
   font-family: 'VT323', monospace;
   line-height: 1;
-  font-size: 16px; /* Adjust for best fit */
+  font-size: 16px;
   display: grid;
   background-color: #1a1a1a;
   cursor: crosshair;
   user-select: none;
-  /* Let the wrapper handle sizing */
   width: 100%;
   height: 100%;
+  position: relative;
 }
+
+/* ADDED: Grid styling */
+#paint-canvas.paint-grid-active {
+  --grid-color: rgba(100, 116, 139, 0.3);
+  background-size: calc(100% / 80) calc(100% / 24);
+  background-image:
+          linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+}
+
 
 #paint-canvas span {
   display: inline-block;
@@ -1373,6 +1380,8 @@ body {
   text-align: center;
   background-color: #1f1f22;
   color: #a3a3a3;
+  height: 2rem;
+  line-height: 1.5rem;
 }
 
 #paint-toolbar {
@@ -1410,9 +1419,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2rem; /* Consistent height */
+  height: 2rem;
+  font-size: 1rem;
 }
-
+.paint-tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.paint-tool:disabled:hover {
+  background-color: #27272a;
+}
+.paint-tool svg {
+  width: 1.25em;
+  height: 1.25em;
+  fill: currentColor;
+}
 .paint-tool:hover {
   background-color: #3f3f46;
   color: #e4e4e7;
@@ -1422,11 +1443,6 @@ body {
   background-color: #60a5fa;
   color: #1e293b;
   border-color: #93c5fd;
-}
-
-.paint-tool svg {
-  width: 1.25em;
-  height: 1.25em;
 }
 
 .paint-color-swatch {
@@ -1457,6 +1473,162 @@ body {
 .paint-exit-btn:hover {
   background-color: #5b2121;
   color: #fecaca;
+}
+
+/* ADDED: Dropdown styles */
+.paint-tool-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.paint-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #18181b;
+  border: 1px solid #52525b;
+  border-radius: 6px;
+  padding: 0.5rem;
+  z-index: 10;
+  margin-top: 0.5rem;
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.paint-dropdown-content.paint-dropdown-active {
+  display: block;
+}
+
+.paint-dropdown-section {
+  margin-bottom: 0.5rem;
+}
+.paint-dropdown-section:last-child {
+  margin-bottom: 0;
+}
+.paint-dropdown-section label {
+  display: block;
+  font-size: 0.875rem;
+  color: #a1a1aa;
+  margin-bottom: 0.25rem;
+}
+.paint-slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.paint-button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+.paint-button-group > button {
+  background-color: #27272a;
+  color: #a1a1aa;
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+}
+.paint-button-group > button:hover {
+  background-color: #3f3f46;
+}
+.paint-button-group > button.paint-tool-active {
+  background-color: #60a5fa;
+  color: #1e293b;
+  border-color: #93c5fd;
+}
+
+/* ADDED: Modal styles */
+.paint-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(10, 10, 10, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(2px);
+}
+.paint-modal-overlay.hidden {
+  display: none;
+}
+.paint-modal-content {
+  background-color: #18181b;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);
+  color: #d4d4d4;
+  max-width: 80%;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+}
+.paint-modal-title {
+  font-size: 1.25rem;
+  text-align: center;
+  color: #7dd3fc;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+.paint-modal-body {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* Styles for Character Select Modal */
+#paint-char-select-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+.paint-char-btn {
+  background-color: #27272a;
+  border: 1px solid #52525b;
+  color: #e4e4e7;
+  border-radius: 4px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.25rem;
+}
+.paint-char-btn:hover {
+  background-color: #60a5fa;
+  color: #1e293b;
+}
+
+/* Styles for Color Select Modal */
+#paint-color-select-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
+  margin-bottom: 1rem;
+}
+.paint-custom-hex-container {
+  display: flex;
+  gap: 0.5rem;
+}
+.paint-hex-input {
+  flex-grow: 1;
+  background-color: #0A0A0A;
+  border: 1px solid #52525b;
+  padding: 0.25rem 0.5rem;
+  color: #e4e4e7;
+  border-radius: 4px;
+}
+.paint-hex-set-btn {
+  background-color: #27272a;
+  color: #a1a1aa;
+  border: 1px solid #52525b;
+  padding: 0.25rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.paint-hex-set-btn:hover {
+  background-color: #3f3f46;
 }
 
 @property --tw-space-y-reverse {
