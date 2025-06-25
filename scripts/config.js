@@ -35,6 +35,12 @@ const Config = (() => {
             MIN_USERNAME_LENGTH: 3,
             MAX_USERNAME_LENGTH: 20,
         },
+        /** Sudo-related configuration. */
+        SUDO: {
+            SUDOERS_PATH: "/etc/sudoers",
+            DEFAULT_TIMEOUT: 15, // In minutes
+            AUDIT_LOG_PATH: "/var/log/sudo.log",
+        },
         /** Terminal appearance and behavior settings. */
         TERMINAL: {
             MAX_HISTORY_SIZE: 50,

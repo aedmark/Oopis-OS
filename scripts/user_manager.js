@@ -153,6 +153,56 @@ const UserManager = (() => {
     }
 
     /**
+     * Verifies a user's password without changing the session. Required for sudo.
+     * @param {string} username - The user whose password to verify.
+     * @param {string} password - The password to check.
+     * @returns {Promise<{success: boolean, error?: string}>} An object indicating if the password is correct.
+     */
+    async function verifyPassword(username, password) {
+        const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
+        const userEntry = users[username];
+
+        if (!userEntry) {
+            return { success: false, error: "User not found." };
+        }
+
+        const storedPasswordHash = userEntry.passwordHash;
+        if (storedPasswordHash === null) {
+            // This case shouldn't be hit if sudoers requires it, but handles users with no password.
+            return { success: false, error: "User does not have a password set."};
+        }
+
+        const providedPasswordHash = await _secureHashPassword(password);
+        if (providedPasswordHash === storedPasswordHash) {
+            return { success: true };
+        } else {
+            return { success: false, error: "Incorrect password." };
+        }
+    }
+
+    /**
+     * Executes a command with root privileges and then safely returns to the original user.
+     * @param {string} commandStr - The full command string to execute as root.
+     * @param {object} options - The original command options.
+     * @returns {Promise<object>} The result object from the command execution.
+     */
+    async function sudoExecute(commandStr, options) {
+        const originalUser = currentUser;
+        try {
+            // Escalate privileges to root
+            currentUser = { name: 'root' };
+            // Execute the command non-interactively, as if root typed it.
+            return await CommandExecutor.processSingleCommand(commandStr, false, options.scriptingContext);
+        } catch (e) {
+            return { success: false, error: `sudo: an unexpected error occurred during execution: ${e.message}` };
+        } finally {
+            // CRITICAL: Always de-escalate privileges back to the original user.
+            currentUser = originalUser;
+        }
+    }
+
+
+    /**
      * Handles the shared authentication logic for login and su, including interactive password prompts.
      * @private
      * @param {string} username - The user to authenticate.
@@ -336,6 +386,8 @@ const UserManager = (() => {
         login,
         logout,
         su,
+        verifyPassword,
+        sudoExecute,
         initializeDefaultUsers,
         getPrimaryGroupForUser,
     };
