@@ -19,7 +19,7 @@ Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your
 
 ## Getting Started: The 60-Second Experience
 
-![link](https://aedmark.github.io/Oopis-OS/)
+[Live Demo](https://aedmark.github.io/Oopis-OS/)
 
 1. **Open:** Simply open `index.html` in any modern web browser.
 
