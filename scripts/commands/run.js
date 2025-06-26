@@ -239,6 +239,12 @@ SCRIPTING
               If any command within the script fails, the script will
               stop execution immediately.
 
+WARNING
+       The scripting engine does not have infinite loop detection.
+       A script that does not terminate (e.g., 'while true; do echo hello; done')
+       will cause the OopisOS tab to become unresponsive, requiring a
+       manual browser page reload.
+
 EXAMPLES
        Suppose you have a file named 'greet.sh' with the following content:
        #!/bin/oopis_shell

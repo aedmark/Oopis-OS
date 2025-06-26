@@ -34,7 +34,12 @@ const PaintAppConfig = {
         DROPDOWN_ACTIVE: 'paint-dropdown-active',
     },
     PALETTE: [
-        { name: 'green',   value: '#22c55e' }
+        { name: 'Black', value: '#000000' },
+        { name: 'Red', value: '#f44336' },
+        { name: 'Yellow', value: '#ffeb3b' },
+        { name: 'Green', value: '#4caf50' },
+        { name: 'Blue', value: '#03a9f4' },
+        { name: 'Brown', value: '#795548' },
     ],
     EDITOR: {
         DEBOUNCE_DELAY_MS: 300,
@@ -112,7 +117,6 @@ const PaintUI = (() => {
 
         // --- TOOLBAR CONSTRUCTION ---
         elements.saveBtn = Utils.createElement('button', { className: 'paint-tool', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
-        elements.saveAsBtn = Utils.createElement('button', { className: 'paint-tool', textContent: 'Save As...', title: 'Save As', eventListeners: { click: () => eventCallbacks.onSaveAs() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit (Ctrl+Q)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
         elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
@@ -161,7 +165,7 @@ const PaintUI = (() => {
         const historyGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, [elements.undoBtn, elements.redoBtn]);
         const toolsGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, [elements.pencilBtn, elements.eraserBtn, elements.brushToolContainer, elements.shapeToolContainer, elements.gridBtn]);
         const attributesGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, [elements.charSelectBtn, elements.colorPaletteBtn, colorPaletteContainer]);
-        const sessionGroup = Utils.createElement('div', { className: 'paint-toolbar-group paint-session-group' }, [elements.saveBtn, elements.saveAsBtn, elements.exitBtn]);
+        const sessionGroup = Utils.createElement('div', { className: 'paint-toolbar-group paint-session-group' }, [elements.saveBtn, elements.exitBtn]);
 
         elements.toolbar.append(historyGroup, toolsGroup, attributesGroup, sessionGroup);
         elements.canvasWrapper.appendChild(elements.canvas);
@@ -400,8 +404,7 @@ const PaintManager = (() => {
         onMouseLeave: _handleMouseLeave,
         onToolChange: _setTool,
         onColorChange: _setColor,
-        onSave: () => _handleSave(false),
-        onSaveAs: () => _handleSave(true),
+        onSave: () => _handleSave(),
         onExit: () => exit(),
         onUndo: _performUndo,
         onRedo: _performRedo,
@@ -679,24 +682,20 @@ const PaintManager = (() => {
         }
     }
 
-    async function _handleSave(isSaveAs = false) {
+    async function _handleSave() {
         if (!isActiveState) return;
 
-        let savePath;
+        let savePath = currentFilePath;
 
-        // If "Save As" is requested, or if the current file is a temporary one (i.e., untitled),
+        // If the current file is a temporary one (i.e., untitled),
         // we must prompt the user for a filename.
-        if (isSaveAs || isTempFile) {
-            const promptTitle = isSaveAs ? "Save As:" : "Save:";
-            const placeholder = isSaveAs && currentFilePath ? currentFilePath.split('/').pop() : "my-art.oopic";
-            const confirmText = isSaveAs ? "Save Copy" : "Save";
-
+        if (isTempFile) {
             const newFilename = await new Promise(resolve => {
                 ModalManager.request({
                     context: 'graphical-input',
-                    messageLines: [promptTitle],
-                    placeholder: placeholder,
-                    confirmText: confirmText,
+                    messageLines: ["Save:"],
+                    placeholder: "my-art.oopic",
+                    confirmText: "Save",
                     cancelText: "Cancel",
                     onConfirm: (value) => resolve(value.trim() || null),
                     onCancel: () => resolve(null)
@@ -708,9 +707,6 @@ const PaintManager = (() => {
                 return;
             }
             savePath = FileSystemManager.getAbsolutePath(newFilename);
-        } else {
-            // This is a standard save for an existing file.
-            savePath = currentFilePath;
         }
 
         // Ensure the filename has the correct extension.
@@ -825,7 +821,7 @@ const PaintManager = (() => {
             switch (event.key.toLowerCase()) {
                 case 's':
                     event.preventDefault();
-                    _handleSave(false);
+                    _handleSave();
                     break;
                 case 'q':
                     event.preventDefault();

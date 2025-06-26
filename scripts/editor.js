@@ -631,8 +631,10 @@ const EditorUI = (() => {
       } else if(currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
         let iframe = elements.previewPane.querySelector("iframe");
         if(!iframe) {
+          // *** FIX: Added sandbox attribute for security ***
           iframe = Utils.createElement("iframe", {
             className: "w-full h-full border-none bg-white",
+            sandbox: "" // An empty sandbox attribute applies the most restrictions
           });
           elements.previewPane.innerHTML = "";
           elements.previewPane.appendChild(iframe);
