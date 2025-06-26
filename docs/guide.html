@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OopisOS v2.7 User Guide</title>
+    <title>OopisOS v3.0 User Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -217,7 +217,6 @@
                 <li><a href="#advanced-topics" class="nav-link block p-3 rounded-lg">Advanced Topics</a></li>
                 <li><a href="#developer-docs" class="nav-link block p-3 rounded-lg">Developer Docs</a></li>
                 <li><a href="#testing-env" class="nav-link block p-3 rounded-lg">Testing & Showcase</a></li>
-                <li><a href="#recent-changes" class="nav-link block p-3 rounded-lg">Recent Changes</a></li>
                 <li><a href="#about" class="nav-link block p-3 rounded-lg">About & Credits</a></li>
             </ul>
         </nav>
@@ -226,7 +225,7 @@
     <main class="main-content flex-1 p-6 md:p-10 overflow-y-auto mt-16 md:mt-0">
         <section id="home" class="content-section active">
             <h1>Welcome to OopisOS!</h1>
-            <p class="text-lg mt-2 mb-6 text-zinc-400">The Over-Engineered, Oddly-Persistent, Integrated System. Now at Version 2.7, because we can't stop adding features.</p>
+            <p class="text-lg mt-2 mb-6 text-zinc-400">The Over-Engineered, Oddly-Persistent, Integrated System. Now at Version 3.0, because progress is inevitable.</p>
 
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">set GREETING="Welcome to the machine." ; echo $GREETING</span><br>
@@ -238,7 +237,7 @@
             <p>This digital realm is the brainchild of a human (Andrew Edmark) and an AI (Gemini), which probably explains a lot. Thanks to the arcane magic of your browser's local storage, everything you do here—every file, every user, every embarrassing command—is saved. It's a digital ghost that will haunt this browser tab until you command it otherwise with the `reset` command.</p>
 
             <h2>Core Philosophy</h2>
-            <ul class="list-disc ml-6 space-y-2 my-4">
+            <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>A Hermetically-Sealed Playground:</strong> What happens in OopisOS, stays in OopisOS. Your real computer won't even know we were here. Go on, `rm -rf /`. We dare you. (It's fine, we checked.)</li>
                 <li><strong>Zero Dependencies, Infinite Possibilities:</strong> No servers, no cloud, no monthly fees. Just you, this browser tab, and the faint hum of your computer's fan wondering what you're doing.</li>
                 <li><strong>Education Through Egregious Over-engineering:</strong> We built a multi-user OS with a character-based art program and a tool-using AI just to prove a point. The point is that learning shell commands can be way more fun than, say, doing your taxes.</li>
@@ -246,7 +245,7 @@
                 <li><strong>Familiar, Yet Unsettlingly Different:</strong> If you've ever typed `ls -la`, you'll know your way around. We just added more color, more games, and an AI that might talk back.</li>
             </ul>
 
-            <h2>Key Features at a Glance (v2.7)</h2>
+            <h2>Key Features at a Glance (v3.0)</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
                 <li><strong>A File System That Clings to Life:</strong> Powered by IndexedDB, it will remember that embarrassing filename you created at 3 AM. Comes with all the tools you'd expect: `ls` (with more flags than a UN summit), `find`, `diff`, and the elegant `tree` command.</li>
                 <li><strong>A Command-Line Fit for a Digital Monarch:</strong> Full history, tab-completion that feels like magic, and the holy trinity of shell power: piping (`|`), redirection (`>`), and backgrounding (`&`).</li>
@@ -263,10 +262,10 @@
                 <li><strong>A Cornucopia of Utilities:</strong> All the other classics are here: `echo`, `date`, `grep`, `history`, `export`, `upload`, `reboot`, and many more.</li>
                 <li><strong>Wait, There's a Game?:</strong> Yes. Type `adventure` and escape productivity. You're welcome.</li>
             </ul>
-            <p>Go on, get your hands dirty. The world of OopisOS v2.7 awaits!</p>
+            <p>Go on, get your hands dirty. The world of OopisOS v3.0 awaits!</p>
         </section>
         <section id="user-guide" class="content-section">
-            <h1>OopisOS User Guide (v2.7)</h1>
+            <h1>OopisOS User Guide (v3.0)</h1>
             <p>Alright, you've read the marketing material. You're suitably impressed. Let's get to the buttons and levers. This guide is your instruction manual for operating this magnificent, over-engineered beast.</p>
 
             <h2>The Terminal Interface</h2>
@@ -395,7 +394,7 @@
             </ul>
         </section>
         <section id="advanced-topics" class="content-section">
-            <h1>OopisOS v2.7: Advanced Topics & Features</h1>
+            <h1>OopisOS v3.0: Advanced Topics & Features</h1>
             <p>So, you've mastered the pleasantries. You think you know this place. Cute. Let's peel back the wallpaper and look at the wiring. This is where the real power lies.</p>
 
             <h2>The `find` Command: Your Digital Private Eye</h2>
@@ -497,7 +496,7 @@ echo "Agent $1's plan stored." > /secret_lair/plan.txt
             <p>Because even digital gods need a coffee break. When productivity becomes a burden, type <code>adventure</code> to be whisked away to a world of danger, puzzles, and questionable grammar. You can even <code>upload</code> and play your own custom JSON-based adventures if you fancy yourself a game master.</p>
         </section>
         <section id="developer-docs" class="content-section">
-            <h1>OopisOS v2.7: Developer Documentation</h1>
+            <h1>OopisOS v3.0: Developer Documentation</h1>
             <p>So, you want to look under the hood? Pop the bonnet? See how the sausage is made? Fine. But don't say we didn't warn you. This is the official guide for those brave enough to want to understand, modify, or extend the glorious machine that is OopisOS.</p>
 
             <h2>2. Project Overview (The 10,000-Foot View)</h2>
@@ -559,7 +558,7 @@ oopisOS/
     </code></pre>
 
             <h2>5. Forging a New Command (The Fun Part)</h2>
-            <p>The v2.7 architecture makes adding new commands shockingly pleasant. The framework does all the boring validation for you.</p>
+            <p>The v3.0 architecture makes adding new commands shockingly pleasant. The framework does all the boring validation for you.</p>
             <h3>Step 1: Stake Your Claim</h3>
             <p>Create a new file in the <code>scripts/commands/</code> directory. Let's call it <code>mycommand.js</code>.</p>
             <h3>Step 2: Write the Incantation</h3>
@@ -642,7 +641,7 @@ oopisOS/
             <p>Think of this as the ultimate demo disk. A single command that terraforms your empty home directory into a bustling ecosystem of files, directories, and secrets, all designed for you to test, abuse, and explore.</p>
             <p>Just run this command to create your new world:</p>
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /inflate.sh</span>
+                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /extras/inflate.sh</span>
             </div>
             <h3>So, what's in the box?</h3>
             <ul class="list-disc ml-6 my-4 space-y-2">
@@ -668,48 +667,6 @@ oopisOS/
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /diag.sh</span>
             </div>
-        </section>
-        <section id="recent-changes" class="content-section">
-            <h1>System Update & Patch Notes</h1>
-            <h2>Version 2.7 (The Quantum Leap)</h2>
-            <p>Version 2.7 isn't just an update; it's a paradigm shift. We've bolted on major new applications, supercharged existing tools, and fundamentally rebuilt the system's architecture for a brighter, more modular future. Here's what's new on the bleeding edge:</p>
-            <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>
-                    <strong>Unleash Your Inner Pixel-Artist with `paint`:</strong> A glorious, full-featured, character-based art studio is now a core part of OopisOS.
-                    <ul>
-                        <li>Launched with <code>paint [filename.oopic]</code>, it opens a dedicated modal for creating ASCII and ANSI art on a classic 80x24 canvas.</li>
-                        <li>Comes equipped with a full toolbar including a Pencil, Eraser, shape tools, Undo/Redo functionality, and a Grid Toggle.</li>
-                        <li>Includes a default 6-color palette and a full custom color picker. You can select any printable ASCII character as your "brush."</li>
-                        <li>Your masterpieces are saved to the custom <code>.oopic</code> JSON file format, preserving every character and color for posterity.</li>
-                    </ul>
-                </li>
-                <li>
-                    <strong>Tame Your Knowledge-Base with `chidi`:</strong> The `chidi` command summons a powerful AI Librarian to help you make sense of your own notes.
-                    <ul>
-                        <li>Point it at a file or directory (`chidi /docs`), and it opens a focused reading app, recursively finding and loading all Markdown (`.md`) files.</li>
-                        <li>Its killer feature: Use the integrated AI toolkit to **Summarize** documents, generate **Study** questions, or **Ask** a natural language question across the *entire set* of loaded documents at once.</li>
-                        <li>It's smart. It uses a Retrieval-Augmented Generation (RAG) strategy, meaning its clever brain finds the most relevant documents in your collection *before* bothering the Gemini API, giving you faster, more accurate answers.</li>
-                    </ul>
-                </li>
-                <li>
-                    <strong>A More Personal Shell with Environment Variables:</strong> The shell is no longer a one-size-fits-all affair. You can now define your own environment variables.
-                    <ul>
-                        <li>Use <code>set VAR="value"</code> to create variables, <code>set</code> to see them all, and <code>unset VAR</code> to make the shell forget.</li>
-                        <li>Use your variables in any command with the familiar <code>$VAR</code> or <code>${VAR}</code> syntax for shell expansion.</li>
-                        <li>Comes with the standard defaults you'd expect: <code>$USER</code>, <code>$HOME</code>, <code>$HOST</code>, and <code>$PATH</code>.</li>
-                    </ul>
-                </li>
-                <li>
-                    <strong>Admire Your Creations with `tree`:</strong> Due to popular demand (from us), the `tree` command has arrived. It provides a beautiful, bird's-eye view of your directory structures. Supports flags for depth (`-L`) and listing directories only (`-d`).</li>
-                <li>
-                    <strong>A Revolution Under the Hood (For the Nerds):</strong> This might not seem like a flashy feature, but it's the most important one. We tore the monolithic command executor apart and gave every single command its own file in the <code>scripts/commands/</code> directory. For developers, this means adding new commands is no longer a Sisyphean task. For users, it means the system is more stable and robust. You're welcome.</li>
-            </ul>
-
-            <h2>Version 2.5 (The Humble Beginnings)</h2>
-            <ul class="list-disc ml-6 my-4 space-y-2">
-                <li>This was the initial public release. The foundation upon which this glorious v2.7 empire was built.</li>
-                <li>Core features included the persistent file system, the multi-user and permission model, the first iteration of the `edit` command, and the `gemini` command.</li>
-            </ul>
         </section>
         <section id="about" class="content-section">
             <h1>About the Project (And Other Mysteries)</h1>
@@ -743,11 +700,11 @@ oopisOS/
             <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS (INCLUDING THE CURATOR) OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
             <h2>What's Next? (More Madness, Probably)</h2>
-            <p>Now that the v2.7 architecture is a sleek, modular machine, the possibilities are endless. A graphical user interface? A peer-to-peer virtual file system? A command that generates ASCII art of cats? Who knows. The foundation is laid. The future is unwritten. And probably buggy.</p>
-            <p class="mt-6"><em>"OopisOS v2.7: Now with 26% more Oopis!"</em></p>
+            <p>Now that the v3.0 architecture is a sleek, modular machine, the possibilities are endless. A graphical user interface? A peer-to-peer virtual file system? A command that generates ASCII art of cats? Who knows. The foundation is laid. The future is unwritten. And probably buggy.</p>
+            <p class="mt-6"><em>"OopisOS v3.0: Now with 30% more Oopis!"</em></p>
         </section>
         <footer class="footer text-center">
-            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v2.7).</p>
+            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v3.0).</p>
         </footer>
     </main>
 </div>
