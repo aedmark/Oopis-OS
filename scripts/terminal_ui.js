@@ -929,6 +929,7 @@ const AppLayerManager = (() => {
 
         // Show app layer and append the app's main element
         currentAppContainer = appContainerElement;
+        currentAppContainer.classList.remove('hidden');
         appLayer.appendChild(currentAppContainer);
         appLayer.classList.remove('hidden');
         isActive = true;

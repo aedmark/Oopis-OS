@@ -1,4 +1,9 @@
-// text_adventure.js - OopisOS Adventure Engine and Editor
+/**
+ * @file Manages the OopisOS text adventure game engine, including game state,
+ * command processing, and UI interaction via the TextAdventureModal.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
 
 /**
  * @typedef {Object.<string, Room>} RoomDict
@@ -92,7 +97,9 @@ const TextAdventureModal = (() => {
       adventureOutput.innerHTML = '';
       adventureInput.value = '';
       adventureInput.disabled = false;
-      adventureModal.classList.remove('hidden');
+
+      // REFACTORED: Use AppLayerManager to show the modal
+      AppLayerManager.show(adventureModal);
 
       if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(true);
       if (typeof TerminalUI !== 'undefined') TerminalUI.setInputState(false);
@@ -120,11 +127,13 @@ const TextAdventureModal = (() => {
 
     currentScriptingContext = null;
 
-    adventureModal.classList.add('hidden');
+    // REFACTORED: Use AppLayerManager to hide the modal
+    AppLayerManager.hide();
+
     if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(false);
     if (typeof TerminalUI !== 'undefined') {
       TerminalUI.setInputState(true);
-      TerminalUI.focusInput();
+      // TerminalUI.focusInput(); is already called by AppLayerManager.hide()
     }
 
     adventureInput.removeEventListener('keydown', _handleInputKeydown);
