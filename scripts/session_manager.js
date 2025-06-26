@@ -647,18 +647,19 @@ const SessionManager = (() => {
         OutputManager.clearOutput();
         TerminalUI.clearInput();
         const allKeys = StorageManager.getAllLocalStorageKeys();
+
+        // DEFINITIVE FIX: Use a prefix to robustly identify all OS-related keys.
+        const OS_KEY_PREFIX = 'oopisOs';
+
         allKeys.forEach((key) => {
-            const shouldRemove =
-                key.startsWith(Config.STORAGE_KEYS.USER_TERMINAL_STATE_PREFIX) ||
-                key.startsWith(Config.STORAGE_KEYS.MANUAL_TERMINAL_STATE_PREFIX) ||
-                key === Config.STORAGE_KEYS.USER_CREDENTIALS ||
-                key === Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED ||
-                key === Config.STORAGE_KEYS.ALIAS_DEFINITIONS ||
-                key === Config.STORAGE_KEYS.USER_GROUPS;
-            if (shouldRemove && key !== Config.STORAGE_KEYS.GEMINI_API_KEY) {
+            // Remove any key that starts with our OS prefix.
+            // This is more robust than a hardcoded list.
+            // The Gemini API key ("oopisGeminiApiKey") does not match and will be preserved.
+            if (key.startsWith(OS_KEY_PREFIX)) {
                 StorageManager.removeItem(key);
             }
         });
+
         await OutputManager.appendToOutput(
             "All session states, credentials, aliases, groups, and editor settings cleared from local storage."
         );
