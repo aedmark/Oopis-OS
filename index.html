@@ -6,6 +6,7 @@
   <title>OopisOS</title>
   <script src="./scripts/marked.min.js"></script>
   <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#34d399">
 </head>
 <body class="bg-neutral-900 text-green-500 m-0 p-5 flex flex-col items-center justify-center min-h-screen overflow-x-hidden">
@@ -122,5 +123,18 @@
 <script src="./scripts/commands/wget.js"></script>
 <script src="./scripts/commands/whoami.js"></script>
 <script src="./scripts/commands/zip.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+              .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              })
+              .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+              });
+    });
+  }
+</script>
 </body>
 </html>
