@@ -204,14 +204,22 @@
                     };
                 }
 
+                // --- REFACTORED CONFIRMATION LOGIC ---
+                const isPromptRequired = flags.interactive || (options.isInteractive && !flags.force);
                 let confirmed = false;
-                if (flags.force) {
-                    confirmed = true;
-                } else if (flags.interactive) {
-                    confirmed = await new Promise((resolve) => ModalManager.request({ context: "terminal", messageLines: [`Overwrite '${absDestPath}'?`], onConfirm: () => resolve(true), onCancel: () => resolve(false), options }));
-                } else if (options.isInteractive) {
-                    confirmed = await new Promise((resolve) => ModalManager.request({ context: "terminal", messageLines: [`Overwrite '${absDestPath}'?`], onConfirm: () => resolve(true), onCancel: () => resolve(false), options }));
+
+                if (isPromptRequired) {
+                    confirmed = await new Promise((resolve) => {
+                        ModalManager.request({
+                            context: "terminal",
+                            messageLines: [`Overwrite '${absDestPath}'?`],
+                            onConfirm: () => resolve(true),
+                            onCancel: () => resolve(false),
+                            options,
+                        });
+                    });
                 } else {
+                    // Auto-confirm if -f is used or if in a non-interactive script.
                     confirmed = true;
                 }
 

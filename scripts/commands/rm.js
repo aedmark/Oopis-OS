@@ -91,17 +91,18 @@
                     continue;
                 }
 
-                // --- NEW, SIMPLIFIED CONFIRMATION LOGIC ---
+                // --- REFACTORED CONFIRMATION LOGIC ---
+                // Determine if a prompt is needed. A prompt is needed if -i is used,
+                // or if it's an interactive session and -f is NOT used.
+                const isPromptRequired = flags.interactive || (options.isInteractive && !flags.force);
                 let confirmed = false;
 
-                if (flags.force) {
-                    confirmed = true; // If -f, auto-confirm.
-                } else if (flags.interactive) {
-                    // If -i, always prompt.
+                if (isPromptRequired) {
                     const promptMsg =
                         node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
                             ? `Recursively remove directory '${pathArg}'?`
                             : `Remove file '${pathArg}'?`;
+
                     confirmed = await new Promise((resolve) => {
                         ModalManager.request({
                             context: "terminal",
@@ -111,20 +112,8 @@
                             options, // Pass context for scripted prompts.
                         });
                     });
-                } else if (options.isInteractive) {
-                    // In interactive shell without -f or -i, default to prompting.
-                    const promptMsg = `Remove ${node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? "directory" : "file"} '${pathArg}'?`;
-                    confirmed = await new Promise((resolve) => {
-                        ModalManager.request({
-                            context: "terminal",
-                            messageLines: [promptMsg],
-                            onConfirm: () => resolve(true),
-                            onCancel: () => resolve(false),
-                            options,
-                        });
-                    });
                 } else {
-                    // In non-interactive (script) mode, without -f or -i, default to no prompt (auto-confirm).
+                    // Auto-confirm if -f is used or if in a non-interactive script.
                     confirmed = true;
                 }
 
