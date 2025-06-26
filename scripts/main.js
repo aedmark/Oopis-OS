@@ -27,6 +27,7 @@ function initializeTerminalEventListeners() {
 
   // Focus the input area when the terminal is clicked, unless text is being selected.
   DOM.terminalDiv.addEventListener("click", (e) => {
+    // REFACTORED: Added PaintManager.isActive() check
     if (EditorManager.isActive() || (typeof PaintManager !== 'undefined' && PaintManager.isActive())) return;
     const selection = window.getSelection();
     if (selection && selection.toString().length > 0) {
@@ -58,6 +59,8 @@ function initializeTerminalEventListeners() {
       return;
     }
 
+    // SECOND PRIORITY: If a full-screen app is running, let it handle its own keys.
+    // DIRECTIVE 3.3: Add PaintManager.isActive() to the check.
     if (EditorManager.isActive() ||
         TextAdventureModal.isActive() ||
         (typeof ChidiApp !== 'undefined' && ChidiApp.isActive()) ||
@@ -65,15 +68,18 @@ function initializeTerminalEventListeners() {
       return; // Let the active app handle its own keyboard events.
     }
 
+    // Ignore key events not targeting the main input div.
     if (e.target !== DOM.editableInputDiv) {
       return;
     }
 
+    // Prevent user input while a script is running.
     if (CommandExecutor.isScriptRunning()) {
       e.preventDefault();
       return;
     }
 
+    // Handle special key presses for terminal functionality.
     switch (e.key) {
       case "Enter":
         e.preventDefault();
@@ -164,6 +170,7 @@ function initializeTerminalEventListeners() {
       selection.addRange(range);
     });
 
+    // Reset tab completion cycle on any manual input.
     DOM.editableInputDiv.addEventListener("input", (e) => {
       if (e.isTrusted) {
         TabCompletionManager.resetCycle();
@@ -179,6 +186,7 @@ function initializeTerminalEventListeners() {
  * @async
  */
 window.onload = async () => {
+  // Cache all necessary DOM elements for performance.
   DOM = {
     terminalBezel: document.getElementById("terminal-bezel"),
     terminalDiv: document.getElementById("terminal"),
@@ -194,9 +202,11 @@ window.onload = async () => {
     adventureInput: document.getElementById("adventure-input"),
   };
 
+  // Override console methods to output to the terminal display.
   OutputManager.initializeConsoleOverrides();
 
   try {
+    // Begin the OS boot sequence. Order is important here.
     await IndexedDBManager.init();
     await FileSystemManager.load();
     await UserManager.initializeDefaultUsers();
@@ -205,9 +215,14 @@ window.onload = async () => {
     AliasManager.initialize();
     EnvironmentManager.initialize();
     SessionManager.initializeStack();
+
+    // Initialize the command executor, which loads all command definitions.
     CommandExecutor.initialize();
+
+    // Load the initial user's session state.
     SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
 
+    // Ensure the current path is valid after loading.
     const guestHome = `/home/${Config.USER.DEFAULT_NAME}`;
     if (!FileSystemManager.getNodeByPath(FileSystemManager.getCurrentPath())) {
       if (FileSystemManager.getNodeByPath(guestHome)) {
@@ -217,11 +232,16 @@ window.onload = async () => {
       }
     }
 
+    // Finalize UI setup and event listeners.
     initializeTerminalEventListeners();
     TerminalUI.updatePrompt();
     TerminalUI.focusInput();
+    console.log(
+        `${Config.OS.NAME} v.${Config.OS.VERSION} loaded successfully!`
+    );
 
-    const resizeObserver = new ResizeObserver(() => {
+    const resizeObserver = new ResizeObserver(entries => {
+      // UPDATED: Check for PaintManager and its UI resize handler
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
         if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
           PaintUI.handleResize();
