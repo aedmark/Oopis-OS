@@ -54,103 +54,91 @@
          */
         coreLogic: async (context) => {
             const { args, options, signal } = context;
-            const scriptPathArg = args[0]; // The path to the script file.
-            const scriptArgs = args.slice(1); // Arguments passed to the script.
-            const scriptNode = context.validatedPaths[0].node; // The file system node of the script.
+            const scriptPathArg = args[0];
+            const scriptArgs = args.slice(1);
+            const scriptNode = context.validatedPaths[0].node;
             const fileExtension = Utils.getFileExtension(scriptPathArg);
 
-            // Validate script file extension.
             if (fileExtension !== "sh") {
                 return { success: false, error: `run: '${scriptPathArg}' is not a shell script (.sh) file.` };
             }
-            // Check if the script content is empty.
             if (!scriptNode.content) {
                 return { success: true, output: `run: Script '${scriptPathArg}' is empty.` };
             }
-            // Prevent nested script execution in interactive mode.
             if (CommandExecutor.isScriptRunning() && options.isInteractive) {
                 return { success: false, error: "run: Cannot execute a script while another is already running in interactive mode." };
             }
 
             const rawScriptLines = scriptNode.content.split('\n');
 
-            // Initialize the scripting context.
             const scriptingContext = {
-                isScripting: true, // Flag indicating script is running.
-                waitingForInput: false, // Flag for when script is waiting for user/scripted input.
-                inputCallback: null, // Callback to resolve when input is received.
-                cancelCallback: null, // Callback to resolve if input is cancelled.
-                lines: rawScriptLines, // All lines of the script.
-                currentLineIndex: 0, // Current line being executed.
+                isScripting: true,
+                waitingForInput: false,
+                inputCallback: null,
+                cancelCallback: null,
+                lines: rawScriptLines,
+                currentLineIndex: 0,
             };
 
-            // Save previous script execution state and set new state.
             const previousScriptExecutionState = CommandExecutor.isScriptRunning();
             CommandExecutor.setScriptExecutionInProgress(true);
-            // If interactive, temporarily disable terminal input.
             if (options.isInteractive) TerminalUI.setInputState(false);
 
-            let overallScriptSuccess = true; // Tracks if the entire script executed successfully.
+            let overallScriptSuccess = true;
 
-            // Main script execution loop.
+            // Main script execution loop
             while (scriptingContext.currentLineIndex < scriptingContext.lines.length) {
-                // Check if the script has been aborted (e.g., via `kill` command).
+                const lineIndexBeforeCommand = scriptingContext.currentLineIndex; // Capture index at start of loop
+
                 if (signal?.aborted) {
                     overallScriptSuccess = false;
                     await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                     if (scriptingContext.cancelCallback) scriptingContext.cancelCallback();
-                    break; // Exit loop on cancellation.
+                    break;
                 }
 
                 let line = scriptingContext.lines[scriptingContext.currentLineIndex];
 
-                // --- START OF REFINED FIX FOR COMMENT HANDLING ---
-                // This logic correctly finds the first '#' that is not inside single or double quotes.
                 let inDoubleQuote = false;
                 let inSingleQuote = false;
                 let commentIndex = -1;
-
                 for (let i = 0; i < line.length; i++) {
                     const char = line[i];
                     const prevChar = i > 0 ? line[i - 1] : null;
-
                     if (char === '"' && prevChar !== '\\' && !inSingleQuote) {
                         inDoubleQuote = !inDoubleQuote;
                     } else if (char === '\'' && prevChar !== '\\' && !inDoubleQuote) {
                         inSingleQuote = !inSingleQuote;
                     } else if (char === '#' && !inDoubleQuote && !inSingleQuote) {
                         commentIndex = i;
-                        break; // Found the real comment, no need to look further.
+                        break;
                     }
                 }
-
                 if (commentIndex !== -1) {
-                    line = line.substring(0, commentIndex); // Truncate line at the start of the comment.
+                    line = line.substring(0, commentIndex);
                 }
                 const trimmedLine = line.trim();
-                // --- END OF REFINED FIX ---
 
-
-                // Handle cases where the script is waiting for interactive input (e.g., from `ModalManager.request`).
                 if (scriptingContext.waitingForInput) {
-                    const cb = scriptingContext.inputCallback; // Get the pending callback.
-                    scriptingContext.inputCallback = null; // Clear callback.
-                    scriptingContext.waitingForInput = false; // Reset waiting flag.
-
+                    const cb = scriptingContext.inputCallback;
+                    scriptingContext.inputCallback = null;
+                    scriptingContext.waitingForInput = false;
                     if (cb) {
-                        await cb(trimmedLine); // Provide the current line as input to the waiting callback.
+                        await cb(trimmedLine);
                     }
-                    scriptingContext.currentLineIndex++; // Move to next script line.
+                    if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
+                        scriptingContext.currentLineIndex++;
+                    }
                     continue;
                 }
 
-                // Skip empty lines (after comment removal).
                 if (trimmedLine === '') {
-                    scriptingContext.currentLineIndex++;
+                    if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
+                        scriptingContext.currentLineIndex++;
+                    }
                     continue;
                 }
 
-                // Process command line arguments ($1, $2, $@, $#).
                 let processedLine = line;
                 for (let i = 0; i < scriptArgs.length; i++) {
                     processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
@@ -158,46 +146,45 @@
                 processedLine = processedLine.replace(/\$@/g, scriptArgs.map(arg => arg.includes(" ") ? `"${arg}"` : arg).join(" "));
                 processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
 
-                // Execute the processed command line. Commands within a script are non-interactive.
                 const result = await CommandExecutor.processSingleCommand(processedLine.trim(), false, scriptingContext);
 
-                // Handle cases where `processSingleCommand` sets `waitingForInput` (e.g., `rm -i` in script).
                 if (scriptingContext.waitingForInput) {
-                    let lineForInput = line; // Use the original line (before trimming/comment removal) for input to preserve context.
-                    const commentIndex = lineForInput.indexOf('#'); // Re-find comment index.
+                    let lineForInput = line;
+                    const commentIndex = lineForInput.indexOf('#');
                     if (commentIndex !== -1) {
                         lineForInput = lineForInput.substring(0, commentIndex);
                     }
-                    lineForInput = lineForInput.trim(); // Trim for actual input.
-
+                    lineForInput = lineForInput.trim();
                     const cb = scriptingContext.inputCallback;
                     scriptingContext.inputCallback = null;
                     scriptingContext.waitingForInput = false;
-
                     if (cb) {
                         await cb(lineForInput);
                     }
-                    scriptingContext.currentLineIndex++;
+                    if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
+                        scriptingContext.currentLineIndex++;
+                    }
                     continue;
                 }
 
-                // If any command within the script fails, set overall success to false and break the loop.
                 if (!result || !result.success) {
                     const errorMsg = `Script '${scriptPathArg}' error on line: ${scriptingContext.lines[scriptingContext.currentLineIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
                     await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                     overallScriptSuccess = false;
                     break;
                 }
-                scriptingContext.currentLineIndex++; // Move to the next line.
+
+                // If the command we just ran didn't advance the script pointer, we do it.
+                if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
+                    scriptingContext.currentLineIndex++;
+                }
             }
 
-            // Restore previous script execution state and re-enable terminal input if necessary.
             CommandExecutor.setScriptExecutionInProgress(previousScriptExecutionState);
             if (options.isInteractive && !CommandExecutor.isScriptRunning()) {
                 TerminalUI.setInputState(true);
             }
 
-            // Return the final result of the script execution.
             return {
                 success: overallScriptSuccess,
                 error: overallScriptSuccess ? null : `Script '${scriptPathArg}' failed.`

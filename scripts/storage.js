@@ -23,10 +23,8 @@ const StorageManager = (() => {
         try {
             const storedValue = localStorage.getItem(key);
             if (storedValue !== null) {
-                // Handle specific non-JSON values first
                 if (key === Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED)
                     return storedValue === "true";
-                // Attempt to parse as JSON, fall back to returning the raw string on error
                 try {
                     return JSON.parse(storedValue);
                 } catch (e) {
@@ -37,7 +35,7 @@ const StorageManager = (() => {
             const errorMsg = `Warning: Could not load ${itemName} for key '${key}' from localStorage. Error: ${e.message}. Using default value.`;
             if (
                 typeof OutputManager !== "undefined" &&
-                typeof void OutputManager.appendToOutput === "function"
+                typeof OutputManager.appendToOutput === "function"
             )
                 void OutputManager.appendToOutput(errorMsg, {
                     typeClass: Config.CSS_CLASSES.WARNING_MSG,
@@ -57,9 +55,9 @@ const StorageManager = (() => {
     function saveItem(key, data, itemName) {
         try {
             const valueToStore =
-                typeof data === "object" && data !== null
-                    ? JSON.stringify(data)
-                    : String(data);
+                typeof data === "object" && data !== null ?
+                    JSON.stringify(data) :
+                    String(data);
             localStorage.setItem(key, valueToStore);
             return true;
         } catch (e) {
@@ -124,9 +122,18 @@ const StorageManager = (() => {
  */
 const IndexedDBManager = (() => {
     "use strict";
-    /** @private @type {IDBDatabase|null} */
+    /**
+     * The singleton instance of the IDBDatabase object.
+     * @private
+     * @type {IDBDatabase|null}
+     */
     let dbInstance = null;
-    /** @private @type {boolean} */
+
+    /**
+     * A flag to ensure the successful initialization message is logged only once per session.
+     * @private
+     * @type {boolean}
+     */
     let hasLoggedNormalInitialization = false;
 
     /**
@@ -159,7 +166,6 @@ const IndexedDBManager = (() => {
                 Config.DATABASE.VERSION
             );
 
-            // Handles database creation and version upgrades.
             request.onupgradeneeded = (event) => {
                 const tempDb = event.target.result;
                 if (!tempDb.objectStoreNames.contains(Config.DATABASE.FS_STORE_NAME))
@@ -168,7 +174,6 @@ const IndexedDBManager = (() => {
                     });
             };
 
-            // Handles a successful database connection.
             request.onsuccess = (event) => {
                 dbInstance = event.target.result;
                 if (!hasLoggedNormalInitialization) {
@@ -192,7 +197,6 @@ const IndexedDBManager = (() => {
                 resolve(dbInstance);
             };
 
-            // Handles errors during database connection.
             request.onerror = (event) => {
                 const errorMsg =
                     "Error: OopisOs could not access its file system storage. This might be due to browser settings (e.g., private Browse mode, disabled storage, or full storage). Please check your browser settings and try again. Some features may be unavailable.";
@@ -212,7 +216,7 @@ const IndexedDBManager = (() => {
 
     /**
      * Returns the active IndexedDB database instance.
-     * @throws {Error} If the database has not been initialized.
+     * @throws {Error} If the database has not been initialized via `init()`.
      * @returns {IDBDatabase} The active database instance.
      */
     function getDbInstance() {
