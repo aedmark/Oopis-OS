@@ -623,7 +623,8 @@ const EditorUI = (() => {
     previewDebounceTimer = setTimeout(() => {
       if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
         if(typeof marked !== "undefined") {
-          elements.previewPane.innerHTML = marked.parse(content);
+          // --- SECURITY HARDENING: ADDED SANITIZE OPTION ---
+          elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
         } else {
           elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
         }
@@ -631,7 +632,7 @@ const EditorUI = (() => {
       } else if(currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
         let iframe = elements.previewPane.querySelector("iframe");
         if(!iframe) {
-          // *** FIX: Added sandbox attribute for security ***
+          // --- SECURITY HARDENING: ADDED SANDBOX ATTRIBUTE ---
           iframe = Utils.createElement("iframe", {
             className: "w-full h-full border-none bg-white",
             sandbox: "" // An empty sandbox attribute applies the most restrictions
