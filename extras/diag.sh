@@ -15,6 +15,20 @@ chown userDiag /home/userDiag/diag_workspace/
 cp /home/Guest/diag_assets.sh /home/userDiag/diag_workspace/diag_assets.sh
 chown userDiag /home/userDiag/diag_workspace/diag_assets.sh
 chmod 700 /home/userDiag/diag_workspace/diag_assets.sh
+
+# --- Phase 1.2: Create Sudo Test Scripts ---
+echo "--- Phase: Creating sudo helper scripts ---"
+echo '#!/bin/oopis_shell' > /sudo_test_script.sh
+echo 'echo "Attempting to run sudo command..."' >> /sudo_test_script.sh
+echo 'sudo echo "Sudo command successful."' >> /sudo_test_script.sh
+chmod 755 /sudo_test_script.sh
+
+echo '#!/bin/oopis_shell' > /sudo_reauth_test.sh
+echo 'echo "Attempting to run sudo command after re-login..."' >> /sudo_reauth_test.sh
+echo 'sudo echo "Sudo re-authentication successful."' >> /sudo_reauth_test.sh
+chmod 755 /sudo_reauth_test.sh
+delay 200
+
 delay 500
 login userDiag pantload
 echo "Current User (expected: userDiag):"
@@ -259,7 +273,6 @@ echo "--- Application non-interactive checks passed. ---"
 delay 700
 echo "---------------------------------------------------------------------"
 
-
 # --- Phase 12: Adventure Game Engine ---
 echo ""
 echo "===== Testing: Adventure Game Engine (Scripted) ====="
@@ -286,6 +299,7 @@ cd /
 login root mcgoopis
 delay 300
 rm -r -f /home/userDiag/diag_workspace
+rm -f /sudo_test_script.sh /sudo_reauth_test.sh
 login Guest
 echo "Final user list (expected: Guest, root, userDiag):"
 listusers
