@@ -37,59 +37,110 @@
             const { args, options } = context;
             const username = args[0];
 
-            return new Promise(async (resolve) => {
-                // Check if the user already exists before prompting for password.
-                const userCheck = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
-                if (userCheck[username]) {
-                    resolve({ success: false, error: `User '${username}' already exists.` });
-                    return;
-                }
+            // --- REFACTORED LOGIC ---
+            // This refactor introduces a dedicated path for handling non-interactive, scripted input,
+            // preventing the 'run' command from misinterpreting password lines as commands.
 
-                // First password prompt (obscured input).
-                ModalInputManager.requestInput(
-                    Config.MESSAGES.PASSWORD_PROMPT,
-                    async (firstPassword) => {
-                        // If the first password input is empty, treat it as an intention to create no password.
-                        if (firstPassword.trim() === "") {
-                            await OutputManager.appendToOutput("Registering user with no password.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                            const registerResult = await UserManager.register(username, null); // Register with null password.
-                            resolve(registerResult);
-                            return;
+            // First, perform a preliminary check for existing users to fail early.
+            const userCheck = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
+            if (userCheck[username]) {
+                return { success: false, error: `User '${username}' already exists.` };
+            }
+
+            // Path 1: Scripted Execution
+            if (options.scriptingContext?.isScripting) {
+                const scriptContext = options.scriptingContext;
+
+                // Helper to get the next valid line from the script, advancing the script's line index.
+                const getNextInputLine = () => {
+                    while (scriptContext.currentLineIndex < scriptContext.lines.length - 1) {
+                        scriptContext.currentLineIndex++;
+                        const line = scriptContext.lines[scriptContext.currentLineIndex]?.trim();
+                        // A valid input line is one that exists and is not a comment.
+                        if (line && !line.startsWith('#')) {
+                            return line;
                         }
+                    }
+                    return null; // Return null if we reach the end of the script.
+                };
 
-                        // Second password prompt for confirmation.
-                        ModalInputManager.requestInput(
-                            Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
-                            async (confirmedPassword) => {
-                                // Check if the two passwords match.
-                                if (firstPassword !== confirmedPassword) {
-                                    resolve({ success: false, error: Config.MESSAGES.PASSWORD_MISMATCH });
-                                    return;
-                                }
-                                // Passwords match, proceed with user registration.
-                                const registerResult = await UserManager.register(username, firstPassword);
-                                resolve(registerResult);
-                            },
-                            // Callback if the second password prompt is cancelled.
-                            () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
-                            true, // `isObscured` for password input.
-                            options // Pass options for scripting context.
-                        );
-                    },
-                    // Callback if the first password prompt is cancelled.
-                    () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
-                    true, // `isObscured` for password input.
-                    options // Pass options for scripting context.
-                );
-            }).then(result => {
-                // This `.then()` block processes the final result from the Promise chain.
-                // If registration was successful and returned a message, format it for success output.
-                if (result.success && result.message) {
-                    return { success: true, output: result.message, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
+                // Manually handle the password prompts by consuming the next lines from the script.
+                await OutputManager.appendToOutput(Config.MESSAGES.PASSWORD_PROMPT, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
+                const password = getNextInputLine();
+                if (password === null) {
+                    return { success: false, error: "Script ended while awaiting password." };
                 }
-                // Otherwise, return the result object as is (it's already structured for success/error).
-                return result;
-            });
+                // Echo obscured password to the terminal to simulate interactive entry.
+                const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
+                await OutputManager.appendToOutput(`${promptEcho}${'*'.repeat(password.length)}`);
+
+                await OutputManager.appendToOutput(Config.MESSAGES.PASSWORD_CONFIRM_PROMPT, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
+                const confirmPassword = getNextInputLine();
+                if (confirmPassword === null) {
+                    return { success: false, error: "Script ended while awaiting password confirmation." };
+                }
+                await OutputManager.appendToOutput(`${promptEcho}${'*'.repeat(confirmPassword.length)}`);
+
+                if (password !== confirmPassword) {
+                    return { success: false, error: Config.MESSAGES.PASSWORD_MISMATCH };
+                }
+
+                // With passwords confirmed, proceed with registration.
+                const registerResult = await UserManager.register(username, password);
+                if (registerResult.success && registerResult.message) {
+                    return { success: true, output: registerResult.message, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
+                }
+                return registerResult;
+
+            } else {
+                // Path 2: Interactive Execution (Original Logic)
+                return new Promise(async (resolve) => {
+                    // First password prompt (obscured input).
+                    ModalInputManager.requestInput(
+                        Config.MESSAGES.PASSWORD_PROMPT,
+                        async (firstPassword) => {
+                            // If the first password input is empty, treat it as an intention to create no password.
+                            if (firstPassword.trim() === "") {
+                                await OutputManager.appendToOutput("Registering user with no password.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                                const registerResult = await UserManager.register(username, null); // Register with null password.
+                                resolve(registerResult);
+                                return;
+                            }
+
+                            // Second password prompt for confirmation.
+                            ModalInputManager.requestInput(
+                                Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
+                                async (confirmedPassword) => {
+                                    // Check if the two passwords match.
+                                    if (firstPassword !== confirmedPassword) {
+                                        resolve({ success: false, error: Config.MESSAGES.PASSWORD_MISMATCH });
+                                        return;
+                                    }
+                                    // Passwords match, proceed with user registration.
+                                    const registerResult = await UserManager.register(username, firstPassword);
+                                    resolve(registerResult);
+                                },
+                                // Callback if the second password prompt is cancelled.
+                                () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
+                                true, // `isObscured` for password input.
+                                options // Pass options for scripting context.
+                            );
+                        },
+                        // Callback if the first password prompt is cancelled.
+                        () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
+                        true, // `isObscured` for password input.
+                        options // Pass options for scripting context.
+                    );
+                }).then(result => {
+                    // This `.then()` block processes the final result from the Promise chain.
+                    // If registration was successful and returned a message, format it for success output.
+                    if (result.success && result.message) {
+                        return { success: true, output: result.message, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
+                    }
+                    // Otherwise, return the result object as is (it's already structured for success/error).
+                    return result;
+                });
+            }
         },
     };
 

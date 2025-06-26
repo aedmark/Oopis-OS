@@ -174,8 +174,15 @@
                     break;
                 }
 
-                // If the command we just ran didn't advance the script pointer, we do it.
+                // The command at `lineIndexBeforeCommand` and any lines it consumed as input have been processed.
+                // We must always advance to the next line for the subsequent iteration of the loop.
                 if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
+                    scriptingContext.currentLineIndex++;
+                } else {
+                    // If the index was advanced by a subroutine (like a password prompt),
+                    // the loop will naturally continue from the new, correct index.
+                    // However, we must increment once more to move *past* the line that was
+                    // just consumed as input.
                     scriptingContext.currentLineIndex++;
                 }
             }

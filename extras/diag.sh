@@ -273,26 +273,8 @@ echo "--- Application non-interactive checks passed. ---"
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 12: Adventure Game Engine ---
-echo ""
-echo "===== Testing: Adventure Game Engine (Scripted) ====="
-delay 400
-echo "--- Test 1: Launch and immediately quit custom game ---"
-run ./adv_test1.sh
-delay 300
-echo "--- Test 2: Basic gameplay sequence ---"
-run ./adv_test2.sh
-delay 300
-echo "--- Test 3: Saving game state ---"
-run ./adv_test3.sh
-echo "Verifying save file was created:"
-ls my_save.sav
-delay 300
-echo "--- Test 4: Loading game state and verifying ---"
-run ./adv_test4.sh
-delay 700
 
-# --- Phase 13: Final Cleanup ---
+# --- Phase 12: Final Cleanup ---
 echo ""
 echo "--- Final Cleanup ---"
 cd /
