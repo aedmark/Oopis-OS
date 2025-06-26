@@ -6,28 +6,28 @@
  */
 
 /**
- * @typedef {Object.<string, Room>} RoomDict
+ * @typedef {Object.<string, Room>} RoomDict A dictionary of Room objects, keyed by room ID.
  */
 
 /**
- * @typedef {Object.<string, Item>} ItemDict
+ * @typedef {Object.<string, Item>} ItemDict A dictionary of Item objects, keyed by item ID.
  */
 
 /**
- * @typedef {Object} WinCondition
+ * @typedef {Object} WinCondition Defines the condition required to win the game.
  * @property {'itemInRoom' | 'playerHasItem'} type - The type of condition to check for winning.
  * @property {string} itemId - The ID of the item involved in the win condition.
  * @property {string} [roomId] - The ID of the room, required if type is 'itemInRoom'.
  */
 
 /**
- * @typedef {Object} PlayerState
+ * @typedef {Object} PlayerState Represents the player's current state.
  * @property {string} currentLocation - The ID of the room the player is currently in.
  * @property {string[]} inventory - An array of item IDs that the player is carrying.
  */
 
 /**
- * @typedef {Object} Item
+ * @typedef {Object} Item Represents an item within the adventure.
  * @property {string} id - The unique identifier for the item.
  * @property {string} name - The display name of the item.
  * @property {string} description - The default description of the item when looked at.
@@ -44,7 +44,7 @@
  */
 
 /**
- * @typedef {Object} Room
+ * @typedef {Object} Room Represents a location in the adventure.
  * @property {string} id - The unique identifier for the room.
  * @property {string} name - The name of the room.
  * @property {string} description - The description of the room.
@@ -52,7 +52,7 @@
  */
 
 /**
- * @typedef {Object} Adventure
+ * @typedef {Object} Adventure The complete data structure for an adventure game.
  * @property {string} title - The title of the adventure.
  * @property {string} startingRoomId - The ID of the room where the player begins.
  * @property {RoomDict} rooms - A dictionary of all rooms in the adventure.
@@ -63,6 +63,10 @@
  */
 
 
+/**
+ * @module TextAdventureModal
+ * @description Manages the UI modal for the text adventure game.
+ */
 const TextAdventureModal = (() => {
   "use strict";
   let adventureModal, adventureOutput, adventureInput, adventureCloseBtn, adventureTitle;
@@ -70,8 +74,13 @@ const TextAdventureModal = (() => {
   let promptResolver = null;
   let currentEngineInstance = null;
   let currentScriptingContext = null;
-  let sessionCompletionResolver = null; // Add this line
+  let sessionCompletionResolver = null;
 
+  /**
+   * Initializes and caches the necessary DOM elements for the modal.
+   * @private
+   * @returns {boolean} True if all elements were found, false otherwise.
+   */
   function _initDOM() {
     adventureModal = document.getElementById('adventure-modal');
     adventureOutput = document.getElementById('adventure-output');
@@ -85,6 +94,13 @@ const TextAdventureModal = (() => {
     return true;
   }
 
+  /**
+   * Displays the adventure modal and starts a new game session.
+   * @param {Adventure} adventureData - The data for the adventure to be played.
+   * @param {object} engineInstance - A reference to the main TextAdventureEngine instance.
+   * @param {object|null} scriptingContext - The context for scripted play, if any.
+   * @returns {Promise<void>} A promise that resolves when the game session ends (modal is hidden).
+   */
   function show(adventureData, engineInstance, scriptingContext) {
     if (!_initDOM()) return Promise.reject("DOM Not Ready");
 
@@ -98,11 +114,7 @@ const TextAdventureModal = (() => {
       adventureInput.value = '';
       adventureInput.disabled = false;
 
-      // REFACTORED: Use AppLayerManager to show the modal
       AppLayerManager.show(adventureModal);
-
-      if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(true);
-      if (typeof TerminalUI !== 'undefined') TerminalUI.setInputState(false);
 
       adventureInput.focus();
       adventureInput.addEventListener('keydown', _handleInputKeydown);
@@ -110,6 +122,9 @@ const TextAdventureModal = (() => {
     });
   }
 
+  /**
+   * Hides the adventure modal and cleans up the session.
+   */
   function hide() {
     if (!isActive) return;
 
@@ -127,22 +142,22 @@ const TextAdventureModal = (() => {
 
     currentScriptingContext = null;
 
-    // REFACTORED: Use AppLayerManager to hide the modal
     AppLayerManager.hide();
-
-    if (typeof OutputManager !== 'undefined') OutputManager.setEditorActive(false);
-    if (typeof TerminalUI !== 'undefined') {
-      TerminalUI.setInputState(true);
-      // TerminalUI.focusInput(); is already called by AppLayerManager.hide()
-    }
 
     adventureInput.removeEventListener('keydown', _handleInputKeydown);
     adventureCloseBtn.removeEventListener('click', hide);
     if (typeof OutputManager !== 'undefined') {
-      void OutputManager.appendToOutput("Exited text adventure.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+      void OutputManager.appendToOutput("Exited text adventure.", {
+        typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG
+      });
     }
   }
 
+  /**
+   * Handles the keydown event on the adventure input field.
+   * @private
+   * @param {KeyboardEvent} event - The keyboard event.
+   */
   function _handleInputKeydown(event) {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -154,13 +169,17 @@ const TextAdventureModal = (() => {
         const resolver = promptResolver;
         promptResolver = null;
         resolver(command);
-      }
-      else if (command && currentEngineInstance) {
+      } else if (command && currentEngineInstance) {
         currentEngineInstance.processCommand(command);
       }
     }
   }
 
+  /**
+   * Requests a line of input from the user or script.
+   * @param {string} promptText - The prompt message to display.
+   * @returns {Promise<string|null>} A promise that resolves with the user's input, or null if cancelled or end of script.
+   */
   function requestInput(promptText) {
     appendOutput(promptText, 'system');
 
@@ -190,6 +209,11 @@ const TextAdventureModal = (() => {
     });
   }
 
+  /**
+   * Appends a line of text to the adventure output screen.
+   * @param {string} text - The text to display.
+   * @param {string} [type='room-desc'] - The CSS class to apply for styling (e.g., 'error', 'info').
+   */
   function appendOutput(text, type = 'room-desc') {
     if (!_initDOM()) return;
     const p = document.createElement('p');
@@ -199,8 +223,11 @@ const TextAdventureModal = (() => {
     adventureOutput.scrollTop = adventureOutput.scrollHeight;
   }
 
+  /**
+   * Clears all text from the adventure output screen.
+   */
   function clearOutput() {
-    if(adventureOutput) adventureOutput.innerHTML = '';
+    if (adventureOutput) adventureOutput.innerHTML = '';
   }
 
   return {
@@ -213,6 +240,10 @@ const TextAdventureModal = (() => {
   };
 })();
 
+/**
+ * @module TextAdventureEngine
+ * @description The core engine for processing text adventure game logic.
+ */
 const TextAdventureEngine = (() => {
   "use strict";
   /** @type {Adventure} */
@@ -222,8 +253,11 @@ const TextAdventureEngine = (() => {
   let scriptingContext = null;
 
   /**
-   * @param {Adventure} adventureData
-   * @param {object} options
+   * Starts a new adventure game.
+   * @param {Adventure} adventureData - The adventure data object.
+   * @param {object} [options={}] - Options for the game session.
+   * @param {object|null} [options.scriptingContext=null] - Context for scripted play.
+   * @returns {Promise<void>} A promise that resolves when the adventure session ends.
    */
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
@@ -232,10 +266,17 @@ const TextAdventureEngine = (() => {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
     };
-    TextAdventureModal.show(adventure, { processCommand }, scriptingContext);
     _displayCurrentRoom();
+    return TextAdventureModal.show(adventure, {
+      processCommand
+    }, scriptingContext);
   }
 
+  /**
+   * Processes a single command from the player.
+   * @param {string} command - The command string entered by the player.
+   * @async
+   */
   async function processCommand(command) {
     TextAdventureModal.appendOutput(`> ${command}`, 'system');
     const parts = command.toLowerCase().trim().split(/\s+/);
@@ -243,23 +284,56 @@ const TextAdventureEngine = (() => {
     const target = parts.slice(1).join(" ");
     if (!action) return;
 
-    switch(action) {
-      case 'look': _handleLook(target); break;
-      case 'go': case 'move': _handleGo(target); break;
-      case 'take': case 'get': _handleTake(target); break;
-      case 'drop': _handleDrop(target); break;
-      case 'inventory': case 'i': _handleInventory(); break;
-      case 'help': _handleHelp(); break;
-      case 'quit': case 'exit': TextAdventureModal.hide(); break;
-      case 'use': _handleUse(target); break;
-      case 'open': case 'close': _handleOpen(action, target); break;
-      case 'save': void _handleSave(); break;
-      case 'load': void _handleLoad(); break;
-      default: TextAdventureModal.appendOutput("I don't understand that command. Try 'help'.", 'error');
+    switch (action) {
+      case 'look':
+        _handleLook(target);
+        break;
+      case 'go':
+      case 'move':
+        _handleGo(target);
+        break;
+      case 'take':
+      case 'get':
+        _handleTake(target);
+        break;
+      case 'drop':
+        _handleDrop(target);
+        break;
+      case 'inventory':
+      case 'i':
+        _handleInventory();
+        break;
+      case 'help':
+        _handleHelp();
+        break;
+      case 'quit':
+      case 'exit':
+        TextAdventureModal.hide();
+        break;
+      case 'use':
+        _handleUse(target);
+        break;
+      case 'open':
+      case 'close':
+        _handleOpen(action, target);
+        break;
+      case 'save':
+        void _handleSave();
+        break;
+      case 'load':
+        void _handleLoad();
+        break;
+      default:
+        TextAdventureModal.appendOutput("I don't understand that command. Try 'help'.", 'error');
     }
     _checkWinConditions();
   }
 
+  /**
+   * Handles the 'save' command logic.
+   * @private
+   * @async
+   */
   async function _handleSave() {
     const fileName = await TextAdventureModal.requestInput("Save game as (leave blank to cancel):");
     if (!fileName) {
@@ -269,7 +343,10 @@ const TextAdventureEngine = (() => {
 
     const itemStates = {};
     for (const id in adventure.items) {
-      itemStates[id] = { location: adventure.items[id].location, state: adventure.items[id].state };
+      itemStates[id] = {
+        location: adventure.items[id].location,
+        state: adventure.items[id].state
+      };
     }
 
     const saveState = {
@@ -285,8 +362,10 @@ const TextAdventureEngine = (() => {
 
     const saveResult = await FileSystemManager.createOrUpdateFile(
         savePath,
-        JSON.stringify(saveState, null, 2),
-        { currentUser, primaryGroup }
+        JSON.stringify(saveState, null, 2), {
+          currentUser,
+          primaryGroup
+        }
     );
 
     if (saveResult.success) {
@@ -297,6 +376,11 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Handles the 'load' command logic.
+   * @private
+   * @async
+   */
   async function _handleLoad() {
     const fileName = await TextAdventureModal.requestInput("Load which save game? (leave blank to cancel):");
     if (!fileName) {
@@ -317,7 +401,7 @@ const TextAdventureEngine = (() => {
     try {
       const saveData = JSON.parse(pathInfo.node.content);
       player = saveData.player;
-      for(const id in saveData.itemStates) {
+      for (const id in saveData.itemStates) {
         if (adventure.items[id]) {
           adventure.items[id].location = saveData.itemStates[id].location;
           if (saveData.itemStates[id].state) {
@@ -336,26 +420,35 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Displays the description of the current room.
+   * @private
+   */
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
-    if(!room) {
+    if (!room) {
       TextAdventureModal.appendOutput("Error: You are in an unknown void!", 'error');
       return;
     }
     TextAdventureModal.appendOutput(`\n--- ${room.name} ---`, 'room-name');
     TextAdventureModal.appendOutput(room.description, 'room-desc');
     const roomItems = _getItemsInRoom(player.currentLocation);
-    if(roomItems.length > 0) {
+    if (roomItems.length > 0) {
       TextAdventureModal.appendOutput("You see here: " + roomItems.map(item => adventure.items[item.id].name).join(", ") + ".", 'items');
     }
     const exitNames = Object.keys(room.exits || {});
-    if(exitNames.length > 0) {
+    if (exitNames.length > 0) {
       TextAdventureModal.appendOutput("Exits: " + exitNames.join(", ") + ".", 'exits');
     } else {
       TextAdventureModal.appendOutput("There are no obvious exits.", 'exits');
     }
   }
 
+  /**
+   * Handles the 'use' command logic.
+   * @private
+   * @param {string} target - The full argument string for the 'use' command.
+   */
   function _handleUse(target) {
     const parts = target.split(/ on | with /);
     const itemName = parts[0]?.trim();
@@ -394,6 +487,11 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Handles the 'look' command logic.
+   * @private
+   * @param {string} target - The item or area to look at.
+   */
   function _handleLook(target) {
     if (!target || target === 'room' || target === 'around') {
       _displayCurrentRoom();
@@ -425,6 +523,12 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Handles the 'open' and 'close' command logic.
+   * @private
+   * @param {string} action - The action to perform ('open' or 'close').
+   * @param {string} targetName - The name of the item to open/close.
+   */
   function _handleOpen(action, targetName) {
     if (!targetName) {
       TextAdventureModal.appendOutput(`What do you want to ${action}?`, 'error');
@@ -468,7 +572,11 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  /** @param {Item} container */
+  /**
+   * Displays the contents of a container item.
+   * @private
+   * @param {Item} container - The container item to look inside.
+   */
   function _lookInContainer(container) {
     const itemsInside = _getItemsInContainer(container.id);
     if (itemsInside.length > 0) {
@@ -479,6 +587,12 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Gets all items located within a specific container.
+   * @private
+   * @param {string} containerId - The ID of the container item.
+   * @returns {Item[]} An array of items inside the container.
+   */
   function _getItemsInContainer(containerId) {
     /** @type {Item[]} */
     const items = [];
@@ -490,6 +604,11 @@ const TextAdventureEngine = (() => {
     return items;
   }
 
+  /**
+   * Handles the 'go' command logic.
+   * @private
+   * @param {string} direction - The direction the player wants to move.
+   */
   function _handleGo(direction) {
     const room = adventure.rooms[player.currentLocation];
     if (room.exits && room.exits[direction]) {
@@ -522,6 +641,11 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Handles the 'take' command logic.
+   * @private
+   * @param {string} itemName - The name of the item to take.
+   */
   function _handleTake(itemName) {
     const item = _findItemByName(itemName, player.currentLocation);
     if (item) {
@@ -537,6 +661,11 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Handles the 'drop' command logic.
+   * @private
+   * @param {string} itemName - The name of the item to drop.
+   */
   function _handleDrop(itemName) {
     const item = _findItemInInventory(itemName);
     if (item) {
@@ -548,6 +677,10 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Handles the 'inventory' command logic.
+   * @private
+   */
   function _handleInventory() {
     if (player.inventory.length === 0) {
       TextAdventureModal.appendOutput("You are not carrying anything.", 'info');
@@ -557,6 +690,10 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * Displays the help text for game commands.
+   * @private
+   */
   function _handleHelp() {
     TextAdventureModal.appendOutput("\nAvailable commands:", 'system');
     TextAdventureModal.appendOutput("  look [target] - Describes the room or an item.", 'system');
@@ -574,9 +711,11 @@ const TextAdventureEngine = (() => {
   }
 
   /**
-   * @param {string} name
-   * @param {string | null} locationId
-   * @returns {Item | null}
+   * Finds an item by name in a given location or in open containers within that location.
+   * @private
+   * @param {string} name - The name of the item to find.
+   * @param {string | null} locationId - The ID of the location to search in.
+   * @returns {Item | null} The found item object or null.
    */
   function _findItemByName(name, locationId = null) {
     for (const id in adventure.items) {
@@ -585,7 +724,6 @@ const TextAdventureEngine = (() => {
         if (item.location === locationId) {
           return item;
         }
-        // Check if item is inside an open container in the current location
         const container = adventure.items[item.location];
         if (container && container.location === locationId && container.isContainer && container.state === 'open') {
           return item;
@@ -596,8 +734,10 @@ const TextAdventureEngine = (() => {
   }
 
   /**
-   * @param {string} name
-   * @returns {Item | null}
+   * Finds an item by name within the player's inventory.
+   * @private
+   * @param {string} name - The name of the item to find.
+   * @returns {Item | null} The found item object or null.
    */
   function _findItemInInventory(name) {
     const itemId = player.inventory.find(id => adventure.items[id].name.toLowerCase() === name.toLowerCase());
@@ -605,8 +745,10 @@ const TextAdventureEngine = (() => {
   }
 
   /**
-   * @param {string} roomId
-   * @returns {Item[]}
+   * Gets all items directly located in a specific room.
+   * @private
+   * @param {string} roomId - The ID of the room.
+   * @returns {Item[]} An array of items in the room.
    */
   function _getItemsInRoom(roomId) {
     /** @type {Item[]} */
@@ -619,6 +761,10 @@ const TextAdventureEngine = (() => {
     return itemsInRoom;
   }
 
+  /**
+   * Checks if the win condition for the game has been met.
+   * @private
+   */
   function _checkWinConditions() {
     const winCondition = adventure.winCondition;
     if (!winCondition) return;
@@ -647,29 +793,48 @@ const TextAdventureEngine = (() => {
 window.sampleAdventure = {
   "title": "The Test Chamber",
   "startingRoomId": "hallway",
-  "winCondition": {"type": "itemInRoom", "itemId": "trophy", "roomId": "throne_room"},
+  "winCondition": {
+    "type": "itemInRoom",
+    "itemId": "trophy",
+    "roomId": "throne_room"
+  },
   "winMessage": "You place the trophy on the throne. You have won the test!",
   "rooms": {
     "hallway": {
-      "id": "hallway", "name": "Stone Hallway",
+      "id": "hallway",
+      "name": "Stone Hallway",
       "description": "A dusty hallway. A heavy oak door is to the north.",
-      "exits": {"north": "oak_door"}
+      "exits": {
+        "north": "oak_door"
+      }
     },
     "throne_room": {
-      "id": "throne_room", "name": "Throne Room",
+      "id": "throne_room",
+      "name": "Throne Room",
       "description": "A grand room with a single throne.",
       "exits": {}
     }
   },
   "items": {
     "rusty_key": {
-      "id": "rusty_key", "name": "rusty key", "location": "hallway"
+      "id": "rusty_key",
+      "name": "rusty key",
+      "location": "hallway"
     },
     "oak_door": {
-      "id": "oak_door", "name": "oak door", "location": "hallway",
-      "isOpenable": true, "state": "locked", "unlocksWith": "rusty_key",
-      "leadsTo": "throne_room", "canTake": false
+      "id": "oak_door",
+      "name": "oak door",
+      "location": "hallway",
+      "isOpenable": true,
+      "state": "locked",
+      "unlocksWith": "rusty_key",
+      "leadsTo": "throne_room",
+      "canTake": false
     },
-    "trophy": { "id": "trophy", "name": "shiny trophy", "location": "player" }
+    "trophy": {
+      "id": "trophy",
+      "name": "shiny trophy",
+      "location": "player"
+    }
   }
 };
