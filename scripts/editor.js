@@ -1,11 +1,13 @@
 /**
  * @file Manages the entire lifecycle and functionality of the OopisOS full-screen text editor.
+ * This file contains all modules related to the editor, including its configuration,
+ * UI management, utility functions, and the main state controller.
  * @author Andrew Edmark
  * @author Gemini
  * @see EditorManager
  */
 
-/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, StorageManager */
+/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, StorageManager, AppLayerManager */
 
 /**
  * @module EditorAppConfig
@@ -17,9 +19,6 @@ const EditorAppConfig = {
    * @property {object} EDITOR - Configuration settings specific to the editor's behavior.
    * @property {number} EDITOR.DEBOUNCE_DELAY_MS - Delay in milliseconds for debouncing preview rendering.
    * @property {string} EDITOR.TAB_REPLACEMENT - The string to insert when the Tab key is pressed.
-   * @property {string} EDITOR.CTRL_S_ACTION - Action identifier for the Ctrl+S key combination.
-   * @property {string} EDITOR.CTRL_O_ACTION - Action identifier for the Ctrl+O key combination.
-   * @property {string} EDITOR.CTRL_P_ACTION - Action identifier for the Ctrl+P key combination.
    * @property {string} EDITOR.DEFAULT_MODE - The default editor mode if none can be determined from the file extension.
    * @property {object} EDITOR.MODES - Enumeration of available editor modes.
    * @property {object} EDITOR.EXTENSIONS_MAP - A map of file extensions to their corresponding editor modes.
@@ -30,9 +29,6 @@ const EditorAppConfig = {
   EDITOR: {
     DEBOUNCE_DELAY_MS: 250,
     TAB_REPLACEMENT: "    ",
-    CTRL_S_ACTION: "save_exit",
-    CTRL_O_ACTION: "exit_no_save",
-    CTRL_P_ACTION: "toggle_preview",
     DEFAULT_MODE: "text",
     MODES: {
       TEXT: "text",
@@ -89,7 +85,7 @@ const EditorUtils = (() => {
    */
   function determineMode(filePath) {
     const extension = Utils.getFileExtension(filePath);
-    return(EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
+    return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
   }
 
   /**
@@ -100,22 +96,22 @@ const EditorUtils = (() => {
    */
   function getPreviewStylingCSS(isHtmlMode = false) {
     let baseStyles = `
-                    body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #fff; color: #333; }
-                    pre { white-space: pre-wrap; word-break: break-word; }
-                `;
-    if(isHtmlMode) {
-      return(`html { height: 100%; width: 100%; margin: 0; padding: 0; box-sizing: border-box; background-color: #fff; } ` + `body { height: 100%; width: 100%; margin: 0; padding: 15px;  box-sizing: border-box; overflow: auto; ` + `font-family: sans-serif; color: #333; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; } ` + `pre { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; }`);
+            body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #fff; color: #333; }
+            pre { white-space: pre-wrap; word-break: break-word; }
+        `;
+    if (isHtmlMode) {
+      return (`html { height: 100%; width: 100%; margin: 0; padding: 0; box-sizing: border-box; background-color: #fff; } ` + `body { height: 100%; width: 100%; margin: 0; padding: 15px;  box-sizing: border-box; overflow: auto; ` + `font-family: sans-serif; color: #333; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; } ` + `pre { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; }`);
     }
-    return(baseStyles + `
-                    .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1em; margin-bottom: 0.5em; }
-                    .markdown-preview p { margin-bottom: 0.5em; line-height: 1.5; }
-                    .markdown-preview code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937; }
-                    .markdown-preview pre { background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px;}
-                    .markdown-preview pre > code { display: block; padding: 0; }
-                    .markdown-preview ul, .markdown-preview ol { margin-left: 20px; margin-bottom: 0.5em;}
-                    .markdown-preview blockquote { border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280; }
-                    .markdown-preview a { color: #0ea5e9; text-decoration: underline; }
-                `);
+    return (baseStyles + `
+            .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1em; margin-bottom: 0.5em; }
+            .markdown-preview p { margin-bottom: 0.5em; line-height: 1.5; }
+            .markdown-preview code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937; }
+            .markdown-preview pre { background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px;}
+            .markdown-preview pre > code { display: block; padding: 0; }
+            .markdown-preview ul, .markdown-preview ol { margin-left: 20px; margin-bottom: 0.5em;}
+            .markdown-preview blockquote { border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280; }
+            .markdown-preview a { color: #0ea5e9; text-decoration: underline; }
+        `);
   }
 
   /**
@@ -132,19 +128,19 @@ const EditorUtils = (() => {
     let currentLineNum = 0;
     let currentColNum = 0;
     let charCounter = 0;
-    for(let i = 0; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const lineLengthWithNewline = lines[i].length + 1;
-      if(selectionStart >= charCounter && selectionStart < charCounter + lineLengthWithNewline) {
+      if (selectionStart >= charCounter && selectionStart < charCounter + lineLengthWithNewline) {
         currentLineNum = i;
         currentColNum = selectionStart - charCounter;
         break;
       }
       charCounter += lineLengthWithNewline;
     }
-    if(selectionStart === text.length && !text.endsWith("\n")) {
+    if (selectionStart === text.length && !text.endsWith("\n")) {
       currentLineNum = lines.length - 1;
       currentColNum = lines[lines.length - 1].length;
-    } else if(selectionStart === text.length && text.endsWith("\n")) {
+    } else if (selectionStart === text.length && text.endsWith("\n")) {
       currentLineNum = lines.length - 1;
       currentColNum = 0;
     }
@@ -401,9 +397,6 @@ const EditorUI = (() => {
       textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview | Ctrl+Z: Undo | Ctrl+Y/Ctrl+Shift+Z: Redo`,
     });
 
-    // --- DEFINITIVE FIX START ---
-    // The editor container is now built with explicit inline styles to ensure it behaves
-    // like a proper modal panel, respecting viewport boundaries.
     elements.editorContainer = Utils.createElement("div", {
       id: "editor-container",
       style: {
@@ -419,7 +412,6 @@ const EditorUI = (() => {
         boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.4)',
       },
     }, elements.controlsDiv, elements.mainArea, elements.statusBar, elements.instructionsFooter);
-    // --- DEFINITIVE FIX END ---
 
     return elements.editorContainer;
   }
@@ -429,8 +421,8 @@ const EditorUI = (() => {
    * @param {boolean} visible - If true, the gutter is shown; otherwise, it's hidden.
    */
   function setGutterVisibility(visible) {
-    if(elements.lineGutter) {
-      if(visible) {
+    if (elements.lineGutter) {
+      if (visible) {
         elements.lineGutter.classList.remove(GUTTER_WRAP_HIDDEN_CLASS);
       } else {
         elements.lineGutter.classList.add(GUTTER_WRAP_HIDDEN_CLASS);
@@ -442,12 +434,9 @@ const EditorUI = (() => {
    * Removes the editor layout from the DOM and resets its state.
    */
   function destroyLayout() {
-    if(elements.editorContainer && elements.editorContainer.parentNode) {
-      elements.editorContainer.parentNode.removeChild(elements.editorContainer);
-    }
-    if(previewDebounceTimer) clearTimeout(previewDebounceTimer);
+    if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     previewDebounceTimer = null;
-    const newElementsToClear = ['formattingToolbar', 'boldButton', 'italicButton', 'linkButton', 'quoteButton', 'codeButton', 'codeBlockButton', 'ulButton', 'olButton', 'exitButton', 'undoButton', 'redoButton']; // ADDED undo/redo to clear list
+    const newElementsToClear = ['formattingToolbar', 'boldButton', 'italicButton', 'linkButton', 'quoteButton', 'codeButton', 'codeBlockButton', 'ulButton', 'olButton', 'exitButton', 'undoButton', 'redoButton'];
     newElementsToClear.forEach(elName => {
       elements[elName] = null;
     });
@@ -460,7 +449,7 @@ const EditorUI = (() => {
    * @param {boolean} isDirty - Whether the file has unsaved changes.
    */
   function updateFilenameDisplay(filePath, isDirty) {
-    if(elements.filenameDisplay) {
+    if (elements.filenameDisplay) {
       elements.filenameDisplay.textContent = `File: ${filePath || "Untitled"}${isDirty ? "*" : ""}`;
     }
   }
@@ -471,12 +460,12 @@ const EditorUI = (() => {
    * @param {number} selectionStart - The starting position of the cursor/selection.
    */
   function updateStatusBar(text, selectionStart) {
-    if(!elements.textarea || !elements.statusBar) return;
+    if (!elements.textarea || !elements.statusBar) return;
     const stats = EditorUtils.calculateStatusBarInfo(text, selectionStart);
-    if(elements.statusBarLineCount) elements.statusBarLineCount.textContent = `Lines: ${stats.lines}`;
-    if(elements.statusBarWordCount) elements.statusBarWordCount.textContent = `Words: ${stats.words} `; // Added space here
-    if(elements.statusBarCharCount) elements.statusBarCharCount.textContent = `Chars: ${stats.chars}`;
-    if(elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col} `; // Added space here
+    if (elements.statusBarLineCount) elements.statusBarLineCount.textContent = `Lines: ${stats.lines}`;
+    if (elements.statusBarWordCount) elements.statusBarWordCount.textContent = `Words: ${stats.words} `;
+    if (elements.statusBarCharCount) elements.statusBarCharCount.textContent = `Chars: ${stats.chars}`;
+    if (elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col} `;
   }
 
   /**
@@ -484,7 +473,7 @@ const EditorUI = (() => {
    * @param {string} text - The full text content of the editor.
    */
   function updateLineNumbers(text) {
-    if(!elements.textarea || !elements.lineGutter) return;
+    if (!elements.textarea || !elements.lineGutter) return;
     const numbersArray = EditorUtils.generateLineNumbersArray(text);
     elements.lineGutter.textContent = numbersArray.join("\n");
     elements.lineGutter.scrollTop = elements.textarea.scrollTop;
@@ -494,7 +483,7 @@ const EditorUI = (() => {
    * Synchronizes the scroll position of the line gutter with the textarea.
    */
   function syncLineGutterScroll() {
-    if(elements.lineGutter && elements.textarea) {
+    if (elements.lineGutter && elements.textarea) {
       elements.lineGutter.scrollTop = elements.textarea.scrollTop;
     }
   }
@@ -504,7 +493,7 @@ const EditorUI = (() => {
    * @param {string} text - The content to set.
    */
   function setTextareaContent(text) {
-    if(elements.textarea) elements.textarea.value = text;
+    if (elements.textarea) elements.textarea.value = text;
   }
 
   /**
@@ -519,7 +508,7 @@ const EditorUI = (() => {
    * Sets focus to the main textarea.
    */
   function setEditorFocus() {
-    if(elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains(EditorAppConfig.CSS_CLASSES.HIDDEN)) {
+    if (elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains(EditorAppConfig.CSS_CLASSES.HIDDEN)) {
       elements.textarea.focus();
     }
   }
@@ -529,7 +518,7 @@ const EditorUI = (() => {
    * @returns {{start: number, end: number}} The selection object.
    */
   function getTextareaSelection() {
-    if(elements.textarea) {
+    if (elements.textarea) {
       return {
         start: elements.textarea.selectionStart,
         end: elements.textarea.selectionEnd
@@ -547,7 +536,7 @@ const EditorUI = (() => {
    * @param {number} end - The ending position of the selection.
    */
   function setTextareaSelection(start, end) {
-    if(elements.textarea) {
+    if (elements.textarea) {
       elements.textarea.selectionStart = start;
       elements.textarea.selectionEnd = end;
     }
@@ -558,8 +547,8 @@ const EditorUI = (() => {
    * @param {boolean} isWordWrapActive - The desired word wrap state.
    */
   function applyTextareaWordWrap(isWordWrapActive) {
-    if(!elements.textarea) return;
-    if(isWordWrapActive) {
+    if (!elements.textarea) return;
+    if (isWordWrapActive) {
       elements.textarea.setAttribute("wrap", "soft");
       elements.textarea.classList.remove("no-wrap");
     } else {
@@ -574,8 +563,8 @@ const EditorUI = (() => {
    * @param {string} currentFileMode - The current mode of the editor.
    */
   function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
-    if(!elements.previewPane) return;
-    if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+    if (!elements.previewPane) return;
+    if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
       elements.previewPane.classList.toggle("word-wrap-enabled", isWordWrapActive);
     }
   }
@@ -585,7 +574,7 @@ const EditorUI = (() => {
    * @param {boolean} isWordWrapActive - The current word wrap state.
    */
   function updateWordWrapButtonText(isWordWrapActive) {
-    if(elements.wordWrapToggleButton) {
+    if (elements.wordWrapToggleButton) {
       elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
     }
   }
@@ -595,11 +584,11 @@ const EditorUI = (() => {
    * @returns {string} The HTML content of the preview pane.
    */
   function getPreviewPaneHTML() {
-    if(elements.previewPane) {
+    if (elements.previewPane) {
       const iframe = elements.previewPane.querySelector("iframe");
-      if(iframe && iframe.srcdoc) {
+      if (iframe && iframe.srcdoc) {
         const match = iframe.srcdoc.match(/<body>([\s\S]*)<\/body>/i);
-        if(match && match[1]) return match[1];
+        if (match && match[1]) return match[1];
         return iframe.srcdoc;
       }
       return elements.previewPane.innerHTML;
@@ -614,34 +603,34 @@ const EditorUI = (() => {
    * @param {boolean} isWordWrapActive - The current word wrap state.
    */
   function renderPreview(content, currentFileMode, isWordWrapActive) {
-    if(!elements.previewPane) return;
-    if(currentFileMode !== EditorAppConfig.EDITOR.MODES.MARKDOWN && currentFileMode !== EditorAppConfig.EDITOR.MODES.HTML) {
+    if (!elements.previewPane) return;
+    if (currentFileMode !== EditorAppConfig.EDITOR.MODES.MARKDOWN && currentFileMode !== EditorAppConfig.EDITOR.MODES.HTML) {
       elements.previewPane.innerHTML = "";
       return;
     }
-    if(previewDebounceTimer) clearTimeout(previewDebounceTimer);
+    if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     previewDebounceTimer = setTimeout(() => {
-      if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
-        if(typeof marked !== "undefined") {
-          // --- SECURITY HARDENING: ADDED SANITIZE OPTION ---
-          elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
+      if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+        if (typeof marked !== "undefined") {
+          elements.previewPane.innerHTML = marked.parse(content, {
+            sanitize: true
+          });
         } else {
           elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
         }
         applyPreviewWordWrap(isWordWrapActive, currentFileMode);
-      } else if(currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+      } else if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
         let iframe = elements.previewPane.querySelector("iframe");
-        if(!iframe) {
-          // --- SECURITY HARDENING: ADDED SANDBOX ATTRIBUTE ---
+        if (!iframe) {
           iframe = Utils.createElement("iframe", {
             className: "w-full h-full border-none bg-white",
-            sandbox: "" // An empty sandbox attribute applies the most restrictions
+            sandbox: ""
           });
           elements.previewPane.innerHTML = "";
           elements.previewPane.appendChild(iframe);
         }
         let injectedStyles = "";
-        if(isWordWrapActive) {
+        if (isWordWrapActive) {
           injectedStyles = `<style> pre { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; } body { word-wrap: break-word; overflow-wrap: break-word; } </style>`;
         }
         iframe.srcdoc = `${injectedStyles}<style>${EditorUtils.getPreviewStylingCSS(true)}</style>${content}`;
@@ -657,12 +646,10 @@ const EditorUI = (() => {
    * @param {boolean} isWordWrapActive - The current word wrap state.
    */
   function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
-    // Guard clause: ensure all required elements exist.
     if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) {
       return;
     }
 
-    // Perform initial UI setup that's common to all modes.
     elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
     if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
       applyPreviewWordWrap(isWordWrapActive, currentFileMode);
@@ -671,19 +658,43 @@ const EditorUI = (() => {
     elements.exportPreviewButton.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isPreviewable);
     elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "1px solid #404040" : "none";
 
-    // Configuration map for different view modes.
     const viewConfigs = {
-      [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]:       { text: "Edit Only",    gutter: true,  editor: true,  editorFlex: "1", preview: true,  previewFlex: "1" },
-      [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]:   { text: "Preview Only", gutter: true,  editor: true,  editorFlex: "1", preview: false, previewFlex: "0" },
-      [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]:{ text: "Split View",   gutter: false, editor: false, editorFlex: "0", preview: true,  previewFlex: "1" },
-      // Define a configuration for the non-previewable state.
-      noPreview:                                     { text: "Split View",   gutter: true,  editor: true,  editorFlex: "1", preview: false, previewFlex: "0" }
+      [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: {
+        text: "Edit Only",
+        gutter: true,
+        editor: true,
+        editorFlex: "1",
+        preview: true,
+        previewFlex: "1"
+      },
+      [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: {
+        text: "Preview Only",
+        gutter: true,
+        editor: true,
+        editorFlex: "1",
+        preview: false,
+        previewFlex: "0"
+      },
+      [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: {
+        text: "Split View",
+        gutter: false,
+        editor: false,
+        editorFlex: "0",
+        preview: true,
+        previewFlex: "1"
+      },
+      noPreview: {
+        text: "Split View",
+        gutter: true,
+        editor: true,
+        editorFlex: "1",
+        preview: false,
+        previewFlex: "0"
+      }
     };
 
-    // Select the appropriate configuration based on whether the file is previewable.
     const config = isPreviewable ? viewConfigs[viewMode] : viewConfigs.noPreview;
 
-    // Apply the selected configuration to the UI elements.
     if (config) {
       elements.viewToggleButton.textContent = config.text;
       elements.lineGutter.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.gutter);
@@ -770,12 +781,12 @@ const EditorManager = (() => {
    * @private
    */
   function _toggleWordWrap() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     isWordWrapActive = !isWordWrapActive;
     _saveWordWrapSetting();
     EditorUI.applyTextareaWordWrap(isWordWrapActive);
     EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
-    if(currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+    if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
     }
     EditorUI.updateWordWrapButtonText(isWordWrapActive);
@@ -788,13 +799,13 @@ const EditorManager = (() => {
    * @private
    */
   function _updateFullEditorUI() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
     const textContent = EditorUI.getTextareaContent();
     EditorUI.updateLineNumbers(textContent);
     const selection = EditorUI.getTextareaSelection();
     EditorUI.updateStatusBar(textContent, selection.start);
-    if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+    if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
     }
   }
@@ -804,7 +815,7 @@ const EditorManager = (() => {
    * @private
    */
   function _handleEditorInput() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     const currentContent = EditorUI.getTextareaContent();
 
     if (saveUndoStateTimeout) {
@@ -824,7 +835,7 @@ const EditorManager = (() => {
    * @private
    */
   function _handleEditorScroll() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     EditorUI.syncLineGutterScroll();
   }
 
@@ -833,7 +844,7 @@ const EditorManager = (() => {
    * @private
    */
   function _handleEditorSelectionChange() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     const textContent = EditorUI.getTextareaContent();
     const selection = EditorUI.getTextareaSelection();
     EditorUI.updateStatusBar(textContent, selection.start);
@@ -845,18 +856,18 @@ const EditorManager = (() => {
    * @async
    */
   async function exportPreviewAsHtml() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     let contentToExport
     let baseFilename = "preview";
-    if(currentFilePath) {
+    if (currentFilePath) {
       baseFilename = currentFilePath.substring(currentFilePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
       const dotIndex = baseFilename.lastIndexOf(".");
-      if(dotIndex > 0) baseFilename = baseFilename.substring(0, dotIndex);
+      if (dotIndex > 0) baseFilename = baseFilename.substring(0, dotIndex);
     }
     const downloadFilename = `${baseFilename}_preview.html`;
-    if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+    if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
       contentToExport = EditorUI.getPreviewPaneHTML();
-    } else if(currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+    } else if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       contentToExport = EditorUI.getTextareaContent();
     } else {
       const textContent = EditorUI.getTextareaContent();
@@ -864,7 +875,7 @@ const EditorManager = (() => {
     }
     const styles = EditorUtils.getPreviewStylingCSS(currentFileMode === EditorAppConfig.EDITOR.MODES.HTML);
     let injectedWordWrapStyles = "";
-    if(isWordWrapActive && currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+    if (isWordWrapActive && currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       injectedWordWrapStyles = `pre { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; } body { word-wrap: break-word; overflow-wrap: break-word; }`;
     }
     const htmlDoc = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>OopisOS Editor Preview - ${currentFilePath || "Untitled"}</title><style>${styles}${injectedWordWrapStyles}</style></head><body><div class="${currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN ? "markdown-preview" : ""}">${contentToExport}</div></body></html>`;
@@ -884,7 +895,7 @@ const EditorManager = (() => {
       await OutputManager.appendToOutput(`Preview exported as '${downloadFilename}'`, {
         typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
       });
-    } catch(error) {
+    } catch (error) {
       console.error("Error exporting preview:", error);
       await OutputManager.appendToOutput(`Error exporting preview: ${error.message}`, {
         typeClass: Config.CSS_CLASSES.ERROR_MSG
@@ -964,7 +975,7 @@ const EditorManager = (() => {
    * @private
    */
   function _applyTextManipulation(type) {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     const selection = EditorUI.getTextareaSelection();
     const currentFullText = EditorUI.getTextareaContent();
     const textBeforeSelection = currentFullText.substring(0, selection.start);
@@ -980,7 +991,7 @@ const EditorManager = (() => {
         placeholder = "";
     let modifiedSegment = "";
     const applyToLines = (text, linePrefixTransform) => text.split('\n').map((line, index) => (typeof linePrefixTransform === 'function' ? linePrefixTransform(index) : linePrefixTransform) + line).join('\n');
-    switch(type) {
+    switch (type) {
       case 'bold':
         prefix = isMarkdown ? "**" : "<strong>";
         suffix = isMarkdown ? "**" : "</strong>";
@@ -993,18 +1004,18 @@ const EditorManager = (() => {
         break;
       case 'link':
         const url = prompt("Enter URL:", "https://");
-        if(url === null) return;
+        if (url === null) return;
         let linkDisplayText = selectedTextVal || prompt("Enter link text (optional):", "link text");
-        if(linkDisplayText === null) return;
+        if (linkDisplayText === null) return;
         modifiedSegment = isMarkdown ? `[${linkDisplayText}](${url})` : (isHTML ? `<a href="${url}">${linkDisplayText}</a>` : null);
-        if(modifiedSegment === null) return;
+        if (modifiedSegment === null) return;
         finalSelectionStart = textBeforeSelection.length + (isMarkdown ? 1 : `<a href="${url}">`.length);
         finalSelectionEnd = finalSelectionStart + linkDisplayText.length;
         break;
       case 'quote':
         placeholder = "Quoted text";
         modifiedSegment = isMarkdown ? applyToLines(selectedTextVal || placeholder, "> ") : (isHTML ? `<blockquote>\n  ${selectedTextVal || placeholder}\n</blockquote>` : null);
-        if(modifiedSegment === null) return;
+        if (modifiedSegment === null) return;
         finalSelectionStart = selection.start;
         finalSelectionEnd = selection.start + modifiedSegment.length;
         break;
@@ -1016,11 +1027,11 @@ const EditorManager = (() => {
       case 'codeblock':
         placeholder = "source code";
         let lang = "";
-        if(isMarkdown) {
+        if (isMarkdown) {
           lang = prompt("Enter language for code block (optional):", "");
           modifiedSegment = "```" + lang + "\n" + (selectedTextVal || placeholder) + "\n```";
           finalSelectionStart = textBeforeSelection.length + ("```" + lang + "\n").length;
-        } else if(isHTML) {
+        } else if (isHTML) {
           modifiedSegment = "<pre><code>\n" + (selectedTextVal || placeholder) + "\n</code></pre>";
           finalSelectionStart = textBeforeSelection.length + "<pre><code>\n".length;
         } else return;
@@ -1030,9 +1041,9 @@ const EditorManager = (() => {
       case 'ol':
         placeholder = "List item";
         const items = (selectedTextVal || placeholder).split('\n');
-        if(isMarkdown) {
+        if (isMarkdown) {
           modifiedSegment = items.map((line, index) => (type === 'ol' ? `${index + 1}. ` : "- ") + line).join('\n');
-        } else if(isHTML) {
+        } else if (isHTML) {
           const listTag = type === 'ol' ? "ol" : "ul";
           modifiedSegment = `<${listTag}>\n` + items.map(line => `  <li>${line}</li>`).join('\n') + `\n</${listTag}>`;
         } else return;
@@ -1042,8 +1053,8 @@ const EditorManager = (() => {
       default:
         return;
     }
-    if(type !== 'link' && type !== 'quote' && type !== 'codeblock' && type !== 'ul' && type !== 'ol') {
-      if(!selectedTextVal) selectedTextVal = placeholder;
+    if (type !== 'link' && type !== 'quote' && type !== 'codeblock' && type !== 'ul' && type !== 'ol') {
+      if (!selectedTextVal) selectedTextVal = placeholder;
       modifiedSegment = prefix + selectedTextVal + suffix;
       finalSelectionStart = selection.start + prefix.length;
       finalSelectionEnd = finalSelectionStart + selectedTextVal.length;
@@ -1060,11 +1071,11 @@ const EditorManager = (() => {
    * @private
    */
   function _toggleViewModeHandler() {
-    if(!isActiveState) return;
+    if (!isActiveState) return;
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
-    if(!isPreviewable) return;
-    if(currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
-    else if(currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY;
+    if (!isPreviewable) return;
+    if (currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
+    else if (currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY;
     else currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT;
     EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
     EditorUI.setEditorFocus();
@@ -1077,7 +1088,7 @@ const EditorManager = (() => {
    * @param {function(string): Promise<void> | null} [callback=null] - An optional async callback to run after a successful save.
    */
   function enter(filePath, content, callback = null) {
-    if(isActiveState) {
+    if (isActiveState) {
       void OutputManager.appendToOutput("Editor already active.", {
         typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
       });
@@ -1086,10 +1097,6 @@ const EditorManager = (() => {
     _loadWordWrapSetting();
     isActiveState = true;
     OutputManager.setEditorActive(true);
-    if(DOM.outputDiv) DOM.outputDiv.classList.add(EditorAppConfig.CSS_CLASSES.HIDDEN);
-    else console.error("[EditorManager.enter] DOM.outputDiv is null!");
-    if(DOM.inputLineContainerDiv) DOM.inputLineContainerDiv.classList.add(EditorAppConfig.CSS_CLASSES.HIDDEN);
-    else console.error("[EditorManager.enter] DOM.inputLineContainerDiv is null!");
     TerminalUI.setInputState(false);
     currentFilePath = filePath;
     currentFileMode = EditorUtils.determineMode(filePath);
@@ -1104,7 +1111,6 @@ const EditorManager = (() => {
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     document.addEventListener('keydown', handleKeyDown);
 
-    // --- MODIFICATION START: Decouple UI creation from DOM insertion ---
     const editorCallbacks = {
       onInput: _handleEditorInput.bind(this),
       onScroll: _handleEditorScroll.bind(this),
@@ -1127,7 +1133,6 @@ const EditorManager = (() => {
 
     const editorElement = EditorUI.buildLayout(editorCallbacks);
     AppLayerManager.show(editorElement);
-    // --- MODIFICATION END ---
 
     EditorUI.setGutterVisibility(!isWordWrapActive);
     currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
@@ -1149,25 +1154,17 @@ const EditorManager = (() => {
    */
   async function _performExitActions() {
     document.removeEventListener('keydown', handleKeyDown);
-    AppLayerManager.hide();
+    AppLayerManager.hide(); // Use AppLayerManager to hide the editor
     EditorUI.destroyLayout();
     isActiveState = false;
     currentFilePath = null;
     currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
     isDirty = false;
     originalContent = "";
-    onSaveCallback = null; // Reset the on-save callback
-
+    onSaveCallback = null;
     undoStack = [];
     redoStack = [];
     saveUndoStateTimeout = null;
-
-    if(DOM.outputDiv) DOM.outputDiv.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-    if(DOM.inputLineContainerDiv) DOM.inputLineContainerDiv.classList.remove(EditorAppConfig.CSS_CLASSES.HIDDEN);
-    TerminalUI.setInputState(true);
-    if(DOM.outputDiv) DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
-    TerminalUI.focusInput();
-    TerminalUI.updatePrompt();
   }
 
   /**
@@ -1216,17 +1213,24 @@ const EditorManager = (() => {
       const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
 
       if (!primaryGroup) {
-        await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+        await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, {
+          typeClass: Config.CSS_CLASSES.ERROR_MSG
+        });
         saveSuccess = false;
       } else {
         const saveResult = await FileSystemManager.createOrUpdateFile(
             currentFilePath,
-            newContent,
-            { currentUser, primaryGroup, existingNode }
+            newContent, {
+              currentUser,
+              primaryGroup,
+              existingNode
+            }
         );
 
         if (!saveResult.success) {
-          await OutputManager.appendToOutput(`Error saving '${currentFilePath}': ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+          await OutputManager.appendToOutput(`Error saving '${currentFilePath}': ${saveResult.error}`, {
+            typeClass: Config.CSS_CLASSES.ERROR_MSG
+          });
           saveSuccess = false;
         }
       }
@@ -1271,8 +1275,8 @@ const EditorManager = (() => {
    * @async
    */
   async function handleKeyDown(event) {
-    if(!isActiveState) return;
-    if(event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
+    if (!isActiveState) return;
+    if (event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
       event.preventDefault();
       const selection = EditorUI.getTextareaSelection();
       const content = EditorUI.getTextareaContent();
@@ -1281,8 +1285,8 @@ const EditorManager = (() => {
       _handleEditorInput();
       return;
     }
-    if(event.ctrlKey) {
-      switch(event.key.toLowerCase()) {
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key.toLowerCase()) {
         case "s":
           event.preventDefault();
           await exit(true);
@@ -1296,13 +1300,13 @@ const EditorManager = (() => {
           _toggleViewModeHandler();
           break;
         case "b":
-          if(currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+          if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             event.preventDefault();
             _applyTextManipulation('bold');
           }
           break;
         case "i":
-          if(!event.shiftKey && (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML)) {
+          if (!event.shiftKey && (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML)) {
             event.preventDefault();
             _applyTextManipulation('italic');
           }
@@ -1329,8 +1333,7 @@ const EditorManager = (() => {
    * @private
    */
   function _updateFormattingToolbarVisibility() {
-    if(!isActiveState || !EditorUI || !EditorUI.elements || !EditorUI.elements.formattingToolbar) {
-      console.warn("EditorManager: Formatting toolbar UI not ready.");
+    if (!isActiveState || !EditorUI || !EditorUI.elements || !EditorUI.elements.formattingToolbar) {
       return;
     }
     const isMarkdownOrHTML = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;

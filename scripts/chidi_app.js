@@ -1,18 +1,28 @@
 /**
  * @fileoverview Core application logic for Chidi.md, a modal Markdown reader and analyzer for OopisOS.
  * This file handles the UI creation, state management, Markdown rendering, and interaction with the Gemini API.
+ * It is designed to be launched by the 'chidi' command and operate within the AppLayerManager.
+ * @module ChidiApp
  */
 
 const ChidiApp = {
-    // Application state
+    /**
+     * @property {object} state - The current state of the Chidi application.
+     * @property {Array<object>} state.loadedFiles - Array of file objects ({name, path, content}) loaded into the app.
+     * @property {number} state.currentIndex - The index of the currently displayed file in the loadedFiles array.
+     * @property {boolean} state.isModalOpen - Flag indicating if the application UI is currently active.
+     * @property {boolean} state.isAskingMode - Flag indicating if the user is in the multi-file "Ask" mode.
+     */
     state: {
         loadedFiles: [],
         currentIndex: -1,
         isModalOpen: false,
-        isAskingMode: false, // State to track if user is in "Ask" mode
+        isAskingMode: false,
     },
 
-    // DOM element references
+    /**
+     * @property {Object.<string, HTMLElement>} elements - A cache of frequently accessed DOM elements.
+     */
     elements: {},
 
     /**
@@ -23,10 +33,9 @@ const ChidiApp = {
         return this.state.isModalOpen;
     },
 
-    // --- Core Application Flow ---
-
     /**
      * Launches the Chidi.md application in a modal window.
+     * This is the main entry point for the application.
      * @param {Array<object>} files - An array of file objects ({ name, path, content }) to be loaded.
      * @param {function} onExit - Callback function to execute when the application is closed.
      */
@@ -43,11 +52,10 @@ const ChidiApp = {
 
         this.injectStyles();
 
-        // REFACTORED: Use AppLayerManager
         const chidiElement = this.createModal();
         AppLayerManager.show(chidiElement);
 
-        this.cacheDOMElements(); // Must be called after element is in DOM
+        this.cacheDOMElements();
         this._populateFileDropdown();
         this.setupEventListeners();
 
@@ -61,10 +69,11 @@ const ChidiApp = {
     close() {
         if (!this.state.isModalOpen) return;
 
-        AppLayerManager.hide(); // REFACTORED: Use AppLayerManager to hide
-        this.elements.styleTag.remove();
+        AppLayerManager.hide();
+        if (this.elements.styleTag) {
+            this.elements.styleTag.remove();
+        }
 
-        // Reset state
         this.state = {
             loadedFiles: [],
             currentIndex: -1,
@@ -78,8 +87,6 @@ const ChidiApp = {
         }
     },
 
-    // --- UI and DOM Management ---
-
     /**
      * Injects the application's CSS into the document's head.
      */
@@ -92,20 +99,18 @@ const ChidiApp = {
     },
 
     /**
-     * Creates and appends the main modal structure to the terminal div.
+     * Creates the main modal element containing the application's UI.
+     * @returns {HTMLElement} The root element of the Chidi application.
      */
     createModal() {
-        // This is a new wrapper function to create the main app container
-        // without appending it to the DOM.
         const appContainer = document.createElement('div');
-        appContainer.id = 'chidi-console-panel'; // The root element from getHTML()
+        appContainer.id = 'chidi-console-panel';
         appContainer.innerHTML = this.getHTML();
-        // We now return the element instead of appending it.
         return appContainer;
     },
 
     /**
-     * Caches references to frequently used DOM elements.
+     * Caches references to frequently used DOM elements for performance.
      */
     cacheDOMElements() {
         const get = (id) => document.getElementById(id);
@@ -130,7 +135,8 @@ const ChidiApp = {
     },
 
     /**
-     * Updates the entire UI based on the current state.
+     * Updates the entire UI based on the current application state.
+     * This includes button states, titles, and the rendered Markdown content.
      */
     updateUI() {
         if (!this.state.isModalOpen) return;
@@ -208,8 +214,6 @@ const ChidiApp = {
         });
     },
 
-    // --- Event Handling ---
-
     /**
      * Sets up all necessary event listeners for the application's interactive elements.
      */
@@ -245,7 +249,12 @@ const ChidiApp = {
             const prompt = `Please provide a concise summary of the following document:\n\n---\n\n${currentFile.content}`;
             this.toggleLoader(true);
             this.showMessage("Contacting Gemini API...");
-            const summary = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
+            const summary = await this.callGeminiApi([{
+                role: 'user',
+                parts: [{
+                    text: prompt
+                }]
+            }]);
             this.toggleLoader(false);
             this.appendAiOutput("Summary", summary);
         });
@@ -260,7 +269,12 @@ const ChidiApp = {
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${currentFile.content}`;
             this.toggleLoader(true);
             this.showMessage("Contacting Gemini API...");
-            const questions = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
+            const questions = await this.callGeminiApi([{
+                role: 'user',
+                parts: [{
+                    text: prompt
+                }]
+            }]);
             this.toggleLoader(false);
             this.appendAiOutput("Suggested Questions", questions);
         });
@@ -280,8 +294,6 @@ const ChidiApp = {
             }
         });
     },
-
-    // --- Core Logic & Helpers ---
 
     /**
      * Switches the UI into question-asking mode.
@@ -309,7 +321,7 @@ const ChidiApp = {
     },
 
     /**
-     * Exits question-asking mode and reverts the UI.
+     * Exits question-asking mode and reverts the UI to its normal state.
      * @private
      */
     _exitQuestionMode() {
@@ -329,7 +341,9 @@ const ChidiApp = {
     /**
      * Submits the user's question. This implementation first finds the most relevant
      * files using a local keyword search before sending a single, focused request to the AI.
+     * This is a Retrieval-Augmented Generation (RAG) strategy.
      * @private
+     * @async
      */
     async _submitQuestion() {
         const userQuestion = this.elements.askInput.value.trim();
@@ -340,7 +354,6 @@ const ChidiApp = {
         this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
 
         try {
-            // 1. Setup: Define keywords and get the currently active file.
             const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how', 'and', 'or', 'but']);
             const questionKeywords = userQuestion.toLowerCase().split(/[\s!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~]+/).filter(word => word.length > 2 && !stopWords.has(word));
 
@@ -354,7 +367,6 @@ const ChidiApp = {
             const currentFile = this.getCurrentFile();
             const otherFiles = this.state.loadedFiles.filter(file => file.path !== currentFile.path);
 
-            // 2. Retrieval Phase: Score and sort all *other* files.
             const scoredFiles = otherFiles.map(file => {
                 let score = 0;
                 const contentLower = file.content.toLowerCase();
@@ -366,12 +378,14 @@ const ChidiApp = {
                         score += 5;
                     }
                 });
-                return { file, score };
+                return {
+                    file,
+                    score
+                };
             });
 
             scoredFiles.sort((a, b) => b.score - a.score);
 
-            // 3. Assemble final context: current file + top N-1 other files.
             const MAX_CONTEXT_FILES = 10;
             const relevantFiles = [currentFile];
             const uniquePaths = new Set([currentFile.path]);
@@ -385,7 +399,6 @@ const ChidiApp = {
 
             this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
 
-            // 4. Augmentation & Generation Phase
             let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question. Prioritize information from the first document if it is relevant, but use all provided documents to form your answer.\n\n";
             relevantFiles.forEach(file => {
                 promptContext += `--- START OF DOCUMENT: ${file.name} ---\n\n${file.content}\n\n--- END OF DOCUMENT: ${file.name} ---\n\n`;
@@ -393,7 +406,12 @@ const ChidiApp = {
 
             const finalPrompt = `${promptContext}User's Question: "${userQuestion}"`;
 
-            const finalAnswer = await this.callGeminiApi([{ role: 'user', parts: [{ text: finalPrompt }] }]);
+            const finalAnswer = await this.callGeminiApi([{
+                role: 'user',
+                parts: [{
+                    text: finalPrompt
+                }]
+            }]);
 
             const fileNames = relevantFiles.map(item => item.name).join(', ');
             this.appendAiOutput(`Answer for "${userQuestion}" (based on: ${fileNames})`, finalAnswer || "Could not generate a final answer based on the provided documents.");
@@ -465,12 +483,10 @@ const ChidiApp = {
         outputBlock.className = 'chidi-ai-output';
         outputBlock.innerHTML = marked.parse(`### ${title}\n\n${content}`);
         this.elements.markdownDisplay.appendChild(outputBlock);
-
-        // --- REVISION START ---
-        // Scroll the new block into view, aligning it to the top of the container.
-        outputBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // --- REVISION END ---
-
+        outputBlock.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
         this.showMessage(`AI Response received for "${title}".`);
     },
 
@@ -523,7 +539,9 @@ const ChidiApp = {
             </html>
         `;
 
-        const blob = new Blob([html], { type: 'text/html' });
+        const blob = new Blob([html], {
+            type: 'text/html'
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -535,13 +553,12 @@ const ChidiApp = {
         this.showMessage(`Exported view for ${currentFile.name}.`);
     },
 
-    // --- Gemini API Interaction ---
-
     /**
      * Calls the Gemini API with a given chat history.
      * Assumes API key is already present in StorageManager.
      * @param {Array<object>} chatHistory - The conversation history to send to the model.
      * @returns {Promise<string>} A promise that resolves to the model's text response.
+     * @async
      */
     async callGeminiApi(chatHistory) {
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
@@ -558,7 +575,9 @@ const ChidiApp = {
                 'Content-Type': 'application/json',
                 'x-goog-api-key': apiKey
             };
-            const payload = { contents: chatHistory };
+            const payload = {
+                contents: chatHistory
+            };
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: headers,
@@ -566,7 +585,11 @@ const ChidiApp = {
             });
 
             if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
+                const errorBody = await response.json().catch(() => ({
+                    error: {
+                        message: response.statusText
+                    }
+                }));
                 let errorMsg = `API request failed with status ${response.status}: ${errorBody.error.message}`;
                 if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
                     StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
@@ -618,8 +641,6 @@ const ChidiApp = {
         }
     },
 
-    // --- HTML and CSS Definitions ---
-
     /**
      * Returns the HTML structure for the application modal.
      * @returns {string} The HTML content as a string.
@@ -659,7 +680,7 @@ const ChidiApp = {
                     <div class="chidi-control-group">
                         <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
                         <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
-                    </div>  
+                    </div>
                 </footer>
             </div>
         `;
