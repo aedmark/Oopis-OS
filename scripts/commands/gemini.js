@@ -446,6 +446,7 @@
                 } else if (textResponse) {
                     // If AI returns a text response, add it to history and return it as command output.
                     geminiConversationHistory.push(modelResponseTurn);
+                    const formattedResponse = textResponse.replace(/\n\s*\n/g, '\n\n');
                     return { success: true, output: textResponse };
                 } else {
                     // If AI returns neither text nor function call (unexpected), remove user prompt and report error.
