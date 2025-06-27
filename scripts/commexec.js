@@ -503,6 +503,7 @@ const CommandExecutor = (() => {
       if (DOM.inputLineContainerDiv) {
         DOM.inputLineContainerDiv.classList.remove(Config.CSS_CLASSES.HIDDEN);
       }
+      TerminalUI.setInputState(true);
       TerminalUI.focusInput();
     }
     if (DOM.outputDiv) {

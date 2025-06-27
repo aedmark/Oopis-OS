@@ -32,7 +32,7 @@
          * It checks the provided file path: if an existing file, it validates its type (.oopic)
          * and read permissions to load its content. If it's a new file, it ensures the
          * specified name has the correct extension. Finally, it delegates to `PaintManager.enter`
-         * to launch the graphical editor.
+         * to launch the graphical editor and awaits its completion.
          * @async
          * @param {object} context - The context object provided by the command executor.
          * @param {string[]} context.args - The arguments provided to the command (optional filename).
@@ -69,13 +69,12 @@
                 return { success: false, error: `paint: new file must have .oopic extension.` };
             }
 
-            // Launch the paint editor.
-            PaintManager.enter(filePath, fileContent);
+            // Launch the paint editor and wait for it to exit.
+            await PaintManager.enter(filePath, fileContent);
 
             return {
                 success: true,
-                output: `Opening paint for '${filePath || "new file"}'...`,
-                messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG
+                output: "" // Output is handled by the app itself.
             };
         }
     };

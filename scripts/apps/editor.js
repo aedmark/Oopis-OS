@@ -1,13 +1,13 @@
 /**
  * @file Manages the entire lifecycle and functionality of the OopisOS full-screen text editor.
  * This file contains all modules related to the editor, including its configuration,
- * UI management, utility functions, and the main state controller.
+ * UI management, and the main state controller.
  * @author Andrew Edmark
  * @author Gemini
  * @see EditorManager
  */
 
-/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, StorageManager, AppLayerManager */
+/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager */
 
 /**
  * @module EditorAppConfig
@@ -758,6 +758,8 @@ const EditorManager = (() => {
   let saveUndoStateTimeout = null;
   /** @private @type {?function} */
   let onSaveCallback = null;
+  /** @private @type {?function} */
+  let _exitPromiseResolve = null;
 
   /**
    * Loads the word wrap setting from local storage.
@@ -1086,65 +1088,71 @@ const EditorManager = (() => {
    * @param {string} filePath - The path of the file to edit.
    * @param {string} content - The initial content of the file.
    * @param {function(string): Promise<void> | null} [callback=null] - An optional async callback to run after a successful save.
+   * @returns {Promise<void>} A promise that resolves when the editor exits.
    */
   function enter(filePath, content, callback = null) {
     if (isActiveState) {
       void OutputManager.appendToOutput("Editor already active.", {
         typeClass: EditorAppConfig.CSS_CLASSES.EDITOR_MSG
       });
-      return;
+      return Promise.resolve();
     }
-    _loadWordWrapSetting();
-    isActiveState = true;
-    OutputManager.setEditorActive(true);
-    TerminalUI.setInputState(false);
-    currentFilePath = filePath;
-    currentFileMode = EditorUtils.determineMode(filePath);
-    originalContent = content;
-    isDirty = false;
-    onSaveCallback = callback; // Store the on-save callback
 
-    undoStack = [];
-    redoStack = [];
-    _saveUndoState(content);
+    return new Promise(resolve => {
+      _exitPromiseResolve = resolve;
 
-    const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
-    document.addEventListener('keydown', handleKeyDown);
+      _loadWordWrapSetting();
+      isActiveState = true;
+      OutputManager.setEditorActive(true);
+      TerminalUI.setInputState(false);
+      currentFilePath = filePath;
+      currentFileMode = EditorUtils.determineMode(filePath);
+      originalContent = content;
+      isDirty = false;
+      onSaveCallback = callback; // Store the on-save callback
 
-    const editorCallbacks = {
-      onInput: _handleEditorInput.bind(this),
-      onScroll: _handleEditorScroll.bind(this),
-      onSelectionChange: _handleEditorSelectionChange.bind(this),
-      onViewToggle: _toggleViewModeHandler.bind(this),
-      onExportPreview: exportPreviewAsHtml.bind(this),
-      onWordWrapToggle: _toggleWordWrap.bind(this),
-      onExitButtonClick: () => this.exit(false),
-      onFormatBold: () => _applyTextManipulation('bold'),
-      onFormatItalic: () => _applyTextManipulation('italic'),
-      onFormatLink: () => _applyTextManipulation('link'),
-      onFormatQuote: () => _applyTextManipulation('quote'),
-      onFormatCode: () => _applyTextManipulation('code'),
-      onFormatCodeBlock: () => _applyTextManipulation('codeblock'),
-      onFormatUl: () => _applyTextManipulation('ul'),
-      onFormatOl: () => _applyTextManipulation('ol'),
-      onUndo: _performUndo.bind(this),
-      onRedo: _performRedo.bind(this)
-    };
+      undoStack = [];
+      redoStack = [];
+      _saveUndoState(content);
 
-    const editorElement = EditorUI.buildLayout(editorCallbacks);
-    AppLayerManager.show(editorElement);
+      const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+      document.addEventListener('keydown', handleKeyDown);
 
-    EditorUI.setGutterVisibility(!isWordWrapActive);
-    currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
-    EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
-    EditorUI.applyTextareaWordWrap(isWordWrapActive);
-    EditorUI.updateWordWrapButtonText(isWordWrapActive);
-    EditorUI.setTextareaContent(content);
-    EditorUI.setTextareaSelection(0, 0);
-    _updateFormattingToolbarVisibility();
-    _updateFullEditorUI();
-    EditorUI.setEditorFocus();
-    _updateUndoRedoButtonStates();
+      const editorCallbacks = {
+        onInput: _handleEditorInput.bind(this),
+        onScroll: _handleEditorScroll.bind(this),
+        onSelectionChange: _handleEditorSelectionChange.bind(this),
+        onViewToggle: _toggleViewModeHandler.bind(this),
+        onExportPreview: exportPreviewAsHtml.bind(this),
+        onWordWrapToggle: _toggleWordWrap.bind(this),
+        onExitButtonClick: () => this.exit(false),
+        onFormatBold: () => _applyTextManipulation('bold'),
+        onFormatItalic: () => _applyTextManipulation('italic'),
+        onFormatLink: () => _applyTextManipulation('link'),
+        onFormatQuote: () => _applyTextManipulation('quote'),
+        onFormatCode: () => _applyTextManipulation('code'),
+        onFormatCodeBlock: () => _applyTextManipulation('codeblock'),
+        onFormatUl: () => _applyTextManipulation('ul'),
+        onFormatOl: () => _applyTextManipulation('ol'),
+        onUndo: _performUndo.bind(this),
+        onRedo: _performRedo.bind(this)
+      };
+
+      const editorElement = EditorUI.buildLayout(editorCallbacks);
+      AppLayerManager.show(editorElement);
+
+      EditorUI.setGutterVisibility(!isWordWrapActive);
+      currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
+      EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
+      EditorUI.applyTextareaWordWrap(isWordWrapActive);
+      EditorUI.updateWordWrapButtonText(isWordWrapActive);
+      EditorUI.setTextareaContent(content);
+      EditorUI.setTextareaSelection(0, 0);
+      _updateFormattingToolbarVisibility();
+      _updateFullEditorUI();
+      EditorUI.setEditorFocus();
+      _updateUndoRedoButtonStates();
+    });
   }
 
   /**
@@ -1261,6 +1269,10 @@ const EditorManager = (() => {
         });
       }
       await _performExitActions();
+      if (_exitPromiseResolve) {
+        _exitPromiseResolve();
+        _exitPromiseResolve = null;
+      }
       return true;
     } else {
       EditorUI.setEditorFocus();
