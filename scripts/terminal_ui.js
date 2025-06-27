@@ -920,14 +920,16 @@ const AppLayerManager = (() => {
             return;
         }
 
-        // Apply classes to make the app layer a centering modal overlay.
+        // --- UNIFIED LOGIC: BEGIN ---
+        TerminalUI.setInputState(false);      // Disable terminal input
+        OutputManager.setEditorActive(true);  // Suppress terminal output
+        // --- UNIFIED LOGIC: END ---
+
         appLayer.className = 'w-full h-full absolute top-0 left-0 bg-neutral-950/80 flex items-center justify-center z-10';
 
-        // Hide terminal UI
         if (terminalOutput) terminalOutput.classList.add('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
 
-        // Show app layer and append the app's main element
         currentAppContainer = appContainerElement;
         currentAppContainer.classList.remove('hidden');
         appLayer.appendChild(currentAppContainer);
@@ -935,28 +937,27 @@ const AppLayerManager = (() => {
         isActive = true;
     }
 
-    /**
-     * Hides the currently active application and restores the standard terminal UI.
-     */
     function hide() {
         _cacheDOM();
         if (!isActive || !appLayer) return;
 
         appLayer.className = '';
-
-        // Hide app layer and remove the app's element
         appLayer.classList.add('hidden');
         if (currentAppContainer && appLayer.contains(currentAppContainer)) {
             appLayer.removeChild(currentAppContainer);
         }
         currentAppContainer = null;
 
-
-        // Restore terminal UI
         if (terminalOutput) terminalOutput.classList.remove('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.remove('hidden');
 
+        // --- UNIFIED LOGIC: BEGIN ---
+        TerminalUI.clearInput();
+        TerminalUI.setInputState(true);       // Re-enable terminal input
+        OutputManager.setEditorActive(false); // Restore terminal output
         TerminalUI.focusInput();
+        // --- UNIFIED LOGIC: END ---
+
         isActive = false;
     }
 

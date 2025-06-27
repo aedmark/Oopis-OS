@@ -1103,8 +1103,6 @@ const EditorManager = (() => {
 
       _loadWordWrapSetting();
       isActiveState = true;
-      OutputManager.setEditorActive(true);
-      TerminalUI.setInputState(false);
       currentFilePath = filePath;
       currentFileMode = EditorUtils.determineMode(filePath);
       originalContent = content;
@@ -1262,7 +1260,6 @@ const EditorManager = (() => {
       }
     }
     if (proceedToExit && saveSuccess) {
-      OutputManager.setEditorActive(false);
       if (terminalMessage) {
         await OutputManager.appendToOutput(terminalMessage, {
           typeClass: terminalMessageClass

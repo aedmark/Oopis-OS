@@ -27,8 +27,9 @@ function initializeTerminalEventListeners() {
 
   // Focus the input area when the terminal is clicked, unless text is being selected.
   DOM.terminalDiv.addEventListener("click", (e) => {
-    // REFACTORED: Added PaintManager.isActive() check
-    if (EditorManager.isActive() || (typeof PaintManager !== 'undefined' && PaintManager.isActive())) return;
+    // REFACTORED: Use the central AppLayerManager to check if any app is active.
+    if (AppLayerManager.isActive()) return;
+
     const selection = window.getSelection();
     if (selection && selection.toString().length > 0) {
       return;
@@ -60,14 +61,9 @@ function initializeTerminalEventListeners() {
     }
 
     // SECOND PRIORITY: If a full-screen app is running, let it handle its own keys.
-    // DIRECTIVE 3.3: Add PaintManager.isActive() to the check.
-    if (EditorManager.isActive() ||
-        TextAdventureModal.isActive() ||
-        (typeof ChidiApp !== 'undefined' && ChidiApp.isActive()) ||
-        (typeof PaintManager !== 'undefined' && PaintManager.isActive())) {
+    if (AppLayerManager.isActive()) {
       return; // Let the active app handle its own keyboard events.
     }
-
     // Ignore key events not targeting the main input div.
     if (e.target !== DOM.editableInputDiv) {
       return;
