@@ -555,6 +555,23 @@ const ChidiApp = {
             body { background-color: #0d0d0d; color: #e4e4e7; font-family: 'VT323', monospace; line-height: 1.6; padding: 2rem; }
             h1, h2, h3 { border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: #60a5fa; }
             a { color: #34d399; }
+            /* BEGIN ADDED STYLES */
+            p, ul, ol, blockquote, pre, table {
+                margin-bottom: 1rem;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid #444;
+                padding: 0.5rem;
+                text-align: left;
+            }
+            th {
+                background-color: #27272a;
+            }
+            /* END ADDED STYLES */
             code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; }
             pre { background-color: #000; padding: 1rem; border-radius: 4px; border: 1px solid #333; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
             blockquote { border-left: 4px solid #60a5fa; padding-left: 1rem; margin-left: 0; color: #a1a1aa; }
@@ -934,11 +951,27 @@ const ChidiApp = {
             /* Markdown Content Styles */
             .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--chidi-accent-blue); }
             .chidi-markdown-content a { color: var(--chidi-accent-green); text-decoration: none; }
+            .chidi-markdown-content p { margin-bottom: 1rem; }
             .chidi-markdown-content a:hover { text-decoration: underline; }
             .chidi-markdown-content code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
             .chidi-markdown-content pre { background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid #333; }
             .chidi-markdown-content blockquote { border-left: 4px solid var(--chidi-accent-blue); padding-left: 1rem; margin-left: 0; font-style: italic; color: #a1a1aa; }
             .chidi-ai-output { border-top: 2px dashed var(--chidi-accent-blue); margin-top: 2rem; padding-top: 1rem; }
+            
+            /* Add these rules for tables inside .chidi-markdown-content */
+            .chidi-markdown-content table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 1rem;
+            }
+            .chidi-markdown-content th, .chidi-markdown-content td {
+                border: 1px solid #444;
+                padding: 0.5rem;
+                text-align: left;
+            }
+            .chidi-markdown-content th {
+                background-color: #27272a;
+            }
 
             /* Ask Input Styles */
             .chidi-ask-textarea { width: 100%; height: 100%; background: transparent; border: none; color: var(--chidi-text); font-size: 1.1rem; resize: none; outline: none; }

@@ -95,23 +95,41 @@ const EditorUtils = (() => {
    * @returns {string} The CSS style block as a string.
    */
   function getPreviewStylingCSS(isHtmlMode = false) {
-    let baseStyles = `
-            body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #fff; color: #333; }
-            pre { white-space: pre-wrap; word-break: break-word; }
-        `;
+    const commonSpacingStyles = `
+        p, ul, ol, blockquote, pre, table { margin-bottom: 1rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
+        th { background-color: #f3f4f6; }
+    `;
+
     if (isHtmlMode) {
-      return (`html { height: 100%; width: 100%; margin: 0; padding: 0; box-sizing: border-box; background-color: #fff; } ` + `body { height: 100%; width: 100%; margin: 0; padding: 15px;  box-sizing: border-box; overflow: auto; ` + `font-family: sans-serif; color: #333; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; } ` + `pre { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; }`);
+      // Styles for the sandboxed <iframe> when previewing raw HTML
+      return `
+        html { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: inherit; }
+        body { 
+            font-family: sans-serif; 
+            margin: 20px; 
+            line-height: 1.6; 
+            background-color: #fff; 
+            color: #333; 
+        }
+        ${commonSpacingStyles}
+      `;
     }
-    return (baseStyles + `
-            .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1em; margin-bottom: 0.5em; }
-            .markdown-preview p { margin-bottom: 0.5em; line-height: 1.5; }
-            .markdown-preview code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937; }
-            .markdown-preview pre { background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px;}
-            .markdown-preview pre > code { display: block; padding: 0; }
-            .markdown-preview ul, .markdown-preview ol { margin-left: 20px; margin-bottom: 0.5em;}
-            .markdown-preview blockquote { border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280; }
-            .markdown-preview a { color: #0ea5e9; text-decoration: underline; }
-        `);
+
+    // Styles for the Markdown preview pane
+    return `
+        .markdown-preview { font-family: sans-serif; line-height: 1.6; color: #333; }
+        .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.25rem; }
+        .markdown-preview code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937; }
+        .markdown-preview pre { background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px; }
+        .markdown-preview pre > code { display: block; padding: 0; background-color: transparent; color: inherit; }
+        .markdown-preview ul, .markdown-preview ol { margin-left: 20px; }
+        .markdown-preview blockquote { border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280; }
+        .markdown-preview a { color: #0ea5e9; text-decoration: underline; }
+        ${commonSpacingStyles}
+    `;
   }
 
   /**

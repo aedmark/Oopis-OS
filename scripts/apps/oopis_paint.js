@@ -8,6 +8,7 @@
 /**
  * @module PaintAppConfig
  * @description Provides a centralized configuration object for the paint application.
+ * This includes constants for canvas dimensions, tools, colors, and UI elements.
  */
 const PaintAppConfig = {
     CANVAS: {
@@ -15,384 +16,477 @@ const PaintAppConfig = {
         DEFAULT_HEIGHT: 24,
     },
     DEFAULT_CHAR: '#',
-    DEFAULT_FG_COLOR: '#22c55e',
-    DEFAULT_BG_COLOR: 'transparent',
+    DEFAULT_FG_COLOR: 'text-green-500',
+    DEFAULT_BG_COLOR: 'bg-transparent',
     ERASER_CHAR: ' ',
-    ERASER_BG_COLOR: 'transparent',
+    ERASER_BG_COLOR: 'bg-transparent',
     FILE_EXTENSION: 'oopic',
-    ASCII_CHAR_RANGE: {
-        START: 32,
-        END: 126
-    },
-    BRUSH: {
-        DEFAULT_SIZE: 1,
-        MAX_SIZE: 10,
-        DEFAULT_SHAPE: 'round',
-    },
-    LOCAL_STORAGE_KEY: 'oopisPaintSettings',
+    ASCII_CHAR_RANGE: { START: 32, END: 126 },
     CSS_CLASSES: {
         MODAL_HIDDEN: 'hidden',
         ACTIVE_TOOL: 'paint-tool-active',
         GRID_ACTIVE: 'paint-grid-active',
         DROPDOWN_ACTIVE: 'paint-dropdown-active',
     },
-    PALETTE: [{
-        name: 'Black',
-        value: '#000000'
-    }, {
-        name: 'Red',
-        value: '#f44336'
-    }, {
-        name: 'Yellow',
-        value: '#ffeb3b'
-    }, {
-        name: 'Green',
-        value: '#4caf50'
-    }, {
-        name: 'Blue',
-        value: '#03a9f4'
-    }, {
-        name: 'Brown',
-        value: '#795548'
-    }, ],
+    PALETTE: [
+        { name: 'green',   class: 'text-green-500',   value: 'rgb(34, 197, 94)' },
+        { name: 'red',     class: 'text-red-500',     value: 'rgb(239, 68, 68)' },
+        { name: 'sky',     class: 'text-sky-400',     value: 'rgb(56, 189, 248)' },
+        { name: 'amber',   class: 'text-amber-400',   value: 'rgb(251, 191, 36)' },
+        { name: 'lime',    class: 'text-lime-400',    value: 'rgb(163, 230, 53)' },
+        { name: 'neutral', class: 'text-neutral-300', value: 'rgb(212, 212, 212)' }
+    ],
     EDITOR: {
         DEBOUNCE_DELAY_MS: 300,
         MAX_UNDO_STATES: 50,
     },
+    // --- ADD THIS NEW ARRAY ---
     CUSTOM_COLOR_GRID: [
-        // Greyscale Ramp
-        '#ffffff', '#f0f0f0', '#e0e0e0', '#cfcfcf', '#bfbfbf', '#afafaf', '#9f9f9f', '#8f8f8f',
-        '#7f7f7f', '#6f6f6f', '#5f5f5f', '#4f4f4f', '#3f3f3f', '#2f2f2f', '#1f1f1f', '#000000',
-        // Reds -> Pinks
-        '#ffcdd2', '#ef9a9a', '#e57373', '#ef5350', '#f44336', '#d32f2f', '#b71c1c', '#880e4f',
-        '#f8bbd0', '#f48fb1', '#f06292', '#ec407a', '#e91e63', '#d81b60', '#c2185b', '#ad1457',
-        // Oranges -> Browns
-        '#ffccbc', '#ffab91', '#ff8a65', '#ff7043', '#ff5722', '#e64a19', '#bf360c', '#8d6e63',
-        '#ffe0b2', '#ffcc80', '#ffb74d', '#ffa726', '#ff9800', '#fb8c00', '#f57c00', '#795548',
-        // Yellows
-        '#fff9c4', '#fff59d', '#fff176', '#ffee58', '#ffeb3b', '#fdd835', '#fbc02d', '#f57f17',
-        // Greens
-        '#dcedc8', '#c5e1a5', '#aed581', '#9ccc65', '#8bc34a', '#7cb342', '#689f38', '#33691e',
-        '#c8e6c9', '#a5d6a7', '#81c784', '#66bb6a', '#4caf50', '#43a047', '#388e3c', '#1b5e20',
-        // Blues & Teals
-        '#b2dfdb', '#80cbc4', '#4db6ac', '#26a69a', '#009688', '#00796b', '#004d40', '#01579b',
-        '#b3e5fc', '#81d4fa', '#4fc3f7', '#29b6f6', '#03a9f4', '#0288d1', '#0277bd', '#01579b',
-        // Purples & Indigos
-        '#d1c4e9', '#b39ddb', '#9575cd', '#7e57c2', '#673ab7', '#5e35b1', '#512da8', '#311b92',
-        '#c5cae9', '#9fa8da', '#7986cb', '#5c6bc0', '#3f51b5', '#3949ab', '#303f9f', '#1a237e'
+        '#ffffff', '#f2f2f2', '#e6e6e6', '#d9d9d9', '#cccccc', '#bfbfbf', '#b3b3b3', '#a6a6a6',
+        '#999999', '#8c8c8c', '#808080', '#737373', '#666666', '#595959', '#4d4d4d', '#404040',
+        '#fed7d7', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d',
+        '#fee2d5', '#fdbb7d', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12',
+        '#fef3c7', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12',
+        '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#14532d',
+        '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46',
+        '#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#155e75',
+        '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af',
+        '#e0e7ff', '#c7d2fe', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca', '#3730a3'
     ]
-};
+}
+
 
 /**
  * @module PaintUI
- * @description Manages all DOM manipulations and UI logic for the paint editor.
- * It is responsible for building the layout, rendering the canvas, and handling UI events.
+ * @description Manages all DOM manipulations for the paint editor. This includes building the UI,
+ * handling display updates, and calculating coordinates. It is a pure UI controller
+ * that receives its instructions and data from the PaintManager.
  */
 const PaintUI = (() => {
     "use strict";
     let elements = {};
-    let eventCallbacks = {};
     let isInitialized = false;
-    let cellDimensions = {
-        width: 0,
-        height: 0
-    };
-    let gridOffset = {
-        x: 0,
-        y: 0
-    };
+    let eventCallbacks = {};
+    let cellDimensions = { width: 0, height: 0 };
+    let gridOffset = { x: 0, y: 0 };
 
     /**
-     * Constructs the entire DOM structure for the paint application.
-     * @param {object} callbacks - An object mapping event names to their handler functions from PaintManager.
-     * @returns {HTMLElement} The main container element for the paint application.
+     * Initializes DOM elements, builds the toolbar, and attaches initial event listeners.
+     * This function is designed to run only once.
+     * @private
+     * @param {object} callbacks - An object containing callback functions from PaintManager for UI events.
+     * @returns {boolean} True if initialization is successful, false otherwise.
      */
-    function buildLayout(callbacks) {
+    function _initDOM(callbacks) {
+        if (isInitialized) return true;
         eventCallbacks = callbacks;
-        elements = {};
 
-        const paintContainer = Utils.createElement('div', {
-            id: 'paint-container'
+        elements.modal = document.getElementById('paint-modal');
+        elements.toolbar = document.getElementById('paint-toolbar');
+        elements.canvas = document.getElementById('paint-canvas');
+        elements.statusBar = document.getElementById('paint-statusbar');
+        elements.charSelectModal = document.getElementById('paint-char-select-modal');
+        elements.charSelectGrid = document.getElementById('paint-char-select-grid');
+        elements.colorSelectModal = document.getElementById('paint-color-select-modal');
+        elements.colorSelectGrid = document.getElementById('paint-color-select-grid');
+
+        if (!elements.modal || !elements.toolbar || !elements.canvas || !elements.statusBar || !elements.charSelectModal || !elements.charSelectGrid) {
+            console.error("PaintUI: Critical UI elements missing!");
+            return false;
+        }
+
+        elements.toolbar.innerHTML = '';
+
+        // SVG definitions for all our tools
+        const pencilSVG = '<svg fill="#ffffff" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
+        const eraserSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M17.9995 13L10.9995 6.00004M20.9995 21H7.99955M10.9368 20.0628L19.6054 11.3941C20.7935 10.2061 21.3875 9.61207 21.6101 8.92709C21.8058 8.32456 21.8058 7.67551 21.6101 7.07298C21.3875 6.388 20.7935 5.79397 19.6054 4.60592L19.3937 4.39415C18.2056 3.2061 17.6116 2.61207 16.9266 2.38951C16.3241 2.19373 15.675 2.19373 15.0725 2.38951C14.3875 2.61207 13.7935 3.2061 12.6054 4.39415L4.39366 12.6059C3.20561 13.794 2.61158 14.388 2.38902 15.073C2.19324 15.6755 2.19324 16.3246 2.38902 16.9271C2.61158 17.6121 3.20561 18.2061 4.39366 19.3941L5.06229 20.0628C5.40819 20.4087 5.58114 20.5816 5.78298 20.7053C5.96192 20.815 6.15701 20.8958 6.36108 20.9448C6.59126 21 6.83585 21 7.32503 21H8.67406C9.16324 21 9.40784 21 9.63801 20.9448C9.84208 20.8958 10.0372 20.815 10.2161 20.7053C10.418 20.5816 10.5909 20.4087 10.9368 20.0628Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>';
+        const lineSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const ellipseSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21C16.9706 21 21 16.4183 21 12C21 7.58172 16.9706 4 12 4C7.02944 4 3 7.58172 3 12C3 16.4183 7.02944 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const quadSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const undoSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 8H5V3M5.29102 16.3569C6.22284 17.7918 7.59014 18.8902 9.19218 19.4907C10.7942 20.0913 12.547 20.1624 14.1925 19.6937C15.8379 19.225 17.2893 18.2413 18.3344 16.8867C19.3795 15.5321 19.963 13.878 19.9989 12.1675C20.0347 10.4569 19.5211 8.78001 18.5337 7.38281C17.5462 5.98561 16.1366 4.942 14.5122 4.40479C12.8878 3.86757 11.1341 3.86499 9.5083 4.39795C7.88252 4.93091 6.47059 5.97095 5.47949 7.36556" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+        const redoSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.9998 8H18.9998V3M18.7091 16.3569C17.7772 17.7918 16.4099 18.8902 14.8079 19.4907C13.2059 20.0913 11.4534 20.1624 9.80791 19.6937C8.16246 19.225 6.71091 18.2413 5.66582 16.8867C4.62073 15.5321 4.03759 13.878 4.00176 12.1675C3.96593 10.4569 4.47903 8.78001 5.46648 7.38281C6.45392 5.98561 7.86334 4.942 9.48772 4.40479C11.1121 3.86757 12.8661 3.86499 14.4919 4.39795C16.1177 4.93091 17.5298 5.97095 18.5209 7.36556" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+        const gridSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 9.33333V6C20 4.89543 19.1046 4 18 4H14.6667M20 9.33333H14.6667M20 9.33333V14.6667M4 9.33333V6C4 4.89543 4.89543 4 6 4H9.33333M4 9.33333H9.33333M4 9.33333V14.6667M14.6667 9.33333H9.33333M14.6667 9.33333V4M14.6667 9.33333V14.6667M9.33333 9.33333V4M9.33333 9.33333V14.6667M20 14.6667V18C20 19.1046 19.1046 20 18 20H14.6667M20 14.6667H14.6667M4 14.6667V18C4 19.1046 4.89543 20 6 20H9.33333M4 14.6667H9.33333M14.6667 14.6667H9.33333M14.6667 14.6667V20M9.33333 14.6667V20M9.33333 4H14.6667M9.33333 20H14.6667" stroke="#fafafa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+        const charSelectSVG = '<svg fill="#ffffff" height="200px" width="200px" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 197.974 197.974" xml:space="preserve" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M1.64,0l21.735,197.974l53.912-67.637l85.473-13.261L1.64,0z M69.205,116.411l-34.889,43.771L20.25,32.064l104.267,75.766 L69.205,116.411z M131.334,136.462h65v17.541h-15v-2.541h-10v28.82h7.334v15H149v-15h7.334v-28.82h-10v2.541h-15V136.462z"></path> </g></svg>';
+        const colorPaletteSVG = '<svg fill="#ffffff" height="200px" width="200px" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 297 297" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M254.141,53.244C224.508,18.909,185.299,0,143.736,0c-35.062,0-68.197,13.458-93.302,37.9 C10.383,76.892-2.822,123.282,14.207,165.178c13.868,34.122,45.625,57.954,77.227,57.954c0.841,0,1.671-0.016,2.508-0.053 c4.705-0.194,9.249-0.586,13.646-0.966c5.309-0.462,10.325-0.895,14.77-0.895c10.54,0,19.645,0,19.645,26.846 c0,28.811,17.538,48.934,42.65,48.936c0.002,0,0.002,0,0.004,0c17.864,0,37.651-10.342,57.215-29.903 c25.882-25.88,43.099-62.198,47.234-99.64C293.762,125.326,281.343,84.763,254.141,53.244z M227.315,252.54 c-15.397,15.398-30.55,23.877-42.66,23.875c-16.288,0-22.064-15.274-22.064-28.352c0-32.357-12.786-47.43-40.232-47.43 c-5.333,0-10.778,0.472-16.545,0.969c-4.169,0.359-8.481,0.733-12.724,0.909c-0.553,0.024-1.102,0.034-1.655,0.034 c-23.07,0-47.529-18.975-58.156-45.118c-13.714-33.738-2.225-71.927,31.519-104.779c21.239-20.676,49.272-32.063,78.939-32.063 c35.485,0,69.159,16.373,94.82,46.107C289.187,125.359,272.6,207.256,227.315,252.54z"></path> <path d="M192.654,165.877c0,17.213,13.918,31.217,31.026,31.217c17.107,0,31.025-14.004,31.025-31.217 c0-17.215-13.918-31.219-31.025-31.219C206.572,134.658,192.654,148.662,192.654,165.877z M234.118,165.877 c0,5.861-4.682,10.633-10.438,10.633c-5.756,0-10.438-4.771-10.438-10.633c0-5.863,4.683-10.633,10.438-10.633 C229.436,155.244,234.118,160.014,234.118,165.877z"></path> <path d="M226.914,93.489c0-17.215-13.917-31.219-31.025-31.219c-17.107,0-31.025,14.004-31.025,31.219 c0,17.211,13.918,31.218,31.025,31.218C212.997,124.707,226.914,110.7,226.914,93.489z M185.45,93.489 c0-5.865,4.684-10.632,10.439-10.632c5.756,0,10.438,4.767,10.438,10.632c0,5.86-4.683,10.633-10.438,10.633 C190.133,104.122,185.45,99.35,185.45,93.489z"></path> <path d="M124.863,39.627c-17.107,0-31.025,14.004-31.025,31.217c0,17.213,13.918,31.217,31.025,31.217s31.025-14.004,31.025-31.217 C155.888,53.631,141.97,39.627,124.863,39.627z M124.863,81.478c-5.756,0-10.438-4.771-10.438-10.634 c0-5.863,4.682-10.633,10.438-10.633c5.756,0,10.438,4.77,10.438,10.633C135.3,76.707,130.619,81.478,124.863,81.478z"></path> <path d="M70.821,92.809c-17.107,0-31.026,14.004-31.026,31.217c0,17.214,13.919,31.219,31.026,31.219s31.024-14.005,31.024-31.219 C101.845,106.813,87.928,92.809,70.821,92.809z M70.821,134.658c-5.757,0-10.439-4.77-10.439-10.633 c0-5.861,4.683-10.63,10.439-10.63c5.755,0,10.438,4.769,10.438,10.63C81.259,129.889,76.576,134.658,70.821,134.658z"></path> </g> </g></svg>';
+
+        elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
+        elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
+        elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
+        elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
+
+        // Shape tools dropdown
+        elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' });
+        elements.shapeToolBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: lineSVG, title: 'Shape Tool (L)' });
+        elements.shapeDropdown = Utils.createElement('div', { className: 'paint-dropdown-content' },
+            Utils.createElement('button', { innerHTML: lineSVG, title: 'Line', eventListeners: { click: () => eventCallbacks.onToolChange('line') } }),
+            Utils.createElement('button', { innerHTML: quadSVG, title: 'Rectangle', eventListeners: { click: () => eventCallbacks.onToolChange('quad') } }),
+            Utils.createElement('button', { innerHTML: ellipseSVG, title: 'Ellipse', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } })
+        );
+        elements.shapeToolContainer.append(elements.shapeToolBtn, elements.shapeDropdown);
+        elements.shapeToolBtn.addEventListener('click', () => {
+            elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        });
+        document.addEventListener('click', (e) => {
+            if (isInitialized && elements.shapeToolContainer && !elements.shapeToolContainer.contains(e.target)) {
+                elements.shapeDropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+            }
         });
 
-        elements.toolbar = Utils.createElement('div', {
-            id: 'paint-toolbar'
+        elements.gridBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
+        elements.charSelectBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
+        elements.colorButtons = [];
+        const colorPaletteContainer = Utils.createElement('div', { className: 'paint-palette' });
+        PaintAppConfig.PALETTE.forEach((color, index) => {
+            const colorBtn = Utils.createElement('button', {
+                className: `paint-color-swatch`,
+                style: { backgroundColor: color.value },
+                title: `Color ${index + 1} (${color.name}) (${index + 1})`,
+                eventListeners: { click: () => eventCallbacks.onColorChange(color.value) } // Pass the VALUE, not the class
+            });
+            elements.colorButtons.push(colorBtn);
+            colorPaletteContainer.appendChild(colorBtn);
         });
-        elements.statusBar = Utils.createElement('div', {
-            id: 'paint-statusbar',
-            textContent: 'Tool: Pencil | Char: # | Coords: 0,0'
+        elements.customColorSwatch = Utils.createElement('button', {
+            className: 'paint-color-swatch',
+            title: 'Your Custom Color',
+            style: { display: 'none' } // Initially hidden
         });
-        elements.canvasWrapper = Utils.createElement('div', {
-            id: 'paint-canvas-wrapper'
+        // Add a click listener to re-select the custom color
+        elements.customColorSwatch.addEventListener('click', () => {
+            if (elements.customColorSwatch.style.backgroundColor) {
+                eventCallbacks.onColorChange(elements.customColorSwatch.style.backgroundColor);
+            }
         });
-        elements.canvas = Utils.createElement('div', {
-            id: 'paint-canvas'
-        });
-
-        elements.charSelectModal = _createModal('paint-char-select-modal', 'Select a Character');
-        elements.colorSelectModal = _createModal('paint-color-select-modal', 'Select a Color');
-
-        const pencilSVG = '<svg fill="currentColor" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12Z"></path></svg>';
-        const eraserSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.9995 13L10.9995 6.00004M20.9995 21H7.99955M10.9368 20.0628L19.6054 11.3941C20.7935 10.2061 21.3875 9.61207 21.6101 8.92709C21.8058 8.32456 21.8058 7.67551 21.6101 7.07298C21.3875 6.388 20.7935 5.79397 19.6054 4.60592L19.3937 4.39415C18.2056 3.2061 17.6116 2.61207 16.9266 2.38951C16.3241 2.19373 15.675 2.19373 15.0725 2.38951C14.3875 2.61207 13.7935 3.2061 12.6054 4.39415L4.39366 12.6059C3.20561 13.794 2.61158 14.388 2.38902 15.073C2.19324 15.6755 2.19324 16.3246 2.38902 16.9271C2.61158 17.6121 3.20561 18.2061 4.39366 19.3941L5.06229 20.0628C5.40819 20.4087 5.58114 20.5816 5.78298 20.7053C5.96192 20.815 6.15701 20.8958 6.36108 20.9448C6.59126 21 6.83585 21 7.32503 21H8.67406C9.16324 21 9.40784 21 9.63801 20.9448C9.84208 20.8958 10.0372 20.815 10.2161 20.7053C10.418 20.5816 10.5909 20.4087 10.9368 20.0628Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-        const shapeSVG = '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M9.072 15.25h13.855c0.69-0 1.249-0.56 1.249-1.25 0-0.23-0.062-0.446-0.171-0.631l0.003 0.006-6.927-12c-0.237-0.352-0.633-0.58-1.083-0.58s-0.846 0.228-1.080 0.575l-0.003 0.005-6.928 12c-0.105 0.179-0.167 0.395-0.167 0.625 0 0.69 0.56 1.25 1.25 1.25 0 0 0 0 0.001 0h-0zM16 4.5l4.764 8.25h-9.526zM7.838 16.75c-0.048-0.001-0.104-0.002-0.161-0.002-4.005 0-7.252 3.247-7.252 7.252s3.247 7.252 7.252 7.252c0.056 0 0.113-0.001 0.169-0.002l-0.008 0c0.048 0.001 0.104 0.002 0.161 0.002 4.005 0 7.252-3.247 7.252-7.252s-3.247-7.252-7.252-7.252c-0.056 0-0.113 0.001-0.169 0.002l0.008-0zM7.838 28.75c-0.048 0.002-0.103 0.003-0.16 0.003-2.625 0-4.753-2.128-4.753-4.753s2.128-4.753 4.753-4.753c0.056 0 0.112 0.001 0.168 0.003l-0.008-0c0.048-0.002 0.103-0.003 0.16-0.003 2.625 0 4.753 2.128 4.753 4.753s-2.128 4.753-4.753 4.753c-0.056 0-0.112-0.001-0.168-0.003l0.008 0zM28 16.75h-8c-1.794 0.001-3.249 1.456-3.25 3.25v8c0.001 1.794 1.456 3.249 3.25 3.25h8c1.794-0.001 3.249-1.456 3.25-3.25v-8c-0.001-1.794-1.456-3.249-3.25-3.25h-0zM28.75 28c-0 0.414-0.336 0.75-0.75 0.75h-8c-0.414-0-0.75-0.336-0.75-0.75v0-8c0-0.414 0.336 0.75 0.75 0.75h8c0.414 0 0.75 0.336 0.75 0.75v0z"></path></svg>';
-        const dropdownArrowSVG = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:0.8em; height:0.8em; margin-left:4px;"><path d="M7 10l5 5 5-5z"></path></svg>';
-
-        elements.saveBtn = Utils.createElement('button', {
+        // Insert the custom swatch after the first color (green)
+        colorPaletteContainer.insertBefore(elements.customColorSwatch, colorPaletteContainer.firstChild);
+        elements.colorPalleteBtn = Utils.createElement('button', {
             className: 'paint-tool',
-            textContent: 'Save',
-            title: 'Save (Ctrl+S)',
+            innerHTML: colorPaletteSVG,
+            title: 'Select Custom Color',
             eventListeners: {
-                click: () => eventCallbacks.onSave()
-            }
-        });
-        elements.exitBtn = Utils.createElement('button', {
-            className: 'paint-tool paint-exit-btn',
-            textContent: 'Exit',
-            title: 'Exit (Ctrl+Q)',
-            eventListeners: {
-                click: () => eventCallbacks.onExit()
+                click: () => eventCallbacks.onColorSelectOpen() // CORRECT: Opens the modal
             }
         });
 
-        elements.pencilBtn = Utils.createElement('button', {
-            className: 'paint-tool',
-            innerHTML: pencilSVG,
-            title: 'Pencil (P)',
-            eventListeners: {
-                click: () => eventCallbacks.onToolChange('pencil')
-            }
-        });
-        elements.eraserBtn = Utils.createElement('button', {
-            className: 'paint-tool',
-            innerHTML: eraserSVG,
-            title: 'Eraser (E)',
-            eventListeners: {
-                click: () => eventCallbacks.onToolChange('eraser')
-            }
-        });
+        elements.saveExitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save & Exit', title: 'Save & Exit (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSaveAndExit() }});
+        elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit without Saving (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        elements.shapeToolContainer = Utils.createElement('div', {
-            className: 'paint-tool-dropdown'
-        });
-        elements.shapeSelectBtn = Utils.createElement('button', {
-            className: 'paint-tool',
-            innerHTML: shapeSVG + dropdownArrowSVG,
-            title: 'Shape Tools (L)',
-            eventListeners: {
-                click: (e) => {
-                    e.stopPropagation();
-                    eventCallbacks.onShapeSelectToggle();
-                }
-            }
-        });
-        elements.shapeDropdown = Utils.createElement('div', {
-            id: 'paint-shape-dropdown',
-            className: 'paint-dropdown-content'
-        });
+        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, elements.charSelectBtn);
+        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveExitBtn, elements.exitBtn);
 
-        const toolsGroup = Utils.createElement('div', {
-            className: 'paint-toolbar-group'
-        }, [elements.pencilBtn, elements.eraserBtn, elements.shapeToolContainer]);
-        const sessionGroup = Utils.createElement('div', {
-            className: 'paint-toolbar-group paint-session-group'
-        }, [elements.saveBtn, elements.exitBtn]);
-
-        elements.toolbar.append(toolsGroup, sessionGroup);
-        elements.canvasWrapper.appendChild(elements.canvas);
-        paintContainer.append(elements.toolbar, elements.canvasWrapper, elements.statusBar, elements.charSelectModal, elements.colorSelectModal);
+        elements.toolbar.append(leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
 
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
         document.addEventListener('mouseup', eventCallbacks.onMouseUp);
         elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
-        elements.canvas.addEventListener('contextmenu', e => e.preventDefault());
-
-        eventCallbacks.onDocumentClick = (e) => {
-            if (isInitialized) {
-                if (elements.shapeToolContainer && !elements.shapeToolContainer.contains(e.target)) {
-                    elements.shapeDropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
-                }
+        elements.charSelectModal.addEventListener('click', (e) => {
+            if (e.target === elements.charSelectModal) {
+                hideCharSelect();
             }
-        };
-        document.addEventListener('click', eventCallbacks.onDocumentClick);
+        });
+
+        elements.colorSelectModal.addEventListener('click', (e) => {
+            if (e.target === elements.colorSelectModal) {
+                hideColorSelect();
+            }
+        });
 
         isInitialized = true;
-        return paintContainer;
+        return true;
     }
 
     /**
-     * Creates a standard modal overlay structure.
+     * Toggles the visibility of the grid overlay on the canvas.
+     * @param {boolean} isActive - True to show the grid, false to hide it.
+     */
+    function toggleGrid(isActive) {
+        if (!elements.canvas) return;
+        elements.canvas.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
+    }
+
+    /**
+     * Populates the character selection grid with all available ASCII characters and shows the modal.
+     * @param {function(string): void} onSelectCallback - The callback to execute when a character is chosen.
+     */
+    function populateAndShowCharSelect(onSelectCallback) {
+        if (!elements.charSelectGrid || !elements.charSelectModal) return;
+        elements.charSelectGrid.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        const { START, END } = PaintAppConfig.ASCII_CHAR_RANGE;
+
+        for (let i = START; i <= END; i++) {
+            const char = String.fromCharCode(i);
+            const btn = Utils.createElement('button', {
+                className: 'paint-char-btn',
+                textContent: char,
+                eventListeners: {
+                    click: () => onSelectCallback(char)
+                }
+            });
+            fragment.appendChild(btn);
+        }
+        elements.charSelectGrid.appendChild(fragment);
+        elements.charSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+    }
+
+    /**
+     * Hides the character selection modal.
+     */
+    function hideCharSelect() {
+        if (elements.charSelectModal) {
+            elements.charSelectModal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
+    }
+
+    /**
+     * Populates the color selection grid with a palette of colors and shows the modal.
+     * @param {function(string): void} onSelectCallback - The callback to execute when a color is chosen.
+     */
+    function populateAndShowColorSelect(onSelectCallback) {
+        if (!elements.colorSelectGrid || !elements.colorSelectModal) return;
+
+        elements.colorSelectGrid.innerHTML = ''; // Clear previous grid
+        elements.colorSelectGrid.className = 'paint-color-select-grid'; // Add a class for styling
+
+        const fragment = document.createDocumentFragment();
+        PaintAppConfig.CUSTOM_COLOR_GRID.forEach(colorValue => {
+            const btn = Utils.createElement('button', {
+                className: 'paint-color-swatch', // Reuse existing swatch style
+                style: { backgroundColor: colorValue },
+                title: colorValue,
+                eventListeners: {
+                    click: () => onSelectCallback(colorValue)
+                }
+            });
+            fragment.appendChild(btn);
+        });
+
+        elements.colorSelectGrid.appendChild(fragment);
+        elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+    }
+
+    /**
+     * Hides the color selection modal.
+     */
+    function hideColorSelect() {
+        if (elements.colorSelectModal) {
+            elements.colorSelectModal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
+    }
+
+    /**
+     * Calculates grid and cell metrics based on the rendered container's properties.
+     * This determines the offset of the grid and calculates a precise, proportional
+     * cell size to eliminate scaling errors.
      * @private
-     * @param {string} id - The DOM ID for the modal overlay.
-     * @param {string} titleText - The title to display in the modal's header.
-     * @returns {HTMLElement} The created modal overlay element.
      */
-    function _createModal(id, titleText) {
-        const modalOverlay = Utils.createElement('div', {
-            id: id,
-            className: `paint-modal-overlay ${PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN}`
-        });
-        const modalContent = Utils.createElement('div', {
-            className: 'paint-modal-content'
-        });
-        const modalTitle = Utils.createElement('div', {
-            className: 'paint-modal-title',
-            textContent: titleText
-        });
-        const modalBody = Utils.createElement('div', {
-            className: 'paint-modal-body'
-        });
-        modalContent.append(modalTitle, modalBody);
-        modalOverlay.appendChild(modalContent);
+    function _calculateGridMetrics() {
+        if (!elements.canvas) return;
 
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) {
-                modalOverlay.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
-            }
-        });
-        return modalOverlay;
+        const containerRect = elements.canvas.getBoundingClientRect();
+        const style = window.getComputedStyle(elements.canvas);
+
+        // Get the container's padding and border widths to find the true content area.
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingRight = parseFloat(style.paddingRight) || 0;
+        const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+        const borderRight = parseFloat(style.borderRightWidth) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const paddingBottom = parseFloat(style.paddingBottom) || 0;
+        const borderTop = parseFloat(style.borderTopWidth) || 0;
+        const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+
+        // Calculate the dimensions of the area available for the grid cells.
+        const contentWidth = containerRect.width - paddingLeft - paddingRight - borderLeft - borderRight;
+        const contentHeight = containerRect.height - paddingTop - paddingBottom - borderTop - borderBottom;
+
+        // Calculate the precise, proportional width and height of a single cell.
+        // This is the key to fixing the progressive offset bug.
+        cellDimensions.width = contentWidth / PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        cellDimensions.height = contentHeight / PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        // The grid's starting offset is simply the container's left/top padding and border.
+        gridOffset.x = paddingLeft + borderLeft;
+        gridOffset.y = paddingTop + borderTop;
     }
 
     /**
-     * Tears down the UI and removes event listeners to prevent memory leaks.
+     * Public resize handler. Recalculates grid metrics.
      */
-    function destroyLayout() {
+    function handleResize() {
         if (!isInitialized) return;
-        document.removeEventListener('mousemove', eventCallbacks.onMouseMove);
-        document.removeEventListener('mouseup', eventCallbacks.onMouseUp);
-        document.removeEventListener('click', eventCallbacks.onDocumentClick);
-        elements = {};
-        eventCallbacks = {};
-        isInitialized = false;
+        _calculateGridMetrics();
     }
 
     /**
-     * Renders the canvas based on the 2D array of cell data.
-     * @param {Array<Array<object>>} canvasData - The 2D array representing the canvas state.
+     * Converts mouse pixel coordinates to canvas grid coordinates, accounting for CSS offsets.
+     * @param {number} pixelX - The clientX coordinate from a mouse event.
+     * @param {number} pixelY - The clientY coordinate from a mouse event.
+     * @returns {{x: number, y: number}|null} An object with x and y grid coordinates, or null if outside the canvas.
+     */
+    function getGridCoordinates(pixelX, pixelY) {
+        if (!elements.canvas || !cellDimensions.width || !cellDimensions.height) return null;
+
+        const rect = elements.canvas.getBoundingClientRect();
+
+        // Calculate the mouse position relative to the grid's true origin by subtracting the cached offset.
+        const x = pixelX - rect.left - gridOffset.x;
+        const y = pixelY - rect.top - gridOffset.y;
+
+        const gridX = Math.floor(x / cellDimensions.width);
+        const gridY = Math.floor(y / cellDimensions.height);
+
+        // Perform a bounds check to ensure the calculated coordinates are valid.
+        const gridColumnCount = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        const gridRowCount = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        if (gridX < 0 || gridX >= gridColumnCount || gridY < 0 || gridY >= gridRowCount) {
+            return null;
+        }
+
+        return { x: gridX, y: gridY };
+    }
+
+    /**
+     * Updates the status bar text with the current tool, character, color, and coordinates.
+     * @param {object} status - The current status object.
+     * @param {string} status.tool - The name of the active tool.
+     * @param {string} status.char - The current drawing character.
+     * @param {string} status.fg - The current foreground color class.
+     * @param {{x: number, y: number}} status.coords - The current mouse grid coordinates.
+     */
+    function updateStatusBar(status) {
+        if (!elements.statusBar) return;
+        const paletteEntry = PaintAppConfig.PALETTE.find(p => p.value === status.fg);
+        const colorName = paletteEntry ? paletteEntry.name : status.fg;
+
+        elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Coords: ${status.coords.x},${status.coords.y}`;
+    }
+
+    /**
+     * Updates the toolbar UI to reflect the current state (active tool, color, undo/redo availability).
+     * @param {string} activeTool - The name of the currently active tool.
+     * @param {string} activeColor - The CSS class of the currently active color.
+     * @param {boolean} undoPossible - Whether an undo action is available.
+     * @param {boolean} redoPossible - Whether a redo action is available.
+     * @param {boolean} isGridActive - Whether the grid overlay is currently visible.
+     */
+    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive) {
+        if (!isInitialized) return;
+        // ... (SVG definitions and tool toggling logic remains the same)
+        elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
+        elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
+        // ... (rest of the tool active states logic remains)
+
+        // --- Color Swatch Logic ---
+        let isCustomColorActive = true;
+
+        // Check the predefined palette buttons
+        elements.colorButtons.forEach((btn, index) => {
+            const colorValue = PaintAppConfig.PALETTE[index].value;
+            const isActive = colorValue === activeColor;
+            if (isActive) {
+                isCustomColorActive = false;
+            }
+            btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isActive); // Change colorClass to isActive
+        });
+
+        // Now, manage the custom color swatch
+        if (isCustomColorActive) {
+            elements.customColorSwatch.style.backgroundColor = activeColor;
+            elements.customColorSwatch.style.display = 'block';
+            elements.customColorSwatch.classList.add(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
+        } else {
+            // If a standard color is active, just deactivate the custom swatch.
+            // We'll leave it visible if it has a color.
+            elements.customColorSwatch.classList.remove(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
+        }
+    }
+
+    /**
+     * Shows the main paint application modal.
+     * @param {object} callbacks - An object of event callbacks from the PaintManager.
+     */
+    function show(callbacks) {
+        if (!isInitialized) {
+            if (!_initDOM(callbacks)) return;
+        }
+        elements.modal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        OutputManager.setEditorActive(true);
+    }
+
+    /**
+     * Hides the main paint application modal.
+     */
+    function hide() {
+        if (elements.modal) {
+            elements.modal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        }
+        hideCharSelect();
+        OutputManager.setEditorActive(false);
+    }
+
+    /**
+     * Renders the entire canvas based on the provided data model.
+     * @param {Array<Array<{char: string, fg: string, bg: string}>>} canvasData - A 2D array representing the canvas state.
      */
     function renderCanvas(canvasData) {
-        if (!isInitialized || !elements.canvas) return;
+        if (!elements.canvas) return;
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
         elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
         elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
 
         for (let y = 0; y < gridHeight; y++) {
             for (let x = 0; x < gridWidth; x++) {
-                const cell = canvasData[y]?.[x] || {
-                    char: ' ',
-                    fg: PaintAppConfig.DEFAULT_FG_COLOR,
-                    bg: 'transparent'
-                };
-                const span = Utils.createElement('span', {
-                    textContent: cell.char || ' '
-                });
-                span.style.color = cell.fg;
-                span.style.backgroundColor = cell.bg;
+                const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
+                const span = Utils.createElement('span', { textContent: cell.char });
+                span.style.color = cell.fg; // Apply color via inline style
+                span.classList.add(cell.bg); // Background is still a class
+
                 fragment.appendChild(span);
             }
         }
         elements.canvas.appendChild(fragment);
+        _calculateGridMetrics();
     }
 
     /**
-     * Updates the toolbar UI to reflect the current tool and settings.
-     * @param {string} activeTool - The name of the currently active tool.
-     * @param {boolean} isGridActive - Whether the grid overlay is active.
+     * Resets the UI to its initial state, clearing all dynamically generated elements.
      */
-    function updateToolbar(activeTool, isGridActive) {
-        if (!isInitialized) return;
-        const {
-            ACTIVE_TOOL
-        } = PaintAppConfig.CSS_CLASSES;
-        elements.pencilBtn.classList.toggle(ACTIVE_TOOL, activeTool === 'pencil');
-        elements.eraserBtn.classList.toggle(ACTIVE_TOOL, activeTool === 'eraser');
-
-        const isShapeToolActive = ['line', 'quad', 'ellipse'].includes(activeTool);
-        elements.shapeSelectBtn.classList.toggle(ACTIVE_TOOL, isShapeToolActive);
+    function reset() {
+        if (elements.canvas) elements.canvas.innerHTML = '';
+        if (elements.statusBar) elements.statusBar.textContent = '';
+        if (elements.toolbar) elements.toolbar.innerHTML = '';
+        isInitialized = false;
     }
 
-    /**
-     * Gets the canvas grid coordinates from mouse event pixel coordinates.
-     * @param {number} pixelX - The clientX from a mouse event.
-     * @param {number} pixelY - The clientY from a mouse event.
-     * @returns {{x: number, y: number}|null} The grid coordinates or null if outside the canvas.
-     */
-    function getGridCoordinates(pixelX, pixelY) {
-        if (!elements.canvas) return null;
-        const rect = elements.canvas.getBoundingClientRect();
-        const x = pixelX - rect.left;
-        const y = pixelY - rect.top;
-        const gridX = Math.floor(x / (rect.width / PaintAppConfig.CANVAS.DEFAULT_WIDTH));
-        const gridY = Math.floor(y / (rect.height / PaintAppConfig.CANVAS.DEFAULT_HEIGHT));
-
-        if (gridX < 0 || gridX >= PaintAppConfig.CANVAS.DEFAULT_WIDTH || gridY < 0 || gridY >= PaintAppConfig.CANVAS.DEFAULT_HEIGHT) return null;
-        return {
-            x: gridX,
-            y: gridY
-        };
-    }
-
-    /**
-     * Updates the content of the status bar.
-     * @param {object} status - An object containing the current status information.
-     * @param {string} status.fileName - The name of the current file.
-     * @param {boolean} status.isDirty - Whether the file has unsaved changes.
-     * @param {string} status.tool - The name of the active tool.
-     * @param {string} status.char - The currently selected drawing character.
-     * @param {{x: number, y: number}} status.coords - The current cursor coordinates.
-     */
-    function updateStatusBar(status) {
-        if (!elements.statusBar) return;
-        const dirtyIndicator = status.isDirty ? "*" : "";
-        const fileName = (status.fileName || "Untitled") + dirtyIndicator;
-        elements.statusBar.textContent = `File: ${fileName} | Tool: ${status.tool} | Char: '${status.char}' | Coords: ${status.coords.x ?? '-'},${status.coords.y ?? '-'}`;
-    }
-
-
-    return {
-        buildLayout,
-        destroyLayout,
-        renderCanvas,
-        getGridCoordinates,
-        updateStatusBar,
-        updateToolbar
-    };
+    return { show, hide, renderCanvas, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, handleResize };
 })();
 
 /**
  * @module PaintManager
- * @description The main controller for the paint application. Manages state, user interactions,
- * and coordinates between the UI (PaintUI) and the file system.
+ * @description The main controller for the paint application. It manages the application's state,
+ * user interactions (mouse and keyboard), the canvas data model, and the undo/redo stack.
  */
 const PaintManager = (() => {
     "use strict";
-    let isActiveState = false,
-        currentFilePath = null,
-        canvasData = [],
-        isDirty = false;
-    let isDrawing = false,
-        currentTool = 'pencil',
-        drawChar = PaintAppConfig.DEFAULT_CHAR;
-    let fgColor = PaintAppConfig.PALETTE[0].value,
-        lastCoords = {
-            x: -1,
-            y: -1
-        };
-    let undoStack = [],
-        redoStack = [],
-        saveUndoStateTimeout = null;
-    let isGridVisible = false,
-        isTempFile = false;
+    let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
+    let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
+    let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 }; // <-- CHANGE THIS LINE
+    let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
+    let isGridVisible = false;
     let shapeStartCoords = null;
     let shapePreviewBaseState = null;
-    let brushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
-    let brushShape = PaintAppConfig.BRUSH.DEFAULT_SHAPE;
+
 
     /**
-     * @const {object} paintEventCallbacks - An object containing all callback functions passed to the PaintUI module.
+     * A collection of callbacks passed to the PaintUI module to handle events.
+     * @private
      */
     const paintEventCallbacks = {
         onMouseDown: _handleMouseDown,
@@ -400,9 +494,15 @@ const PaintManager = (() => {
         onMouseUp: _handleMouseUp,
         onMouseLeave: _handleMouseLeave,
         onToolChange: _setTool,
-        onSave: () => _handleSave(),
-        onExit: () => exit(),
-        onShapeSelectToggle: () => PaintUI.toggleDropdown('shape')
+        onColorChange: _setColor,
+        onSaveAndExit: () => exit(true),
+        onExit: () => exit(false),
+        onUndo: _performUndo,
+        onRedo: _performRedo,
+        onGridToggle: _toggleGrid,
+        onCharSelectOpen: _openCharSelect,
+        onColorSelectOpen: _openColorSelect, // <-- ADD THIS LINE
+
     };
 
     /**
@@ -412,20 +512,18 @@ const PaintManager = (() => {
      * @param {number} y0 - Start Y coordinate.
      * @param {number} x1 - End X coordinate.
      * @param {number} y1 - End Y coordinate.
-     * @returns {Array<{x: number, y: number}>} An array of points on the line.
+     * @returns {Array<{x: number, y: number}>} An array of point objects.
      */
     function _getLinePoints(x0, y0, x1, y1) {
         const points = [];
-        const dx = Math.abs(x1 - x0),
-            dy = -Math.abs(y1 - y0);
-        const sx = x0 < x1 ? 1 : -1,
-            sy = y0 < y1 ? 1 : -1;
+        const dx = Math.abs(x1 - x0);
+        const dy = -Math.abs(y1 - y0);
+        const sx = x0 < x1 ? 1 : -1;
+        const sy = y0 < y1 ? 1 : -1;
         let err = dx + dy;
+
         while (true) {
-            points.push({
-                x: x0,
-                y: y0
-            });
+            points.push({ x: x0, y: y0 });
             if (x0 === x1 && y0 === y1) break;
             const e2 = 2 * err;
             if (e2 >= dy) {
@@ -441,37 +539,104 @@ const PaintManager = (() => {
     }
 
     /**
-     * Creates a blank canvas data structure.
+     * Gets points for a rectangle.
      * @private
-     * @param {number} w - The width of the canvas.
-     * @param {number} h - The height of the canvas.
-     * @returns {Array<Array<object>>} A 2D array representing the blank canvas.
      */
-    function _createBlankCanvas(w, h) {
-        return Array.from({
-            length: h
-        }, () => Array.from({
-            length: w
-        }, () => ({
-            char: ' ',
-            fg: PaintAppConfig.DEFAULT_FG_COLOR,
-            bg: PaintAppConfig.DEFAULT_BG_COLOR
-        })));
+    function _getRectanglePoints(x0, y0, x1, y1) {
+        const points = new Set();
+        _getLinePoints(x0, y0, x1, y0).forEach(p => points.add(`${p.x},${p.y}`));
+        _getLinePoints(x1, y0, x1, y1).forEach(p => points.add(`${p.x},${p.y}`));
+        _getLinePoints(x1, y1, x0, y1).forEach(p => points.add(`${p.x},${p.y}`));
+        _getLinePoints(x0, y1, x0, y0).forEach(p => points.add(`${p.x},${p.y}`));
+        return Array.from(points).map(p => {
+            const [x, y] = p.split(',').map(Number);
+            return { x, y };
+        });
     }
 
     /**
-     * Updates the status bar UI with the current state.
+     * Gets points for a ellipse using the Midpoint Ellipse Algorithm.
      * @private
-     * @param {object} coords - The current cursor coordinates.
      */
-    function _updateStatus(coords) {
-        PaintUI.updateStatusBar({
-            tool: currentTool,
-            char: drawChar,
-            coords: coords || lastCoords,
-            fileName: currentFilePath,
-            isDirty: isDirty
+    function _getEllipsePoints(cx, cy, rx, ry) {
+        if (rx < 0 || ry < 0) return [];
+        const points = new Set();
+        let x = 0, y = ry;
+        let p1 = (ry * ry) - (rx * rx * ry) + (0.25 * rx * rx);
+        let dx = 2 * ry * ry * x;
+        let dy = 2 * rx * rx * y;
+
+        // Region 1
+        while (dx < dy) {
+            points.add(`${cx + x},${cy + y}`);
+            points.add(`${cx - x},${cy + y}`);
+            points.add(`${cx + x},${cy - y}`);
+            points.add(`${cx - x},${cy - y}`);
+
+            if (p1 < 0) {
+                x++;
+                dx = dx + (2 * ry * ry);
+                p1 = p1 + dx + (ry * ry);
+            } else {
+                x++;
+                y--;
+                dx = dx + (2 * ry * ry);
+                dy = dy - (2 * rx * rx);
+                p1 = p1 + dx - dy + (ry * ry);
+            }
+        }
+
+        // Region 2
+        let p2 = ((ry * ry) * ((x + 0.5) * (x + 0.5))) + ((rx * rx) * ((y - 1) * (y - 1))) - (rx * rx * ry * ry);
+        while (y >= 0) {
+            points.add(`${cx + x},${cy + y}`);
+            points.add(`${cx - x},${cy + y}`);
+            points.add(`${cx + x},${cy - y}`);
+            points.add(`${cx - x},${cy - y}`);
+
+            if (p2 > 0) {
+                y--;
+                dy = dy - (2 * rx * rx);
+                p2 = p2 + (rx * rx) - dy;
+            } else {
+                y--;
+                x++;
+                dx = dx + (2 * ry * ry);
+                dy = dy - (2 * rx * rx);
+                p2 = p2 + dx - dy + (rx * rx);
+            }
+        }
+
+        return Array.from(points).map(p => {
+            const [px, py] = p.split(',').map(Number);
+            return { x: px, y: py };
         });
+    }
+
+
+    /**
+     * Creates a new, empty 2D array to represent a blank canvas.
+     * @private
+     * @param {number} w - The width of the canvas.
+     * @param {number} h - The height of the canvas.
+     * @returns {Array<Array<object>>} The new canvas data model.
+     */
+    function _createBlankCanvas(w, h) {
+        let data = [];
+        for (let y = 0; y < h; y++) {
+            data.push(Array.from({ length: w }, () => ({
+                char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR
+            })));
+        }
+        return data;
+    }
+
+    /**
+     * Updates the UI toolbar based on the current state of the manager.
+     * @private
+     */
+    function _updateToolbarState() {
+        PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible);
     }
 
     /**
@@ -480,17 +645,15 @@ const PaintManager = (() => {
      */
     function _saveUndoState() {
         redoStack = [];
-        const currentState = JSON.parse(JSON.stringify(canvasData));
-        const lastState = undoStack[undoStack.length - 1];
-        if (JSON.stringify(currentState) === JSON.stringify(lastState)) return;
-        undoStack.push(currentState);
-        if (undoStack.length > PaintAppConfig.EDITOR.MAX_UNDO_STATES) undoStack.shift();
-        isDirty = true;
-        _updateStatus(lastCoords);
+        undoStack.push(JSON.parse(JSON.stringify(canvasData)));
+        if (undoStack.length > PaintAppConfig.EDITOR.MAX_UNDO_STATES) {
+            undoStack.shift();
+        }
+        _updateToolbarState();
     }
 
     /**
-     * Triggers a debounced save to the undo stack.
+     * Debounces the saving of the undo state to improve performance during rapid drawing.
      * @private
      */
     function _triggerSaveUndoState() {
@@ -499,137 +662,239 @@ const PaintManager = (() => {
     }
 
     /**
-     * Paints a single cell on a given canvas data structure.
+     * Reverts the canvas to the previous state in the undo stack.
      * @private
-     * @param {number} x - The X coordinate of the cell.
-     * @param {number} y - The Y coordinate of the cell.
-     * @param {Array<Array<object>>} targetCanvas - The canvas data to modify.
-     * @returns {boolean} True if the cell was changed, false otherwise.
      */
-    function _paintCell(x, y, targetCanvas) {
-        const canvas = targetCanvas || canvasData;
-        if (y < 0 || y >= canvas.length || x < 0 || x >= canvas[0].length) return false;
-        const cell = canvas[y][x];
-        const isEraser = currentTool === 'eraser';
-        const newChar = isEraser ? PaintAppConfig.ERASER_CHAR : drawChar;
-        const newFg = isEraser ? PaintAppConfig.DEFAULT_FG_COLOR : fgColor;
-        const newBg = isEraser ? PaintAppConfig.ERASER_BG_COLOR : PaintAppConfig.DEFAULT_BG_COLOR;
-        if (cell.char !== newChar || cell.fg !== newFg || cell.bg !== newBg) {
-            cell.char = newChar;
-            cell.fg = newFg;
-            cell.bg = newBg;
-            return true;
-        }
-        return false;
+    function _performUndo() {
+        if (undoStack.length <= 1) return;
+        const currentState = undoStack.pop();
+        redoStack.push(currentState);
+        canvasData = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
+        PaintUI.renderCanvas(canvasData);
+        _updateToolbarState();
     }
 
     /**
-     * Draws on the canvas using the current brush settings.
+     * Re-applies a state from the redo stack.
      * @private
-     * @param {number} x - The center X coordinate of the brush.
-     * @param {number} y - The center Y coordinate of the brush.
-     * @param {Array<Array<object>>} [targetCanvas=null] - An optional temporary canvas for previews.
+     */
+    function _performRedo() {
+        if (redoStack.length === 0) return;
+        const nextState = redoStack.pop();
+        undoStack.push(nextState);
+        canvasData = JSON.parse(JSON.stringify(nextState));
+        PaintUI.renderCanvas(canvasData);
+        _updateToolbarState();
+    }
+
+    /**
+     * Toggles the grid visibility state and updates the UI.
+     * @private
+     */
+    function _toggleGrid() {
+        isGridVisible = !isGridVisible;
+        PaintUI.toggleGrid(isGridVisible);
+        _updateToolbarState();
+    }
+
+    /**
+     * Opens the character selection modal.
+     * @private
+     */
+    function _openCharSelect() {
+        PaintUI.populateAndShowCharSelect(_setDrawCharFromSelection);
+    }
+    /**
+     * Opens the color selection modal.
+     * @private
+     */
+    function _openColorSelect() {
+        PaintUI.populateAndShowColorSelect(_setColor);
+    }
+
+    /**
+     * Sets the drawing character based on the user's selection from the modal.
+     * @private
+     * @param {string} char - The character selected by the user.
+     */
+    function _setDrawCharFromSelection(char) {
+        drawChar = char;
+        PaintUI.hideCharSelect();
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+    }
+
+    /**
+     * The core drawing logic. Modifies the canvas data model at specific coordinates based on the current tool.
+     * @private
+     * @param {number} x - The x-coordinate of the cell to draw on.
+     * @param {number} y - The y-coordinate of the cell to draw on.
+     * @param {object|null} targetCanvas - The canvas data to draw on. If null, uses the main canvasData.
      */
     function _drawOnCanvas(x, y, targetCanvas = null) {
-        const radius = (brushSize - 1) / 2;
-        for (let i = 0; i < brushSize; i++) {
-            for (let j = 0; j < brushSize; j++) {
-                const drawX = Math.round(x - radius + i);
-                const drawY = Math.round(y - radius + j);
-                let shouldPaint = brushShape === 'square' || Math.hypot(drawX - x, drawY - y) <= radius;
-                if (shouldPaint) _paintCell(drawX, drawY, targetCanvas);
+        const canvas = targetCanvas || canvasData;
+        if (y < 0 || y >= canvas.length || x < 0 || x >= canvas[0].length) return;
+
+        const cell = canvas[y][x];
+        let changed = false;
+
+        if (currentTool !== 'eraser') {
+            if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== PaintAppConfig.DEFAULT_BG_COLOR) {
+                cell.char = drawChar;
+                cell.fg = fgColor;
+                cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
+                changed = true;
+            }
+        } else {
+            if (cell.char !== PaintAppConfig.ERASER_CHAR || cell.bg !== PaintAppConfig.ERASER_BG_COLOR) {
+                cell.char = PaintAppConfig.ERASER_CHAR;
+                cell.fg = PaintAppConfig.DEFAULT_FG_COLOR;
+                cell.bg = PaintAppConfig.ERASER_BG_COLOR;
+                changed = true;
             }
         }
+
+        if (changed && !targetCanvas) {
+            isDirty = true;
+            PaintUI.renderCanvas(canvasData);
+        }
+        return changed;
     }
 
+
     /**
-     * Handles the mousedown event on the canvas to start drawing.
+     * Handles the mousedown event on the canvas to begin a drawing action.
      * @private
      * @param {MouseEvent} e - The mouse event.
      */
     function _handleMouseDown(e) {
-        if (e.button !== 0) return;
         isDrawing = true;
         const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
         if (!coords) return;
         lastCoords = coords;
-        _updateStatus(coords);
+
         if (['line', 'ellipse', 'quad'].includes(currentTool)) {
-            shapeStartCoords = { ...coords
-            };
+            shapeStartCoords = { ...coords };
             shapePreviewBaseState = JSON.parse(JSON.stringify(canvasData));
         } else {
-            _triggerSaveUndoState();
             _drawOnCanvas(coords.x, coords.y);
-            PaintUI.renderCanvas(canvasData);
         }
+
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords });
     }
 
     /**
-     * Handles the mousemove event to draw continuously or preview shapes.
+     * Handles the mousemove event to continue a drawing action or update status.
      * @private
      * @param {MouseEvent} e - The mouse event.
      */
     function _handleMouseMove(e) {
         const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
-        if (coords) _updateStatus(coords);
+        if (coords) {
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords });
+        }
+
         if (!isDrawing || !coords) return;
+
         if (currentTool === 'pencil' || currentTool === 'eraser') {
             if (coords.x === lastCoords.x && coords.y === lastCoords.y) return;
-            _getLinePoints(lastCoords.x, lastCoords.y, coords.x, coords.y).forEach(p => _drawOnCanvas(p.x, p.y));
+            _drawOnCanvas(coords.x, coords.y);
             lastCoords = coords;
-            PaintUI.renderCanvas(canvasData);
         } else if (shapeStartCoords) {
-            let tempCanvas = JSON.parse(JSON.stringify(shapePreviewBaseState));
-            _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y).forEach(p => _paintCell(p.x, p.y, tempCanvas));
-            PaintUI.renderCanvas(tempCanvas);
+            let tempCanvasData = JSON.parse(JSON.stringify(shapePreviewBaseState));
+            let points = [];
+
+            if (currentTool === 'line') {
+                points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y);
+            } else if (currentTool === 'quad') {
+                points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y);
+            } else if (currentTool === 'ellipse') {
+                let rx = Math.abs(coords.x - shapeStartCoords.x);
+                let ry = Math.abs(coords.y - shapeStartCoords.y);
+                if (e.shiftKey) {
+                    rx = ry = Math.max(rx, ry);
+                }
+                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
+            }
+
+            points.forEach(p => _drawOnCanvas(p.x, p.y, tempCanvasData));
+            PaintUI.renderCanvas(tempCanvasData);
         }
     }
 
     /**
-     * Handles the mouseup event to finalize a drawing action.
+     * Handles the mouseup event to end a drawing action.
      * @private
      * @param {MouseEvent} e - The mouse event.
      */
     function _handleMouseUp(e) {
         if (!isDrawing) return;
-        isDrawing = false;
+
         if (shapeStartCoords) {
-            canvasData = JSON.parse(JSON.stringify(shapePreviewBaseState));
             const endCoords = PaintUI.getGridCoordinates(e.clientX, e.clientY) || lastCoords;
-            _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y).forEach(p => _paintCell(p.x, p.y, canvasData));
+            let points = [];
+            if (currentTool === 'line') {
+                points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y);
+            } else if (currentTool === 'quad') {
+                points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y);
+            } else if (currentTool === 'ellipse') {
+                let rx = Math.abs(endCoords.x - shapeStartCoords.x);
+                let ry = Math.abs(endCoords.y - shapeStartCoords.y);
+                if (e.shiftKey) { // Check shift key on mouseup as well
+                    rx = ry = Math.max(rx, ry);
+                }
+                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
+            }
+            points.forEach(p => _drawOnCanvas(p.x, p.y));
         }
-        _saveUndoState();
-        PaintUI.renderCanvas(canvasData);
+
+        if (isDirty) {
+            _triggerSaveUndoState();
+        }
+        isDrawing = false;
+        lastCoords = { x: -1, y: -1 };
         shapeStartCoords = null;
         shapePreviewBaseState = null;
     }
 
+
     /**
-     * Handles the mouseleave event to stop drawing if the cursor leaves the canvas.
+     * Handles the mouseleave event to end a drawing action if the mouse leaves the canvas.
      * @private
-     * @param {MouseEvent} e - The mouse event.
      */
     function _handleMouseLeave(e) {
-        if (isDrawing) _handleMouseUp(e);
-        _updateStatus({
-            x: null,
-            y: null
-        });
+        if (isDrawing) {
+            _handleMouseUp(e);
+        }
     }
 
     /**
      * Sets the active drawing tool.
      * @private
-     * @param {string} toolName - The name of the tool to activate ('pencil', 'eraser', etc.).
+     * @param {string} toolName - The name of the tool to activate.
      */
     function _setTool(toolName) {
         currentTool = toolName;
-        PaintUI.updateToolbar(currentTool, isGridVisible);
+        _updateToolbarState();
+        const dropdown = document.querySelector('.paint-dropdown-content');
+        if (dropdown) {
+            dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        }
     }
 
     /**
-     * Resets the entire state of the paint manager.
+     * Sets the active drawing color.
+     * @private
+     * @param {string} colorValue - The CSS color value (e.g., 'rgb(x,y,z)' or '#RRGGBB').
+     */
+    function _setColor(colorValue) {
+        fgColor = colorValue;
+        _updateToolbarState();
+        PaintUI.hideColorSelect(); // <-- ADD THIS LINE
+
+    }
+
+    /**
+     * Resets all internal state variables to their defaults.
      * @private
      */
     function _resetState() {
@@ -640,265 +905,277 @@ const PaintManager = (() => {
         isDrawing = false;
         currentTool = 'pencil';
         drawChar = PaintAppConfig.DEFAULT_CHAR;
-        fgColor = PaintAppConfig.PALETTE[0].value;
-        lastCoords = {
-            x: -1,
-            y: -1
-        };
+        fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
+        lastCoords = { x: -1, y: -1 };
         undoStack = [];
         redoStack = [];
         isGridVisible = false;
-        isTempFile = false;
         shapeStartCoords = null;
         shapePreviewBaseState = null;
-        brushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
-        brushShape = PaintAppConfig.BRUSH.DEFAULT_SHAPE;
-        if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
+        if (saveUndoStateTimeout) {
+            clearTimeout(saveUndoStateTimeout);
+            saveUndoStateTimeout = null;
+        }
     }
 
     /**
-     * Saves the current canvas to a file in the virtual file system.
+     * Serializes the canvas data and saves it to a file in the virtual file system.
      * @private
      * @param {string} filePath - The absolute path to save the file to.
-     * @returns {Promise<{success: boolean, error?: string}>} The result of the save operation.
-     * @async
+     * @returns {Promise<boolean>} A promise that resolves to true on success, false otherwise.
      */
     async function _performSave(filePath) {
-        if (!filePath) return {
-            success: false,
-            error: 'No filename specified.'
-        };
+        if (!filePath) {
+            await OutputManager.appendToOutput(`Cannot save. No filename specified.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            return false;
+        }
+
         const fileData = {
             version: "1.1",
             width: canvasData[0].length,
             height: canvasData.length,
             cells: canvasData
         };
-        const jsonContent = JSON.stringify(fileData);
+        const jsonContent = JSON.stringify(fileData, null, 2);
         const currentUser = UserManager.getCurrentUser().name;
         const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-        if (!primaryGroup) return {
-            success: false,
-            error: "Critical error: Could not determine primary group for user."
-        };
+        const saveResult = await FileSystemManager.createOrUpdateFile(filePath, jsonContent, { currentUser, primaryGroup });
 
-        const saveResult = await FileSystemManager.createOrUpdateFile(filePath, jsonContent, {
-            currentUser,
-            primaryGroup
-        });
         if (saveResult.success) {
-            await FileSystemManager.save();
-            return {
-                success: true
-            };
+            if (await FileSystemManager.save()) {
+                await OutputManager.appendToOutput(`Art saved to '${filePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                isDirty = false;
+                return true;
+            } else {
+                await OutputManager.appendToOutput(`Error saving file system after art save.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                return false;
+            }
         } else {
-            return {
-                success: false,
-                error: saveResult.error
-            };
+            await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            return false;
         }
     }
 
     /**
-     * Handles the user-initiated save action, including prompting for a filename if needed.
+     * Helper function to re-show the paint UI after a modal confirmation is cancelled.
      * @private
-     * @async
+     * @param {string} [logMessage] - An optional message to log to the terminal.
      */
-    async function _handleSave() {
-        if (!isActiveState) return;
-        let savePath = currentFilePath;
-        if (isTempFile) {
-            const newFilename = await new Promise(resolve => {
-                ModalManager.request({
-                    context: 'graphical-input',
-                    messageLines: ["Save:"],
-                    placeholder: "my-art.oopic",
-                    confirmText: "Save",
-                    cancelText: "Cancel",
-                    onConfirm: (value) => resolve(value.trim() || null),
-                    onCancel: () => resolve(null)
-                });
-            });
-
-            if (!newFilename) {
-                await OutputManager.appendToOutput("Save cancelled.", {
-                    typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG
-                });
-                return;
-            }
-            savePath = FileSystemManager.getAbsolutePath(newFilename);
+    function _reenterPaint(logMessage) {
+        if (logMessage) {
+            void OutputManager.appendToOutput(logMessage, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
         }
-
-        if (!savePath.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
-            savePath += `.${PaintAppConfig.FILE_EXTENSION}`;
-        }
-
-        const saveResult = await _performSave(savePath);
-
-        if (saveResult.success) {
-            const oldPathIfTemp = isTempFile ? currentFilePath : null;
-            if (oldPathIfTemp && oldPathIfTemp !== savePath) {
-                await FileSystemManager.deleteNodeRecursive(oldPathIfTemp, {
-                    force: true,
-                    currentUser: UserManager.getCurrentUser().name
-                });
-                await FileSystemManager.save();
-            }
-            currentFilePath = savePath;
-            isTempFile = false;
-            isDirty = false;
-            await OutputManager.appendToOutput(`Art saved to '${savePath}'.`, {
-                typeClass: Config.CSS_CLASSES.SUCCESS_MSG
-            });
-            _updateStatus(lastCoords);
-        } else {
-            await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG
-            });
-        }
+        PaintUI.show(paintEventCallbacks);
+        PaintUI.renderCanvas(canvasData);
+        _updateToolbarState();
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        document.addEventListener('keydown', handleKeyDown);
+        TerminalUI.setInputState(false);
     }
 
     /**
-     * Enters the paint application, initializing state and UI.
-     * @param {string} filePath - The path of the file to open, or null for a new file.
-     * @param {string} fileContent - The content of the file if it exists.
-     * @async
+     * Enters the paint application, initializing the UI and state.
+     * @param {string|null} filePath - The path of the file to edit, or null for a new file.
+     * @param {string} fileContent - The initial content of the file if it exists.
      */
-    async function enter(filePath, fileContent) {
+    function enter(filePath, fileContent) {
         if (isActiveState) return;
-        _resetState();
         isActiveState = true;
         TerminalUI.setInputState(false);
+        currentFilePath = filePath;
+        isDirty = false;
+        currentTool = 'pencil';
+        drawChar = PaintAppConfig.DEFAULT_CHAR;
+        fgColor = PaintAppConfig.DEFAULT_FG_COLOR;
+        isGridVisible = false;
 
-        if (filePath) {
-            currentFilePath = filePath;
-            if (fileContent) {
-                try {
-                    const parsedData = JSON.parse(fileContent);
-                    if (parsedData && parsedData.cells) canvasData = parsedData.cells;
-                    else throw new Error("Invalid .oopic file format.");
-                } catch (e) {
-                    await OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, {
-                        typeClass: Config.CSS_CLASSES.ERROR_MSG
-                    });
-                    canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
-                }
+        if (fileContent) {
+            let parsedData = null;
+            let parseError = null;
+            try {
+                parsedData = JSON.parse(fileContent);
+            } catch (e) {
+                parseError = e;
+            }
+
+            if (!parseError && parsedData && parsedData.cells && parsedData.width && parsedData.height) {
+                canvasData = parsedData.cells;
             } else {
+                const errorMessage = parseError ? parseError.message : "Invalid .oopic file format.";
+                void OutputManager.appendToOutput(`Error loading paint file: ${errorMessage}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                 canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
             }
         } else {
-            isTempFile = true;
-            const tempName = `temp_paint_${Date.now()}.${PaintAppConfig.FILE_EXTENSION}`;
-            currentFilePath = FileSystemManager.getAbsolutePath(tempName, FileSystemManager.getCurrentPath());
-            const currentUser = UserManager.getCurrentUser().name;
-            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-            const blankCanvasData = {
-                version: "1.1",
-                width: PaintAppConfig.CANVAS.DEFAULT_WIDTH,
-                height: PaintAppConfig.CANVAS.DEFAULT_HEIGHT,
-                cells: _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT)
-            };
-            await FileSystemManager.createOrUpdateFile(currentFilePath, JSON.stringify(blankCanvasData), {
-                currentUser,
-                primaryGroup
-            });
-            await FileSystemManager.save();
-            canvasData = blankCanvasData.cells;
+            canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
         }
 
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
-        const paintElement = PaintUI.buildLayout(paintEventCallbacks);
-        AppLayerManager.show(paintElement);
+        redoStack = [];
 
+        PaintUI.show(paintEventCallbacks);
         PaintUI.renderCanvas(canvasData);
-        PaintUI.updateToolbar(currentTool, isGridVisible);
-        _updateStatus({
-            x: null,
-            y: null
-        });
+        PaintUI.toggleGrid(isGridVisible);
+        _updateToolbarState();
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1} });
+
         document.addEventListener('keydown', handleKeyDown);
     }
 
     /**
-     * Exits the paint application, handling unsaved changes prompts.
+     * Exits the paint application, handling save logic and confirmation prompts.
+     * @param {boolean} [save=false] - If true, attempts to save the file before exiting.
+     * @returns {Promise<void>}
      * @async
      */
-    async function exit() {
+    async function exit(save = false) {
         if (!isActiveState) return;
 
-        const performExit = async () => {
-            if (isTempFile) {
-                await FileSystemManager.deleteNodeRecursive(currentFilePath, {
-                    force: true,
-                    currentUser: UserManager.getCurrentUser().name
-                });
-                await FileSystemManager.save();
-            }
-            AppLayerManager.hide();
-            document.removeEventListener('keydown', handleKeyDown);
-            PaintUI.destroyLayout();
-            _resetState();
-        };
+        document.removeEventListener('keydown', handleKeyDown);
 
-        if (isDirty) {
-            ModalManager.request({
-                context: 'graphical',
-                messageLines: ["You have unsaved changes.", "Are you sure you want to exit without saving?"],
-                onConfirm: performExit,
-                onCancel: () => {},
-                confirmText: 'Discard',
-                cancelText: 'Cancel'
+        if (isDirty && !save) {
+            const confirmed = await new Promise(resolve => {
+                ModalManager.request({
+                    context: 'graphical',
+                    messageLines: ["You have unsaved changes. Are you sure you want to exit and discard them?"],
+                    confirmText: "Discard Changes",
+                    cancelText: "Keep Painting",
+                    onConfirm: () => resolve(true),
+                    onCancel: () => resolve(false),
+                });
             });
-        } else {
-            await performExit();
+            if (!confirmed) {
+                _reenterPaint();
+                return;
+            }
         }
+
+        if (save && isDirty) {
+            let savePath = currentFilePath;
+            let wasSaveSuccessful = false;
+
+            if (savePath) {
+                wasSaveSuccessful = await _performSave(savePath);
+            } else {
+                PaintUI.hide();
+
+                const prospectivePath = await new Promise(resolve => {
+                    ModalInputManager.requestInput(
+                        "Enter filename to save as (.oopic extension will be added if missing):",
+                        (filename) => {
+                            if (!filename || filename.trim() === "") {
+                                resolve({ path: null, reason: "Save cancelled. No filename provided." });
+                            } else {
+                                if (!filename.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
+                                    filename += `.${PaintAppConfig.FILE_EXTENSION}`;
+                                }
+                                resolve({ path: FileSystemManager.getAbsolutePath(filename, FileSystemManager.getCurrentPath()), reason: null });
+                            }
+                        },
+                        () => {
+                            resolve({ path: null, reason: "Save cancelled." });
+                        },
+                        false
+                    );
+                });
+
+                if (prospectivePath.path) {
+                    let proceedWithSave = true;
+                    const pathInfo = FileSystemManager.validatePath("paint save", prospectivePath.path, { allowMissing: true });
+
+                    if (pathInfo.node) {
+                        const confirmedOverwrite = await new Promise(resolve => {
+                            ModalManager.request({
+                                context: 'graphical',
+                                messageLines: [`File '${prospectivePath.path.split('/').pop()}' already exists. Overwrite?`],
+                                onConfirm: () => resolve(true),
+                                onCancel: () => resolve(false)
+                            });
+                        });
+                        if (!confirmedOverwrite) {
+                            proceedWithSave = false;
+                            await OutputManager.appendToOutput("Save cancelled. File not overwritten.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                        }
+                    }
+
+                    if (proceedWithSave) {
+                        wasSaveSuccessful = await _performSave(prospectivePath.path);
+                        if(wasSaveSuccessful) {
+                            currentFilePath = prospectivePath.path;
+                        }
+                    }
+                } else {
+                    await OutputManager.appendToOutput(prospectivePath.reason, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                }
+            }
+
+            if (!wasSaveSuccessful) {
+                _reenterPaint("Returning to paint editor.");
+                return;
+            }
+        }
+
+        PaintUI.hide();
+        PaintUI.reset();
+        _resetState();
+        TerminalUI.setInputState(true);
+        TerminalUI.focusInput();
     }
 
     /**
-     * Handles global keydown events when the paint application is active.
-     * @param {KeyboardEvent} event - The keyboard event.
+     * Global keydown handler for the paint editor, processing shortcuts.
+     * @param {KeyboardEvent} event - The keydown event object.
+     * @private
      */
     function handleKeyDown(event) {
-        if (!isActiveState || event.target.closest('.paint-hex-input, .graphical-modal-input-field')) return;
+        if (!isActiveState) return;
 
         if (event.ctrlKey || event.metaKey) {
-            switch (event.key.toLowerCase()) {
-                case 's':
-                    event.preventDefault();
-                    _handleSave();
-                    break;
-                case 'q':
-                    event.preventDefault();
-                    exit();
-                    break;
+            const key = event.key.toLowerCase();
+            if (key === 'z') {
+                event.preventDefault(); _performUndo();
+            } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+                event.preventDefault(); _performRedo();
+            } else if (key === 's') {
+                event.preventDefault(); void exit(true);
+            } else if (key === 'o') {
+                event.preventDefault(); void exit(false);
             }
             return;
         }
 
         const key = event.key.toLowerCase();
-        if (['p', 'e', 'l'].includes(key)) {
+        const shapeTools = ['line', 'quad', 'ellipse'];
+        const isAppKey = ['p', 'e', 'l', 'g', 'c', '1', '2', '3', '4', '5', '6'].includes(key);
+        const isCharKey = event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey;
+
+        if (isAppKey) {
             event.preventDefault();
-            if (key === 'p') _setTool('pencil');
-            else if (key === 'e') _setTool('eraser');
+            if (key === 'p') { _setTool('pencil'); }
+            else if (key === 'e') { _setTool('eraser'); }
             else if (key === 'l') {
-                const shapeTools = ['line', 'quad', 'ellipse'];
-                const currentIndex = shapeTools.indexOf(currentTool);
-                _setTool(shapeTools[(currentIndex + 1) % shapeTools.length]);
+                const currentShapeIndex = shapeTools.indexOf(currentTool);
+                if (currentShapeIndex !== -1) {
+                    const nextShapeIndex = (currentShapeIndex + 1) % shapeTools.length;
+                    _setTool(shapeTools[nextShapeIndex]);
+                } else {
+                    _setTool('line');
+                }
             }
-        } else if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+            else if (key === 'g') { _toggleGrid(); }
+            else if (key === 'c') { _openCharSelect(); }
+            else {
+                const colorIndex = parseInt(key, 10) - 1;
+                if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
+                    _setColor(PaintAppConfig.PALETTE[colorIndex].value); // Change .class to .value
+                }
+            }
+        } else if (isCharKey) {
             event.preventDefault();
             drawChar = event.key;
-            _updateStatus(lastCoords);
         }
+
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
     }
 
-    return {
-        /**
-         * Checks if the paint application is currently active.
-         * @returns {boolean} True if active, false otherwise.
-         */
-        isActive: () => isActiveState,
-        enter,
-        exit,
-    };
+    return { enter, exit, isActive: () => isActiveState };
 })();
