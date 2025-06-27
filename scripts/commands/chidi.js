@@ -172,21 +172,26 @@
                     resolve({ success: true, output: "" });
                 };
                 const handleSaveSession = async (htmlContent) => {
-                    const defaultName = `chidi-session-${new Date().toISOString().slice(0,10)}.html`;
+                    const defaultName = `chidi-session-${new Date().toISOString().slice(0, 10)}.html`;
+
                     const fileName = await new Promise(resolve => {
-                        ModalInputManager.requestInput(`Save session as:`,
-                            (val) => resolve(val || defaultName),
-                            () => resolve(null),
-                            false, options
-                        );
+                        ModalManager.request({
+                            context: 'graphical-input', // Use the graphical input modal
+                            messageLines: ["Save Chidi Session"],
+                            placeholder: defaultName,
+                            confirmText: "Save",
+                            cancelText: "Cancel",
+                            onConfirm: (value) => resolve(value.trim() || defaultName),
+                            onCancel: () => resolve(null)
+                        });
                     });
 
-                    if (!fileName) {
+                    if (fileName === null) {
                         await OutputManager.appendToOutput("Save cancelled.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
                         return;
                     }
 
-                    const savePath = FileSystemManager.getAbsolutePath(fileName);
+                    const savePath = FileSystemManager.getAbsolutePath(fileName, FileSystemManager.getCurrentPath());
                     const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
                     const saveResult = await FileSystemManager.createOrUpdateFile(savePath, htmlContent, { currentUser, primaryGroup });
 
@@ -198,7 +203,6 @@
                 };
 
                 TerminalUI.setInputState(false);
-                // --- MODIFIED: Pass both callbacks to the ChidiApp ---
                 ChidiApp.launch(files, { onExit, onSaveSession: handleSaveSession });
             });
         }
