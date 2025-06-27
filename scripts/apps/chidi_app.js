@@ -433,7 +433,7 @@ const ChidiApp = {
             }
 
             let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question. Prioritize information from the first document if it is relevant, but use all provided documents to form your answer.\n\n";
-                relevantFiles.forEach(file => {
+            relevantFiles.forEach(file => {
                 promptContext += `--- START OF DOCUMENT: ${file.name} ---\n\n${file.content}\n\n--- END OF DOCUMENT: ${file.name} ---\n\n`;
             });
 
@@ -744,19 +744,72 @@ const ChidiApp = {
     },
 
     /**
-     * Handles the "Save Session" button click. Packages the session and passes it to the callback.
+     * Handles the "Save Session" button click. Packages the session and saves it to a new file in the VFS.
      * @private
      */
-    _handleSaveSession() {
-        if (typeof this.callbacks.onSaveSession !== 'function') {
-            this.showMessage("Error: Save session functionality is not configured.");
+    async _handleSaveSession() {
+        if (!this.state.isModalOpen || this.state.loadedFiles.length === 0) {
+            this.showMessage("Error: No session to save.");
             return;
         }
-        const html = this._packageSessionAsHTML();
-        if (html) {
-            this.callbacks.onSaveSession(html);
+
+        const defaultFilename = `chidi_session_${new Date().toISOString().split('T')[0]}.html`;
+
+        const filename = await new Promise(resolve => {
+            ModalManager.request({
+                context: 'graphical-input',
+                messageLines: ["Save Chidi Session As:"],
+                placeholder: defaultFilename,
+                confirmText: "Save",
+                cancelText: "Cancel",
+                onConfirm: (value) => resolve(value.trim() || defaultFilename),
+                onCancel: () => resolve(null)
+            });
+        });
+
+        if (!filename) {
+            this.showMessage("Save cancelled.");
+            return;
+        }
+
+        const htmlContent = this._packageSessionAsHTML();
+        if (!htmlContent) {
+            this.showMessage("Error: Could not package session for saving.");
+            return;
+        }
+
+        try {
+            const absPath = FileSystemManager.getAbsolutePath(filename);
+            const currentUser = UserManager.getCurrentUser().name;
+            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+
+            if (!primaryGroup) {
+                this.showMessage("Critical Error: Cannot determine primary group. Save failed.");
+                return;
+            }
+
+            const saveResult = await FileSystemManager.createOrUpdateFile(
+                absPath,
+                htmlContent,
+                { currentUser, primaryGroup }
+            );
+
+            if (!saveResult.success) {
+                this.showMessage(`Error: ${saveResult.error}`);
+                return;
+            }
+
+            if (!(await FileSystemManager.save())) {
+                this.showMessage("Critical Error: Failed to persist file system changes.");
+                return;
+            }
+
+            this.showMessage(`Session saved to '${filename}'.`);
+        } catch (e) {
+            this.showMessage(`An unexpected error occurred during save: ${e.message}`);
         }
     },
+
 
     /**
      * Returns the HTML structure for the application modal.
