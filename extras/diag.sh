@@ -273,6 +273,29 @@ echo "--- Application non-interactive checks passed. ---"
 delay 700
 echo "---------------------------------------------------------------------"
 
+# --- Phase 11.5: Globbing Expansion ---
+echo ""
+echo "===== Testing: Globbing Wildcard Expansion ====="
+delay 400
+echo "--- Test: Basic '*' glob for .sh files ---"
+ls *.sh
+delay 300
+echo "--- Test: Path-prefixed './*.txt' glob ---"
+ls ./*.txt
+delay 300
+echo "--- Test: Subdirectory glob 'chidi_test_docs/*.md' ---"
+ls chidi_test_docs/*.md
+delay 300
+echo "--- Test: Question mark '?' glob 'test_??_yes.sh' ---"
+ls test_??_yes.sh
+delay 300
+echo "--- Test: No-match glob should pass literal to command and fail ---"
+check_fail "ls *.nonexistent"
+delay 300
+echo "--- Test: Non-whitelisted command 'echo' should NOT expand glob ---"
+echo *.txt
+delay 700
+echo "---------------------------------------------------------------------"
 
 # --- Phase 12: Final Cleanup ---
 echo ""
