@@ -604,36 +604,43 @@ const EditorUI = (() => {
    */
   function renderPreview(content, currentFileMode, isWordWrapActive) {
     if (!elements.previewPane) return;
-    if (currentFileMode !== EditorAppConfig.EDITOR.MODES.MARKDOWN && currentFileMode !== EditorAppConfig.EDITOR.MODES.HTML) {
+
+    const isHtmlMode = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+    const isMarkdownMode = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
+
+    if (!isHtmlMode && !isMarkdownMode) {
       elements.previewPane.innerHTML = "";
       return;
     }
+
     if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+
     previewDebounceTimer = setTimeout(() => {
-      if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+      // For Markdown, we convert it to HTML and render it directly.
+      if (isMarkdownMode) {
         if (typeof marked !== "undefined") {
-          elements.previewPane.innerHTML = marked.parse(content, {
-            sanitize: true
-          });
+          elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
         } else {
           elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
         }
         applyPreviewWordWrap(isWordWrapActive, currentFileMode);
-      } else if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+
+        // For full HTML files, we use a sandboxed iframe to prevent style conflicts.
+      } else if (isHtmlMode) {
         let iframe = elements.previewPane.querySelector("iframe");
         if (!iframe) {
           iframe = Utils.createElement("iframe", {
             className: "w-full h-full border-none bg-white",
-            sandbox: ""
+            // The sandbox attribute is a critical security feature.
+            // "allow-scripts" would be needed for JS, but we omit it for safety.
+            sandbox: "allow-same-origin allow-popups allow-forms"
           });
-          elements.previewPane.innerHTML = "";
+          elements.previewPane.innerHTML = ""; // Clear any previous direct content
           elements.previewPane.appendChild(iframe);
         }
-        let injectedStyles = "";
-        if (isWordWrapActive) {
-          injectedStyles = `<style> pre { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; } body { word-wrap: break-word; overflow-wrap: break-word; } </style>`;
-        }
-        iframe.srcdoc = `${injectedStyles}<style>${EditorUtils.getPreviewStylingCSS(true)}</style>${content}`;
+        // Setting srcdoc populates the iframe with the provided HTML content.
+        // The browser handles creating a complete, isolated document structure.
+        iframe.srcdoc = content;
       }
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }

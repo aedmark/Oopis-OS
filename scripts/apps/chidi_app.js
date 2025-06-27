@@ -820,34 +820,40 @@ const ChidiApp = {
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
                     <h1 id="chidi-mainTitle">chidi.md</h1>
-                    <div class="chidi-header-right-group">
-                        <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                    </div>
                 </header>
+
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
                     <p class="chidi-placeholder-text">Awaiting file selection...</p>
                 </main>
+
                 <div id="chidi-ask-input-container" class="chidi-ask-container chidi-hidden">
                     <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
                 </div>
+                
+                <div class="chidi-progress-bar">
+                    <div class="chidi-progress-bar-inner"></div>
+                </div>
+
                 <div class="chidi-controls-container">
-                    <div class="chidi-control-group chidi-group-left">
+                    <div class="chidi-control-group">
                         <button id="chidi-prevBtn" class="chidi-btn" disabled>&larr; PREV</button>
                         <button id="chidi-nextBtn" class="chidi-btn" disabled>NEXT &rarr;</button>
                     </div>
-                    <div class="chidi-control-group chidi-group-center">
+                    <div class="chidi-control-group">
                         <select id="chidi-file-selector" class="chidi-btn chidi-select"></select>
                     </div>
-                    <div class="chidi-control-group chidi-group-right">
+                    <div class="chidi-control-group">
                         <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
                         <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
                         <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
                     </div>
                 </div>
+
                 <footer class="chidi-status-readout">
                     <div id="chidi-fileCountDisplay" class="chidi-status-item">FILES: 0</div>
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>
                     <div class="chidi-control-group">
+                        <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
                         <button id="chidi-verbose-toggle-btn" class="chidi-btn" title="Toggle verbose operation log">Log: Off</button>
                         <button id="chidi-saveSessionBtn" class="chidi-btn" title="Save current session to a new file">Save Session</button>
                         <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
@@ -864,174 +870,100 @@ const ChidiApp = {
      */
     getStyles() {
         return `
-            #chidi-modal {
-                --panel-bg: #1a1a1d;
-                --screen-bg: #0d0d0d;
-                --text-primary: #e4e4e7;
-                --text-secondary: #a1a1aa;
-                --accent-green: #34d399;
-                --accent-blue: #60a5fa;
-                --accent-red: #f87171;
-                --border-color: #52525b;
-                --font-family: 'VT323', monospace;
+            :root {
+                --chidi-bg: #1e1e1e;
+                --chidi-screen-bg: #111;
+                --chidi-border: #4a4a4a;
+                --chidi-text: #dcdcdc;
+                --chidi-accent-green: #4ade80;
+                --chidi-accent-blue: #60a5fa;
+                --chidi-font: 'VT323', monospace;
             }
-            .chidi-modal-overlay {
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background-color: rgba(10, 10, 10, 0.9);
-                display: flex; align-items: center; justify-content: center;
-                z-index: 998; font-family: var(--font-family);
-            }
+
             #chidi-console-panel {
-                width: 95%; height: 95%; max-width: 1000px;
-                background-color: var(--panel-bg);
-                border: 2px solid var(--border-color); border-radius: 8px;
-                box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.4);
-                display: flex; flex-direction: column;
-                padding: 1rem; color: var(--text-primary);
-                overflow: auto;
+                width: 95%;
+                height: 95%;
+                max-width: 1000px;
+                background-color: var(--chidi-bg);
+                border: 2px solid var(--chidi-border);
+                border-radius: 8px;
+                box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+                display: flex;
+                flex-direction: column;
+                padding: 1rem;
+                font-family: var(--chidi-font);
+                color: var(--chidi-text);
+                position: relative;
+                overflow: hidden;
             }
+
             .chidi-console-header {
-                display: grid;
-                grid-template-columns: 1fr auto 1fr;
-                align-items: center;
-                border-bottom: 2px solid var(--border-color);
-                padding-bottom: 0.5rem;
+                background-color: var(--chidi-accent-green);
+                padding: 0.25rem 0.5rem;
                 margin-bottom: 1rem;
             }
+
             #chidi-mainTitle {
-                grid-column: 2;
                 font-size: 1.5rem;
-                color: var(--accent-green);
+                color: #000;
                 text-align: center;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                padding: 0 1rem;
             }
-            .chidi-header-right-group {
-                grid-column: 3;
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                gap: 1.25rem;
-            }
-            .chidi-markdown-content {
-                flex-grow: 1; background-color: var(--screen-bg); color: var(--text-primary);
-                padding: 1.5rem; border-radius: 4px; overflow-y: auto;
+            
+            #chidi-markdownDisplay, .chidi-ask-container {
+                flex-grow: 1;
+                background-color: var(--chidi-screen-bg);
+                color: var(--chidi-text);
+                padding: 1.5rem;
+                border: 1px solid var(--chidi-border);
+                box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+                border-radius: 4px;
+                overflow-y: auto;
                 line-height: 1.6;
-                scrollbar-width: thin; scrollbar-color: var(--accent-green) var(--screen-bg);
+                scrollbar-width: thin;
+                scrollbar-color: var(--chidi-accent-green) var(--chidi-screen-bg);
             }
-            .chidi-markdown-content::-webkit-scrollbar { width: 8px; }
-            .chidi-markdown-content::-webkit-scrollbar-track { background: var(--screen-bg); }
-            .chidi-markdown-content::-webkit-scrollbar-thumb { background-color: var(--accent-green); border-radius: 4px; border: 2px solid var(--screen-bg); }
 
-            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--accent-blue); }
-            .chidi-markdown-content p { margin-bottom: 1rem; }
-            .chidi-markdown-content ul, .chidi-markdown-content ol, .chidi-markdown-content blockquote, .chidi-markdown-content pre { margin-bottom: 1rem; }
-            .chidi-markdown-content a { color: var(--accent-green); text-decoration: none; }
+            /* Webkit Scrollbar Styles */
+            #chidi-markdownDisplay::-webkit-scrollbar, .chidi-ask-container::-webkit-scrollbar { width: 8px; }
+            #chidi-markdownDisplay::-webkit-scrollbar-track, .chidi-ask-container::-webkit-scrollbar-track { background: var(--chidi-screen-bg); }
+            #chidi-markdownDisplay::-webkit-scrollbar-thumb, .chidi-ask-container::-webkit-scrollbar-thumb { background-color: var(--chidi-accent-green); border-radius: 4px; border: 2px solid var(--chidi-screen-bg); }
+
+            /* Markdown Content Styles */
+            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--chidi-accent-blue); }
+            .chidi-markdown-content a { color: var(--chidi-accent-green); text-decoration: none; }
             .chidi-markdown-content a:hover { text-decoration: underline; }
             .chidi-markdown-content code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
             .chidi-markdown-content pre { background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid #333; }
-            .chidi-markdown-content blockquote { border-left: 4px solid var(--accent-blue); padding-left: 1rem; margin-left: 0; font-style: italic; color: #a1a1aa; }
-            .chidi-placeholder-text, .chidi-error-text { color: #888; text-align: center; margin-top: 3rem; font-style: italic; }
-            .chidi-error-text { color: var(--accent-red); }
-            .chidi-ai-output { border-top: 2px dashed var(--accent-blue); margin-top: 2rem; padding-top: 1rem; }
+            .chidi-markdown-content blockquote { border-left: 4px solid var(--chidi-accent-blue); padding-left: 1rem; margin-left: 0; font-style: italic; color: #a1a1aa; }
+            .chidi-ai-output { border-top: 2px dashed var(--chidi-accent-blue); margin-top: 2rem; padding-top: 1rem; }
 
-            .chidi-ask-container { flex-grow: 1; display: flex; }
-            .chidi-ask-textarea {
-                width: 100%; height: 100%; background-color: var(--screen-bg);
-                border: 1px solid var(--accent-blue); border-radius: 4px;
-                color: var(--text-primary); font-family: var(--font-family);
-                font-size: 1.1rem; line-height: 1.6; padding: 1rem; resize: none;
-                outline: none;
-            }
+            /* Ask Input Styles */
+            .chidi-ask-textarea { width: 100%; height: 100%; background: transparent; border: none; color: var(--chidi-text); font-size: 1.1rem; resize: none; outline: none; }
             
-            .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; align-items: center; }
+            /* Controls Styles */
+            .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; margin-bottom: 0.5rem; align-items: center; }
             .chidi-control-group { display: flex; gap: 0.5rem; align-items: center;}
-            
-            .chidi-btn {
-                background-color: #3f3f46;
-                color: #a7f3d0;
-                border: 1px solid #52525b;
-                padding: 0.4rem 0.8rem;
-                border-radius: 0.375rem;
-                font-family: 'VT323', monospace;
-                font-size: 1.1rem;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                white-space: nowrap;
-            }
-            .chidi-btn:hover:not(:disabled) {
-                background-color: #52525b;
-                color: #d1fae5;
-            }
-            .chidi-btn:disabled {
-                background-color: #27272a;
-                color: #52525b;
-                border-color: #3f3f46;
-                cursor: not-allowed;
-            }
-            .chidi-select {
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                text-align: left;
-                padding-right: 2.5rem;
-                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a7f3d0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-                background-position: right 0.5rem center;
-                background-repeat: no-repeat;
-                background-size: 1.5em 1.5em;
-                max-width: 300px;
-                text-overflow: ellipsis;
-            }
-             .chidi-select:disabled {
-                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2352525b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            }
-            .chidi-exit-btn {
-                background-color: #3f1212;
-                color: #fca5a5;
-                border-color: #ef4444;
-            }
-            .chidi-exit-btn:hover:not(:disabled) {
-                background-color: #5b2121;
-                color: #fecaca;
-            }
+            .chidi-btn { background-color: #333; color: var(--chidi-accent-green); border: 1px solid var(--chidi-border); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s ease; }
+            .chidi-btn:hover:not(:disabled) { background-color: #444; color: #fff; }
+            .chidi-btn:disabled { background-color: #222; color: #555; border-color: #444; cursor: not-allowed; }
+            .chidi-exit-btn { background-color: #3f1212; color: #fca5a5; border-color: #ef4444; }
+            .chidi-exit-btn:hover:not(:disabled) { background-color: #5b2121; }
+            .chidi-select { max-width: 300px; text-overflow: ellipsis; }
 
-            .chidi-status-readout {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 1rem;
-                border-top: 2px solid var(--border-color);
-                padding-top: 0.5rem;
-                margin-top: 1rem;
-                font-size: 1.2rem;
-                color: var(--text-secondary);
-            }
-            .chidi-status-readout > .chidi-status-item,
-            .chidi-status-readout > .chidi-control-group {
-                flex-shrink: 0;
-            }
-            .chidi-status-message {
-                flex-grow: 1;
-                text-align: center;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                min-width: 0;
-            }
-            .chidi-loader {
-                width: 10px;
-                height: 18px;
-                background-color: var(--accent-green);
-                animation: chidi-blink-cursor 1.2s steps(2, start) infinite;
-            }
-            @keyframes chidi-blink-cursor {
-                to {
-                    visibility: hidden;
-                }
-            }
+            /* Progress Bar */
+            .chidi-progress-bar { width: 100%; background-color: #111; border: 1px solid var(--chidi-border); height: 10px; padding: 1px; margin-top: 0.5rem; }
+            .chidi-progress-bar-inner { width: 45%; height: 100%; background-color: var(--chidi-accent-green); }
+
+            /* Footer Styles */
+            .chidi-status-readout { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--chidi-border); padding-top: 0.5rem; margin-top: 0.5rem; font-size: 1.1rem; color: #888; }
+            .chidi-status-message { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .chidi-loader { width: 10px; height: 16px; background-color: var(--chidi-accent-green); animation: chidi-blink-cursor 1.2s steps(2, start) infinite; }
+            
             .chidi-hidden { display: none !important; }
+            @keyframes chidi-blink-cursor { to { visibility: hidden; } }
         `;
     }
 };
