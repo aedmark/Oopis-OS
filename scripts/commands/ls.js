@@ -134,18 +134,18 @@
              * @async
              * @param {string} targetPathArg - The path argument provided to ls (can be relative).
              * @param {object} effectiveFlags - The flags object relevant to this listing.
-             * @returns {Promise<{success: boolean, output: string, items?: object[]}>} The result of the listing, including output lines and item details.
+             * @returns {Promise<{success: boolean, output?: string, error?: string, items?: object[]}>} The result of the listing.
              */
             async function listSinglePathContents(targetPathArg, effectiveFlags) {
                 // Validate the target path.
                 const pathValidation = FileSystemManager.validatePath("ls", targetPathArg);
-                if (pathValidation.error) return { success: false, output: pathValidation.error };
+                if (pathValidation.error) return { success: false, error: pathValidation.error };
 
                 const targetNode = pathValidation.node;
 
                 // Check read permission on the target node.
                 if (!FileSystemManager.hasPermission(targetNode, currentUser, "read")) {
-                    return { success: false, output: `ls: cannot access '${targetPathArg}': Permission denied` };
+                    return { success: false, error: `ls: cannot access '${targetPathArg}': Permission denied` };
                 }
 
                 let itemDetailsList = [];
@@ -155,7 +155,7 @@
                     // If -d is used and target is a directory, list the directory itself.
                     const details = getItemDetails(targetPathArg, targetNode, pathValidation.resolvedPath);
                     if (details) singleItemResultOutput = effectiveFlags.long ? formatLongListItem(details) : details.name;
-                    else return { success: false, output: `ls: cannot stat '${targetPathArg}': Error retrieving details` };
+                    else return { success: false, error: `ls: cannot stat '${targetPathArg}': Error retrieving details` };
                 } else if (targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
                     // If target is a directory (and -d is not used), list its children.
                     const childrenNames = Object.keys(targetNode.children);
@@ -171,7 +171,7 @@
                     const fileName = pathValidation.resolvedPath.substring(pathValidation.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
                     const details = getItemDetails(fileName, targetNode, pathValidation.resolvedPath);
                     if (details) singleItemResultOutput = effectiveFlags.long ? formatLongListItem(details) : details.name;
-                    else return { success: false, output: `ls: cannot stat '${targetPathArg}': Error retrieving details` };
+                    else return { success: false, error: `ls: cannot stat '${targetPathArg}': Error retrieving details` };
                 }
 
                 let currentPathOutputLines = [];
@@ -205,7 +205,7 @@
 
                 const listResult = await listSinglePathContents(currentPath, displayFlags);
                 if (!listResult.success) {
-                    blockOutputs.push(listResult.output);
+                    blockOutputs.push(listResult.error); // Use .error property
                     encounteredErrorInThisBranch = true;
                     return { outputs: blockOutputs, encounteredError: encounteredErrorInThisBranch };
                 }
@@ -241,11 +241,21 @@
                         outputBlocks.push(`${path}:`); // Add header for multiple non-recursive paths.
                     }
                     const listResult = await listSinglePathContents(path, flags);
-                    if (!listResult.success) overallSuccess = false;
-                    if (listResult.output) outputBlocks.push(listResult.output);
+                    if (!listResult.success) {
+                        overallSuccess = false;
+                        if (listResult.error) outputBlocks.push(listResult.error); // Use .error property
+                    } else {
+                        if (listResult.output) outputBlocks.push(listResult.output);
+                    }
                 }
             }
-            return { success: overallSuccess, output: outputBlocks.join("\n") };
+
+            // Return success or failure with the appropriate message property.
+            if (overallSuccess) {
+                return { success: true, output: outputBlocks.join("\n") };
+            } else {
+                return { success: false, error: outputBlocks.join("\n") };
+            }
         },
     };
 

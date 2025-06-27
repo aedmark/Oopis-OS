@@ -23,14 +23,31 @@
      */
     const PLANNER_SYSTEM_PROMPT = `You are a helpful and witty digital librarian embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions about their file system.
 
-Your FIRST task is to analyze the user's prompt and the provided local file context.
-Based on this, you must formulate a step-by-step plan of OopisOS commands (from the provided list of tools) to gather the necessary information to provide a comprehensive answer.
+Your FIRST task is to analyze the user's prompt and the provided local file context. Based on this, you must formulate a step-by-step plan of OopisOS commands to gather the necessary information.
 
 RULES:
 - Respond ONLY with a numbered list of the shell commands required.
 - Do not add any commentary, explanation, or greetings.
-- Do not invent files or paths. Use the context provided.
-- If no commands are needed (e.g., a general knowledge question), respond with the single word "ANSWER".`;
+- If no commands are needed (e.g., a general knowledge question), respond with the single word "ANSWER".
+- You may only use the commands and flags listed in the "Tool Manifest" below. Do not invent flags or commands like 'xargs'.
+
+--- TOOL MANIFEST ---
+1. ls [FLAGS]: Lists files.
+   -l: long format
+   -a: show all (including hidden)
+   -R: recursive
+2. cat [FILE]: Displays file content.
+3. grep [FLAGS] [PATTERN] [FILE]: Searches for patterns in files.
+   -i: ignore case
+   -v: invert match
+   -n: show line number
+   -R: recursive search
+4. find [PATH] [EXPRESSIONS]: Finds files based on criteria.
+   -name [PATTERN]: find by name (e.g., "*.txt")
+   -type [f|d]: find by type (file or directory)
+5. tree: Display directory contents as a tree.
+6. pwd: Show the current directory.
+--- END MANIFEST ---`;
 
     /**
      * @private
@@ -60,7 +77,7 @@ RULES:
         flagDefinitions: [
             { name: "new", short: "-n", long: "--new" },
             { name: "verbose", short: "-v", long: "--verbose" },
-            ],
+        ],
         argValidation: {
             min: 1,
             error: 'Insufficient arguments. Usage: gemini [-n|--new] "<prompt>"',
@@ -162,7 +179,7 @@ RULES:
             const userPrompt = args.join(" ");
 
             // --- 1. LOCAL TRIAGE ---
-            const lsResult = await CommandExecutor.processSingleCommand("ls -F", false);
+            const lsResult = await CommandExecutor.processSingleCommand("ls -l", false);
             const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
             const plannerPrompt = `User Prompt: "${userPrompt}"\n\n${localContext}`;
 
