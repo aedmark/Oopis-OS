@@ -1,17 +1,12 @@
 /**
  * @fileoverview Core application logic for Chidi.md, a modal Markdown reader and analyzer for OopisOS.
  * This file handles the UI creation, state management, Markdown rendering, and interaction with the Gemini API.
- * It is designed to be launched by the 'chidi' command and operate within the AppLayerManager.
  * @module ChidiApp
  */
 
 const ChidiApp = {
     /**
      * @property {object} state - The current state of the Chidi application.
-     * @property {Array<object>} state.loadedFiles - Array of file objects ({name, path, content}) loaded into the app.
-     * @property {number} state.currentIndex - The index of the currently displayed file in the loadedFiles array.
-     * @property {boolean} state.isModalOpen - Flag indicating if the application UI is currently active.
-     * @property {boolean} state.isAskingMode - Flag indicating if the user is in the multi-file "Ask" mode.
      */
     state: {
         loadedFiles: [],
@@ -24,6 +19,7 @@ const ChidiApp = {
      * @property {Object.<string, HTMLElement>} elements - A cache of frequently accessed DOM elements.
      */
     elements: {},
+    callbacks: {},
 
     /**
      * Checks if the Chidi modal is currently open and active.
@@ -35,11 +31,10 @@ const ChidiApp = {
 
     /**
      * Launches the Chidi.md application in a modal window.
-     * This is the main entry point for the application.
      * @param {Array<object>} files - An array of file objects ({ name, path, content }) to be loaded.
-     * @param {function} onExit - Callback function to execute when the application is closed.
+     * @param {object} callbacks - An object containing onExit and onSaveSession callbacks.
      */
-    launch(files, onExit) {
+    launch(files, callbacks) {
         if (this.state.isModalOpen) {
             console.warn("ChidiApp is already open.");
             return;
@@ -48,7 +43,7 @@ const ChidiApp = {
         this.state.isModalOpen = true;
         this.state.loadedFiles = files;
         this.state.currentIndex = files.length > 0 ? 0 : -1;
-        this.onExit = onExit;
+        this.callbacks = callbacks;
 
         this.injectStyles();
 
@@ -81,9 +76,10 @@ const ChidiApp = {
             isAskingMode: false,
         };
         this.elements = {};
+        this.callbacks = {};
 
-        if (typeof this.onExit === 'function') {
-            this.onExit();
+        if (typeof this.callbacks.onExit === 'function') {
+            this.callbacks.onExit();
         }
     },
 
@@ -122,6 +118,7 @@ const ChidiApp = {
             summarizeBtn: get('chidi-summarizeBtn'),
             studyBtn: get('chidi-suggestQuestionsBtn'),
             askBtn: get('chidi-askAllFilesBtn'),
+            saveSessionBtn: get('chidi-saveSessionBtn'), // New button
             exportBtn: get('chidi-exportBtn'),
             closeBtn: get('chidi-closeBtn'),
             markdownDisplay: get('chidi-markdownDisplay'),
@@ -136,7 +133,6 @@ const ChidiApp = {
 
     /**
      * Updates the entire UI based on the current application state.
-     * This includes button states, titles, and the rendered Markdown content.
      */
     updateUI() {
         if (!this.state.isModalOpen) return;
@@ -149,6 +145,7 @@ const ChidiApp = {
         this.elements.nextBtn.disabled = this.state.currentIndex >= this.state.loadedFiles.length - 1;
         this.elements.fileSelector.disabled = !hasFiles;
         this.elements.exportBtn.disabled = !hasFiles;
+        this.elements.saveSessionBtn.disabled = !hasFiles; // New button state
 
         if (hasFiles) {
             this.elements.fileSelector.value = this.state.currentIndex;
@@ -160,15 +157,20 @@ const ChidiApp = {
 
         if (currentFile) {
             this.elements.mainTitle.textContent = currentFile.name.replace(/\.md$/i, '');
-            try {
-                this.elements.markdownDisplay.innerHTML = marked.parse(currentFile.content);
-            } catch (error) {
-                this.elements.markdownDisplay.innerHTML = `<p class="chidi-error-text">Error rendering Markdown for ${currentFile.name}.</p>`;
-                console.error("Markdown parsing error:", error);
+            // For .txt files, we need to wrap the content in <pre> to preserve whitespace.
+            if (currentFile.name.toLowerCase().endsWith('.txt')) {
+                this.elements.markdownDisplay.innerHTML = `<pre>${Utils.escapeHTML(currentFile.content)}</pre>`;
+            } else {
+                try {
+                    this.elements.markdownDisplay.innerHTML = marked.parse(currentFile.content);
+                } catch (error) {
+                    this.elements.markdownDisplay.innerHTML = `<p class="chidi-error-text">Error rendering Markdown for ${currentFile.name}.</p>`;
+                    console.error("Markdown parsing error:", error);
+                }
             }
         } else {
             this.elements.mainTitle.textContent = "chidi.md";
-            this.elements.markdownDisplay.innerHTML = `<p class="chidi-placeholder-text">No Markdown files loaded.</p>`;
+            this.elements.markdownDisplay.innerHTML = `<p class="chidi-placeholder-text">No files loaded.</p>`;
         }
 
         this._adjustTitleFontSize();
@@ -219,11 +221,11 @@ const ChidiApp = {
      */
     setupEventListeners() {
         this.elements.closeBtn.addEventListener('click', () => this.close());
-        this.elements.exportBtn.addEventListener('click', () => this._exportConversation());
+        this.elements.exportBtn.addEventListener('click', () => this._handleExport());
+        this.elements.saveSessionBtn.addEventListener('click', () => this._handleSaveSession()); // New listener
 
         document.addEventListener('keydown', (e) => {
             if (!this.isActive()) return;
-
             if (e.key === 'Escape') {
                 if (this.state.isAskingMode) {
                     this._exitQuestionMode();
@@ -235,11 +237,8 @@ const ChidiApp = {
 
         this.elements.prevBtn.addEventListener('click', () => this.navigate(-1));
         this.elements.nextBtn.addEventListener('click', () => this.navigate(1));
-
         this.elements.fileSelector.addEventListener('change', (e) => {
-            if (this.state.isAskingMode) {
-                this._exitQuestionMode();
-            }
+            if (this.state.isAskingMode) this._exitQuestionMode();
             this._selectFileByIndex(e.target.value);
         });
 
@@ -249,12 +248,7 @@ const ChidiApp = {
             const prompt = `Please provide a concise summary of the following document:\n\n---\n\n${currentFile.content}`;
             this.toggleLoader(true);
             this.showMessage("Contacting Gemini API...");
-            const summary = await this.callGeminiApi([{
-                role: 'user',
-                parts: [{
-                    text: prompt
-                }]
-            }]);
+            const summary = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
             this.toggleLoader(false);
             this.appendAiOutput("Summary", summary);
         });
@@ -269,12 +263,7 @@ const ChidiApp = {
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${currentFile.content}`;
             this.toggleLoader(true);
             this.showMessage("Contacting Gemini API...");
-            const questions = await this.callGeminiApi([{
-                role: 'user',
-                parts: [{
-                    text: prompt
-                }]
-            }]);
+            const questions = await this.callGeminiApi([{ role: 'user', parts: [{ text: prompt }] }]);
             this.toggleLoader(false);
             this.appendAiOutput("Suggested Questions", questions);
         });
@@ -642,6 +631,85 @@ const ChidiApp = {
     },
 
     /**
+     * Packages the current view (including original content and AI responses) into a complete HTML string.
+     * @private
+     * @returns {string} A string containing the full HTML document for the session.
+     */
+    _packageSessionAsHTML() {
+        const currentFile = this.getCurrentFile();
+        if (!currentFile) return "";
+
+        const content = this.elements.markdownDisplay.innerHTML;
+        const title = `Chidi Session: ${currentFile.name}`;
+        const styles = `
+            body { background-color: #0d0d0d; color: #e4e4e7; font-family: 'VT323', monospace; line-height: 1.6; padding: 2rem; }
+            h1, h2, h3 { border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: #60a5fa; }
+            a { color: #34d399; }
+            pre { white-space: pre-wrap; word-break: break-all; background-color: #000; padding: 1rem; border-radius: 4px; border: 1px solid #333; }
+            code:not(pre > code) { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; }
+            blockquote { border-left: 4px solid #60a5fa; padding-left: 1rem; margin-left: 0; color: #a1a1aa; }
+            .chidi-ai-output { border-top: 2px dashed #60a5fa; margin-top: 2rem; padding-top: 1rem; }
+        `;
+        return `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+                <title>${title}</title>
+                <style>${styles}</style>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                ${content}
+            </body>
+            </html>
+        `;
+    },
+
+    /**
+     * Handles the "Export" button click. Packages the session and triggers a browser download.
+     * @private
+     */
+    _handleExport() {
+        const currentFile = this.getCurrentFile();
+        if (!currentFile) {
+            this.showMessage("Error: No file to export.");
+            return;
+        }
+
+        const html = this._packageSessionAsHTML();
+        if (!html) return;
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentFile.name.replace(/\.(md|txt)$/, '')}_session.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showMessage(`Exported session for ${currentFile.name}.`);
+    },
+
+    /**
+     * Handles the "Save Session" button click. Packages the session and passes it to the callback.
+     * @private
+     */
+    _handleSaveSession() {
+        if (typeof this.callbacks.onSaveSession !== 'function') {
+            this.showMessage("Error: Save session functionality is not configured.");
+            return;
+        }
+        const html = this._packageSessionAsHTML();
+        if (html) {
+            this.callbacks.onSaveSession(html);
+        }
+    },
+
+    /**
      * Returns the HTML structure for the application modal.
      * @returns {string} The HTML content as a string.
      */
@@ -678,6 +746,7 @@ const ChidiApp = {
                     <div id="chidi-fileCountDisplay" class="chidi-status-item">FILES: 0</div>
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>
                     <div class="chidi-control-group">
+                        <button id="chidi-saveSessionBtn" class="chidi-btn" title="Save current session to a new file">Save Session</button>
                         <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
                         <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
                     </div>

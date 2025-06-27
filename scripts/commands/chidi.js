@@ -171,16 +171,42 @@
                     TerminalUI.focusInput();
                     resolve({ success: true, output: "" });
                 };
+                const handleSaveSession = async (htmlContent) => {
+                    const defaultName = `chidi-session-${new Date().toISOString().slice(0,10)}.html`;
+                    const fileName = await new Promise(resolve => {
+                        ModalInputManager.requestInput(`Save session as:`,
+                            (val) => resolve(val || defaultName),
+                            () => resolve(null),
+                            false, options
+                        );
+                    });
+
+                    if (!fileName) {
+                        await OutputManager.appendToOutput("Save cancelled.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                        return;
+                    }
+
+                    const savePath = FileSystemManager.getAbsolutePath(fileName);
+                    const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+                    const saveResult = await FileSystemManager.createOrUpdateFile(savePath, htmlContent, { currentUser, primaryGroup });
+
+                    if (saveResult.success && await FileSystemManager.save()) {
+                        await OutputManager.appendToOutput(`Chidi session saved to '${savePath}'`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                    } else {
+                        await OutputManager.appendToOutput(`Error saving session: ${saveResult.error || 'Failed to save to VFS.'}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                    }
+                };
+
                 TerminalUI.setInputState(false);
-                ChidiApp.launch(files, onExit);
+                // --- MODIFIED: Pass both callbacks to the ChidiApp ---
+                ChidiApp.launch(files, { onExit, onSaveSession: handleSaveSession });
             });
         }
     };
 
-    // --- UPDATED HELP TEXT ---
     const description = "Opens the Chidi AI reader for specified documents.";
     const helpText = `
-Usage: chidi [path]
+Usage: chidi <path>
 
 DESCRIPTION
     Launches a modal application to read and analyze Markdown (.md) and text (.txt) files.
@@ -192,6 +218,9 @@ DESCRIPTION
 
     The first time you run this command, you will be prompted for a Gemini API key
     if one is not already saved.
+
+NEW FEATURES
+    - Save Session: Inside the app, you can save the current view (including AI responses) to a new HTML file.
 
 EXAMPLES
     chidi /docs
