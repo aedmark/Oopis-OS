@@ -183,7 +183,7 @@ RULES:
             const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
             const plannerPrompt = `User Prompt: "${userPrompt}"\n\n${localContext}`;
 
-            if (options.isInteractive) {
+            if (options.isInteractive && flags.verbose) {
                 await OutputManager.appendToOutput("Gemini is thinking...", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
 
@@ -220,13 +220,13 @@ RULES:
                         return { success: false, error: `Attempted to run restricted command: ${commandName}` };
                     }
 
-                    if (options.isInteractive) {
+                    if (flags.verbose && options.isInteractive) {
                         await OutputManager.appendToOutput(`> ${commandStr}`, { typeClass: Config.CSS_CLASSES.EDITOR_MSG });
                     }
                     const execResult = await CommandExecutor.processSingleCommand(commandStr, false);
                     const output = execResult.success ? execResult.output : `Error: ${execResult.error}`;
 
-                    if (options.isInteractive && output) {
+                    if (flags.verbose && options.isInteractive && output) {
                         await OutputManager.appendToOutput(output);
                     }
                     executedCommandsOutput += `--- Output of '${commandStr}' ---\n${output}\n\n`;
