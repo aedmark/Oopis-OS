@@ -13,6 +13,7 @@ const ChidiApp = {
         currentIndex: -1,
         isModalOpen: false,
         isAskingMode: false,
+        isVerbose: false,
     },
 
     /**
@@ -55,7 +56,12 @@ const ChidiApp = {
         this.setupEventListeners();
 
         this.updateUI();
-        this.showMessage("Chidi.md initialized. " + files.length + " files loaded.");
+
+        if (callbacks.isNewSession) {
+            this.showMessage("New session started. AI interaction history is cleared.");
+        } else {
+            this.showMessage("Chidi.md initialized. " + files.length + " files loaded.");
+        }
     },
 
     /**
@@ -119,6 +125,7 @@ const ChidiApp = {
             studyBtn: get('chidi-suggestQuestionsBtn'),
             askBtn: get('chidi-askAllFilesBtn'),
             saveSessionBtn: get('chidi-saveSessionBtn'), // New button
+            verboseToggleBtn: get('chidi-verbose-toggle-btn'),
             exportBtn: get('chidi-exportBtn'),
             closeBtn: get('chidi-closeBtn'),
             markdownDisplay: get('chidi-markdownDisplay'),
@@ -224,6 +231,11 @@ const ChidiApp = {
         this.elements.exportBtn.addEventListener('click', () => this._handleExport());
         this.elements.saveSessionBtn.addEventListener('click', () => this._handleSaveSession()); // New listener
 
+        this.elements.verboseToggleBtn.addEventListener('click', () => {
+            this.state.isVerbose = !this.state.isVerbose;
+            this.elements.verboseToggleBtn.textContent = this.state.isVerbose ? 'Log: On' : 'Log: Off';
+            this.showMessage(`Verbose logging ${this.state.isVerbose ? 'enabled' : 'disabled'}.`);
+        });
         document.addEventListener('keydown', (e) => {
             if (!this.isActive()) return;
             if (e.key === 'Escape') {
@@ -340,13 +352,22 @@ const ChidiApp = {
 
         this._exitQuestionMode();
         this.toggleLoader(true);
-        this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
+        if (this.state.isVerbose) {
+            this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
+        }
 
         try {
+            const questionLower = userQuestion.toLowerCase();
             const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how', 'and', 'or', 'but']);
-            const questionKeywords = userQuestion.toLowerCase().split(/[\s!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~]+/).filter(word => word.length > 2 && !stopWords.has(word));
+            const allWords = questionLower.split(/[\s!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~]+/).filter(Boolean);
+            const keywords = allWords.filter(word => word.length > 2 && !stopWords.has(word));
 
-            if (questionKeywords.length === 0) {
+            const bigrams = [];
+            for (let i = 0; i < allWords.length - 1; i++) {
+                bigrams.push(allWords[i] + ' ' + allWords[i + 1]);
+            }
+
+            if (keywords.length === 0 && bigrams.length === 0) {
                 this.toggleLoader(false);
                 this.showMessage("Your question is too generic. Please be more specific.");
                 this.appendAiOutput("Refine Your Question", "Please ask a more specific question so I can find relevant documents for you.");
@@ -361,12 +382,31 @@ const ChidiApp = {
                 const contentLower = file.content.toLowerCase();
                 const nameLower = file.name.toLowerCase();
 
-                questionKeywords.forEach(keyword => {
-                    score += (contentLower.match(new RegExp(keyword, 'g')) || []).length;
+                bigrams.forEach(phrase => {
+                    score += (contentLower.match(new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length * 10;
+                });
+
+                keywords.forEach(keyword => {
                     if (nameLower.includes(keyword)) {
-                        score += 5;
+                        score += 15;
                     }
                 });
+
+                const headerRegex = /^(#+)\s+(.*)/gm;
+                let match;
+                while ((match = headerRegex.exec(file.content)) !== null) {
+                    const headerText = match[2].toLowerCase();
+                    keywords.forEach(keyword => {
+                        if (headerText.includes(keyword)) {
+                            score += 5;
+                        }
+                    });
+                }
+
+                keywords.forEach(keyword => {
+                    score += (contentLower.match(new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+                });
+
                 return {
                     file,
                     score
@@ -375,7 +415,7 @@ const ChidiApp = {
 
             scoredFiles.sort((a, b) => b.score - a.score);
 
-            const MAX_CONTEXT_FILES = 10;
+            const MAX_CONTEXT_FILES = 5;
             const relevantFiles = [currentFile];
             const uniquePaths = new Set([currentFile.path]);
 
@@ -386,14 +426,23 @@ const ChidiApp = {
                 }
             });
 
-            this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
+            if (this.state.isVerbose) {
+                this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
+            } else {
+                this.showMessage("Asking Gemini...");
+            }
 
             let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question. Prioritize information from the first document if it is relevant, but use all provided documents to form your answer.\n\n";
-            relevantFiles.forEach(file => {
+                relevantFiles.forEach(file => {
                 promptContext += `--- START OF DOCUMENT: ${file.name} ---\n\n${file.content}\n\n--- END OF DOCUMENT: ${file.name} ---\n\n`;
             });
 
             const finalPrompt = `${promptContext}User's Question: "${userQuestion}"`;
+
+            this.appendAiOutput(
+                "Constructed Prompt for Gemini",
+                "The following block contains the exact context and question being sent to the AI for analysis.\n\n```text\n" + finalPrompt + "\n```"
+            );
 
             const finalAnswer = await this.callGeminiApi([{
                 role: 'user',
@@ -746,6 +795,7 @@ const ChidiApp = {
                     <div id="chidi-fileCountDisplay" class="chidi-status-item">FILES: 0</div>
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>
                     <div class="chidi-control-group">
+                        <button id="chidi-verbose-toggle-btn" class="chidi-btn" title="Toggle verbose operation log">Log: Off</button>
                         <button id="chidi-saveSessionBtn" class="chidi-btn" title="Save current session to a new file">Save Session</button>
                         <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
                         <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>

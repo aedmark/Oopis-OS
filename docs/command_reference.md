@@ -386,9 +386,11 @@ This document provides a comprehensive reference for all available commands in O
 
 #### `gemini`
 **Description:** Engages in a context-aware conversation with the Gemini AI.
-**Usage:** `gemini [-n] "<prompt>"`
+**Usage:** `gemini [-n] [-v] "<prompt>"`
 **Details:** An AI assistant that can use OopisOS commands to explore the file system and answer questions.
-**Options:** `-n, --new`: Starts a new conversation.
+**Options:**
+- `-n, --new`: Starts a new conversation.
+- `-v, --verbose`: Enable verbose logging to see the AI's step-by-step plan and command execution.
 
 #### `chidi`
 **Description:** Opens the Chidi.md Markdown reader for a specified file or directory.

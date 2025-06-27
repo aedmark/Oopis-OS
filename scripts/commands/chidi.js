@@ -58,9 +58,14 @@
 
     const chidiCommandDefinition = {
         commandName: "chidi",
+        flagDefinitions: [{
+            name: "new",
+            short: "-n",
+            long: "--new"
+        }],
         argValidation: {
             max: 1, // Allows 0 or 1 arguments.
-            error: "Usage: chidi [path_to_file_or_directory]"
+            error: "Usage: chidi [-n] [path_to_file_or_directory]"
         },
         pathValidation: [{
             argIndex: 0,
@@ -76,6 +81,7 @@
         coreLogic: async (context) => {
             const {
                 args,
+                flags,
                 currentUser,
                 validatedPaths,
                 options
@@ -152,10 +158,6 @@
                 startPath = pathInfo.resolvedPath;
             }
 
-            // --- REFACTORED LOGIC ---
-            // The command logic now awaits a promise from the app.
-            // The app itself is responsible for resolving this promise when it closes.
-            // The command no longer meddles with the Terminal's UI state.
             try {
                 const files = await getMarkdownFiles(startPath, startNode, currentUser);
 
@@ -166,12 +168,13 @@
                     };
                 }
 
-                // This promise will be resolved by the ChidiApp's onExit callback.
                 await new Promise(resolve => {
-                    ChidiApp.launch(files, resolve);
+                    ChidiApp.launch(files, {
+                        onExit: resolve,
+                        isNewSession: flags.new
+                    });
                 });
 
-                // Once the promise is resolved (app has exited), the command is done.
                 return {
                     success: true,
                     output: ""
@@ -188,15 +191,17 @@
 
     const description = "Opens the Chidi.md Markdown reader for a specified file or directory.";
     const helpText = `
-Usage: chidi <path>
+Usage: chidi [-n|--new] [path]
 
 DESCRIPTION
     Launches a modal application to read and analyze Markdown (.md) files.
     The path can be to a single .md file or a directory.
     If a directory is provided, Chidi will recursively find and load all .md files within it.
 
-    The first time you run this command, you will be prompted for a Gemini API key
-    if one is not already saved.
+OPTIONS
+    -n, --new
+          Start a new session. Since Chidi's session is ephemeral and resets on
+          every launch, this flag serves to confirm that you are starting fresh.
 
     Inside the application:
     - Use PREV/NEXT to navigate between files if multiple are loaded.
