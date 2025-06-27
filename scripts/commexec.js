@@ -547,7 +547,7 @@ const CommandExecutor = (() => {
         lastResult.output !== null &&
         lastResult.output !== undefined
     ) {
-      if (!pipeline.isBackground) {
+      if (isInteractive && !pipeline.isBackground) {
         if (lastResult.output) {
           await OutputManager.appendToOutput(lastResult.output, {
             typeClass: lastResult.messageType || null,
