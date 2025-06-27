@@ -160,6 +160,82 @@ const CommandExecutor = (() => {
   }
 
   /**
+   * REFINED: Expands wildcard glob patterns (*, ?) in command arguments before parsing.
+   * This is a pre-processing step to handle file path expansion with more robust path handling.
+   * @private
+   * @param {string} commandString The raw command string after alias/variable expansion.
+   * @returns {Promise<string>} The command string with glob patterns expanded to matching file paths.
+   */
+  async function _expandGlobPatterns(commandString) {
+    const GLOB_WHITELIST = ['ls', 'rm', 'cat', 'cp', 'mv', 'chmod', 'chown', 'chgrp'];
+    // This regex correctly handles quoted arguments.
+    const args = commandString.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+
+    if (args.length === 0 || !GLOB_WHITELIST.includes(args[0])) {
+      return commandString;
+    }
+
+    const expandedArgs = [args[0]]; // Start with the command name itself.
+    let hasExpansionOccurred = false;
+
+    for (let i = 1; i < args.length; i++) {
+      const arg = args[i];
+      const isQuoted = (arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'"));
+      const hasGlobChar = arg.includes('*') || arg.includes('?');
+
+      if (!isQuoted && hasGlobChar) {
+        const globPattern = arg;
+        const lastSlashIndex = globPattern.lastIndexOf('/');
+
+        let pathPrefix = '.';
+        let patternPart = globPattern;
+
+        if (lastSlashIndex > -1) {
+          pathPrefix = globPattern.substring(0, lastSlashIndex + 1);
+          patternPart = globPattern.substring(lastSlashIndex + 1);
+        }
+        // If the prefix is just "/", handle it as root. Otherwise, resolve it.
+        const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix);
+        const dirNode = FileSystemManager.getNodeByPath(searchDir);
+
+        if (dirNode && dirNode.type === 'directory') {
+          const regex = Utils.globToRegex(patternPart);
+          if (regex) {
+            const matches = Object.keys(dirNode.children)
+                .filter(name => regex.test(name))
+                .map(name => {
+                  const fullPath = FileSystemManager.getAbsolutePath(name, searchDir);
+                  // Quote paths with spaces to ensure they are treated as a single argument.
+                  return fullPath.includes(' ') ? `"${fullPath}"` : fullPath;
+                });
+
+            if (matches.length > 0) {
+              expandedArgs.push(...matches);
+              hasExpansionOccurred = true;
+            } else {
+              // No matches found, preserve the original glob pattern.
+              expandedArgs.push(globPattern);
+            }
+          } else {
+            // Invalid glob pattern, preserve it.
+            expandedArgs.push(globPattern);
+          }
+        } else {
+          // Path doesn't exist or isn't a directory, preserve the original glob pattern.
+          expandedArgs.push(globPattern);
+        }
+      } else {
+        // Not a glob pattern (or is quoted), just add the argument as is.
+        expandedArgs.push(arg);
+      }
+    }
+
+    // Only reconstruct the string if an expansion actually happened.
+    return hasExpansionOccurred ? expandedArgs.join(' ') : commandString;
+  }
+
+
+  /**
    * Returns a dictionary of all active background jobs.
    * @returns {Object.<number, {id: number, command: string, abortController: AbortController}>} A dictionary of active jobs.
    */
@@ -579,7 +655,10 @@ const CommandExecutor = (() => {
       };
     }
 
-    const commandToParse = aliasResult.newCommand;
+    // NEW: Expand Glob Patterns
+    const commandAfterAliases = aliasResult.newCommand;
+    const commandToParse = await _expandGlobPatterns(commandAfterAliases);
+
     const cmdToEcho = rawCommandText.trim();
 
     // Echo the command to the output if interactive
