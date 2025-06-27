@@ -305,7 +305,7 @@ MESSAGES.WELCOME_SUFFIX=!`;
      * @param {string} basePath - The base path to resolve against if targetPath is relative.
      * @returns {string} The resolved absolute path.
      */
-    function getAbsolutePath(targetPath, basePath) {
+    function getAbsolutePath(targetPath, basePath = FileSystemManager.getCurrentPath()) {
         if (!targetPath) targetPath = Config.FILESYSTEM.CURRENT_DIR_SYMBOL;
         let effectiveBasePath = basePath;
         if (targetPath.startsWith(Config.FILESYSTEM.PATH_SEPARATOR))

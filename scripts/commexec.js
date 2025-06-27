@@ -195,7 +195,7 @@ const CommandExecutor = (() => {
           patternPart = globPattern.substring(lastSlashIndex + 1);
         }
         // If the prefix is just "/", handle it as root. Otherwise, resolve it.
-        const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix);
+        const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix, FileSystemManager.getCurrentPath());
         const dirNode = FileSystemManager.getNodeByPath(searchDir);
 
         if (dirNode && dirNode.type === 'directory') {
