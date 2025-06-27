@@ -261,6 +261,7 @@ const UserManager = (() => {
     async function _performLogin(username) {
         if (currentUser.name !== Config.USER.DEFAULT_NAME) {
             SessionManager.saveAutomaticState(currentUser.name);
+            SudoManager.clearUserTimestamp(currentUser.name);
         }
         SessionManager.clearUserStack(username);
         currentUser = { name: username };

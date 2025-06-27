@@ -59,6 +59,10 @@
             const scriptNode = context.validatedPaths[0].node;
             const fileExtension = Utils.getFileExtension(scriptPathArg);
 
+            // --- New Governor Configuration ---
+            const MAX_SCRIPT_STEPS = 10000; // Max number of commands to execute
+            let steps = 0;
+
             if (fileExtension !== "sh") {
                 return { success: false, error: `run: '${scriptPathArg}' is not a shell script (.sh) file.` };
             }
@@ -88,7 +92,14 @@
 
             // Main script execution loop
             while (scriptingContext.currentLineIndex < scriptingContext.lines.length) {
-                const lineIndexBeforeCommand = scriptingContext.currentLineIndex; // Capture index at start of loop
+                // --- Governor Check: Step Limit ---
+                if (steps++ > MAX_SCRIPT_STEPS) {
+                    overallScriptSuccess = false;
+                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                    break;
+                }
+
+                const lineIndexBeforeCommand = scriptingContext.currentLineIndex;
 
                 if (signal?.aborted) {
                     overallScriptSuccess = false;
@@ -174,15 +185,9 @@
                     break;
                 }
 
-                // The command at `lineIndexBeforeCommand` and any lines it consumed as input have been processed.
-                // We must always advance to the next line for the subsequent iteration of the loop.
                 if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
                     scriptingContext.currentLineIndex++;
                 } else {
-                    // If the index was advanced by a subroutine (like a password prompt),
-                    // the loop will naturally continue from the new, correct index.
-                    // However, we must increment once more to move *past* the line that was
-                    // just consumed as input.
                     scriptingContext.currentLineIndex++;
                 }
             }
