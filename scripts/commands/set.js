@@ -28,18 +28,45 @@
          */
         coreLogic: async (context) => {
             const { args } = context;
+
             if (args.length === 0) {
                 const allVars = EnvironmentManager.getAll();
                 const output = Object.keys(allVars).sort().map(key => `${key}="${allVars[key]}"`).join('\n');
                 return { success: true, output: output };
             }
 
-            const varName = args[0];
-            const value = args.slice(1).join(' ');
+            const combinedArg = args.join(' ');
+            const eqIndex = combinedArg.indexOf('=');
 
-            const result = EnvironmentManager.set(varName, value);
-            if (!result.success) {
-                return { success: false, error: `set: ${result.error}` };
+            // Heuristic: If an '=' is present, we assume 'VAR=value' format.
+            // This handles `VAR=val`, `VAR="val"`, and `VAR = "val"`.
+            if (eqIndex !== -1) {
+                const varName = combinedArg.substring(0, eqIndex).trim();
+                let value = combinedArg.substring(eqIndex + 1).trim();
+
+                if (!varName) {
+                    return { success: false, error: "set: invalid format. Missing variable name." };
+                }
+
+                // Strip surrounding quotes from the value, if they exist.
+                if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+                    value = value.substring(1, value.length - 1);
+                }
+
+                const result = EnvironmentManager.set(varName, value);
+                if (!result.success) {
+                    return { success: false, error: `set: ${result.error}` };
+                }
+            } else {
+                // If NO '=' is found, we assume 'set VAR value' format for compatibility.
+                const varName = args[0];
+                // The value is the rest of the arguments, which are already tokenized correctly.
+                const value = args.slice(1).join(' ');
+
+                const result = EnvironmentManager.set(varName, value);
+                if (!result.success) {
+                    return { success: false, error: `set: ${result.error}` };
+                }
             }
 
             return { success: true };

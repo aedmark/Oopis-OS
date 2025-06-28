@@ -222,11 +222,51 @@ check_fail "l"
 unalias la
 delay 300
 echo "--- Test: Environment Variables (set, unset, expansion) ---"
-set TEST_VAR "Hello OopisOS"
+
+echo "--- Test 1.1: Basic 'VAR value' syntax ---"
+set TEST_VAR_1 "Hello OopisOS"
+echo "Result -> TEST_VAR_1 is: '$TEST_VAR_1'"
+echo "(Expected: 'Hello OopisOS')"
+echo ""
+delay 500
+
+echo "--- Test 1.2: Basic 'VAR=value' syntax ---"
+set TEST_VAR_2=HelloWorld
+echo "Result -> TEST_VAR_2 is: '$TEST_VAR_2'"
+echo "(Expected: 'HelloWorld')"
+echo ""
+delay 500
+
+echo "--- Test 1.3: 'VAR = \"value\"' syntax ---"
+set TEST_VAR_3 = "Spaces and quotes"
+echo "Result -> TEST_VAR_3 is: '$TEST_VAR_3'"
+echo "(Expected: 'Spaces and quotes')"
+echo ""
+delay 500
+
+echo "--- Test 1.4: Overwriting a variable ---"
+set TEST_VAR_1="Goodbye"
+echo "Result -> TEST_VAR_1 is now: '$TEST_VAR_1'"
+echo "(Expected: 'Goodbye')"
+echo ""
+delay 500
+
+echo "--- Test 1.5: Unsetting variables ---"
+unset TEST_VAR_1
+unset TEST_VAR_2
+echo "Result -> TEST_VAR_1 is now: '$TEST_VAR_1'"
+echo "(Expected: '')"
+echo ""
+delay 500
+
+echo "--- Test 1.6: Invalid variable names ---"
+check_fail "set 1VAR=fail"
+check_fail "set VAR-FAIL=fail"
+echo ""
+delay 500
+
+echo "--- Test 1.7: Displaying final set of variables ---"
 set
-echo "Value is: $TEST_VAR"
-unset TEST_VAR
-echo "Value is now: $TEST_VAR"
 delay 700
 echo "---------------------------------------------------------------------"
 
@@ -273,7 +313,7 @@ echo "--- Application non-interactive checks passed. ---"
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 11.5: Globbing Expansion ---
+# --- Phase 12: Globbing Expansion ---
 echo ""
 echo "===== Testing: Globbing Wildcard Expansion ====="
 delay 400
@@ -297,7 +337,71 @@ echo *.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 12: Final Cleanup ---
+# --- Phase 12: Globbing Expansion ---
+# --- Test 1: Basic Assignment ---
+echo "--- Test 1: Basic 'VAR=value' syntax ---"
+set GREETING=HelloWorld
+echo "Result -> GREETING is: '$GREETING'"
+echo "(Expected: 'HelloWorld')"
+echo ""
+delay 700
+
+# --- Test 2: Assignment with Spaces & Quotes ---
+echo "--- Test 2: Assignment with spaces and quotes ---"
+set MESSAGE="Hello, OopisOS World!"
+echo "Result -> MESSAGE is: '$MESSAGE'"
+echo "(Expected: 'Hello, OopisOS World!')"
+echo ""
+delay 700
+
+# --- Test 3: Assignment with spaces around '=' ---
+echo "--- Test 3: Assignment with spaces around '=' ---"
+set SPACEY_VAR = "This also works"
+echo "Result -> SPACEY_VAR is: '$SPACEY_VAR'"
+echo "(Expected: 'This also works')"
+echo ""
+delay 700
+
+# --- Test 4: Overwriting a variable ---
+echo "--- Test 4: Overwriting an existing variable ---"
+set GREETING="Goodbye"
+echo "Result -> GREETING is now: '$GREETING'"
+echo "(Expected: 'Goodbye')"
+echo ""
+delay 700
+
+# --- Test 5: Setting to an empty string ---
+echo "--- Test 5: Setting to an empty string ---"
+set EMPTY_VAR=""
+echo "Result -> EMPTY_VAR is: '$EMPTY_VAR'"
+echo "(Expected: '')"
+echo ""
+delay 700
+
+# --- Test 6: Unsetting a variable ---
+echo "--- Test 6: Unsetting a variable ---"
+unset MESSAGE
+echo "Result -> MESSAGE is now: '$MESSAGE'"
+echo "(Expected: '')"
+echo ""
+delay 700
+
+# --- Test 7: Invalid variable name ---
+echo "--- Test 7: Attempting to set an invalid variable name ---"
+check_fail "set 1VAR=fail"
+check_fail "set VAR-FAIL=fail"
+echo ""
+delay 700
+
+# --- Test 8: Displaying all variables ---
+echo "--- Test 8: Final state of all variables ---"
+set
+echo ""
+delay 700
+
+echo "===== 'set' Command Test Suite Complete ====="
+
+# --- Phase 14: Final Cleanup ---
 echo ""
 echo "--- Final Cleanup ---"
 cd /
