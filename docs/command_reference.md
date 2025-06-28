@@ -197,6 +197,17 @@ This document provides a comprehensive reference for all available commands in O
 **Details:** Permanently deletes a user, their home directory, and group memberships. `root` and `Guest` cannot be removed.
 **Options:** `-f, --force`: Do not prompt for confirmation.
 
+#### `passwd`
+**Description:** Change a user's password.
+**Usage:** `passwd [username]`
+**Details:** The passwd command updates the password for a user account.
+If run without arguments, it changes the password for the current user. You will be prompted for your current password, and then for the new password twice.
+The root user can change the password for any user by specifying their username, and will not be prompted for the old password.
+**Examples:**
+`passwd`: Initiates the process to change your own password.
+`sudo passwd Guest`: As root, initiates the process to change the password for 'Guest'.
+
+
 #### `listusers`
 **Description:** Lists all registered users on the system.
 **Usage:** `listusers`
