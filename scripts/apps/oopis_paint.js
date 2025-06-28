@@ -15,6 +15,17 @@ const PaintAppConfig = {
         DEFAULT_WIDTH: 80,
         DEFAULT_HEIGHT: 24,
     },
+    /**
+     * @property {object} BRUSH - Configuration for brush tool behavior.
+     * @property {number} BRUSH.DEFAULT_SIZE - The starting brush size.
+     * @property {number} BRUSH.MIN_SIZE - The minimum brush size.
+     * @property {number} BRUSH.MAX_SIZE - The maximum brush size.
+     */
+    BRUSH: {
+        DEFAULT_SIZE: 1,
+        MIN_SIZE: 1,
+        MAX_SIZE: 5,
+    },
     DEFAULT_CHAR: '#',
     DEFAULT_FG_COLOR: 'rgb(34, 197, 94)',
     DEFAULT_BG_COLOR: 'bg-transparent',
@@ -81,10 +92,14 @@ const PaintUI = (() => {
         eventCallbacks = callbacks;
 
         elements.undoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
-        elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() } });
+        elements.redoBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() }});
         elements.pencilBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
         elements.eraserBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
 
+        elements.brushSizeDownBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '-', title: 'Decrease Brush Size', eventListeners: { click: () => eventCallbacks.onBrushSizeDown() }});
+        elements.brushSizeDisplay = Utils.createElement('span', { className: 'paint-size-display', textContent: '1' });
+        elements.brushSizeUpBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '+', title: 'Increase Brush Size', eventListeners: { click: () => eventCallbacks.onBrushSizeUp() }});
+        const brushSizeContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.brushSizeDownBtn, elements.brushSizeDisplay, elements.brushSizeUpBtn);
         elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' });
         elements.shapeToolBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: lineSVG, title: 'Shape Tool (L)' });
 
@@ -135,8 +150,7 @@ const PaintUI = (() => {
         elements.saveBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit Application (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, elements.charSelectBtn);
-        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group paint-session-group'}, elements.saveBtn, elements.exitBtn);
+        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, elements.charSelectBtn);        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group paint-session-group'}, elements.saveBtn, elements.exitBtn);
 
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
 
@@ -262,10 +276,10 @@ const PaintUI = (() => {
         if (!elements.statusBar) return;
         const paletteEntry = PaintAppConfig.PALETTE.find(p => p.value === status.fg);
         const colorName = paletteEntry ? paletteEntry.name : (status.fg.startsWith('rgb') ? 'custom' : status.fg);
-        elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Coords: ${status.coords.x},${status.coords.y}`;
+        elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Brush: ${status.brushSize} | Coords: ${status.coords.x},${status.coords.y}`;
     }
 
-    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive) {
+    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive, brushSize) {
         if (!elements.pencilBtn) return;
         elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
         elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
@@ -283,6 +297,11 @@ const PaintUI = (() => {
         elements.undoBtn.disabled = !undoPossible;
         elements.redoBtn.disabled = !redoPossible;
         elements.gridBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isGridActive);
+
+        elements.brushSizeDisplay.textContent = brushSize;
+        elements.brushSizeDownBtn.disabled = brushSize <= PaintAppConfig.BRUSH.MIN_SIZE;
+        elements.brushSizeUpBtn.disabled = brushSize >= PaintAppConfig.BRUSH.MAX_SIZE;
+
         let isCustomColorActive = true;
         elements.colorButtons.forEach((btn, index) => {
             const colorValue = PaintAppConfig.PALETTE[index].value;
@@ -338,6 +357,7 @@ const PaintManager = (() => {
     let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
     let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 };
+    let currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
     let isGridVisible = false;
     let shapeStartCoords = null;
@@ -348,6 +368,7 @@ const PaintManager = (() => {
         onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
         onSave: _handleSave, onExit: () => exit(), onUndo: _performUndo, onRedo: _performRedo,
         onGridToggle: _toggleGrid, onCharSelectOpen: _openCharSelect, onColorSelectOpen: _openColorSelect,
+        onBrushSizeUp: () => _setBrushSize(1), onBrushSizeDown: () => _setBrushSize(-1)
     };
 
     function _getLinePoints(x0, y0, x1, y1) {
@@ -403,7 +424,7 @@ const PaintManager = (() => {
         return data;
     }
 
-    function _updateToolbarState() { PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible); }
+    function _updateToolbarState() { PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible, currentBrushSize); }
     function _saveUndoState() {
         redoStack = [];
         undoStack.push(JSON.parse(JSON.stringify(canvasData)));
@@ -436,27 +457,58 @@ const PaintManager = (() => {
     function _setDrawCharFromSelection(char) {
         drawChar = char;
         PaintUI.hideCharSelect();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
+    }
+
+    function _setBrushSize(delta) {
+        const newSize = currentBrushSize + delta;
+        currentBrushSize = Math.max(PaintAppConfig.BRUSH.MIN_SIZE, Math.min(newSize, PaintAppConfig.BRUSH.MAX_SIZE));
+        _updateToolbarState();
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
     }
 
     function _drawOnCanvas(x, y, targetCanvas = null) {
         const canvas = targetCanvas || canvasData;
-        if (y < 0 || y >= canvas.length || x < 0 || x >= canvas[0].length) return;
-        const cell = canvas[y][x];
-        let changed = false;
-        if (currentTool !== 'eraser') {
-            if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== PaintAppConfig.DEFAULT_BG_COLOR) {
-                cell.char = drawChar; cell.fg = fgColor; cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
-                changed = true;
+        const drawLogic = (cx, cy) => {
+            if (cy < 0 || cy >= canvas.length || cx < 0 || cx >= canvas[0].length) return false;
+            const cell = canvas[cy][cx];
+            let changed = false;
+            if (currentTool !== 'eraser') {
+                if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== PaintAppConfig.DEFAULT_BG_COLOR) {
+                    cell.char = drawChar; cell.fg = fgColor; cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
+                    changed = true;
+                }
+            } else {
+                if (cell.char !== PaintAppConfig.ERASER_CHAR || cell.bg !== PaintAppConfig.ERASER_BG_COLOR) {
+                    cell.char = PaintAppConfig.ERASER_CHAR; cell.fg = PaintAppConfig.DEFAULT_FG_COLOR; cell.bg = PaintAppConfig.ERASER_BG_COLOR;
+                    changed = true;
+                }
+            }
+            return changed;
+        };
+
+        let anyCellChanged = false;
+        if (currentTool === 'pencil' || currentTool === 'eraser') {
+            const halfBrush = Math.floor(currentBrushSize / 2);
+            for (let dy = 0; dy < currentBrushSize; dy++) {
+                for (let dx = 0; dx < currentBrushSize; dx++) {
+                    if (drawLogic(x - halfBrush + dx, y - halfBrush + dy)) {
+                        anyCellChanged = true;
+                    }
+                }
             }
         } else {
-            if (cell.char !== PaintAppConfig.ERASER_CHAR || cell.bg !== PaintAppConfig.ERASER_BG_COLOR) {
-                cell.char = PaintAppConfig.ERASER_CHAR; cell.fg = PaintAppConfig.DEFAULT_FG_COLOR; cell.bg = PaintAppConfig.ERASER_BG_COLOR;
-                changed = true;
+            // Shape tools still draw with a 1px brush
+            if (drawLogic(x, y)) {
+                anyCellChanged = true;
             }
         }
-        if (changed && !targetCanvas) { isDirty = true; PaintUI.renderCanvas(canvasData); }
-        return changed;
+
+        if (anyCellChanged && !targetCanvas) {
+            isDirty = true;
+            PaintUI.renderCanvas(canvasData);
+        }
+        return anyCellChanged;
     }
 
     function onMouseDown(e) {
@@ -470,12 +522,12 @@ const PaintManager = (() => {
         } else {
             _drawOnCanvas(coords.x, coords.y);
         }
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize });
     }
 
     function onMouseMove(e) {
         const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
-        if (coords) { PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords }); }
+        if (coords) { PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize }); }
         if (!isDrawing || !coords) return;
         if (currentTool === 'pencil' || currentTool === 'eraser') {
             if (coords.x === lastCoords.x && coords.y === lastCoords.y) return;
@@ -530,6 +582,7 @@ const PaintManager = (() => {
         isActiveState = false; currentFilePath = null; canvasData = []; isDirty = false;
         isDrawing = false; currentTool = 'pencil'; drawChar = PaintAppConfig.DEFAULT_CHAR;
         fgColor = PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
+        currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
         undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         if (saveUndoStateTimeout) { clearTimeout(saveUndoStateTimeout); saveUndoStateTimeout = null; }
@@ -648,7 +701,7 @@ const PaintManager = (() => {
         PaintUI.renderCanvas(canvasData);
         PaintUI.toggleGrid(isGridVisible);
         _updateToolbarState();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1} });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize });
         document.addEventListener('keydown', handleKeyDown);
     }
 
@@ -715,7 +768,7 @@ const PaintManager = (() => {
             event.preventDefault();
             drawChar = event.key;
         }
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
     }
 
     return { enter, exit, isActive: () => isActiveState };
