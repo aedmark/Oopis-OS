@@ -60,7 +60,7 @@
             const fileExtension = Utils.getFileExtension(scriptPathArg);
 
             // --- New Governor Configuration ---
-            const MAX_SCRIPT_STEPS = 10000; // Max number of commands to execute
+            const MAX_SCRIPT_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS; // Max number of commands to execute
             let steps = 0;
 
             if (fileExtension !== "sh") {
@@ -239,10 +239,9 @@ SCRIPTING
               stop execution immediately.
 
 WARNING
-       The scripting engine does not have infinite loop detection.
-       A script that does not terminate (e.g., 'while true; do echo hello; done')
-       will cause the OopisOS tab to become unresponsive, requiring a
-       manual browser page reload.
+       The scripting engine includes a governor to prevent infinite loops.
+       A script that executes more than ${Config.FILESYSTEM.MAX_SCRIPT_STEPS} commands
+       will be terminated to prevent the OS from becoming unresponsive.
 
 EXAMPLES
        Suppose you have a file named 'greet.sh' with the following content:
@@ -257,7 +256,9 @@ EXAMPLES
        run ./greet.sh "Brave User"
 
        This will output:
-       Welcome to OopisOS, Developer!`;
+       Welcome to OopisOS, Brave User! You provided 1 argument(s).`;
 
-    CommandRegistry.register("run", runCommandDefinition, runDescription, runHelpText);
+    // The 'run' command must be dynamically loaded like any other.
+    CommandRegistry.register(runCommandDefinition.commandName, runCommandDefinition, runDescription, runHelpText);
+
 })();

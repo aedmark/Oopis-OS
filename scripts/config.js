@@ -25,7 +25,7 @@ const Config = (() => {
         /** Core OS metadata. */
         OS: {
             NAME: "OopisOs",
-            VERSION: " 3.0",
+            VERSION: " 3.1",
             DEFAULT_HOST_NAME: "OopisOs",
         },
         /** User-related constants and constraints. */
@@ -86,6 +86,7 @@ const Config = (() => {
             PERMISSION_BIT_WRITE: 0b010,
             PERMISSION_BIT_EXECUTE: 0b001,
             MAX_VFS_SIZE: 640 * 1024 * 1024,
+            MAX_SCRIPT_STEPS: 10000,
         },
         /** Predefined messages for various command outputs and system events. */
         MESSAGES: {
@@ -159,7 +160,7 @@ const Config = (() => {
         },
         /** API endpoint configuration. */
         API: {
-            GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
+            GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
         },
     };
 

@@ -13,6 +13,27 @@ const Utils = (() => {
     "use strict";
 
     /**
+     * Hashes a string using the Web Crypto API (SHA-256).
+     * @param {string} text - The plain-text string to hash.
+     * @returns {Promise<string|null>} A promise that resolves to the hex-encoded hash string, or null on failure.
+     */
+    async function calculateSHA256(text) {
+        if (typeof text !== 'string') {
+            return null;
+        }
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+        } catch (error) {
+            console.error("SHA-256 hashing failed:", error);
+            return null;
+        }
+    }
+
+    /**
      * Formats a function's arguments object into a single, space-separated string for display.
      * @param {IArguments} args - The arguments object from a function call.
      * @returns {string} A string representation of the arguments.
@@ -440,6 +461,7 @@ const Utils = (() => {
         }
     }
     return {
+        calculateSHA256,
         formatConsoleArgs,
         deepCopyNode,
         formatBytes,
