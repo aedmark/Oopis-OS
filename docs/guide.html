@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OopisOS v3.0 User Guide</title>
+    <title>OopisOS v3.1 User Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -111,30 +111,30 @@
 
     <main class="main-content flex-1 p-6 md:p-10 overflow-y-auto mt-16 md:mt-0">
         <section id="home" class="content-section active">
-            <h1>Welcome to OopisOS v3.0: The Keystone Release</h1>
-            <p class="text-lg mt-2 mb-6 text-zinc-400">Security, Power, and Stability. Welcome to the machine, perfected.</p>
+            <h1>Welcome to OopisOS v3.1: "Keystone Prime"</h1>
+            <p class="text-lg mt-2 mb-6 text-zinc-400">Harder, Better, Faster, Stronger.</p>
 
             <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">echo "OopisOS is ready."</span><br>
+                <span class="prompt">Guest@OopisOs:~$</span> <span class="command">echo "OopisOS is ready."</span><br>
                 <span class="output">OopisOS is ready.</span>
             </div>
 
-            <h2>What is OopisOS v3.0?</h2>
+            <h2>What is OopisOS v3.1?</h2>
             <p>OopisOS is a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.</p>
-            <p>The "Keystone" release marks a new era of maturity for the system. The foundations have been fortified, the tools sharpened, and the security model made ironclad. This is OopisOS as it was always meant to be: a powerful, reliable, and secure environment for learning and creation.</p>
+            <p>The "Keystone Prime" release is a complete systemic enhancement. We've made the system faster to boot, harder to break, and given you more control over your environment.</p>
 
             <h2>Key Features at a Glance</h2>
             <ul class="list-disc ml-6 my-4 space-y-2">
-                <li><strong>A Rock-Solid File System:</strong> A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, and `rm`. New in v3.0: `zip` and `unzip` for file archival.</li>
-                <li><strong>An Empowered Command-Line:</strong> Full history, tab-completion, piping (`|`), redirection (`>`), backgrounding (`&`), sequencing (`;`), and environment variable support.</li>
-                <li><strong>A True Multi-User Security Model:</strong> Create users (`useradd`) and groups (`groupadd`). Manage permissions with `chmod`, `chown`, and `chgrp`. New in v3.0: Execute commands with elevated privileges using `sudo` and safely edit the rules with `visudo`.</li>
+                <li><strong>A Rock-Solid File System:</strong> A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, and `rm`. New in v3.1: Secure backup/restore with checksum verification.</li>
+                <li><strong>An Empowered Command-Line:</strong> Full history, tab-completion, piping (`|`), redirection (`>`), backgrounding (`&`), sequencing (`;`), and environment variable support. New in v3.1: a fully customizable prompt via the `PS1` variable.</li>
+                <li><strong>A True Multi-User Security Model:</strong> Create users (`useradd`) and groups (`groupadd`). Manage permissions with `chmod`, `chown`, and `chgrp`. Execute commands with elevated privileges using `sudo` and safely edit the rules with `visudo`.</li>
                 <li><strong>A Full Suite of Applications:</strong>
                     <ul>
                         <li>`edit`: A powerful text editor with live Markdown preview.</li>
                         <li>`paint`: A character-based art studio for your inner artist.</li>
-                        <li>`adventure`: A text-adventure game engine.</li>
                         <li>`chidi`: An AI-powered document analysis tool.</li>
                         <li>`gemini`: A tool-using AI assistant for your terminal.</li>
+                        <li>`explore`: A graphical, two-pane file explorer.</li>
                     </ul>
                 </li>
                 <li><strong>System & Session Management:</strong> Save and restore your entire session state with `savestate` and `loadstate`, or create full system `backup` files for transfer.</li>
@@ -174,6 +174,8 @@
 
             <h2>Application Suite</h2>
             <p>OopisOS comes with several built-in applications that run in a full-screen, modal interface, providing a richer experience than standard command-line tools.</p>
+            <h3><code>explore [path]</code></h3>
+            <p>Opens a graphical, two-pane file explorer. The left pane shows an expandable directory tree, and the right pane shows the contents of the selected directory. It's a powerful and intuitive way to navigate your file system.</p>
             <h3><code>edit [file]</code></h3>
             <p>Opens the OopisOS text editor. It's a surprisingly capable editor with features like live Markdown and HTML preview (`Ctrl+P`), a formatting toolbar, and keyboard shortcuts for saving (`Ctrl+S`) and exiting (`Ctrl+O`).</p>
             <h3><code>paint [file.oopic]</code></h3>
@@ -188,28 +190,38 @@
             <h1>Advanced Topics</h1>
             <p>Ready to wield true power? This section covers the tools that separate the administrators from the users.</p>
 
+            <h2>Shell Customization: The `PS1` Variable</h2>
+            <p>In OopisOS, you have full control over the appearance of your command prompt. This is handled by a special environment variable called <code>PS1</code> (Prompt String 1). By default, this variable is not set, and the system uses its built-in prompt. To create your own, use the <code>set</code> command with a string containing special, backslash-escaped characters.</p>
+
+            <table class="min-w-full divide-y divide-zinc-700">
+                <thead>
+                <tr><th class="px-4 py-2">Sequence</th><th class="px-4 py-2">Description</th></tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-800">
+                <tr><td><code>\u</code></td><td>The current username (e.g., `Guest`).</td></tr>
+                <tr><td><code>\h</code></td><td>The hostname (e.g., `OopisOs`).</td></tr>
+                <tr><td><code>\w</code></td><td>The full path of the current working directory (e.g., <code>/home/Guest</code>).</td></tr>
+                <tr><td><code>\W</code></td><td>The basename of the current working directory (e.g., `Guest`).</td></tr>
+                <tr><td><code>\$</code></td><td>Displays a `#` if the user is `root`, otherwise a `$`.</td></tr>
+                <tr><td><code>\\</code></td><td>A literal backslash character.</td></tr>
+                </tbody>
+            </table>
+
+            <div class="terminal-example">
+                <span class="prompt">Guest@OopisOs:/home/Guest$</span> <span class="command">set PS1="[\u@\h \W]\\$ "</span><br>
+                <span class="prompt">[Guest@OopisOs Guest]$</span> <span class="command"></span>
+            </div>
+            <p>To revert to the default prompt, simply unset the variable with <code>unset PS1</code>.</p>
+
             <h2>Privilege Escalation: `sudo` and `visudo`</h2>
             <p>Not all users are created equal. Some tasks, like installing software or modifying critical system files, require the power of the `root` user. The `sudo` command is your key to borrowing that power, safely and temporarily.</p>
             <h4><code>sudo [command]</code></h4>
             <p>The `sudo` (superuser do) command executes a single command with `root` privileges. The first time you use `sudo`, you will be prompted for *your own* password to verify your identity. If successful, a timestamp is recorded, and you won't need to enter your password again for a set period (typically 15 minutes).</p>
-            <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:~$</span> <span class="command">sudo chmod 777 /etc/motd</span><br>
-                <span class="output">[sudo] password for Guest: ******</span><br>
-                <span class="output"># The command is now executed as root.</span>
-            </div>
 
             <h4><code>visudo</code></h4>
             <p>Who gets to use `sudo`? That's controlled by the <code>/etc/sudoers</code> file. You must **never** edit this file directly with `edit`. The `visudo` command is the only safe way to modify it. It opens the file in the editor but adds a lock to prevent multiple simultaneous edits and, more importantly, performs a syntax check on save to prevent you from locking yourself out of the system.
             </p>
             <p><strong>Permissions:</strong> Only the `root` user can run `visudo`.</p>
-            <pre><code class="language-bash">
-# /etc/sudoers example
-# Give the user 'admin' full root privileges
-admin    ALL
-
-# Allow anyone in the 'testers' group to run the 'reboot' command
-%testers reboot
-            </code></pre>
 
             <h2>File Archival: `zip` and `unzip`</h2>
             <p>Manage collections of files by bundling them into a single archive.</p>
@@ -217,17 +229,11 @@ admin    ALL
             <p>Creates a simulated `.zip` archive containing the file or directory at the specified path. This is a recursive operation that preserves the directory structure within the archive.</p>
             <h4><code>unzip [archive.zip] [destination_path]</code></h4>
             <p>Extracts the contents of a `.zip` archive into the specified destination directory. If no destination is provided, it extracts to the current directory.</p>
-            <div class="terminal-example">
-                <span class="prompt">Guest@OopisOs:~$</span> <span class="command">zip my_project_backup.zip /home/Guest/projects/alpha</span><br>
-                <span class="output">Successfully zipped '/home/Guest/projects/alpha' to 'my_project_backup.zip'.</span><br>
-                <span class="prompt">Guest@OopisOs:~$</span> <span class="command">unzip my_project_backup.zip /home/Guest/backups/</span><br>
-                <span class="output">Archive 'my_project_backup.zip' successfully extracted to '/home/Guest/backups/'.</span>
-            </div>
         </section>
 
         <section id="developer-docs" class="content-section">
             <h1>Developer Documentation</h1>
-            <p>The OopisOS v3.0 "Keystone" release introduces a new, highly modular command architecture. This design is a core component of the system's stability and makes adding new commands a secure and straightforward process. This is a brief overview; for the full architectural document, please see <code>/docs/developer.md</code>.</p>
+            <p>The OopisOS v3.1 "Keystone Prime" release refines our modular command architecture. This design is a core component of the system's stability and makes adding new commands a secure and straightforward process. This is a brief overview; for the full architectural document, please see <code>/docs/developer.md</code>.</p>
 
             <h2>The Command Contract</h2>
             <p>Adding a new command is a declarative process. Instead of writing boilerplate validation logic, you *declare* your command's requirements to the `CommandExecutor`. The executor enforces these rules *before* your command's core logic is ever run. This is a critical security and stability feature.</p>
@@ -240,36 +246,8 @@ admin    ALL
                 <li><code>permissionChecks</code>: Which permissions (`read`, `write`, `execute`) the user must have on those paths.</li>
             </ul>
 
-            <h2>Example: Creating a New Command</h2>
-            <p>Here is the standard pattern for creating a new command file in <code>/scripts/commands/</code>.</p>
-            <pre><code class="language-javascript">
-// scripts/commands/mycommand.js
-(() => {
-    "use strict";
-
-    const myCommandDefinition = {
-        commandName: "mycommand",
-        // 1. Define the contract
-        argValidation: { exact: 1 },
-        pathValidation: [{ argIndex: 0, options: { expectedType: 'file' } }],
-        permissionChecks: [{ pathArgIndex: 0, permissions: ['read'] }],
-
-        // 2. Write the core logic, trusting the context is pre-validated
-        coreLogic: async (context) => {
-            const { validatedPaths } = context;
-            const pathInfo = validatedPaths[0]; // Guaranteed to be a valid, readable file.
-            return { success: true, output: `File content: ${pathInfo.node.content}` };
-        }
-    };
-
-    const description = "A brief summary for 'help'.";
-    const helpText = "Usage: mycommand &lt;file&gt;...";
-
-    // 3. Register it with the system
-    CommandRegistry.register("mycommand", myCommandDefinition, description, helpText);
-})();
-            </code></pre>
-            <p>After creating the file, simply add a <code>&lt;script&gt;</code> tag for it in <code>index.html</code> (after `registry.js` and before `commexec.js`), and your command will be available on the next boot.</p>
+            <h2>On-Demand Command Loading</h2>
+            <p>As of v3.1, you no longer need to add a <code>&lt;script&gt;</code> tag to <code>index.html</code> when creating a new command. The <code>CommandExecutor</code> now dynamically loads command scripts from the <code>/scripts/commands/</code> directory the first time they are called in a session, improving initial boot speed.</p>
 
         </section>
         <section id="testing-env" class="content-section">
@@ -284,7 +262,7 @@ admin    ALL
             </div>
 
             <h2>The Gauntlet: `diag.sh`</h2>
-            <p>This is our quality assurance department, packed into a single script. It's a relentless stress test that runs a barrage of commands to ensure the OS doesn't melt into a puddle of ones and zeros under pressure. It's a comprehensive suite that tests the entire v3.0 feature set, including the new administrative (`sudo`) and file management (`zip`/`unzip`) commands. It is the definitive way to confirm all systems are operational.</p>
+            <p>This is our quality assurance department, packed into a single script. It's a relentless stress test that runs a barrage of commands to ensure the OS doesn't melt into a puddle of ones and zeros under pressure. It is the definitive way to confirm all systems are operational.</p>
             <div class="terminal-example">
                 <span class="prompt">Guest@OopisOs:/&gt;</span> <span class="command">run /extras/diag.sh</span>
             </div>
@@ -320,7 +298,7 @@ admin    ALL
             <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS (INCLUDING THE CURATOR) OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
         </section>
         <footer class="footer text-center">
-            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v3.0).</p>
+            <p>&copy; 2025 Andrew Edmark & Gemini. OopisOS User-Friendly Manual (v3.1).</p>
         </footer>
     </main>
 </div>
