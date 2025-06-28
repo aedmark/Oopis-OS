@@ -88,7 +88,6 @@ const PaintUI = (() => {
         elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' });
         elements.shapeToolBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: lineSVG, title: 'Shape Tool (L)' });
 
-        // FIXED: Added 'paint-tool' class to dropdown buttons
         elements.shapeDropdown = Utils.createElement('div', { className: 'paint-dropdown-content' },
             Utils.createElement('button', { className: 'paint-tool', innerHTML: lineSVG, title: 'Line', eventListeners: { click: () => eventCallbacks.onToolChange('line') } }),
             Utils.createElement('button', { className: 'paint-tool', innerHTML: quadSVG, title: 'Rectangle', eventListeners: { click: () => eventCallbacks.onToolChange('quad') } }),
@@ -273,14 +272,13 @@ const PaintUI = (() => {
         const shapeTools = ['line', 'quad', 'ellipse'];
         elements.shapeToolBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, shapeTools.includes(activeTool));
 
-        // FIXED: Update main shape button icon based on active tool
         if (activeTool === 'line') {
             elements.shapeToolBtn.innerHTML = lineSVG;
         } else if (activeTool === 'quad') {
             elements.shapeToolBtn.innerHTML = quadSVG;
         } else if (activeTool === 'ellipse') {
             elements.shapeToolBtn.innerHTML = ellipseSVG;
-        } // If not a shape tool, it retains its last icon, which is fine.
+        }
 
         elements.undoBtn.disabled = !undoPossible;
         elements.redoBtn.disabled = !redoPossible;

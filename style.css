@@ -1311,9 +1311,24 @@ body {
 .hidden {
   display: none !important;
 }
+#editor-modal-dialog .graphical-modal-input-field {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  background-color: #2a2a2e;
+  border: 1px solid #64d000;
+  color: #F3F4F6;
+  border-radius: 4px;
+  font-family: 'VT323', monospace;
+  font-size: 1.1em;
+}
+#editor-modal-dialog .graphical-modal-input-field:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(100, 208, 0, 0.5);
+}
 
-/* REFACTORED: Paint Application Styles */
-
+/* Paint Application Styles */
 #paint-container {
   position: relative;
   width: 95%;
@@ -1356,7 +1371,6 @@ body {
   position: relative;
 }
 
-/* ADDED: Grid styling */
 #paint-canvas.paint-grid-active {
   --grid-color: rgba(100, 116, 139, 0.3);
   background-size: calc(100% / 80) calc(100% / 24);
@@ -1481,7 +1495,6 @@ body {
   color: #fecaca;
 }
 
-/* ADDED: Dropdown styles */
 .paint-tool-dropdown {
   position: relative;
   display: inline-block;
@@ -1496,52 +1509,17 @@ body {
   padding: 0.5rem;
   z-index: 10;
   margin-top: 0.5rem;
-  min-width: 160px;
   box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  /* The Fix */
+  width: max-content;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .paint-dropdown-content.paint-dropdown-active {
-  display: block;
+  display: flex;
 }
 
-.paint-dropdown-section {
-  margin-bottom: 0.5rem;
-}
-.paint-dropdown-section:last-child {
-  margin-bottom: 0;
-}
-.paint-dropdown-section label {
-  display: block;
-  font-size: 0.875rem;
-  color: #a1a1aa;
-  margin-bottom: 0.25rem;
-}
-.paint-slider-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.paint-button-group {
-  display: flex;
-  gap: 0.5rem;
-}
-.paint-button-group > button {
-  background-color: #27272a;
-  color: #a1a1aa;
-  border: 1px solid #52525b;
-  border-radius: 4px;
-  padding: 0.25rem 0.5rem;
-}
-.paint-button-group > button:hover {
-  background-color: #3f3f46;
-}
-.paint-button-group > button.paint-tool-active {
-  background-color: #60a5fa;
-  color: #1e293b;
-  border-color: #93c5fd;
-}
-
-/* ADDED: Modal styles */
 .paint-modal-overlay {
   position: absolute;
   top: 0;
@@ -1582,7 +1560,6 @@ body {
   flex-grow: 1;
 }
 
-/* Styles for Character Select Modal */
 #paint-char-select-grid {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
@@ -1606,7 +1583,6 @@ body {
   color: #1e293b;
 }
 
-/* Styles for Color Select Modal */
 #paint-color-select-grid {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
@@ -1682,21 +1658,4 @@ body {
       --tw-outline-style: solid;
     }
   }
-}
-}
-#editor-modal-dialog .graphical-modal-input-field {
-  width: 100%;
-  padding: 8px;
-  margin-top: 10px;
-  margin-bottom: 20px;
-  background-color: #2a2a2e;
-  border: 1px solid #64d000;
-  color: #F3F4F6;
-  border-radius: 4px;
-  font-family: 'VT323', monospace;
-  font-size: 1.1em;
-}
-#editor-modal-dialog .graphical-modal-input-field:focus {
-  outline: none;
-  box-shadow: 0 0 5px rgba(100, 208, 0, 0.5);
 }
