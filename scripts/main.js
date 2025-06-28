@@ -212,7 +212,7 @@ window.onload = async () => {
     EnvironmentManager.initialize();
     SessionManager.initializeStack();
 
-    // Initialize the command executor, which loads all command definitions.
+    // Initialize the command executor, which now only sets up its core functions.
     CommandExecutor.initialize();
 
     // Load the initial user's session state.
