@@ -31,33 +31,19 @@ const CommandExecutor = (() => {
   let activeJobs = {};
 
   /**
-   * A dictionary to hold all registered command definitions and their handlers.
-   * This is populated by `_initializeCommands`.
+   * A cache for loaded command definitions. This is populated on-demand.
    * @private
    * @type {Object.<string, {handler: Function, description: string, helpText: string}>}
    */
   const commands = {};
 
   /**
-   * Initializes the CommandExecutor by populating the internal `commands` object
-   * from the definitions stored in the `CommandRegistry`. This function is called
-   * once when the OS boots.
+   * An object to track command scripts currently being loaded to prevent race conditions.
    * @private
+   * @type {Object.<string, Promise<boolean>>}
    */
-  function _initializeCommands() {
-    const definitions = CommandRegistry.getDefinitions();
-    for (const commandName in definitions) {
-      const cmd = definitions[commandName];
-      if (commands[commandName]) {
-        console.warn(`CommandExecutor: Overwriting command '${commandName}' during initialization.`);
-      }
-      commands[commandName] = {
-        handler: createCommandHandler(cmd.definition),
-        description: cmd.description,
-        helpText: cmd.helpText,
-      };
-    }
-  }
+  const loadingPromises = {};
+
 
   /**
    * A factory function that takes a command definition and returns a standardized,
@@ -158,6 +144,50 @@ const CommandExecutor = (() => {
     handler.definition = definition;
     return handler;
   }
+
+  /**
+   * Ensures a command's script is loaded. If not already cached, it dynamically
+   * injects the script tag and waits for it to load.
+   * @private
+   * @param {string} commandName The name of the command to load.
+   * @returns {Promise<boolean>} Resolves true if the command is loaded, false otherwise.
+   */
+  async function _ensureCommandLoaded(commandName) {
+    if (!commandName) return false;
+    if (commands[commandName]) return true; // Already loaded.
+    if (loadingPromises[commandName]) return await loadingPromises[commandName]; // Already in progress.
+
+    const promise = new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = `./scripts/commands/${commandName}.js`;
+      script.onload = () => {
+        const definition = CommandRegistry.getDefinitions()[commandName];
+        if (definition) {
+          commands[commandName] = {
+            handler: createCommandHandler(definition.definition),
+            description: definition.description,
+            helpText: definition.helpText,
+          };
+          resolve(true);
+        } else {
+          console.error(`Script for '${commandName}' loaded, but command not found in registry.`);
+          resolve(false);
+        }
+        delete loadingPromises[commandName];
+      };
+      script.onerror = () => {
+        // A script failing to load is equivalent to a "command not found" error.
+        // We resolve false to allow the executor to handle it gracefully.
+        resolve(false);
+        delete loadingPromises[commandName];
+      };
+      document.head.appendChild(script);
+    });
+
+    loadingPromises[commandName] = promise;
+    return await promise;
+  }
+
 
   /**
    * REFINED: Expands wildcard glob patterns (*, ?) in command arguments before parsing.
@@ -275,7 +305,14 @@ const CommandExecutor = (() => {
    */
   async function _executeCommandHandler(segment, execCtxOpts, stdinContent = null, signal) {
     const commandName = segment.command?.toLowerCase();
-    const cmdData = commandName ? commands[commandName] : undefined;
+
+    // Dynamically load command if necessary.
+    const commandExists = await _ensureCommandLoaded(commandName);
+    if (!commandExists) {
+      return { success: false, error: `${commandName}: command not found` };
+    }
+
+    const cmdData = commands[commandName];
 
     if (cmdData?.handler) {
       try {
@@ -294,11 +331,10 @@ const CommandExecutor = (() => {
         };
       }
     } else if (segment.command) {
-      return {
-        success: false,
-        error: `${segment.command}: command not found`,
-      };
+      // This case is now a fallback, as _ensureCommandLoaded should handle it.
+      return { success: false, error: `${segment.command}: command not found` };
     }
+
     // Handle cases like empty input or just redirection
     return {
       success: true,
@@ -789,10 +825,14 @@ const CommandExecutor = (() => {
   }
 
   /**
-   * Returns the dictionary of all registered commands and their handlers.
+   * Returns a dictionary of all registered commands and their handlers.
+   * This is now more dynamic, as the `commands` object is a cache.
    * @returns {Object.<string, {handler: Function, description: string, helpText: string}>} The commands object.
    */
   function getCommands() {
+    // Note: This returns the currently *cached* commands. For a full list,
+    // one might need to inspect the CommandRegistry if it's made public,
+    // but for 'man' and 'help', we will adapt them to use this dynamic loading.
     return commands;
   }
 
@@ -814,7 +854,7 @@ const CommandExecutor = (() => {
 
   // Public interface of the CommandExecutor module
   return {
-    initialize: _initializeCommands,
+    initialize: () => {}, // No longer pre-loads all commands.
     processSingleCommand,
     getCommands,
     isScriptRunning,

@@ -83,11 +83,13 @@ Our full-screen applications (`edit`, `paint`, `chidi`) are not just features; t
 
 ## 4. Extending the System: Adding New Commands
 
-The process for adding new commands is designed to be simple, secure, and consistent with our principle of **Enforced Modularity**.
+The process for adding new commands is designed to be simple, secure, and consistent with our principle of **Enforced Modularity**. With the introduction of on-demand loading in v3.1, this process is now even more streamlined.
 
-**Step 1: Create the Command File** Create a new file in `scripts/commands/` (e.g., `mycommand.js`). The file itself is the module.
+**Step 1: Create the Command File**
+Create a new file in `/scripts/commands/` with a name that matches the command you are creating (e.g., `mycommand.js`). This filename is now critical, as the `CommandExecutor` uses it to dynamically load the script.
 
-**Step 2: Define the Command Contract** Inside the file, use an IIFE to prevent global scope pollution. Define your command using the declarative object pattern. This pattern is not for convenience; it is a **security contract**. You are declaring the command's requirements to the executor.
+**Step 2: Define the Command Contract**
+Inside your new file, use an IIFE to prevent global scope pollution. Define your command's "contract" with the system using the standard definition object. This declarative pattern is a **security contract**; you are formally stating the command's requirements to the `CommandExecutor`.
 
 ```javascript
 // scripts/commands/mycommand.js
@@ -97,62 +99,19 @@ The process for adding new commands is designed to be simple, secure, and consis
     // The command's formal definition and contract with the CommandExecutor.
     const myCommandDefinition = {
         commandName: "mycommand",
-        // Declare all flags. The executor will parse them for you.
-        flagDefinitions: [
-            { name: "verbose", short: "-v", long: "--verbose" }
-        ],
-        // Declare argument cardinality. The executor enforces this.
-        argValidation: {
-            min: 1,
-            error: "Usage: mycommand [-v] <path>"
-        },
-        // Declare which arguments are paths and their expected type.
-        // The executor validates existence and type.
-        pathValidation: [
-            {
-                argIndex: 0,
-                options: { expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE }
-            }
-        ],
-        // Declare required permissions. The executor performs the check
-        // using the FileSystemManager's security gateway.
-        permissionChecks: [
-            {
-                pathArgIndex: 0,
-                permissions: ["read"]
-            }
-        ],
+        // ... flagDefinitions, argValidation, pathValidation, permissionChecks ...
+        
         // The core logic only executes if every single one of the
         // above declarations is satisfied by the executor.
         coreLogic: async (context) => {
-            // 'context' is a secure, pre-validated object. You can trust its contents.
-            const { args, flags, currentUser, validatedPaths } = context;
-            
-            // Thanks to the contract, this path is guaranteed to exist and be readable.
-            const pathInfo = validatedPaths[0];
-            
-            if (flags.verbose) {
-                await OutputManager.appendToOutput(`Verbose mode ON for user ${currentUser}`);
-            }
-
-            const content = pathInfo.node.content;
-            
-            return {
-                success: true,
-                output: `Successfully processed ${pathInfo.resolvedPath}. Content length: ${content.length}.`
-            };
+            // 'context' is a secure, pre-validated object.
+            // ... your logic here ...
+            return { success: true, output: "Execution complete." };
         }
     };
 
-    // Human-readable documentation for the 'help' and 'man' commands.
     const myCommandDescription = "A brief, one-line description of the command.";
-    const myCommandHelpText = `Usage: mycommand [OPTIONS] <path>
-
-A detailed explanation of the command, its purpose, and its behavior.
-This text is the foundation of our user-facing documentation.
-
-OPTIONS
-  -v, --verbose    Enable verbose, detailed output.`;
+    const myCommandHelpText = "The detailed help text for the 'man' command.";
 
     // Register the command, its contract, and its documentation with the system.
     CommandRegistry.register("mycommand", myCommandDefinition, myCommandDescription, myCommandHelpText);
