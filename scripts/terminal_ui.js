@@ -204,7 +204,7 @@ const ModalManager = (() => {
             if (inputLine !== null) {
                 options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: Config.CSS_CLASSES.WARNING_MSG }));
                 void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
+                const promptEcho = `${DOM.promptContainer.textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
                 if (inputLine.toUpperCase() === 'YES') {
                     if (options.onConfirm) options.onConfirm(options.data);
@@ -237,7 +237,7 @@ const ModalManager = (() => {
      */
     async function handleTerminalInput(input) {
         if (!isAwaitingTerminalInput) return false;
-        const promptString = `${DOM.promptUserSpan.textContent}${Config.TERMINAL.PROMPT_AT}${DOM.promptHostSpan.textContent}${Config.TERMINAL.PROMPT_SEPARATOR}${DOM.promptPathSpan.textContent}${Config.TERMINAL.PROMPT_CHAR} `;
+        const promptString = `${DOM.promptContainer.textContent} `;
         await OutputManager.appendToOutput(`${promptString}${input.trim()}`);
         if (input.trim() === "YES") {
             await activeModalContext.onConfirm(activeModalContext.data);
@@ -265,36 +265,38 @@ const TerminalUI = (() => {
     let _isObscuredInputMode = false;
 
     /**
-     * Updates the command prompt with the current user, host, and path.
+     * Updates the command prompt based on the PS1 environment variable or default settings.
      */
     function updatePrompt() {
-        const user =
-            typeof UserManager !== "undefined"
-                ? UserManager.getCurrentUser()
-                : {
-                    name: Config.USER.DEFAULT_NAME,
-                };
-        if (DOM.promptUserSpan) {
-            DOM.promptUserSpan.textContent = user
-                ? user.name
-                : Config.USER.DEFAULT_NAME;
-            DOM.promptUserSpan.className = "prompt-user mr-0.5 text-sky-400";
+        const user = UserManager.getCurrentUser() || { name: Config.USER.DEFAULT_NAME };
+        const ps1 = EnvironmentManager.get('PS1');
+
+        if (ps1) {
+            // PS1 exists, parse and render it
+            const host = EnvironmentManager.get('HOST') || Config.OS.DEFAULT_HOST_NAME;
+            const path = FileSystemManager.getCurrentPath() || Config.FILESYSTEM.ROOT_PATH;
+
+            // Special case for tilde expansion
+            const homeDir = `/home/${user.name}`;
+            const displayPath = path.startsWith(homeDir) ? `~${path.substring(homeDir.length)}` : path;
+
+            let parsedPrompt = ps1.replace(/\\u/g, user.name)
+                .replace(/\\h/g, host)
+                .replace(/\\w/g, displayPath)
+                .replace(/\\W/g, path.substring(path.lastIndexOf('/') + 1) || '/')
+                .replace(/\\$/g, user.name === 'root' ? '#' : '$')
+                .replace(/\\s/g, "OopisOS") // Shell name
+                .replace(/\\\\/g, '\\'); // Literal backslash
+
+            DOM.promptContainer.textContent = parsedPrompt;
+        } else {
+            // Default prompt rendering
+            const path = FileSystemManager.getCurrentPath();
+            const promptChar = user.name === 'root' ? '#' : Config.TERMINAL.PROMPT_CHAR;
+            DOM.promptContainer.textContent = `${user.name}${Config.TERMINAL.PROMPT_AT}${Config.OS.DEFAULT_HOST_NAME}${Config.TERMINAL.PROMPT_SEPARATOR}${path}${promptChar} `;
         }
-        if (DOM.promptHostSpan)
-            DOM.promptHostSpan.textContent = Config.OS.DEFAULT_HOST_NAME;
-        const currentPathDisplay =
-            typeof FileSystemManager !== "undefined"
-                ? FileSystemManager.getCurrentPath()
-                : Config.FILESYSTEM.ROOT_PATH;
-        if (DOM.promptPathSpan)
-            DOM.promptPathSpan.textContent =
-                currentPathDisplay === Config.FILESYSTEM.ROOT_PATH &&
-                currentPathDisplay.length > 1
-                    ? Config.FILESYSTEM.ROOT_PATH
-                    : currentPathDisplay;
-        if (DOM.promptCharSpan)
-            DOM.promptCharSpan.textContent = Config.TERMINAL.PROMPT_CHAR;
     }
+
 
     /**
      * Sets focus to the main terminal input element.
@@ -526,7 +528,7 @@ const ModalInputManager = (() => {
             if (inputLine !== null) {
                 void OutputManager.appendToOutput(promptMessage, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
                 const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
-                const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
+                const promptEcho = `${DOM.promptContainer.textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
 
                 onInputReceivedCallback(inputLine);
@@ -730,7 +732,7 @@ const TabCompletionManager = (() => {
      * @param {object} context - The completion context from `_getCompletionContext`.
      * @returns {string[]} An array of sorted suggestion strings.
      */
-    function _getSuggestionsFromProvider(context) {
+    async function _getSuggestionsFromProvider(context) {
         const { currentWordPrefix, isCompletingCommand, commandName } = context;
         const allCommands = CommandExecutor.getCommands();
         let suggestions = [];
@@ -742,6 +744,9 @@ const TabCompletionManager = (() => {
                 )
                 .sort();
         } else {
+            const commandLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
+            if (!commandLoaded) return [];
+
             const commandDefinition = allCommands[commandName]?.handler.definition;
 
             if (!commandDefinition) return [];
@@ -818,13 +823,13 @@ const TabCompletionManager = (() => {
      * @param {number} cursorPos - The current cursor position.
      * @returns {{textToInsert: string|null, newCursorPos?: number}} An object with the text to insert, or null if no action is taken.
      */
-    function handleTab(fullInput, cursorPos) {
+    async function handleTab(fullInput, cursorPos) {
         if (fullInput !== lastCompletionInput) {
             resetCycle();
         }
         const context = _getCompletionContext(fullInput, cursorPos);
         if (suggestionsCache.length === 0) {
-            const suggestions = _getSuggestionsFromProvider(context);
+            const suggestions = await _getSuggestionsFromProvider(context);
             if (suggestions.length === 0) {
                 resetCycle();
                 return {
@@ -857,7 +862,7 @@ const TabCompletionManager = (() => {
                 suggestionsCache = suggestions;
                 cycleIndex = -1;
                 lastCompletionInput = fullInput;
-                const promptText = `${DOM.promptUserSpan.textContent}${Config.TERMINAL.PROMPT_AT}${DOM.promptHostSpan.textContent}${Config.TERMINAL.PROMPT_SEPARATOR}${DOM.promptPathSpan.textContent}${Config.TERMINAL.PROMPT_CHAR} `;
+                const promptText = `${DOM.promptContainer.textContent} `;
                 void OutputManager.appendToOutput(`${promptText}${fullInput}`, {
                     isCompletionSuggestion: true,
                 });

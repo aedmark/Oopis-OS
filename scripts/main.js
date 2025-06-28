@@ -122,7 +122,7 @@ function initializeTerminalEventListeners() {
         } else {
           cursorPos = currentInput.length;
         }
-        const result = TabCompletionManager.handleTab(currentInput, cursorPos);
+        const result = await TabCompletionManager.handleTab(currentInput, cursorPos);
         if (
             result?.textToInsert !== null &&
             result.textToInsert !== undefined
@@ -188,10 +188,7 @@ window.onload = async () => {
     terminalDiv: document.getElementById("terminal"),
     outputDiv: document.getElementById("output"),
     inputLineContainerDiv: document.querySelector(".input-line-container"),
-    promptUserSpan: document.getElementById("prompt-user"),
-    promptHostSpan: document.getElementById("prompt-host"),
-    promptPathSpan: document.getElementById("prompt-path"),
-    promptCharSpan: document.getElementById("prompt-char"),
+    promptContainer: document.getElementById("prompt-container"), // CORRECTED
     editableInputContainer: document.getElementById("editable-input-container"),
     editableInputDiv: document.getElementById("editable-input"),
     adventureModal: document.getElementById("adventure-modal"),
