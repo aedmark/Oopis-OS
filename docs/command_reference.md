@@ -1,4 +1,4 @@
-# OopisOS v3.0 Command Reference
+# OopisOS v3.1 Command Reference
 
 This document provides a comprehensive reference for all available commands in OopisOS. Each entry includes a description, usage syntax, details on all available options, and practical examples. For a quick list of commands, type `help`.
 
@@ -328,6 +328,17 @@ This document provides a comprehensive reference for all available commands in O
 **Description:** Set or display environment variables.
 **Usage:** `set [variable[=value]] ...`
 
+#### Customizing the Prompt (PS1)
+You can customize the terminal prompt by setting the `PS1` environment variable. The system will parse the following special sequences:
+- `\u`: The current username.
+- `\h`: The hostname.
+- `\w`: The full path of the current working directory.
+- `\W`: The basename of the current working directory.
+- `\$`: Displays a `$` for normal users, or a `#` for the `root` user.
+- `\\`: A literal backslash.
+  **Example:** `set PS1='\u@\h:\w\$ '` recreates the default prompt.
+  **Example:** `set PS1='(\s) \w> '` creates a prompt like `(OopisOS) /home/Guest>`.
+
 #### `unset`
 **Description:** Unsets one or more environment variables.
 **Usage:** `unset <variable_name>...`
@@ -347,12 +358,12 @@ This document provides a comprehensive reference for all available commands in O
 #### `backup`
 **Description:** Creates a backup of the current OopisOS system state.
 **Usage:** `backup`
-**Details:** Creates a downloadable JSON file containing a snapshot of the entire system state.
+**Details:** Creates a downloadable JSON file containing a snapshot of the entire system state, including a SHA-256 checksum for integrity.
 
 #### `restore`
 **Description:** Restores the entire system state from a backup file.
 **Usage:** `restore`
-**Details:** Prompts to upload a backup file and overwrites the entire current system state.
+**Details:** Prompts to upload a backup file, verifies its checksum, and overwrites the entire current system state.
 
 #### `printscreen`
 **Description:** Saves the visible terminal output to a file.
