@@ -200,6 +200,49 @@ const UserManager = (() => {
         }
     }
 
+    /**
+     * Changes a user's password after performing security checks.
+     * @param {string} actorUsername - The user attempting the change.
+     * @param {string} targetUsername - The user whose password is to be changed.
+     * @param {string|null} oldPassword - The current password (required for non-root users).
+     * @param {string} newPassword - The new password.
+     * @returns {Promise<{success: boolean, message?: string, error?: string}>} Result object.
+     */
+    async function changePassword(actorUsername, targetUsername, oldPassword, newPassword) {
+        const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
+
+        if (!users[targetUsername]) {
+            return { success: false, error: `User '${targetUsername}' not found.` };
+        }
+
+        if (actorUsername !== 'root') {
+            if (actorUsername !== targetUsername) {
+                return { success: false, error: "You can only change your own password." };
+            }
+            const authResult = await _authenticateUser(actorUsername, oldPassword);
+            if (!authResult.success) {
+                return { success: false, error: "Incorrect current password." };
+            }
+        }
+
+        if (!newPassword || newPassword.trim() === '') {
+            return { success: false, error: "New password cannot be empty." };
+        }
+
+        const newPasswordHash = await _secureHashPassword(newPassword);
+        if (!newPasswordHash) {
+            return { success: false, error: "Failed to securely process new password." };
+        }
+
+        users[targetUsername].passwordHash = newPasswordHash;
+
+        if (StorageManager.saveItem(Config.STORAGE_KEYS.USER_CREDENTIALS, users, "User list")) {
+            return { success: true, message: `Password for '${targetUsername}' updated successfully.` };
+        } else {
+            return { success: false, error: "Failed to save updated password." };
+        }
+    }
+
 
     /**
      * Handles the shared authentication logic for login and su, including interactive password prompts.
@@ -389,6 +432,7 @@ const UserManager = (() => {
         su,
         verifyPassword,
         sudoExecute,
+        changePassword,
         initializeDefaultUsers,
         getPrimaryGroupForUser,
     };
