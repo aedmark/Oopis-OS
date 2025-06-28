@@ -71,7 +71,7 @@
                     return { success: false, error: "Script ended while awaiting password." };
                 }
                 // Echo obscured password to the terminal to simulate interactive entry.
-                const promptEcho = `${DOM.promptUserSpan.textContent}@${DOM.promptHostSpan.textContent}:${DOM.promptPathSpan.textContent}${DOM.promptCharSpan.textContent} `;
+                const promptEcho = `${DOM.promptContainer.textContent} `;
                 await OutputManager.appendToOutput(`${promptEcho}${'*'.repeat(password.length)}`);
 
                 await OutputManager.appendToOutput(Config.MESSAGES.PASSWORD_CONFIRM_PROMPT, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});

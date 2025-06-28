@@ -704,7 +704,7 @@ const CommandExecutor = (() => {
     // Echo the command to the output if interactive
     if (isInteractive) {
       DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
-      const prompt = `${DOM.promptUserSpan.textContent}${Config.TERMINAL.PROMPT_AT}${DOM.promptHostSpan.textContent}${Config.TERMINAL.PROMPT_SEPARATOR}${DOM.promptPathSpan.textContent}${Config.TERMINAL.PROMPT_CHAR} `;
+      const prompt = DOM.promptContainer.textContent;
       await OutputManager.appendToOutput(`${prompt}${cmdToEcho}`);
     }
 
@@ -865,5 +865,6 @@ const CommandExecutor = (() => {
     setScriptExecutionInProgress,
     getActiveJobs,
     killJob,
+    _ensureCommandLoaded, // Exposed for TabCompletionManager
   };
 })();
