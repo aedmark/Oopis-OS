@@ -52,16 +52,14 @@ const PaintAppConfig = {
         MAX_UNDO_STATES: 50,
     },
     CUSTOM_COLOR_GRID: [
-        '#ffffff', '#f2f2f2', '#e6e6e6', '#d9d9d9', '#cccccc', '#bfbfbf', '#b3b3b3', '#a6a6a6',
-        '#999999', '#8c8c8c', '#808080', '#737373', '#666666', '#595959', '#4d4d4d', '#404040',
-        '#fed7d7', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d',
-        '#fee2d5', '#fdbb7d', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12',
-        '#fef3c7', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12',
-        '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#14532d',
-        '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46',
-        '#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#155e75',
-        '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af',
-        '#e0e7ff', '#c7d2fe', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca', '#3730a3'
+        '#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3', '#ffffff',
+        '#ff4500', '#ffa500', '#ffd700', '#adff2f', '#00ffff', '#1e90ff', '#8a2be2', '#f5f5f5',
+        '#dc143c', '#ff8c00', '#ffebcd', '#7cfc00', '#7fffd4', '#4169e1', '#9932cc', '#e0e0e0',
+        '#c71585', '#ff6347', '#f0e68c', '#32cd32', '#40e0d0', '#6495ed', '#da70d6', '#c0c0c0',
+        '#d02090', '#ff69b4', '#eee8aa', '#98fb98', '#afeeee', '#87cefa', '#dda0dd', '#a9a9a9',
+        '#ff1493', '#ffb6c1', '#fffacd', '#90ee90', '#b0e0e6', '#add8e6', '#e6e6fa', '#808080',
+        '#c71585', '#ffc0cb', '#fafad2', '#9acd32', '#b0c4de', '#b0c4de', '#d8bfd8', '#696969',
+        '#ff00ff', '#f08080', '#fff8dc', '#3cb371', '#00ced1', '#00bfff', '#ba55d3', '#404040'
     ]
 };
 
@@ -136,7 +134,9 @@ const PaintUI = (() => {
         elements.customColorSwatch = Utils.createElement('button', {
             className: 'paint-color-swatch',
             title: 'Your Custom Color',
-            style: { display: 'none' },
+            style: {
+                backgroundColor: PaintAppConfig.PALETTE[0].value,
+            },
             eventListeners: { click: () => { if (elements.customColorSwatch.style.backgroundColor) eventCallbacks.onColorChange(elements.customColorSwatch.style.backgroundColor); } }
         });
         colorPaletteContainer.insertBefore(elements.customColorSwatch, colorPaletteContainer.firstChild);
@@ -170,10 +170,12 @@ const PaintUI = (() => {
         );
 
         elements.colorSelectGrid = Utils.createElement('div', { id: 'paint-color-select-grid' });
+        const modalBody = Utils.createElement('div', { className: 'paint-modal-body' });
+        modalBody.appendChild(elements.colorSelectGrid);
         elements.colorSelectModal = Utils.createElement('div', { id: 'paint-color-select-modal', className: 'paint-modal-overlay hidden', eventListeners: { click: e => { if (e.target === elements.colorSelectModal) hideColorSelect(); } } },
             Utils.createElement('div', { className: 'paint-modal-content' },
                 Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Color' }),
-                Utils.createElement('div', { className: 'paint-modal-body' }, elements.colorSelectGrid)
+                modalBody
             )
         );
 
@@ -216,7 +218,7 @@ const PaintUI = (() => {
         }
     }
 
-    function populateAndShowColorSelect(onSelectCallback) {
+    function populateAndShowColorSelect(onSelectCallback, onCustomHexSet) {
         if (!elements.colorSelectGrid || !elements.colorSelectModal) return;
         elements.colorSelectGrid.innerHTML = '';
         const fragment = document.createDocumentFragment();
@@ -228,6 +230,20 @@ const PaintUI = (() => {
             fragment.appendChild(btn);
         });
         elements.colorSelectGrid.appendChild(fragment);
+
+        const modalBody = elements.colorSelectGrid.parentElement;
+        let hexInputContainer = modalBody.querySelector('.paint-custom-hex-container');
+        if (!hexInputContainer) {
+            hexInputContainer = Utils.createElement('div', { className: 'paint-custom-hex-container' });
+            const hexInput = Utils.createElement('input', { className: 'paint-hex-input', placeholder: '#RRGGBB', maxLength: 7 });
+            const hexSetBtn = Utils.createElement('button', { className: 'paint-hex-set-btn', textContent: 'Set' });
+            hexSetBtn.addEventListener('click', () => {
+                onCustomHexSet(hexInput.value);
+            });
+            hexInputContainer.append(hexInput, hexSetBtn);
+            modalBody.appendChild(hexInputContainer);
+        }
+
         elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
     }
 
@@ -313,7 +329,6 @@ const PaintUI = (() => {
         });
         if (isCustomColorActive && activeColor) {
             elements.customColorSwatch.style.backgroundColor = activeColor;
-            elements.customColorSwatch.style.display = 'block';
             elements.customColorSwatch.classList.add(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
         } else {
             elements.customColorSwatch.classList.remove(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
@@ -368,7 +383,8 @@ const PaintManager = (() => {
         onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
         onSave: _handleSave, onExit: () => exit(), onUndo: _performUndo, onRedo: _performRedo,
         onGridToggle: _toggleGrid, onCharSelectOpen: _openCharSelect, onColorSelectOpen: _openColorSelect,
-        onBrushSizeUp: () => _setBrushSize(1), onBrushSizeDown: () => _setBrushSize(-1)
+        onBrushSizeUp: () => _setBrushSize(1), onBrushSizeDown: () => _setBrushSize(-1),
+        onCustomHexSet: _setCustomHexColor,
     };
 
     function _getLinePoints(x0, y0, x1, y1) {
@@ -453,11 +469,19 @@ const PaintManager = (() => {
     }
     function _toggleGrid() { isGridVisible = !isGridVisible; PaintUI.toggleGrid(isGridVisible); _updateToolbarState(); }
     function _openCharSelect() { PaintUI.populateAndShowCharSelect(_setDrawCharFromSelection); }
-    function _openColorSelect() { PaintUI.populateAndShowColorSelect(_setColor); }
+    function _openColorSelect() { PaintUI.populateAndShowColorSelect(_setColor, _setCustomHexColor); }
     function _setDrawCharFromSelection(char) {
         drawChar = char;
         PaintUI.hideCharSelect();
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
+    }
+
+    function _setCustomHexColor(hex) {
+        if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(hex)) {
+            _setColor(hex);
+        } else {
+            alert("Invalid hex color format. Please use #RRGGBB or #RGB.");
+        }
     }
 
     function _setBrushSize(delta) {
