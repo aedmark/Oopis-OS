@@ -1,8 +1,8 @@
-# OopisOS v3.0 Architectural Documentation
+# OopisOS v3.1 Architectural Documentation
 
 ## 1. Design Philosophy & Core Principles
 
-This document provides a comprehensive architectural overview of the OopisOS v3.0 project. It is intended for developers who will build upon, extend, or maintain the system. To contribute effectively, it is essential to first understand the philosophical underpinnings of the architecture.
+This document provides a comprehensive architectural overview of the OopisOS project. It is intended for developers who will build upon, extend, or maintain the system. To contribute effectively, it is essential to first understand the philosophical underpinnings of the architecture.
 
 OopisOS is more than a simulated operating system; it is an exploration of a fully self-contained, secure, and persistent client-side application paradigm. Its design is governed by five foundational pillars. Every component and decision must be weighed against these principles.
 
@@ -91,7 +91,8 @@ Create a new file in `/scripts/commands/` with a name that matches the command y
 **Step 2: Define the Command Contract**
 Inside your new file, use an IIFE to prevent global scope pollution. Define your command's "contract" with the system using the standard definition object. This declarative pattern is a **security contract**; you are formally stating the command's requirements to the `CommandExecutor`.
 
-```javascript
+```
+javascript
 // scripts/commands/mycommand.js
 (() => {
     "use strict";
@@ -116,3 +117,7 @@ Inside your new file, use an IIFE to prevent global scope pollution. Define your
     // Register the command, its contract, and its documentation with the system.
     CommandRegistry.register("mycommand", myCommandDefinition, myCommandDescription, myCommandHelpText);
 })();
+```
+
+**Step 3: That's It.**
+There is no third step. You no longer need to add a <script> tag to index.html. The CommandExecutor, upon seeing mycommand for the first time, will automatically look for and load /scripts/commands/mycommand.js. Once loaded, the command is cached for the rest of the session. This makes the system faster to boot and easier to extend.
