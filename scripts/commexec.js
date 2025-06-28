@@ -583,20 +583,24 @@ const CommandExecutor = (() => {
         lastResult.output !== null &&
         lastResult.output !== undefined
     ) {
-      if (isInteractive && !pipeline.isBackground) {
+      if (pipeline.isBackground) {
+        // Suppress output for background jobs, but notify the user.
+        if (lastResult.output) { // Only notify if there was actually output to suppress.
+          await OutputManager.appendToOutput(
+              `${Config.MESSAGES.BACKGROUND_PROCESS_OUTPUT_SUPPRESSED} (Job ${pipeline.jobId})`,
+              {
+                typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+                isBackground: true,
+              }
+          );
+        }
+      } else {
+        // For foreground jobs, always print the output, regardless of interactivity.
         if (lastResult.output) {
           await OutputManager.appendToOutput(lastResult.output, {
             typeClass: lastResult.messageType || null,
           });
         }
-      } else if (lastResult.output && pipeline.isBackground) {
-        await OutputManager.appendToOutput(
-            `${Config.MESSAGES.BACKGROUND_PROCESS_OUTPUT_SUPPRESSED} (Job ${pipeline.jobId})`,
-            {
-              typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-              isBackground: true,
-            }
-        );
       }
     }
     return lastResult;
