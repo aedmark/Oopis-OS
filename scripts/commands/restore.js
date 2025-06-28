@@ -20,14 +20,12 @@
         },
         /**
          * The core logic for the 'restore' command.
-         * It must be run in interactive mode as it requires user interaction for file selection and confirmation.
-         * It opens a file selection dialog for the user to choose a JSON backup file.
-         * After reading and validating the backup file, it prompts the user for a final confirmation
-         * before proceeding to wipe all current OopisOS data (users, file system, sessions)
-         * and replace it with the data from the backup. Finally, it triggers a page reload.
+         * It must be run in interactive mode. It prompts the user to select a JSON backup file.
+         * It then validates the file's data type and integrity via a checksum. If the checksum
+         * is valid (or if it's a legacy backup), it prompts for final confirmation before
+         * wiping and restoring the system.
          * @async
          * @param {object} context - The context object provided by the command executor.
-         * @param {object} context.options - Execution options, including `isInteractive` and `scriptingContext`.
          * @returns {Promise<object>} A promise that resolves to a command result object.
          */
         coreLogic: async (context) => {
@@ -90,14 +88,31 @@
 
                 const file = fileResult.file;
                 let backupData;
+                let fileContent = await file.text();
                 try {
                     // Read and parse the content of the selected JSON file.
-                    backupData = JSON.parse(await file.text());
+                    backupData = JSON.parse(fileContent);
                 } catch (parseError) {
                     return {
                         success: false,
                         error: `restore: Error parsing backup file '${file.name}': ${parseError.message}`,
                     };
+                }
+
+                // --- CHECKSUM VERIFICATION ---
+                if (backupData.checksum) {
+                    const storedChecksum = backupData.checksum;
+                    delete backupData.checksum;
+
+                    const stringifiedDataForChecksum = JSON.stringify(backupData);
+                    const calculatedChecksum = await Utils.calculateSHA256(stringifiedDataForChecksum);
+
+                    if (calculatedChecksum !== storedChecksum) {
+                        return {
+                            success: false,
+                            error: `restore: Checksum mismatch. Backup file is corrupted or has been tampered with.`
+                        };
+                    }
                 }
 
                 // Validate the structure and type of the backup data.
@@ -226,6 +241,10 @@ DESCRIPTION
        This command will open your browser's file selection dialog,
        allowing you to choose the backup file from your local machine.
 
+       The system will first verify the backup file's integrity using
+       an embedded checksum. If the file is valid, you will be asked
+       for final confirmation.
+
        Upon confirmation, the entire current state of OopisOS will be
        wiped and replaced with the data from the backup file. This
        includes all users, groups, files, directories, aliases, and
@@ -235,8 +254,7 @@ DESCRIPTION
 
 WARNING
        THIS OPERATION IS IRREVERSIBLE AND WILL PERMANENTLY OVERWRITE
-       ALL CURRENT OOPISOS DATA. THE COMMAND WILL PROMPT FOR CONFIRMATION
-       BEFORE PROCEEDING.`;
+       ALL CURRENT OOPISOS DATA.`;
 
     CommandRegistry.register("restore", restoreCommandDefinition, restoreDescription, restoreHelpText);
 })();
