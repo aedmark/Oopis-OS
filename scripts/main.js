@@ -234,11 +234,12 @@ window.onload = async () => {
     );
 
     const resizeObserver = new ResizeObserver(entries => {
-      // UPDATED: Check for PaintManager and its UI resize handler
+      // The ResizeObserver is no longer needed for the paint application,
+      // as its canvas size is now fixed. This logic is now inert.
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
-        if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
-          PaintUI.handleResize();
-        }
+        // if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
+        //   PaintUI.handleResize();
+        // }
       }
     });
 
