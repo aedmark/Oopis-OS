@@ -2,43 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OopisOS</title>
   <script src="./scripts/marked.min.js"></script>
   <link rel="stylesheet" href="./style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#34d399">
 </head>
-<body class="bg-neutral-900 text-green-500 m-0 p-5 flex flex-col items-center justify-center min-h-screen overflow-x-hidden">
-<h1 class="text-xl text-green-500 font-['VT323'] mt-4 mb-4">OOPIS_OS v3.1</h1>
-<div id="terminal-bezel" class="bg-neutral-800 p-6 rounded-2xl terminal-bezel-shadow flex items-center justify-center margint=auto">
-  <div id="terminal" class="w-full h-full bg-neutral-950 border-2 border-neutral-900 rounded-lg p-5 overflow-hidden terminal-screen-glow grid relative" style="grid-template-rows: 1fr auto;">
-    <div id="output" class="mb-2.5 overflow-x-auto w-full min-w-0 min-h-0 overflow-y-auto"></div>
-    <div id="app-layer" class="hidden absolute top-0 left-0 w-full h-full bg-neutral-950 z-10"></div>
-    <div class="input-line-container flex items-start w-full">
-      <div id="prompt-container" class="prompt-container flex items-center leading-[1.2em] flex-shrink-0 whitespace-nowrap pt-[0.1em] text-sky-400 mr-2">
-      </div>
-      <div id="editable-input-container" class="flex-grow min-w-0">
-        <div id="editable-input" contenteditable="true" spellcheck="false" autocapitalize="none" class="min-h-[1.2em] leading-[1.2em] whitespace-pre-wrap break-words outline-none text-green-500 w-full">
+<body class="bg-neutral-900 text-green-500 m-0 overflow-hidden">
+
+<div id="app-container">
+  <h1 id="main-header">OOPIS_OS v3.1</h1>
+  <div id="terminal-bezel" class="terminal-bezel-shadow">
+    <div id="terminal" class="terminal-screen-glow grid" style="grid-template-rows: 1fr auto;">
+      <div id="output" class="mb-2.5 overflow-x-auto w-full min-w-0 min-h-0 overflow-y-auto"></div>
+      <div id="app-layer" class="hidden absolute top-0 left-0 w-full h-full bg-neutral-950 z-10"></div>
+      <div class="input-line-container flex items-start w-full">
+        <div id="prompt-container" class="prompt-container flex items-center leading-[1.2em] flex-shrink-0 whitespace-nowrap pt-[0.1em] text-sky-400 mr-2">
+        </div>
+        <div id="editable-input-container" class="flex-grow min-w-0">
+          <div id="editable-input" contenteditable="true" spellcheck="false" autocapitalize="none" class="min-h-[1.2em] leading-[1.2em] whitespace-pre-wrap break-words outline-none text-green-500 w-full">
+          </div>
         </div>
       </div>
-    </div>
-    <div id="adventure-modal" class="hidden">
-      <div id="adventure-container">
-        <div id="adventure-header">
-          <span id="adventure-title">Text Adventure</span>
-          <button id="adventure-close-btn" class="btn-adventure">Exit Adventure</button>
-        </div>
-        <div id="adventure-output"></div>
-        <div id="adventure-input-container">
-          <span>&gt;</span>
-          <label for="adventure-input"></label><input type="text" id="adventure-input" spellcheck="false" autocomplete="off" />
+      <div id="adventure-modal" class="hidden">
+        <div id="adventure-container">
+          <div id="adventure-header">
+            <span id="adventure-title">Text Adventure</span>
+            <button id="adventure-close-btn" class="btn-adventure">Exit Adventure</button>
+          </div>
+          <div id="adventure-output"></div>
+          <div id="adventure-input-container">
+            <span>&gt;</span>
+            <label for="adventure-input"></label><input type="text" id="adventure-input" spellcheck="false" autocomplete="off" />
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <h1 id="main-footer">| COPYRIGHT ©2025 | <a href="mailto:oopismcgoopis@gmail.com">EDMARK</a> & <a href="https://gemini.google.com">GEMINI</a> | <a target="_blank" href="https://github.com/aedmark/oopis-os">GIT</a> | <a target="_blank" href="https://aedmark.itch.io/oopisos">ITCH.IO</a> | <a class= target="_blank" href="./docs/guide.html">GUIDE</a> | <a target="_blank" href="LICENSE.txt">LICENSE</a> |</h1>
 </div>
-<h1 class="text-xl text-green-500 font-['VT323'] mt-4 mb-4">| COPYRIGHT ©2025 | <a href="mailto:oopismcgoopis@gmail.com">EDMARK</a> & <a href="https://gemini.google.com">GEMINI</a> | <a target="_blank" href="https://github.com/aedmark/oopis-os">GIT</a> | <a target="_blank" href="https://aedmark.itch.io/oopisos">ITCH.IO</a> | <a class= target="_blank" href="./docs/guide.html">GUIDE</a> | <a target="_blank" href="LICENSE.txt">LICENSE</a> |</h1>
+
 <script src="./scripts/main.js"></script>
 <script src="./scripts/utils.js"></script>
 <script src="./scripts/config.js"></script>

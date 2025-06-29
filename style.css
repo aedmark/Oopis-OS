@@ -5,9 +5,9 @@
 @layer theme {
   :root, :host {
     --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-      "Courier New", monospace;
+    "Courier New", monospace;
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-amber-400: oklch(82.8% 0.189 84.429);
     --color-lime-400: oklch(84.1% 0.238 128.85);
@@ -1760,7 +1760,7 @@
   justify-content: space-between;
 }
 .hidden {
-  display: none;
+  display: none !important;
 }
 .relative {
   position: relative;
@@ -1773,29 +1773,24 @@ html {
 }
 body {
   font-family: "VT323", monospace;
-  display: grid;
-  place-items: center;
   background-color: #1a1a1a;
   color: #22c55e;
   margin: 0;
-  padding: 1rem;
-  min-height: 100vh;
-  overflow: hidden;
+  overflow: hidden; /* Prevent body-level scrollbars */
 }
 #terminal-bezel {
+  flex-grow: 1; /* Allow bezel to fill available space */
+  min-height: 0; /* Prevent flexbox overflow issue */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
   background-color: rgb(38 38 38);
   border-radius: 1rem;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3), 0 0 3px 1px #111;
   width: 100%;
-  min-width: 720px;
-  min-height: auto;
   max-width: 1300px;
-  nax-height: auto;
-  aspect-ratio: 4 / 3;
+  margin-left: auto;
+  margin-right: auto;
 }
 #terminal {
   width: 95%;
@@ -2598,4 +2593,30 @@ body {
       --tw-backdrop-sepia: initial;
     }
   }
+}
+/* ADDED: New rule for the main application container */
+#app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1rem;
+}
+
+/* ADDED: New rules for the header and footer */
+#main-header, #main-footer {
+  flex-shrink: 0; /* Prevent header/footer from shrinking */
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 1.25rem;
+  color: #22c55e;
+  padding: 0.5rem 0;
+}
+
+#main-footer a {
+  color: #2dd4bf;
+  text-decoration: none;
+}
+
+#main-footer a:hover {
+  text-decoration: underline;
 }
