@@ -87,7 +87,7 @@
   code, kbd, samp, pre {
     font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
     font-feature-settings: var(--default-mono-font-feature-settings, normal);
-    font-variation-settings: var(--default-font-variation-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
     font-size: 1em;
   }
   small {
@@ -359,6 +359,9 @@
   }
   .min-w-full {
     min-width: 100%;
+  }
+  .max-w-full {
+    max-width: 100%;
   }
   .flex-1 {
     flex: 1;
@@ -1223,8 +1226,9 @@ body {
   background-color: #1a1a1a;
   cursor: crosshair;
   user-select: none;
-  width: calc(12px * 80);
-  height: calc(20px * 24);
+  aspect-ratio: 4 / 3;
+  max-width: 100%;
+  max-height: 100%;
   position: relative;
 }
 #paint-canvas.paint-grid-active {

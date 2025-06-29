@@ -267,14 +267,22 @@ const PaintUI = (() => {
 
     function _calculateGridMetrics() {
         if (!elements.canvas) return;
-        // Hardcoded values for a fixed canvas
-        cellDimensions.width = 12;
-        cellDimensions.height = 20;
-
-        // The offset calculation remains dynamic to correctly position clicks within the scrollable wrapper.
+        const containerRect = elements.canvas.getBoundingClientRect();
         const style = window.getComputedStyle(elements.canvas);
-        gridOffset.x = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.borderLeftWidth) || 0);
-        gridOffset.y = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.borderTopWidth) || 0);
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingRight = parseFloat(style.paddingRight) || 0;
+        const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+        const borderRight = parseFloat(style.borderRightWidth) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const paddingBottom = parseFloat(style.paddingBottom) || 0;
+        const borderTop = parseFloat(style.borderTopWidth) || 0;
+        const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+        const contentWidth = containerRect.width - paddingLeft - paddingRight - borderLeft - borderRight;
+        const contentHeight = containerRect.height - paddingTop - paddingBottom - borderTop - borderBottom;
+        cellDimensions.width = contentWidth / PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        cellDimensions.height = contentHeight / PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+        gridOffset.x = paddingLeft + borderLeft;
+        gridOffset.y = paddingTop + borderTop;
     }
 
     function handleResize() { _calculateGridMetrics(); }
@@ -345,8 +353,8 @@ const PaintUI = (() => {
         const fragment = document.createDocumentFragment();
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 12px)`;
-        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 20px)`;
+        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
         for (let y = 0; y < gridHeight; y++) {
             for (let x = 0; x < gridWidth; x++) {
                 const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
