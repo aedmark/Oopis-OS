@@ -106,16 +106,11 @@ const PaintUI = (() => {
             Utils.createElement('button', { className: 'paint-tool', innerHTML: quadSVG, title: 'Rectangle', eventListeners: { click: () => eventCallbacks.onToolChange('quad') } }),
             Utils.createElement('button', { className: 'paint-tool', innerHTML: ellipseSVG, title: 'Ellipse', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } })
         );
-
-        elements.shapeToolContainer.append(elements.shapeToolBtn, elements.shapeDropdown);
         elements.shapeToolBtn.addEventListener('click', () => {
             elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
         });
-        document.addEventListener('click', (e) => {
-            if (elements.shapeToolContainer && !elements.shapeToolContainer.contains(e.target)) {
-                elements.shapeDropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
-            }
-        });
+
+        // This global listener is now managed in the PaintManager enter/exit methods
 
         elements.gridBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
         elements.charSelectBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
@@ -154,9 +149,16 @@ const PaintUI = (() => {
 
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
 
-        elements.canvas = Utils.createElement('div', { id: 'paint-canvas', eventListeners: { mousedown: eventCallbacks.onMouseDown, mouseleave: eventCallbacks.onMouseLeave } });
+        elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
+        elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
+        elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
+        elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
+        elements.canvas.addEventListener('touchcancel', eventCallbacks.onMouseLeave, { passive: false });
+
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
+        document.addEventListener('touchmove', eventCallbacks.onMouseMove, { passive: false });
         document.addEventListener('mouseup', eventCallbacks.onMouseUp);
+        document.addEventListener('touchend', eventCallbacks.onMouseUp, { passive: false });
 
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
         elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' });
@@ -378,6 +380,7 @@ const PaintManager = (() => {
     let shapeStartCoords = null;
     let shapePreviewBaseState = null;
     let paintContainerElement = null;
+    let _boundGlobalClickListener = null; // To hold the bound event listener
 
     const paintEventCallbacks = {
         onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
@@ -387,6 +390,7 @@ const PaintManager = (() => {
         onCustomHexSet: _setCustomHexColor,
     };
 
+    // ... (All internal functions like _getLinePoints, _createBlankCanvas, etc. remain the same) ...
     function _getLinePoints(x0, y0, x1, y1) {
         const points = [];
         const dx = Math.abs(x1 - x0); const dy = -Math.abs(y1 - y0);
@@ -536,9 +540,14 @@ const PaintManager = (() => {
     }
 
     function onMouseDown(e) {
+        e.preventDefault(); // Prevent default touch actions like scrolling
+        const coords = (e.touches)
+            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY)
+            : PaintUI.getGridCoordinates(e.clientX, e.clientY);
+
         isDrawing = true;
-        const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
         if (!coords) return;
+
         lastCoords = coords;
         if (['line', 'ellipse', 'quad'].includes(currentTool)) {
             shapeStartCoords = { ...coords };
@@ -550,7 +559,11 @@ const PaintManager = (() => {
     }
 
     function onMouseMove(e) {
-        const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
+        e.preventDefault();
+        const coords = (e.touches)
+            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY)
+            : PaintUI.getGridCoordinates(e.clientX, e.clientY);
+
         if (coords) { PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize }); }
         if (!isDrawing || !coords) return;
         if (currentTool === 'pencil' || currentTool === 'eraser') {
@@ -575,8 +588,12 @@ const PaintManager = (() => {
 
     function onMouseUp(e) {
         if (!isDrawing) return;
+
+        const endCoords = (e.changedTouches)
+            ? PaintUI.getGridCoordinates(e.changedTouches[0].clientX, e.changedTouches[0].clientY) || lastCoords
+            : PaintUI.getGridCoordinates(e.clientX, e.clientY) || lastCoords;
+
         if (shapeStartCoords) {
-            const endCoords = PaintUI.getGridCoordinates(e.clientX, e.clientY) || lastCoords;
             let points = [];
             if (currentTool === 'line') { points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y); }
             else if (currentTool === 'quad') { points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y); }
@@ -587,6 +604,7 @@ const PaintManager = (() => {
             }
             points.forEach(p => _drawOnCanvas(p.x, p.y));
         }
+
         if (isDirty) { _triggerSaveUndoState(); }
         isDrawing = false;
         lastCoords = { x: -1, y: -1 };
@@ -707,6 +725,17 @@ const PaintManager = (() => {
         paintContainerElement = PaintUI.buildLayout(paintEventCallbacks);
         AppLayerManager.show(paintContainerElement);
 
+        // Add listeners that are active ONLY when the app is open
+        _boundGlobalClickListener = (e) => {
+            const dropdown = paintContainerElement.querySelector('.paint-dropdown-content');
+            const shapeContainer = paintContainerElement.querySelector('.paint-tool-dropdown');
+            if (dropdown && shapeContainer && !shapeContainer.contains(e.target)) {
+                dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+            }
+        };
+        document.addEventListener('click', _boundGlobalClickListener);
+        document.addEventListener('keydown', handleKeyDown);
+
         currentFilePath = filePath;
         if (fileContent) {
             try {
@@ -726,12 +755,17 @@ const PaintManager = (() => {
         PaintUI.toggleGrid(isGridVisible);
         _updateToolbarState();
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize });
-        document.addEventListener('keydown', handleKeyDown);
     }
 
     async function exit() {
         if (!isActiveState) return;
+
+        // Remove listeners
         document.removeEventListener('keydown', handleKeyDown);
+        if (_boundGlobalClickListener) {
+            document.removeEventListener('click', _boundGlobalClickListener);
+            _boundGlobalClickListener = null;
+        }
 
         if (isDirty) {
             const confirmed = await new Promise(resolve => {
@@ -746,6 +780,7 @@ const PaintManager = (() => {
             });
             if (!confirmed) {
                 document.addEventListener('keydown', handleKeyDown); // Re-attach listener if not exiting
+                document.addEventListener('click', _boundGlobalClickListener);
                 return;
             }
         }

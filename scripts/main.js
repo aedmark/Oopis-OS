@@ -234,7 +234,7 @@ window.onload = async () => {
     );
 
     const resizeObserver = new ResizeObserver(entries => {
-      // UPDATED: Check for PaintManager and its UI resize handler
+      // Re-enabled: The dynamic, aspect-ratio-locked canvas requires this.
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
         if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
           PaintUI.handleResize();
