@@ -234,12 +234,11 @@ window.onload = async () => {
     );
 
     const resizeObserver = new ResizeObserver(entries => {
-      // The ResizeObserver is no longer needed for the paint application,
-      // as its canvas size is now fixed. This logic is now inert.
+      // Re-enabled: The dynamic, aspect-ratio-locked canvas requires this.
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
-        // if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
-        //   PaintUI.handleResize();
-        // }
+        if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
+          PaintUI.handleResize();
+        }
       }
     });
 
