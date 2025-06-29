@@ -154,21 +154,9 @@ const PaintUI = (() => {
 
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
 
-        elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
-
-        // Add BOTH sets of listeners for mouse and touch
-        elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
-        elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
-
-        elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
-        elements.canvas.addEventListener('touchcancel', eventCallbacks.onMouseLeave, { passive: false });
-
+        elements.canvas = Utils.createElement('div', { id: 'paint-canvas', eventListeners: { mousedown: eventCallbacks.onMouseDown, mouseleave: eventCallbacks.onMouseLeave } });
         document.addEventListener('mousemove', eventCallbacks.onMouseMove);
-        document.addEventListener('touchmove', eventCallbacks.onMouseMove, { passive: false });
-
         document.addEventListener('mouseup', eventCallbacks.onMouseUp);
-        document.addEventListener('touchend', eventCallbacks.onMouseUp, { passive: false });
-
 
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
         elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' });
@@ -548,14 +536,9 @@ const PaintManager = (() => {
     }
 
     function onMouseDown(e) {
-        e.preventDefault(); // Prevent default touch actions like scrolling
-        const coords = (e.touches)
-            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY)
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY);
-
         isDrawing = true;
+        const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
         if (!coords) return;
-
         lastCoords = coords;
         if (['line', 'ellipse', 'quad'].includes(currentTool)) {
             shapeStartCoords = { ...coords };
@@ -567,11 +550,7 @@ const PaintManager = (() => {
     }
 
     function onMouseMove(e) {
-        e.preventDefault();
-        const coords = (e.touches)
-            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY)
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY);
-
+        const coords = PaintUI.getGridCoordinates(e.clientX, e.clientY);
         if (coords) { PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize }); }
         if (!isDrawing || !coords) return;
         if (currentTool === 'pencil' || currentTool === 'eraser') {
@@ -596,12 +575,8 @@ const PaintManager = (() => {
 
     function onMouseUp(e) {
         if (!isDrawing) return;
-
-        const endCoords = (e.changedTouches)
-            ? PaintUI.getGridCoordinates(e.changedTouches[0].clientX, e.changedTouches[0].clientY) || lastCoords
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY) || lastCoords;
-
         if (shapeStartCoords) {
+            const endCoords = PaintUI.getGridCoordinates(e.clientX, e.clientY) || lastCoords;
             let points = [];
             if (currentTool === 'line') { points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y); }
             else if (currentTool === 'quad') { points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y); }
@@ -612,7 +587,6 @@ const PaintManager = (() => {
             }
             points.forEach(p => _drawOnCanvas(p.x, p.y));
         }
-
         if (isDirty) { _triggerSaveUndoState(); }
         isDrawing = false;
         lastCoords = { x: -1, y: -1 };
