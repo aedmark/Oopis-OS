@@ -55,8 +55,8 @@ const PaintAppConfig = {
         '#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3', '#ffffff',
         '#ff4500', '#ffa500', '#ffd700', '#adff2f', '#00ffff', '#1e90ff', '#8a2be2', '#f5f5f5',
         '#dc143c', '#ff8c00', '#ffebcd', '#7cfc00', '#7fffd4', '#4169e1', '#9932cc', '#e0e0e0',
-        '#c71585', '#ff6347', '#f0e68c', '#32cd32', '#40e0d0', '#6495ed', '#da70d6', '#c0c0c0',
-        '#d02090', '#ff69b4', '#eee8aa', '#98fb98', '#afeeee', '#87cefa', '#dda0dd', '#a9a9a9',
+        '#c71585', '#ff6347', '#f0e68c', '#32cd32', '#40e0d0', '#6495ed', '#dda0dd', '#c0c0c0',
+        '#d02090', '#ff69b4', '#eee8aa', '#98fb98', '#afeeee', '#87cefa', '#d8bfd8', '#a9a9a9',
         '#ff1493', '#ffb6c1', '#fffacd', '#90ee90', '#b0e0e6', '#add8e6', '#e6e6fa', '#808080',
         '#c71585', '#ffc0cb', '#fafad2', '#9acd32', '#b0c4de', '#b0c4de', '#d8bfd8', '#696969',
         '#ff00ff', '#f08080', '#fff8dc', '#3cb371', '#00ced1', '#00bfff', '#ba55d3', '#404040'
@@ -72,6 +72,7 @@ const PaintUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
+    // --- FIX: Directive 2.1: Initialize squareCellSize to 0 ---
     let squareCellSize = 0;
 
     // SVGs are defined once and reused
@@ -109,6 +110,9 @@ const PaintUI = (() => {
         elements.shapeToolBtn.addEventListener('click', () => {
             elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
         });
+
+        // --- FIX: Directive 1.1: Append shape tool to its container ---
+        elements.shapeToolContainer.append(elements.shapeToolBtn, elements.shapeDropdown);
 
         // This global listener is now managed in the PaintManager enter/exit methods
 
@@ -149,9 +153,11 @@ const PaintUI = (() => {
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer);
 
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
-        const canvasStyles = window.getComputedStyle(elements.canvas);
-        cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
-        squareCellSize = Math.ceil(Math.max(cellDimensions.width, cellDimensions.height));
+
+        // --- FIX: Directive 2.2: Remove premature calculation ---
+        // const canvasStyles = window.getComputedStyle(elements.canvas);
+        // cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
+        // squareCellSize = Math.ceil(Math.max(cellDimensions.width, cellDimensions.height));
 
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
@@ -325,6 +331,14 @@ const PaintUI = (() => {
 
     function renderCanvas(canvasData) {
         if (!elements.canvas) return;
+
+        // --- FIX: Directive 2.3: Defer calculation to first render ---
+        if (squareCellSize === 0) {
+            const canvasStyles = window.getComputedStyle(elements.canvas);
+            cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
+            squareCellSize = Math.ceil(Math.max(cellDimensions.width, cellDimensions.height));
+        }
+
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
