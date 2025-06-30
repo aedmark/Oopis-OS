@@ -69,7 +69,7 @@
  */
 const TextAdventureModal = (() => {
   "use strict";
-  let adventureModal, adventureOutput, adventureInput, adventureCloseBtn, adventureTitle;
+  let elements = {};
   let isActive = false;
   let promptResolver = null;
   let currentEngineInstance = null;
@@ -77,22 +77,59 @@ const TextAdventureModal = (() => {
   let sessionCompletionResolver = null;
 
   /**
-   * Initializes and caches the necessary DOM elements for the modal.
+   * Creates the DOM structure for the adventure game modal.
+   * This function is called once when the game is launched.
    * @private
-   * @returns {boolean} True if all elements were found, false otherwise.
+   * @returns {HTMLElement} The root element for the adventure modal.
    */
-  function _initDOM() {
-    adventureModal = document.getElementById('adventure-modal');
-    adventureOutput = document.getElementById('adventure-output');
-    adventureInput = document.getElementById('adventure-input');
-    adventureCloseBtn = document.getElementById('adventure-close-btn');
-    adventureTitle = document.getElementById('adventure-title');
-    if (!adventureModal || !adventureOutput || !adventureInput || !adventureCloseBtn || !adventureTitle) {
-      console.error("TextAdventureModal: Critical UI elements not found in DOM!");
-      return false;
-    }
-    return true;
+  function _buildLayout() {
+    // Create elements using Utils.createElement for robustness
+    elements.adventureTitle = Utils.createElement('span', { id: 'adventure-title' });
+    elements.adventureCloseBtn = Utils.createElement('button', { id: 'adventure-close-btn', className: 'btn btn--cancel', textContent: 'Exit Adventure' });
+    elements.adventureHeader = Utils.createElement('div', { id: 'adventure-header', className: 'modal-dialog__header' }, [elements.adventureTitle, elements.adventureCloseBtn]);
+
+    elements.adventureOutput = Utils.createElement('div', { id: 'adventure-output' });
+    elements.adventureInput = Utils.createElement('input', { id: 'adventure-input', type: 'text', spellcheck: 'false', autocomplete: 'off' });
+    elements.adventureInputContainer = Utils.createElement('div', { id: 'adventure-input-container' }, [
+      Utils.createElement('span', { textContent: '> ' }),
+      elements.adventureInput
+    ]);
+
+    // Main container, styled like a modal dialog for consistency
+    const adventureContainer = Utils.createElement('div', { id: 'adventure-container', className: 'modal-dialog' }, [
+      elements.adventureHeader,
+      elements.adventureOutput,
+      elements.adventureInputContainer
+    ]);
+
+    // Add custom adventure game styles for better presentation
+    adventureContainer.style.width = '90%';
+    adventureContainer.style.maxWidth = '800px';
+    adventureContainer.style.height = '80%';
+    adventureContainer.style.display = 'flex';
+    adventureContainer.style.flexDirection = 'column';
+    elements.adventureOutput.style.flexGrow = '1';
+    elements.adventureOutput.style.overflowY = 'auto';
+    elements.adventureOutput.style.textAlign = 'left';
+    elements.adventureOutput.style.padding = 'var(--spacing-md)';
+    elements.adventureOutput.style.border = '1px solid var(--color-border-primary)';
+    elements.adventureOutput.style.marginBottom = 'var(--spacing-md)';
+    elements.adventureInputContainer.style.display = 'flex';
+    elements.adventureInput.style.flexGrow = '1';
+    elements.adventureInput.style.background = 'transparent';
+    elements.adventureInput.style.border = 'none';
+    elements.adventureInput.style.color = 'var(--color-text-primary)';
+    elements.adventureInput.style.fontFamily = 'var(--font-family-mono)';
+    elements.adventureInput.style.outline = 'none';
+    elements.adventureHeader.style.display = 'flex';
+    elements.adventureHeader.style.justifyContent = 'space-between';
+    elements.adventureHeader.style.alignItems = 'center';
+    elements.adventureHeader.style.marginBottom = 'var(--spacing-md)';
+
+
+    return adventureContainer;
   }
+
 
   /**
    * Displays the adventure modal and starts a new game session.
@@ -102,23 +139,23 @@ const TextAdventureModal = (() => {
    * @returns {Promise<void>} A promise that resolves when the game session ends (modal is hidden).
    */
   function show(adventureData, engineInstance, scriptingContext) {
-    if (!_initDOM()) return Promise.reject("DOM Not Ready");
+    const adventureElement = _buildLayout();
 
     return new Promise(resolve => {
       sessionCompletionResolver = resolve;
       currentEngineInstance = engineInstance;
       currentScriptingContext = scriptingContext;
       isActive = true;
-      adventureTitle.textContent = adventureData.title || "Text Adventure";
-      adventureOutput.innerHTML = '';
-      adventureInput.value = '';
-      adventureInput.disabled = false;
+      elements.adventureTitle.textContent = adventureData.title || "Text Adventure";
+      elements.adventureOutput.innerHTML = '';
+      elements.adventureInput.value = '';
+      elements.adventureInput.disabled = false;
 
-      AppLayerManager.show(adventureModal);
+      AppLayerManager.show(adventureElement);
 
-      adventureInput.focus();
-      adventureInput.addEventListener('keydown', _handleInputKeydown);
-      adventureCloseBtn.addEventListener('click', hide);
+      elements.adventureInput.focus();
+      elements.adventureInput.addEventListener('keydown', _handleInputKeydown);
+      elements.adventureCloseBtn.addEventListener('click', hide);
     });
   }
 
@@ -144,13 +181,14 @@ const TextAdventureModal = (() => {
 
     AppLayerManager.hide();
 
-    adventureInput.removeEventListener('keydown', _handleInputKeydown);
-    adventureCloseBtn.removeEventListener('click', hide);
+    elements.adventureInput.removeEventListener('keydown', _handleInputKeydown);
+    elements.adventureCloseBtn.removeEventListener('click', hide);
     if (typeof OutputManager !== 'undefined') {
       void OutputManager.appendToOutput("Exited text adventure.", {
         typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG
       });
     }
+    elements = {}; // Clear cached elements
   }
 
   /**
@@ -161,8 +199,8 @@ const TextAdventureModal = (() => {
   function _handleInputKeydown(event) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      const command = adventureInput.value.trim();
-      adventureInput.value = '';
+      const command = elements.adventureInput.value.trim();
+      elements.adventureInput.value = '';
 
       if (promptResolver) {
         appendOutput(`> ${command}`, 'system');
@@ -205,7 +243,7 @@ const TextAdventureModal = (() => {
 
     return new Promise(resolve => {
       promptResolver = resolve;
-      adventureInput.focus();
+      elements.adventureInput.focus();
     });
   }
 
@@ -215,19 +253,17 @@ const TextAdventureModal = (() => {
    * @param {string} [type='room-desc'] - The CSS class to apply for styling (e.g., 'error', 'info').
    */
   function appendOutput(text, type = 'room-desc') {
-    if (!_initDOM()) return;
-    const p = document.createElement('p');
-    p.textContent = text;
-    if (type) p.className = type;
-    adventureOutput.appendChild(p);
-    adventureOutput.scrollTop = adventureOutput.scrollHeight;
+    if (!elements.adventureOutput) return;
+    const p = Utils.createElement('p', { textContent: text, className: type });
+    elements.adventureOutput.appendChild(p);
+    elements.adventureOutput.scrollTop = elements.adventureOutput.scrollHeight;
   }
 
   /**
    * Clears all text from the adventure output screen.
    */
   function clearOutput() {
-    if (adventureOutput) adventureOutput.innerHTML = '';
+    if (elements.adventureOutput) elements.adventureOutput.innerHTML = '';
   }
 
   return {
