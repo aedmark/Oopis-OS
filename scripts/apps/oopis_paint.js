@@ -131,7 +131,7 @@ const PaintUI = (() => {
             style: {
                 backgroundColor: PaintAppConfig.PALETTE[0].value,
             },
-            eventListeners: { click: () => { if (elements.customColorSwatch.style.backgroundColor) eventCallbacks.onColorChange(elements.customColorSwatch.style.backgroundColor); } }
+            eventListeners: { click: () => eventCallbacks.onCustomSwatchClick() }
         });
         colorPaletteContainer.insertBefore(elements.customColorSwatch, colorPaletteContainer.firstChild);
         elements.colorPalleteBtn = Utils.createElement('button', {
@@ -376,6 +376,7 @@ const PaintManager = (() => {
     let shapePreviewBaseState = null;
     let paintContainerElement = null;
     let _boundGlobalClickListener = null;
+    let customColorValue = null;
 
     // --- FIX: Add state for dynamic canvas dimensions ---
     let currentCanvasWidth = 0;
@@ -387,6 +388,13 @@ const PaintManager = (() => {
         onGridToggle: _toggleGrid, onCharSelectOpen: _openCharSelect, onColorSelectOpen: _openColorSelect,
         onBrushSizeUp: () => _setBrushSize(1), onBrushSizeDown: () => _setBrushSize(-1),
         onCustomHexSet: _setCustomHexColor,
+        onCustomSwatchClick: () => {
+            if (customColorValue) {
+                _setColor(customColorValue);
+            } else {
+                _openColorSelect();
+            }
+        },
     };
 
     function _getLinePoints(x0, y0, x1, y1) {
@@ -480,6 +488,7 @@ const PaintManager = (() => {
 
     function _setCustomHexColor(hex) {
         if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(hex)) {
+            customColorValue = hex;
             _setColor(hex);
         } else {
             alert("Invalid hex color format. Please use #RRGGBB or #RGB.");
@@ -625,6 +634,7 @@ const PaintManager = (() => {
         currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
         undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
+        customColorValue = null;
         currentCanvasWidth = 0; currentCanvasHeight = 0;
         if (saveUndoStateTimeout) { clearTimeout(saveUndoStateTimeout); saveUndoStateTimeout = null; }
     }
