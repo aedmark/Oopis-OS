@@ -60,14 +60,14 @@ const Config = (() => {
         },
         /** CSS classes used for styling terminal output and UI components. */
         CSS_CLASSES: {
-            ERROR_MSG: "text-red-500",
-            SUCCESS_MSG: "text-lime-400",
-            CONSOLE_LOG_MSG: "text-neutral-400",
-            WARNING_MSG: "text-amber-400",
-            EDITOR_MSG: "text-sky-400",
-            DIR_ITEM: "text-sky-400 font-semibold",
-            FILE_ITEM: "text-green-500",
-            OUTPUT_LINE: "whitespace-pre-wrap break-words min-h-[1.2em] leading-[1.2em]",
+            ERROR_MSG: "text-error",
+            SUCCESS_MSG: "text-success",
+            CONSOLE_LOG_MSG: "text-subtle",
+            WARNING_MSG: "text-warning",
+            EDITOR_MSG: "text-info",
+            DIR_ITEM: "text-dir",
+            FILE_ITEM: "text-file",
+            OUTPUT_LINE: "terminal__output-line",
             HIDDEN: "hidden",
         },
         /** File system constants and default values. */

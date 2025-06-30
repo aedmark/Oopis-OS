@@ -29,29 +29,26 @@ const ModalManager = (() => {
             confirmText = "OK",
             cancelText = "Cancel",
         } = options;
-        const parentContainer = DOM.terminalBezel;
+        const parentContainer = document.getElementById('terminal-bezel'); // Use bezel for centering
         if (!parentContainer) {
-            console.error(
-                "ModalManager: Cannot find terminal-bezel to attach modal."
-            );
+            console.error("ModalManager: Cannot find terminal-bezel to attach modal.");
             if (options.onCancel) options.onCancel();
             return;
         }
-        const originalParentPosition = parentContainer.style.position;
-        if (window.getComputedStyle(parentContainer).position === "static") {
-            parentContainer.style.position = "relative";
-        }
+
         const removeModal = () => {
-            const modal = document.getElementById("editor-modal-dialog");
-            if (modal) modal.remove();
-            parentContainer.style.position = originalParentPosition;
+            const modal = document.getElementById("dynamic-modal-dialog");
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
         };
+
         const confirmButton = Utils.createElement("button", {
-            className: "btn-editor-modal btn-confirm",
+            className: "btn btn--confirm",
             textContent: confirmText,
         });
         const cancelButton = Utils.createElement("button", {
-            className: "btn-editor-modal btn-cancel",
+            className: "btn btn--cancel",
             textContent: cancelText,
         });
 
@@ -68,13 +65,17 @@ const ModalManager = (() => {
         confirmButton.addEventListener('click', confirmHandler);
         cancelButton.addEventListener('click', cancelHandler);
 
-        const buttonContainer = Utils.createElement("div", { className: "editor-modal-buttons" }, [confirmButton, cancelButton]);
+        const buttonContainer = Utils.createElement("div", { className: "modal-dialog__buttons" }, [confirmButton, cancelButton]);
         const messageContainer = Utils.createElement("div");
         messageLines.forEach((line) => {
             messageContainer.appendChild(Utils.createElement("p", { textContent: line }));
         });
-        const modalDialog = Utils.createElement("div", { id: "editor-modal-dialog" }, [messageContainer, buttonContainer]);
-        parentContainer.appendChild(modalDialog);
+
+        // The modal itself is now wrapped in an overlay
+        const modalDialog = Utils.createElement("div", { className: "modal-dialog" }, [messageContainer, buttonContainer]);
+        const modalOverlay = Utils.createElement("div", { id: "dynamic-modal-dialog", className: "modal-overlay" }, [modalDialog]);
+
+        parentContainer.appendChild(modalOverlay);
     }
 
     /**
@@ -91,49 +92,35 @@ const ModalManager = (() => {
             placeholder = ""
         } = options;
 
-        const parentContainer = DOM.terminalBezel;
+        const parentContainer = document.getElementById('terminal-bezel');
         if (!parentContainer) {
             if (onCancel) onCancel();
             return;
         }
 
-        const originalParentPosition = parentContainer.style.position;
-        if (window.getComputedStyle(parentContainer).position === "static") {
-            parentContainer.style.position = "relative";
-        }
-
         const removeModal = () => {
-            const modal = document.getElementById("editor-modal-dialog");
-            if (modal) modal.remove();
-            parentContainer.style.position = originalParentPosition;
+            const modal = document.getElementById("dynamic-modal-dialog");
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
         };
 
         const inputField = Utils.createElement('input', {
             type: 'text',
             placeholder: placeholder,
-            id: 'graphical-modal-input',
-            className: 'graphical-modal-input-field'
+            className: 'modal-dialog__input'
         });
 
-        const confirmButton = Utils.createElement("button", {
-            className: "btn-editor-modal btn-confirm",
-            textContent: confirmText
-        });
-
-        const cancelButton = Utils.createElement("button", {
-            className: "btn-editor-modal btn-cancel",
-            textContent: cancelText
-        });
+        const confirmButton = Utils.createElement("button", { className: "btn btn--confirm", textContent: confirmText });
+        const cancelButton = Utils.createElement("button", { className: "btn btn--cancel", textContent: cancelText });
 
         const handleConfirm = () => {
             const value = inputField.value;
-            // *** FIX: Call the callback BEFORE removing the modal from the DOM ***
             if (onConfirm) onConfirm(value);
             removeModal();
         };
 
         const handleCancel = () => {
-            // *** FIX: Call the callback BEFORE removing the modal from the DOM ***
             if (onCancel) onCancel();
             removeModal();
         };
@@ -149,15 +136,16 @@ const ModalManager = (() => {
             }
         });
 
-        const buttonContainer = Utils.createElement("div", { className: "editor-modal-buttons" }, [confirmButton, cancelButton]);
+        const buttonContainer = Utils.createElement("div", { className: "modal-dialog__buttons" }, [confirmButton, cancelButton]);
         const messageContainer = Utils.createElement("div");
         messageLines.forEach(line => {
             messageContainer.appendChild(Utils.createElement("p", { textContent: line }));
         });
 
-        const modalDialog = Utils.createElement("div", { id: "editor-modal-dialog" }, [messageContainer, inputField, buttonContainer]);
+        const modalDialog = Utils.createElement("div", { className: "modal-dialog" }, [messageContainer, inputField, buttonContainer]);
+        const modalOverlay = Utils.createElement("div", { id: "dynamic-modal-dialog", className: "modal-overlay" }, [modalDialog]);
 
-        parentContainer.appendChild(modalDialog);
+        parentContainer.appendChild(modalOverlay);
         inputField.focus();
     }
 
@@ -172,13 +160,18 @@ const ModalManager = (() => {
         }
         isAwaitingTerminalInput = true;
         activeModalContext = { onConfirm: options.onConfirm, onCancel: options.onCancel, data: options.data || {} };
-        options.messageLines.forEach((line) => void OutputManager.appendToOutput(line, { typeClass: Config.CSS_CLASSES.WARNING_MSG }));
-        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-        if (DOM.inputLineContainerDiv) DOM.inputLineContainerDiv.classList.remove(Config.CSS_CLASSES.HIDDEN);
+        options.messageLines.forEach((line) => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
+        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
+
+        const inputLineContainer = document.querySelector('.terminal__input-line');
+        if (inputLineContainer) inputLineContainer.classList.remove('hidden');
+
         TerminalUI.setInputState(true);
         TerminalUI.focusInput();
         TerminalUI.clearInput();
-        if (DOM.outputDiv) DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
+
+        const outputDiv = document.getElementById('output');
+        if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
     }
 
     /**
@@ -202,9 +195,9 @@ const ModalManager = (() => {
             }
 
             if (inputLine !== null) {
-                options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: Config.CSS_CLASSES.WARNING_MSG }));
-                void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                const promptEcho = `${DOM.promptContainer.textContent} `;
+                options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
+                void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
+                const promptEcho = `${document.getElementById('prompt-container').textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
                 if (inputLine.toUpperCase() === 'YES') {
                     if (options.onConfirm) options.onConfirm(options.data);
@@ -237,7 +230,7 @@ const ModalManager = (() => {
      */
     async function handleTerminalInput(input) {
         if (!isAwaitingTerminalInput) return false;
-        const promptString = `${DOM.promptContainer.textContent} `;
+        const promptString = `${document.getElementById('prompt-container').textContent} `;
         await OutputManager.appendToOutput(`${promptString}${input.trim()}`);
         if (input.trim() === "YES") {
             await activeModalContext.onConfirm(activeModalContext.data);
@@ -245,7 +238,7 @@ const ModalManager = (() => {
             if (typeof activeModalContext.onCancel === "function") {
                 await activeModalContext.onCancel(activeModalContext.data);
             } else {
-                await OutputManager.appendToOutput(Config.MESSAGES.OPERATION_CANCELLED, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                await OutputManager.appendToOutput(Config.MESSAGES.OPERATION_CANCELLED, { typeClass: 'text-subtle' });
             }
         }
         isAwaitingTerminalInput = false;
@@ -270,13 +263,12 @@ const TerminalUI = (() => {
     function updatePrompt() {
         const user = UserManager.getCurrentUser() || { name: Config.USER.DEFAULT_NAME };
         const ps1 = EnvironmentManager.get('PS1');
+        const promptContainer = document.getElementById('prompt-container');
+        if (!promptContainer) return;
 
         if (ps1) {
-            // PS1 exists, parse and render it
             const host = EnvironmentManager.get('HOST') || Config.OS.DEFAULT_HOST_NAME;
             const path = FileSystemManager.getCurrentPath() || Config.FILESYSTEM.ROOT_PATH;
-
-            // Special case for tilde expansion
             const homeDir = `/home/${user.name}`;
             const displayPath = path.startsWith(homeDir) ? `~${path.substring(homeDir.length)}` : path;
 
@@ -285,15 +277,14 @@ const TerminalUI = (() => {
                 .replace(/\\w/g, displayPath)
                 .replace(/\\W/g, path.substring(path.lastIndexOf('/') + 1) || '/')
                 .replace(/\\$/g, user.name === 'root' ? '#' : '$')
-                .replace(/\\s/g, "OopisOS") // Shell name
-                .replace(/\\\\/g, '\\'); // Literal backslash
+                .replace(/\\s/g, "OopisOS")
+                .replace(/\\\\/g, '\\');
 
-            DOM.promptContainer.textContent = parsedPrompt;
+            promptContainer.textContent = parsedPrompt;
         } else {
-            // Default prompt rendering
             const path = FileSystemManager.getCurrentPath();
             const promptChar = user.name === 'root' ? '#' : Config.TERMINAL.PROMPT_CHAR;
-            DOM.promptContainer.textContent = `${user.name}${Config.TERMINAL.PROMPT_AT}${Config.OS.DEFAULT_HOST_NAME}${Config.TERMINAL.PROMPT_SEPARATOR}${path}${promptChar} `;
+            promptContainer.textContent = `${user.name}${Config.TERMINAL.PROMPT_AT}${Config.OS.DEFAULT_HOST_NAME}${Config.TERMINAL.PROMPT_SEPARATOR}${path}${promptChar} `;
         }
     }
 
@@ -302,13 +293,11 @@ const TerminalUI = (() => {
      * Sets focus to the main terminal input element.
      */
     function focusInput() {
-        if (
-            DOM.editableInputDiv &&
-            DOM.editableInputDiv.contentEditable === "true"
-        ) {
-            DOM.editableInputDiv.focus();
-            if (DOM.editableInputDiv.textContent.length === 0)
-                setCaretToEnd(DOM.editableInputDiv);
+        const editableInputDiv = document.getElementById('editable-input');
+        if (editableInputDiv && editableInputDiv.contentEditable === "true") {
+            editableInputDiv.focus();
+            if (editableInputDiv.textContent.length === 0)
+                setCaretToEnd(editableInputDiv);
         }
     }
 
@@ -316,7 +305,8 @@ const TerminalUI = (() => {
      * Clears all text from the terminal input element.
      */
     function clearInput() {
-        if (DOM.editableInputDiv) DOM.editableInputDiv.textContent = "";
+        const editableInputDiv = document.getElementById('editable-input');
+        if (editableInputDiv) editableInputDiv.textContent = "";
     }
 
     /**
@@ -324,7 +314,8 @@ const TerminalUI = (() => {
      * @returns {string}
      */
     function getCurrentInputValue() {
-        return DOM.editableInputDiv ? DOM.editableInputDiv.textContent : "";
+        const editableInputDiv = document.getElementById('editable-input');
+        return editableInputDiv ? editableInputDiv.textContent : "";
     }
 
     /**
@@ -333,9 +324,10 @@ const TerminalUI = (() => {
      * @param {boolean} [setAtEnd=true] - If true, the caret is moved to the end of the new text.
      */
     function setCurrentInputValue(value, setAtEnd = true) {
-        if (DOM.editableInputDiv) {
-            DOM.editableInputDiv.textContent = value;
-            if (setAtEnd) setCaretToEnd(DOM.editableInputDiv);
+        const editableInputDiv = document.getElementById('editable-input');
+        if (editableInputDiv) {
+            editableInputDiv.textContent = value;
+            if (setAtEnd) setCaretToEnd(editableInputDiv);
         }
     }
 
@@ -344,12 +336,7 @@ const TerminalUI = (() => {
      * @param {HTMLElement} element - The element to set the caret in.
      */
     function setCaretToEnd(element) {
-        if (
-            !element ||
-            typeof window.getSelection === "undefined" ||
-            typeof document.createRange === "undefined"
-        )
-            return;
+        if (!element || typeof window.getSelection === "undefined" || typeof document.createRange === "undefined") return;
         const range = document.createRange();
         const sel = window.getSelection();
         range.selectNodeContents(element);
@@ -367,13 +354,7 @@ const TerminalUI = (() => {
      * @param {number} position - The character position to move the caret to.
      */
     function setCaretPosition(element, position) {
-        if (
-            !element ||
-            typeof position !== "number" ||
-            typeof window.getSelection === "undefined" ||
-            typeof document.createRange === "undefined"
-        )
-            return;
+        if (!element || typeof position !== "number" || typeof window.getSelection === "undefined" || typeof document.createRange === "undefined") return;
         const sel = window.getSelection();
         if (!sel) return;
         const range = document.createRange();
@@ -415,11 +396,12 @@ const TerminalUI = (() => {
      * @param {boolean} [obscured=false] - True if input should be treated as a password (for internal logic).
      */
     function setInputState(isEditable, obscured = false) {
-        if (DOM.editableInputDiv) {
-            DOM.editableInputDiv.contentEditable = isEditable ? "true" : "false";
-            DOM.editableInputDiv.style.opacity = isEditable ? "1" : "0.5";
+        const editableInputDiv = document.getElementById('editable-input');
+        if (editableInputDiv) {
+            editableInputDiv.contentEditable = isEditable ? "true" : "false";
+            editableInputDiv.style.opacity = isEditable ? "1" : "0.5";
             _isObscuredInputMode = obscured;
-            if (!isEditable) DOM.editableInputDiv.blur();
+            if (!isEditable) editableInputDiv.blur();
         }
     }
 
@@ -445,15 +427,13 @@ const TerminalUI = (() => {
      */
     function getSelection() {
         const sel = window.getSelection();
+        const editableInputDiv = document.getElementById('editable-input');
         let start, end;
         if (sel && sel.rangeCount > 0) {
             const range = sel.getRangeAt(0);
-            if (
-                DOM.editableInputDiv &&
-                DOM.editableInputDiv.contains(range.commonAncestorContainer)
-            ) {
+            if (editableInputDiv && editableInputDiv.contains(range.commonAncestorContainer)) {
                 const preSelectionRange = range.cloneRange();
-                preSelectionRange.selectNodeContents(DOM.editableInputDiv);
+                preSelectionRange.selectNodeContents(editableInputDiv);
                 preSelectionRange.setEnd(range.startContainer, range.startOffset);
                 start = preSelectionRange.toString().length;
                 end = start + range.toString().length;
@@ -463,10 +443,7 @@ const TerminalUI = (() => {
         } else {
             start = end = getCurrentInputValue().length;
         }
-        return {
-            start,
-            end,
-        };
+        return { start, end };
     }
 
     return {
@@ -514,7 +491,6 @@ const ModalInputManager = (() => {
     function requestInput(promptMessage, onInputReceivedCallback, onCancelledCallback, isObscured = false, options = {}) {
         if (options.scriptingContext && options.scriptingContext.isScripting) {
             const scriptContext = options.scriptingContext;
-
             let inputLine = null;
             while (scriptContext.currentLineIndex < scriptContext.lines.length - 1) {
                 scriptContext.currentLineIndex++;
@@ -524,27 +500,20 @@ const ModalInputManager = (() => {
                     break;
                 }
             }
-
             if (inputLine !== null) {
-                void OutputManager.appendToOutput(promptMessage, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
                 const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
-                const promptEcho = `${DOM.promptContainer.textContent} `;
+                const promptEcho = `${document.getElementById('prompt-container').textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
-
                 onInputReceivedCallback(inputLine);
             } else {
-                void OutputManager.appendToOutput("Script ended while awaiting input.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                void OutputManager.appendToOutput("Script ended while awaiting input.", { typeClass: 'text-error' });
                 if (onCancelledCallback) onCancelledCallback();
             }
             return;
         }
-
         if (_isAwaitingInput) {
-            void OutputManager.appendToOutput(
-                "Another modal input prompt is already pending.", {
-                    typeClass: Config.CSS_CLASSES.WARNING_MSG,
-                }
-            );
+            void OutputManager.appendToOutput("Another modal input prompt is already pending.", { typeClass: 'text-warning' });
             if (onCancelledCallback) onCancelledCallback();
             return;
         }
@@ -555,16 +524,16 @@ const ModalInputManager = (() => {
             isObscured: isObscured,
             currentInput: "",
         };
-        if (DOM.inputLineContainerDiv) {
-            DOM.inputLineContainerDiv.classList.remove(Config.CSS_CLASSES.HIDDEN);
-        }
-        void OutputManager.appendToOutput(promptMessage, {
-            typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-        });
+        const inputLineContainer = document.querySelector('.terminal__input-line');
+        if (inputLineContainer) inputLineContainer.classList.remove('hidden');
+
+        void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
         TerminalUI.clearInput();
         TerminalUI.setInputState(true, false);
         TerminalUI.focusInput();
-        if (DOM.outputDiv) DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
+
+        const outputDiv = document.getElementById('output');
+        if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
     }
 
     /**
@@ -574,9 +543,7 @@ const ModalInputManager = (() => {
      */
     async function handleInput() {
         if (!_isAwaitingInput || !_inputContext) return false;
-        const finalInput = _inputContext.isObscured
-            ? _inputContext.currentInput
-            : TerminalUI.getCurrentInputValue();
+        const finalInput = _inputContext.isObscured ? _inputContext.currentInput : TerminalUI.getCurrentInputValue();
         const callback = _inputContext.onInputReceived;
         _isAwaitingInput = false;
         _inputContext = null;
@@ -615,11 +582,9 @@ const ModalInputManager = (() => {
             start += rawChar.length;
         }
         _inputContext.currentInput = inputArray.join("");
-        const displayText = _inputContext.isObscured
-            ? "*".repeat(_inputContext.currentInput.length)
-            : _inputContext.currentInput;
+        const displayText = _inputContext.isObscured ? "*".repeat(_inputContext.currentInput.length) : _inputContext.currentInput;
         TerminalUI.setCurrentInputValue(displayText, false);
-        TerminalUI.setCaretPosition(DOM.editableInputDiv, start);
+        TerminalUI.setCaretPosition(document.getElementById('editable-input'), start);
     }
 
     return {
@@ -681,22 +646,12 @@ const TabCompletionManager = (() => {
      * @param {string} completion - The suggestion to insert.
      * @returns {{textToInsert: string, newCursorPos: number}} The new input text and cursor position.
      */
-    function _applyCompletion(
-        fullInput,
-        startOfWordIndex,
-        currentWordPrefixLength,
-        completion
-    ) {
+    function _applyCompletion(fullInput, startOfWordIndex, currentWordPrefixLength, completion) {
         const textBeforeWord = fullInput.substring(0, startOfWordIndex);
-        const textAfterWord = fullInput.substring(
-            startOfWordIndex + currentWordPrefixLength
-        );
+        const textAfterWord = fullInput.substring(startOfWordIndex + currentWordPrefixLength);
         const newText = textBeforeWord + completion + textAfterWord;
         const newCursorPos = textBeforeWord.length + completion.length;
-        return {
-            textToInsert: newText,
-            newCursorPos,
-        };
+        return { textToInsert: newText, newCursorPos };
     }
 
     /**
@@ -715,15 +670,9 @@ const TabCompletionManager = (() => {
         }
         const currentWordPrefix = textBeforeCursor.substring(startOfWordIndex);
         const tokens = fullInput.trimStart().split(/\s+/).filter(Boolean);
-        const isCompletingCommand =
-            tokens.length === 0 || (tokens.length === 1 && !/\s$/.test(fullInput));
+        const isCompletingCommand = tokens.length === 0 || (tokens.length === 1 && !/\s$/.test(fullInput));
         const commandName = isCompletingCommand ? "" : tokens[0].toLowerCase();
-        return {
-            currentWordPrefix,
-            startOfWordIndex,
-            isCompletingCommand,
-            commandName,
-        };
+        return { currentWordPrefix, startOfWordIndex, isCompletingCommand, commandName };
     }
 
     /**
@@ -734,49 +683,35 @@ const TabCompletionManager = (() => {
      */
     async function _getSuggestionsFromProvider(context) {
         const { currentWordPrefix, isCompletingCommand, commandName } = context;
-        const allCommands = CommandExecutor.getCommands();
         let suggestions = [];
 
         if (isCompletingCommand) {
-            suggestions = Object.keys(allCommands)
-                .filter((cmd) =>
-                    cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase())
-                )
+            // This now ensures commands are loaded before trying to get them
+            const commands = await Promise.all(
+                Object.keys(CommandRegistry.getDefinitions()).map(cmd => CommandExecutor._ensureCommandLoaded(cmd))
+            ).then(() => CommandExecutor.getCommands());
+
+            suggestions = Object.keys(commands)
+                .filter((cmd) => cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                 .sort();
         } else {
             const commandLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
             if (!commandLoaded) return [];
 
-            const commandDefinition = allCommands[commandName]?.handler.definition;
-
+            const commandDefinition = CommandExecutor.getCommands()[commandName]?.handler.definition;
             if (!commandDefinition) return [];
 
-            if (commandName === "help" || commandName === "man") {
-                suggestions = Object.keys(allCommands)
-                    .filter((cmd) =>
-                        cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase())
-                    )
-                    .sort();
-            } else if (commandDefinition.completionType === "users") {
-                const users = StorageManager.loadItem(
-                    Config.STORAGE_KEYS.USER_CREDENTIALS,
-                    "User list",
-                    {}
-                );
+            if (commandDefinition.completionType === "users") {
+                const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
                 const userNames = Object.keys(users);
-                if (!userNames.includes(Config.USER.DEFAULT_NAME))
-                    userNames.push(Config.USER.DEFAULT_NAME);
+                if (!userNames.includes(Config.USER.DEFAULT_NAME)) userNames.push(Config.USER.DEFAULT_NAME);
                 suggestions = userNames
-                    .filter((name) =>
-                        name.toLowerCase().startsWith(currentWordPrefix.toLowerCase())
-                    )
+                    .filter((name) => name.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                     .sort();
             } else if (commandDefinition.pathValidation) {
                 let pathPrefixForFS = "";
                 let segmentToMatchForFS = "";
-                const lastSlashIndex = currentWordPrefix.lastIndexOf(
-                    Config.FILESYSTEM.PATH_SEPARATOR
-                );
+                const lastSlashIndex = currentWordPrefix.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR);
 
                 if (lastSlashIndex !== -1) {
                     pathPrefixForFS = currentWordPrefix.substring(0, lastSlashIndex + 1);
@@ -785,30 +720,17 @@ const TabCompletionManager = (() => {
                     segmentToMatchForFS = currentWordPrefix;
                 }
 
-                const effectiveBasePathForFS = FileSystemManager.getAbsolutePath(
-                    pathPrefixForFS,
-                    FileSystemManager.getCurrentPath()
-                );
-                const baseNode = FileSystemManager.getNodeByPath(
-                    effectiveBasePathForFS
-                );
+                const effectiveBasePathForFS = FileSystemManager.getAbsolutePath(pathPrefixForFS, FileSystemManager.getCurrentPath());
+                const baseNode = FileSystemManager.getNodeByPath(effectiveBasePathForFS);
                 const currentUser = UserManager.getCurrentUser().name;
 
-                if (
-                    baseNode &&
-                    baseNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE &&
-                    FileSystemManager.hasPermission(baseNode, currentUser, "read")
-                ) {
+                if (baseNode && baseNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE && FileSystemManager.hasPermission(baseNode, currentUser, "read")) {
                     suggestions = Object.keys(baseNode.children)
-                        .filter((name) =>
-                            name.toLowerCase().startsWith(segmentToMatchForFS.toLowerCase())
-                        )
+                        .filter((name) => name.toLowerCase().startsWith(segmentToMatchForFS.toLowerCase()))
                         .map((name) => {
                             const childNode = baseNode.children[name];
                             const completion = pathPrefixForFS + name;
-                            return childNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
-                                ? completion + Config.FILESYSTEM.PATH_SEPARATOR
-                                : completion;
+                            return childNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? completion + Config.FILESYSTEM.PATH_SEPARATOR : completion;
                         })
                         .sort();
                 }
@@ -832,58 +754,35 @@ const TabCompletionManager = (() => {
             const suggestions = await _getSuggestionsFromProvider(context);
             if (suggestions.length === 0) {
                 resetCycle();
-                return {
-                    textToInsert: null,
-                };
+                return { textToInsert: null };
             }
             if (suggestions.length === 1) {
                 const isDir = suggestions[0].endsWith(Config.FILESYSTEM.PATH_SEPARATOR);
                 const completion = suggestions[0] + (isDir ? "" : " ");
-                const result = _applyCompletion(
-                    fullInput,
-                    context.startOfWordIndex,
-                    context.currentWordPrefix.length,
-                    completion
-                );
+                const result = _applyCompletion(fullInput, context.startOfWordIndex, context.currentWordPrefix.length, completion);
                 resetCycle();
                 return result;
             }
             const lcp = findLongestCommonPrefix(suggestions);
             if (lcp && lcp.length > context.currentWordPrefix.length) {
-                const result = _applyCompletion(
-                    fullInput,
-                    context.startOfWordIndex,
-                    context.currentWordPrefix.length,
-                    lcp
-                );
+                const result = _applyCompletion(fullInput, context.startOfWordIndex, context.currentWordPrefix.length, lcp);
                 lastCompletionInput = result.textToInsert;
                 return result;
             } else {
                 suggestionsCache = suggestions;
                 cycleIndex = -1;
                 lastCompletionInput = fullInput;
-                const promptText = `${DOM.promptContainer.textContent} `;
-                void OutputManager.appendToOutput(`${promptText}${fullInput}`, {
-                    isCompletionSuggestion: true,
-                });
-                void OutputManager.appendToOutput(suggestionsCache.join("    "), {
-                    typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-                    isCompletionSuggestion: true,
-                });
-                if (DOM.outputDiv) DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
-                return {
-                    textToInsert: null,
-                };
+                const promptText = `${document.getElementById('prompt-container').textContent} `;
+                void OutputManager.appendToOutput(`${promptText}${fullInput}`, { isCompletionSuggestion: true });
+                void OutputManager.appendToOutput(suggestionsCache.join("    "), { typeClass: 'text-subtle', isCompletionSuggestion: true });
+                const outputDiv = document.getElementById('output');
+                if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
+                return { textToInsert: null };
             }
         } else {
             cycleIndex = (cycleIndex + 1) % suggestionsCache.length;
             const nextSuggestion = suggestionsCache[cycleIndex];
-            const result = _applyCompletion(
-                fullInput,
-                context.startOfWordIndex,
-                context.currentWordPrefix.length,
-                nextSuggestion
-            );
+            const result = _applyCompletion(fullInput, context.startOfWordIndex, context.currentWordPrefix.length, nextSuggestion);
             lastCompletionInput = result.textToInsert;
             return result;
         }
@@ -911,7 +810,7 @@ const AppLayerManager = (() => {
     function _cacheDOM() {
         if (!appLayer) appLayer = document.getElementById('app-layer');
         if (!terminalOutput) terminalOutput = document.getElementById('output');
-        if (!terminalInputContainer) terminalInputContainer = document.querySelector('.input-line-container');
+        if (!terminalInputContainer) terminalInputContainer = document.querySelector('.terminal__input-line');
     }
 
     /**
@@ -925,43 +824,43 @@ const AppLayerManager = (() => {
             return;
         }
 
-        // --- UNIFIED LOGIC: BEGIN ---
-        TerminalUI.setInputState(false);      // Disable terminal input
-        OutputManager.setEditorActive(true);  // Suppress terminal output
-        // --- UNIFIED LOGIC: END ---
-
-        appLayer.className = 'w-full h-full absolute top-0 left-0 bg-neutral-950/80 flex items-center justify-center z-10';
+        TerminalUI.setInputState(false);
+        OutputManager.setEditorActive(true);
 
         if (terminalOutput) terminalOutput.classList.add('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
 
         currentAppContainer = appContainerElement;
+        if (!currentAppContainer.parentNode) {
+            appLayer.appendChild(currentAppContainer);
+        }
         currentAppContainer.classList.remove('hidden');
-        appLayer.appendChild(currentAppContainer);
         appLayer.classList.remove('hidden');
         isActive = true;
     }
 
+    /**
+     * Hides the currently active full-screen application and restores the terminal UI.
+     */
     function hide() {
         _cacheDOM();
         if (!isActive || !appLayer) return;
 
-        appLayer.className = '';
         appLayer.classList.add('hidden');
         if (currentAppContainer && appLayer.contains(currentAppContainer)) {
-            appLayer.removeChild(currentAppContainer);
+            // Instead of removing, just hide it so it can be re-shown
+            currentAppContainer.classList.add('hidden');
         }
+
         currentAppContainer = null;
 
         if (terminalOutput) terminalOutput.classList.remove('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.remove('hidden');
 
-        // --- UNIFIED LOGIC: BEGIN ---
         TerminalUI.clearInput();
-        TerminalUI.setInputState(true);       // Re-enable terminal input
-        OutputManager.setEditorActive(false); // Restore terminal output
+        TerminalUI.setInputState(true);
+        OutputManager.setEditorActive(false);
         TerminalUI.focusInput();
-        // --- UNIFIED LOGIC: END ---
 
         isActive = false;
     }

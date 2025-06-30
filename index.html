@@ -5,25 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OopisOS</title>
   <script src="./scripts/marked.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="./style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#34d399">
 </head>
-<body class="bg-neutral-900 text-green-500 m-0 overflow-hidden">
+<body>
 
 <div id="app-container">
-  <h1 id="main-header">OOPIS_OS v3.1</h1>
-  <div id="terminal-bezel" class="terminal-bezel-shadow">
-    <div id="terminal" class="terminal-screen-glow grid" style="grid-template-rows: 1fr auto;">
-      <div id="output" class="mb-2.5 overflow-x-auto w-full min-w-0 min-h-0 overflow-y-auto"></div>
-      <div id="app-layer" class="hidden absolute top-0 left-0 w-full h-full bg-neutral-950 z-10"></div>
-      <div class="input-line-container flex items-start w-full">
-        <div id="prompt-container" class="prompt-container flex items-center leading-[1.2em] flex-shrink-0 whitespace-nowrap pt-[0.1em] text-sky-400 mr-2">
+  <div id="terminal-bezel">
+    <div id="terminal" class="terminal">
+      <div id="output" class="terminal__output"></div>
+      <div id="app-layer" class="hidden"></div>
+      <div class="terminal__input-line">
+        <div id="prompt-container" class="terminal__prompt">
         </div>
-        <div id="editable-input-container" class="flex-grow min-w-0">
-          <div id="editable-input" contenteditable="true" spellcheck="false" autocapitalize="none" class="min-h-[1.2em] leading-[1.2em] whitespace-pre-wrap break-words outline-none text-green-500 w-full">
+        <div id="editable-input-container" class="terminal__input-wrapper">
+          <div id="editable-input" contenteditable="true" spellcheck="false" autocapitalize="none" class="terminal__input">
           </div>
         </div>
       </div>
