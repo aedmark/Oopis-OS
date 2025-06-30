@@ -83,9 +83,8 @@ body {
   font-family: var(--font-family-mono);
   background-color: var(--color-background-dark);
   color: var(--color-text-primary);
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
+  height: 100vh;
+  width: 100vw;
   overflow: hidden; /* Prevents scrollbars on the body */
 }
 
@@ -95,19 +94,31 @@ body {
 
 #app-container {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   padding: var(--spacing-md);
-  gap: var(--spacing-sm);
 }
 
-#main-header, #main-footer {
-  flex-shrink: 0;
+#main-column {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 75vw; /* 4:3 Aspect Ratio -> height = 0.75 * width */
+  max-height: 100vh;
+  max-width: 133.33vh; /* 4:3 Aspect Ratio -> width = 1.33 * height */
+  min-width: 480px;
+  min-height: 360px;
+}
+
+#main-footer {
+  flex-shrink: 0; /* Prevent footer from shrinking */
   text-align: center;
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   color: var(--color-text-primary);
+  padding-top: var(--spacing-sm);
 }
 
 #main-footer a {
@@ -120,17 +131,14 @@ body {
 }
 
 #terminal-bezel {
-  flex-grow: 1;
+  flex-grow: 1; /* Allow terminal to fill available space */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
   background-color: var(--color-background-medium);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
-  min-height: 0;
+  min-height: 0; /* Critical for flexbox shrinking */
   width: 100%;
-  max-width: 1300px; /* Constraint */
+  padding: var(--spacing-lg); /* Padding was here, keeping it */
 }
 
 /* 4. Terminal Component (BEM-like)
