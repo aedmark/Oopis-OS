@@ -20,27 +20,30 @@ const ExplorerUI = (() => {
      */
     function buildLayout(cb) {
         callbacks = cb;
-        elements.treePane = Utils.createElement('div', { id: 'explorer-tree-pane', className: 'p-2 border-r border-zinc-700 overflow-y-auto w-1/3' });
-        elements.mainPane = Utils.createElement('div', { id: 'explorer-main-pane', className: 'p-2 overflow-y-auto w-2/3' });
-        elements.statusBar = Utils.createElement('div', { id: 'explorer-status-bar', className: 'text-sm p-1 border-t border-zinc-700 text-zinc-400' });
-        elements.exitBtn = Utils.createElement('button', { id: 'explorer-exit-btn', className: 'text-lg hover:text-red-500', textContent: '×', title: 'Close Explorer (Esc)', eventListeners: { click: () => callbacks.onExit() }});
+        elements.treePane = Utils.createElement('div', { id: 'explorer-tree-pane', className: 'explorer__tree-pane' });
+        elements.mainPane = Utils.createElement('div', { id: 'explorer-main-pane', className: 'explorer__main-pane' });
+        elements.statusBar = Utils.createElement('div', { id: 'explorer-status-bar', className: 'explorer__status-bar' });
 
-        const header = Utils.createElement('header', { id: 'explorer-header', className: 'flex justify-between items-center p-2 border-b border-zinc-700' },
-            Utils.createElement('h2', { className: 'text-lg text-sky-400 font-["VT323"]', textContent: 'OopisOS File Explorer' }),
+        elements.exitBtn = Utils.createElement('button', {
+            id: 'explorer-exit-btn',
+            className: 'explorer__exit-btn',
+            textContent: '×',
+            title: 'Close Explorer (Esc)',
+            eventListeners: { click: () => callbacks.onExit() }
+        });
+
+        const header = Utils.createElement('header', { id: 'explorer-header', className: 'explorer__header' },
+            Utils.createElement('h2', { className: 'explorer__title', textContent: 'OopisOS File Explorer' }),
             elements.exitBtn
         );
 
-        const mainContainer = Utils.createElement('div', { id: 'explorer-main-container', className: 'flex flex-grow min-h-0' }, elements.treePane, elements.mainPane);
+        const mainContainer = Utils.createElement('div', { id: 'explorer-main-container', className: 'explorer__main' }, elements.treePane, elements.mainPane);
 
         elements.container = Utils.createElement('div', {
             id: 'explorer-container',
-            className: 'flex flex-col bg-neutral-800 border-2 border-neutral-700 rounded-lg text-neutral-300 font-["VT323"] overflow-hidden',
-            style: {
-                width: '95%',
-                height: '95%',
-                maxWidth: '1200px'
-            }
+            className: 'explorer-container'
         }, header, mainContainer, elements.statusBar);
+
         return elements.container;
     }
 
@@ -52,13 +55,13 @@ const ExplorerUI = (() => {
      */
     function renderTree(treeData, selectedPath, expandedPaths) {
         if (!elements.treePane) return;
-        const treeRoot = Utils.createElement('ul', { className: 'explorer-tree text-sm' });
+        const treeRoot = Utils.createElement('ul', { className: 'explorer-tree' });
 
         function createTreeItem(node, path, name) {
             const hasChildren = node.children && Object.keys(node.children).filter(childName => node.children[childName].type === 'directory').length > 0;
             const canRead = FileSystemManager.hasPermission(node, UserManager.getCurrentUser().name, 'read');
 
-            const summary = Utils.createElement('summary', { className: 'cursor-pointer select-none hover:bg-zinc-700 rounded' });
+            const summary = Utils.createElement('summary');
             const folderIcon = Utils.createElement('span', { className: 'mr-1', textContent: '📁' });
             const nameSpan = Utils.createElement('span', { textContent: name });
             summary.append(folderIcon, nameSpan);
@@ -67,13 +70,13 @@ const ExplorerUI = (() => {
                 summary.classList.add('opacity-50', 'italic');
             }
 
-            const details = Utils.createElement('details', { className: 'explorer-tree-item pl-4', 'data-path': path }, summary);
+            const details = Utils.createElement('details', { className: 'explorer-tree-item', 'data-path': path }, summary);
             if (expandedPaths.has(path)) {
                 details.open = true;
             }
 
             if (canRead && hasChildren) {
-                const childList = Utils.createElement('ul');
+                const childList = Utils.createElement('ul', { className: 'pl-4' });
                 const sortedChildNames = Object.keys(node.children).sort();
 
                 for (const childName of sortedChildNames) {
@@ -93,7 +96,7 @@ const ExplorerUI = (() => {
             });
 
             if (path === selectedPath) {
-                summary.classList.add('bg-sky-800', 'font-semibold');
+                summary.classList.add('selected');
             }
 
             return details;
@@ -117,15 +120,14 @@ const ExplorerUI = (() => {
             return;
         }
 
-        const list = Utils.createElement('ul', { className: 'explorer-file-list space-y-1' });
+        const list = Utils.createElement('ul', { className: 'explorer-file-list' });
         items.forEach(item => {
             const icon = Utils.createElement('span', { className: 'mr-2 w-4 inline-block', textContent: item.type === 'directory' ? '📁' : '📄' });
-            const name = Utils.createElement('span', { className: 'explorer-item-name flex-1', textContent: item.name });
-            const perms = Utils.createElement('span', { className: 'explorer-item-perms text-xs text-zinc-400 mr-4', textContent: FileSystemManager.formatModeToString(item.node) });
-            const size = Utils.createElement('span', { className: 'explorer-item-size text-xs text-zinc-400 w-16 text-right', textContent: Utils.formatBytes(item.size) });
+            const name = Utils.createElement('span', { className: 'explorer-item-name', textContent: item.name });
+            const perms = Utils.createElement('span', { className: 'explorer-item-perms', textContent: FileSystemManager.formatModeToString(item.node) });
+            const size = Utils.createElement('span', { className: 'explorer-item-size', textContent: Utils.formatBytes(item.size) });
 
             const li = Utils.createElement('li', {
-                    className: `flex items-center p-1 rounded cursor-pointer hover:bg-zinc-700 explorer-type-${item.type}`,
                     'data-path': item.path,
                     title: item.path
                 },
@@ -212,7 +214,6 @@ const ExplorerManager = (() => {
 
         isActive = true;
 
-        // Add the initial path and all its parents to the expanded set for a nice default view
         expandedPaths = new Set(['/']);
         let parent = initialPath;
         while (parent && parent !== '/') {
@@ -237,7 +238,6 @@ const ExplorerManager = (() => {
         AppLayerManager.hide();
         ExplorerUI.reset();
 
-        // Reset state
         isActive = false;
         currentPath = '/';
         explorerContainer = null;
@@ -276,10 +276,8 @@ const ExplorerManager = (() => {
             const items = Object.keys(mainNode.children || {}).sort((a, b) => {
                 const nodeA = mainNode.children[a];
                 const nodeB = mainNode.children[b];
-                // Sort directories before files
                 if (nodeA.type === 'directory' && nodeB.type !== 'directory') return -1;
                 if (nodeA.type !== 'directory' && nodeB.type === 'directory') return 1;
-                // Then sort alphabetically
                 return a.localeCompare(b);
             }).map(name => {
                 const childNode = mainNode.children[name];
