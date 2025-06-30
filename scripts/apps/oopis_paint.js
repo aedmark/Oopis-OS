@@ -72,6 +72,7 @@ const PaintUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
+    let gridDimensions = { width: 0, height: 0 };
 
     // SVGs are defined once and reused
     const pencilSVG = '<svg fill="#ffffff" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
@@ -332,18 +333,18 @@ const PaintUI = (() => {
 
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
-        const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-        const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+        gridDimensions.width = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        gridDimensions.height = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
 
-        const totalWidth = cellDimensions.width * gridWidth;
-        const totalHeight = cellDimensions.height * gridHeight;
+        const totalWidth = cellDimensions.width * gridDimensions.width;
+        const totalHeight = cellDimensions.height * gridDimensions.height;
         elements.canvas.style.width = totalWidth + 'px';
         elements.canvas.style.height = totalHeight + 'px';
-        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, ${cellDimensions.width}px)`;
-        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, ${cellDimensions.height}px)`;
+        elements.canvas.style.gridTemplateColumns = `repeat(${gridDimensions.width}, ${cellDimensions.width}px)`;
+        elements.canvas.style.gridTemplateRows = `repeat(${gridDimensions.height}, ${cellDimensions.height}px)`;
 
-        for (let y = 0; y < gridHeight; y++) {
-            for (let x = 0; x < gridWidth; x++) {
+        for (let y = 0; y < gridDimensions.height; y++) {
+            for (let x = 0; x < gridDimensions.width; x++) {
                 const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
                 const span = Utils.createElement('span', { textContent: cell.char });
                 span.style.color = cell.fg;
@@ -354,11 +355,32 @@ const PaintUI = (() => {
         elements.canvas.appendChild(fragment);
     }
 
-    function reset() {
-        elements = {};
+    function updateCell(x, y, cell) {
+        if (!elements.canvas || gridDimensions.width === 0) return;
+        const index = y * gridDimensions.width + x;
+        const span = elements.canvas.children[index];
+
+        if (span) {
+            if (span.textContent !== cell.char) {
+                span.textContent = cell.char;
+            }
+            if (span.style.color !== cell.fg) {
+                span.style.color = cell.fg;
+            }
+            const currentBg = span.className;
+            const newBg = cell.bg;
+            if (currentBg !== newBg) {
+                span.className = newBg;
+            }
+        }
     }
 
-    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, renderCanvas };
+    function reset() {
+        elements = {};
+        gridDimensions = { width: 0, height: 0 };
+    }
+
+    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, renderCanvas, updateCell };
 })();
 
 /**
@@ -378,6 +400,8 @@ const PaintManager = (() => {
     let paintContainerElement = null;
     let _boundGlobalClickListener = null;
     let customColorValue = null;
+    let pointsToDraw = [];
+    let isFrameScheduled = false;
 
     // --- FIX: Add state for dynamic canvas dimensions ---
     let currentCanvasWidth = 0;
@@ -520,6 +544,9 @@ const PaintManager = (() => {
                     changed = true;
                 }
             }
+            if (changed && !targetCanvas) {
+                PaintUI.updateCell(cx, cy, cell);
+            }
             return changed;
         };
 
@@ -534,7 +561,6 @@ const PaintManager = (() => {
                 }
             }
         } else {
-            // Shape tools still draw with a 1px brush
             if (drawLogic(x, y)) {
                 anyCellChanged = true;
             }
@@ -542,9 +568,25 @@ const PaintManager = (() => {
 
         if (anyCellChanged && !targetCanvas) {
             isDirty = true;
-            PaintUI.renderCanvas(canvasData);
         }
         return anyCellChanged;
+    }
+
+    function drawScheduledPoints() {
+        if (!isDrawing || pointsToDraw.length < 2) {
+            isFrameScheduled = false;
+            return;
+        }
+
+        for (let i = 0; i < pointsToDraw.length - 1; i++) {
+            const start = pointsToDraw[i];
+            const end = pointsToDraw[i + 1];
+            const linePoints = _getLinePoints(start.x, start.y, end.x, end.y);
+            linePoints.forEach(p => _drawOnCanvas(p.x, p.y));
+        }
+
+        pointsToDraw = [pointsToDraw.at(-1)];
+        isFrameScheduled = false;
     }
 
     function onMouseDown(e) {
@@ -561,6 +603,8 @@ const PaintManager = (() => {
             shapeStartCoords = { ...coords };
             shapePreviewBaseState = JSON.parse(JSON.stringify(canvasData));
         } else {
+            pointsToDraw = [];
+            pointsToDraw.push(coords);
             _drawOnCanvas(coords.x, coords.y);
         }
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize });
@@ -572,13 +616,18 @@ const PaintManager = (() => {
             ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY, currentCanvasWidth, currentCanvasHeight)
             : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight);
 
-        if (coords) { PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize }); }
-        if (!isDrawing || !coords) return;
-        if (currentTool === 'pencil' || currentTool === 'eraser') {
-            if (coords.x === lastCoords.x && coords.y === lastCoords.y) return;
-            const linePoints = _getLinePoints(lastCoords.x, lastCoords.y, coords.x, coords.y);
-            linePoints.forEach(p => _drawOnCanvas(p.x, p.y));
+        if (coords) {
             lastCoords = coords;
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize });
+        }
+        if (!isDrawing || !coords) return;
+
+        if (currentTool === 'pencil' || currentTool === 'eraser') {
+            pointsToDraw.push(coords);
+            if (!isFrameScheduled) {
+                isFrameScheduled = true;
+                requestAnimationFrame(drawScheduledPoints);
+            }
         } else if (shapeStartCoords) {
             let tempCanvasData = JSON.parse(JSON.stringify(shapePreviewBaseState));
             let points = [];
@@ -596,7 +645,6 @@ const PaintManager = (() => {
 
     function onMouseUp(e) {
         if (!isDrawing) return;
-
         const endCoords = (e.changedTouches)
             ? PaintUI.getGridCoordinates(e.changedTouches[0].clientX, e.changedTouches[0].clientY, currentCanvasWidth, currentCanvasHeight) || lastCoords
             : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight) || lastCoords;
@@ -613,9 +661,13 @@ const PaintManager = (() => {
             points.forEach(p => _drawOnCanvas(p.x, p.y));
         }
 
-        if (isDirty) { _triggerSaveUndoState(); }
         isDrawing = false;
-        lastCoords = { x: -1, y: -1 };
+        if (pointsToDraw.length > 1) {
+            drawScheduledPoints();
+        }
+
+        if (isDirty) { _triggerSaveUndoState(); }
+        pointsToDraw = [];
         shapeStartCoords = null;
         shapePreviewBaseState = null;
     }
@@ -637,6 +689,8 @@ const PaintManager = (() => {
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         customColorValue = null;
         currentCanvasWidth = 0; currentCanvasHeight = 0;
+        pointsToDraw = [];
+        isFrameScheduled = false;
         if (saveUndoStateTimeout) { clearTimeout(saveUndoStateTimeout); saveUndoStateTimeout = null; }
     }
 
