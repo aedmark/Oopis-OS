@@ -72,7 +72,6 @@ const PaintUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
-    let gridOffset = { x: 0, y: 0 };
 
     // SVGs are defined once and reused
     const pencilSVG = '<svg fill="#ffffff" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
@@ -150,6 +149,9 @@ const PaintUI = (() => {
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
 
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
+        const canvasStyles = window.getComputedStyle(elements.canvas);
+        cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
+
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
         elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
@@ -255,33 +257,11 @@ const PaintUI = (() => {
         }
     }
 
-    function _calculateGridMetrics() {
-        if (!elements.canvas) return;
-        const containerRect = elements.canvas.getBoundingClientRect();
-        const style = window.getComputedStyle(elements.canvas);
-        const paddingLeft = parseFloat(style.paddingLeft) || 0;
-        const paddingRight = parseFloat(style.paddingRight) || 0;
-        const borderLeft = parseFloat(style.borderLeftWidth) || 0;
-        const borderRight = parseFloat(style.borderRightWidth) || 0;
-        const paddingTop = parseFloat(style.paddingTop) || 0;
-        const paddingBottom = parseFloat(style.paddingBottom) || 0;
-        const borderTop = parseFloat(style.borderTopWidth) || 0;
-        const borderBottom = parseFloat(style.borderBottomWidth) || 0;
-        const contentWidth = containerRect.width - paddingLeft - paddingRight - borderLeft - borderRight;
-        const contentHeight = containerRect.height - paddingTop - paddingBottom - borderTop - borderBottom;
-        cellDimensions.width = contentWidth / PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-        cellDimensions.height = contentHeight / PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-        gridOffset.x = paddingLeft + borderLeft;
-        gridOffset.y = paddingTop + borderTop;
-    }
-
-    function handleResize() { _calculateGridMetrics(); }
-
     function getGridCoordinates(pixelX, pixelY) {
         if (!elements.canvas || !cellDimensions.width || !cellDimensions.height) return null;
         const rect = elements.canvas.getBoundingClientRect();
-        const x = pixelX - rect.left - gridOffset.x;
-        const y = pixelY - rect.top - gridOffset.y;
+        const x = pixelX - rect.left;
+        const y = pixelY - rect.top;
         const gridX = Math.floor(x / cellDimensions.width);
         const gridY = Math.floor(y / cellDimensions.height);
         if (gridX < 0 || gridX >= PaintAppConfig.CANVAS.DEFAULT_WIDTH || gridY < 0 || gridY >= PaintAppConfig.CANVAS.DEFAULT_HEIGHT) {
@@ -343,8 +323,14 @@ const PaintUI = (() => {
         const fragment = document.createDocumentFragment();
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
-        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
+
+        const totalWidth = cellDimensions.width * gridWidth;
+        const totalHeight = cellDimensions.height * gridHeight;
+        elements.canvas.style.width = totalWidth + 'px';
+        elements.canvas.style.height = totalHeight + 'px';
+        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, ${cellDimensions.width}px)`;
+        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, ${cellDimensions.height}px)`;
+
         for (let y = 0; y < gridHeight; y++) {
             for (let x = 0; x < gridWidth; x++) {
                 const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
@@ -355,14 +341,13 @@ const PaintUI = (() => {
             }
         }
         elements.canvas.appendChild(fragment);
-        _calculateGridMetrics();
     }
 
     function reset() {
         elements = {};
     }
 
-    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, handleResize, renderCanvas };
+    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, renderCanvas };
 })();
 
 /**

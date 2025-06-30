@@ -13,6 +13,28 @@ const Utils = (() => {
     "use strict";
 
     /**
+     * Measures the precise pixel dimensions of a single character for a given font style.
+     * @param {string} [fontStyle='16px "VT323"'] - The CSS font style to apply.
+     * @returns {{width: number, height: number}} An object containing the measured width and height.
+     */
+    function getCharacterDimensions(fontStyle = '16px "VT323"') {
+        const tempSpan = document.createElement("span");
+        tempSpan.textContent = 'M'; // A common character for measurement
+        tempSpan.style.font = fontStyle;
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.left = '-9999px'; // Position off-screen
+        tempSpan.style.top = '-9999px';
+        tempSpan.style.visibility = 'hidden';
+
+        document.body.appendChild(tempSpan);
+        const rect = tempSpan.getBoundingClientRect();
+        document.body.removeChild(tempSpan);
+
+        return { width: rect.width, height: rect.height };
+    }
+
+
+    /**
      * Hashes a string using the Web Crypto API (SHA-256).
      * @param {string} text - The plain-text string to hash.
      * @returns {Promise<string|null>} A promise that resolves to the hex-encoded hash string, or null on failure.
@@ -471,7 +493,9 @@ const Utils = (() => {
         parseNumericArg,
         validateUsernameFormat,
         parseFlags,
-        globToRegex,};
+        globToRegex,
+        getCharacterDimensions
+    };
 })();
 
 /**
