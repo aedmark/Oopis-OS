@@ -12,7 +12,7 @@
  */
 const PaintAppConfig = {
     CANVAS: {
-        DEFAULT_WIDTH: 36,
+        DEFAULT_WIDTH: 80,
         DEFAULT_HEIGHT: 24,
     },
     /**
@@ -72,8 +72,6 @@ const PaintUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
-    // --- FIX: Directive 2.1: Initialize squareCellSize to 0 ---
-    let squareCellSize = 0;
 
     // SVGs are defined once and reused
     const pencilSVG = '<svg fill="#ffffff" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
@@ -111,10 +109,7 @@ const PaintUI = (() => {
             elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
         });
 
-        // --- FIX: Directive 1.1: Append shape tool to its container ---
         elements.shapeToolContainer.append(elements.shapeToolBtn, elements.shapeDropdown);
-
-        // This global listener is now managed in the PaintManager enter/exit methods
 
         elements.gridBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
         elements.charSelectBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
@@ -154,11 +149,6 @@ const PaintUI = (() => {
 
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
 
-        // --- FIX: Directive 2.2: Remove premature calculation ---
-        // const canvasStyles = window.getComputedStyle(elements.canvas);
-        // cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
-        // squareCellSize = Math.ceil(Math.max(cellDimensions.width, cellDimensions.height));
-
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
         elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
@@ -171,7 +161,6 @@ const PaintUI = (() => {
 
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
 
-        // MODIFICATION 2: Reconstruct the status bar as a footer
         elements.statusBarText = Utils.createElement('span', { id: 'paint-status-text' });
         const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveBtn, elements.exitBtn);
         elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' }, elements.statusBarText, rightGroup);
@@ -269,14 +258,16 @@ const PaintUI = (() => {
         }
     }
 
-    function getGridCoordinates(pixelX, pixelY) {
-        if (!elements.canvas || !squareCellSize) return null;
+    function getGridCoordinates(pixelX, pixelY, gridWidth, gridHeight) {
+        if (!elements.canvas || cellDimensions.width === 0) return null;
         const rect = elements.canvas.getBoundingClientRect();
         const x = pixelX - rect.left;
         const y = pixelY - rect.top;
-        const gridX = Math.floor(x / squareCellSize);
-        const gridY = Math.floor(y / squareCellSize);
-        if (gridX < 0 || gridX >= PaintAppConfig.CANVAS.DEFAULT_WIDTH || gridY < 0 || gridY >= PaintAppConfig.CANVAS.DEFAULT_HEIGHT) {
+
+        const gridX = Math.floor(x / cellDimensions.width);
+        const gridY = Math.floor(y / cellDimensions.height);
+
+        if (gridX < 0 || gridX >= gridWidth || gridY < 0 || gridY >= gridHeight) {
             return null;
         }
         return { x: gridX, y: gridY };
@@ -332,11 +323,10 @@ const PaintUI = (() => {
     function renderCanvas(canvasData) {
         if (!elements.canvas) return;
 
-        // --- FIX: Directive 2.3: Defer calculation to first render ---
-        if (squareCellSize === 0) {
+        if (cellDimensions.width === 0) {
             const canvasStyles = window.getComputedStyle(elements.canvas);
             cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
-            squareCellSize = Math.ceil(Math.max(cellDimensions.width, cellDimensions.height));
+            elements.canvas.style.backgroundSize = `${cellDimensions.width}px ${cellDimensions.height}px`;
         }
 
         elements.canvas.innerHTML = '';
@@ -344,12 +334,12 @@ const PaintUI = (() => {
         const gridWidth = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         const gridHeight = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
 
-        const totalWidth = squareCellSize * gridWidth;
-        const totalHeight = squareCellSize * gridHeight;
+        const totalWidth = cellDimensions.width * gridWidth;
+        const totalHeight = cellDimensions.height * gridHeight;
         elements.canvas.style.width = totalWidth + 'px';
         elements.canvas.style.height = totalHeight + 'px';
-        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, ${squareCellSize}px)`;
-        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, ${squareCellSize}px)`;
+        elements.canvas.style.gridTemplateColumns = `repeat(${gridWidth}, ${cellDimensions.width}px)`;
+        elements.canvas.style.gridTemplateRows = `repeat(${gridHeight}, ${cellDimensions.height}px)`;
 
         for (let y = 0; y < gridHeight; y++) {
             for (let x = 0; x < gridWidth; x++) {
@@ -385,7 +375,11 @@ const PaintManager = (() => {
     let shapeStartCoords = null;
     let shapePreviewBaseState = null;
     let paintContainerElement = null;
-    let _boundGlobalClickListener = null; // To hold the bound event listener
+    let _boundGlobalClickListener = null;
+
+    // --- FIX: Add state for dynamic canvas dimensions ---
+    let currentCanvasWidth = 0;
+    let currentCanvasHeight = 0;
 
     const paintEventCallbacks = {
         onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
@@ -395,7 +389,6 @@ const PaintManager = (() => {
         onCustomHexSet: _setCustomHexColor,
     };
 
-    // ... (All internal functions like _getLinePoints, _createBlankCanvas, etc. remain the same) ...
     function _getLinePoints(x0, y0, x1, y1) {
         const points = [];
         const dx = Math.abs(x1 - x0); const dy = -Math.abs(y1 - y0);
@@ -545,10 +538,10 @@ const PaintManager = (() => {
     }
 
     function onMouseDown(e) {
-        e.preventDefault(); // Prevent default touch actions like scrolling
+        e.preventDefault();
         const coords = (e.touches)
-            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY)
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY);
+            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY, currentCanvasWidth, currentCanvasHeight)
+            : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight);
 
         isDrawing = true;
         if (!coords) return;
@@ -566,8 +559,8 @@ const PaintManager = (() => {
     function onMouseMove(e) {
         e.preventDefault();
         const coords = (e.touches)
-            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY)
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY);
+            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY, currentCanvasWidth, currentCanvasHeight)
+            : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight);
 
         if (coords) { PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize }); }
         if (!isDrawing || !coords) return;
@@ -595,8 +588,8 @@ const PaintManager = (() => {
         if (!isDrawing) return;
 
         const endCoords = (e.changedTouches)
-            ? PaintUI.getGridCoordinates(e.changedTouches[0].clientX, e.changedTouches[0].clientY) || lastCoords
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY) || lastCoords;
+            ? PaintUI.getGridCoordinates(e.changedTouches[0].clientX, e.changedTouches[0].clientY, currentCanvasWidth, currentCanvasHeight) || lastCoords
+            : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight) || lastCoords;
 
         if (shapeStartCoords) {
             let points = [];
@@ -632,6 +625,7 @@ const PaintManager = (() => {
         currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
         undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
+        currentCanvasWidth = 0; currentCanvasHeight = 0;
         if (saveUndoStateTimeout) { clearTimeout(saveUndoStateTimeout); saveUndoStateTimeout = null; }
     }
 
@@ -640,7 +634,7 @@ const PaintManager = (() => {
             await OutputManager.appendToOutput(`Cannot save. No filename specified.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
             return false;
         }
-        const fileData = { version: "1.1", width: canvasData[0].length, height: canvasData.length, cells: canvasData };
+        const fileData = { version: "1.1", width: currentCanvasWidth, height: currentCanvasHeight, cells: canvasData };
         const jsonContent = JSON.stringify(fileData, null, 2);
         const currentUser = UserManager.getCurrentUser().name;
         const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
@@ -730,7 +724,6 @@ const PaintManager = (() => {
         paintContainerElement = PaintUI.buildLayout(paintEventCallbacks);
         AppLayerManager.show(paintContainerElement);
 
-        // Add listeners that are active ONLY when the app is open
         _boundGlobalClickListener = (e) => {
             const dropdown = paintContainerElement.querySelector('.paint-dropdown-content');
             const shapeContainer = paintContainerElement.querySelector('.paint-tool-dropdown');
@@ -742,19 +735,43 @@ const PaintManager = (() => {
         document.addEventListener('keydown', handleKeyDown);
 
         currentFilePath = filePath;
+
         if (fileContent) {
             try {
                 const parsedData = JSON.parse(fileContent);
                 if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
                     canvasData = parsedData.cells;
+                    currentCanvasWidth = parsedData.width;
+                    currentCanvasHeight = parsedData.height;
                 } else { throw new Error("Invalid .oopic file format."); }
             } catch (e) {
                 void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
+                currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+                currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+                canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
             }
         } else {
-            canvasData = _createBlankCanvas(PaintAppConfig.CANVAS.DEFAULT_WIDTH, PaintAppConfig.CANVAS.DEFAULT_HEIGHT);
+            const wrapper = document.getElementById('paint-canvas-wrapper');
+            const canvasEl = document.getElementById('paint-canvas');
+            const wrapperStyles = window.getComputedStyle(wrapper);
+            const canvasStyles = window.getComputedStyle(canvasEl);
+            const paddingX = parseFloat(wrapperStyles.paddingLeft) + parseFloat(wrapperStyles.paddingRight);
+            const paddingY = parseFloat(wrapperStyles.paddingTop) + parseFloat(wrapperStyles.paddingBottom);
+            const availableWidth = wrapper.clientWidth - paddingX;
+            const availableHeight = wrapper.clientHeight - paddingY;
+            const charDims = Utils.getCharacterDimensions(canvasStyles.font);
+
+            if (charDims.width > 0 && charDims.height > 0) {
+                currentCanvasWidth = Math.floor(availableWidth / charDims.width);
+                currentCanvasHeight = Math.floor(availableHeight / charDims.height);
+            } else {
+                currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+                currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+            }
+
+            canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
         }
+
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
         PaintUI.renderCanvas(canvasData);
         PaintUI.toggleGrid(isGridVisible);
@@ -765,7 +782,6 @@ const PaintManager = (() => {
     async function exit() {
         if (!isActiveState) return;
 
-        // Remove listeners
         document.removeEventListener('keydown', handleKeyDown);
         if (_boundGlobalClickListener) {
             document.removeEventListener('click', _boundGlobalClickListener);
@@ -784,7 +800,7 @@ const PaintManager = (() => {
                 });
             });
             if (!confirmed) {
-                document.addEventListener('keydown', handleKeyDown); // Re-attach listener if not exiting
+                document.addEventListener('keydown', handleKeyDown);
                 document.addEventListener('click', _boundGlobalClickListener);
                 return;
             }
