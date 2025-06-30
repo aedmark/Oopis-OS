@@ -207,10 +207,11 @@ const PaintUI = (() => {
         const { START, END } = PaintAppConfig.ASCII_CHAR_RANGE;
         for (let i = START; i <= END; i++) {
             const char = String.fromCharCode(i);
+            const textSpan = Utils.createElement('span', { textContent: char });
             const btn = Utils.createElement('button', {
-                className: 'paint-char-btn', textContent: char,
+                className: 'paint-char-btn',
                 eventListeners: { click: () => onSelectCallback(char) }
-            });
+            }, textSpan);
             fragment.appendChild(btn);
         }
         elements.charSelectGrid.appendChild(fragment);
