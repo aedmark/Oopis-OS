@@ -14,6 +14,7 @@ const PaintAppConfig = {
     CANVAS: {
         DEFAULT_WIDTH: 80,
         DEFAULT_HEIGHT: 24,
+        BASE_FONT_SIZE_PX: 18, // Base font size for zoom calculations
     },
     /**
      * @property {object} BRUSH - Configuration for brush tool behavior.
@@ -25,6 +26,12 @@ const PaintAppConfig = {
         DEFAULT_SIZE: 1,
         MIN_SIZE: 1,
         MAX_SIZE: 5,
+    },
+    ZOOM: {
+        MIN_ZOOM: 25,
+        MAX_ZOOM: 400,
+        ZOOM_STEP: 25,
+        DEFAULT_ZOOM: 100,
     },
     DEFAULT_CHAR: '#',
     DEFAULT_FG_COLOR: 'rgb(34, 197, 94)',
@@ -113,6 +120,11 @@ const PaintUI = (() => {
         elements.shapeToolContainer.append(elements.shapeToolBtn, elements.shapeDropdown);
 
         elements.gridBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
+        elements.zoomOutBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '-', title: 'Zoom Out (Ctrl+-)', eventListeners: { click: () => eventCallbacks.onZoomOut() }});
+        elements.zoomResetBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '100%', title: 'Reset Zoom (Ctrl+0)', eventListeners: { click: () => eventCallbacks.onZoomReset() }});
+        elements.zoomInBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '+', title: 'Zoom In (Ctrl++)', eventListeners: { click: () => eventCallbacks.onZoomIn() }});
+        const zoomContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.zoomOutBtn, elements.zoomResetBtn, elements.zoomInBtn);
+
         elements.charSelectBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
         elements.colorButtons = [];
         const colorPaletteContainer = Utils.createElement('div', { className: 'paint-palette' });
@@ -145,7 +157,7 @@ const PaintUI = (() => {
         elements.saveBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit Application (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, elements.charSelectBtn);
+        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, zoomContainer, elements.charSelectBtn);
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer);
 
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
@@ -279,7 +291,11 @@ const PaintUI = (() => {
         if (!elements.statusBarText) return;
         const paletteEntry = PaintAppConfig.PALETTE.find(p => p.value === status.fg);
         const colorName = paletteEntry ? paletteEntry.name : (status.fg.startsWith('rgb') ? 'custom' : status.fg);
-        elements.statusBarText.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Brush: ${status.brushSize} | Coords: ${status.coords.x},${status.coords.y}`;
+        elements.statusBarText.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Brush: ${status.brushSize} | Coords: ${status.coords.x},${status.coords.y} | Zoom: ${status.zoomLevel}%`;
+
+        if (elements.zoomResetBtn) {
+            elements.zoomResetBtn.textContent = `${status.zoomLevel}%`;
+        }
     }
 
     function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive, brushSize) {
@@ -322,14 +338,13 @@ const PaintUI = (() => {
         }
     }
 
-    function renderCanvas(canvasData) {
+    function renderCanvas(canvasData, zoomLevel) {
         if (!elements.canvas) return;
 
-        if (cellDimensions.width === 0) {
-            const canvasStyles = window.getComputedStyle(elements.canvas);
-            cellDimensions = Utils.getCharacterDimensions(canvasStyles.font);
-            elements.canvas.style.backgroundSize = `${cellDimensions.width}px ${cellDimensions.height}px`;
-        }
+        const newFontSize = PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX * (zoomLevel / 100);
+        elements.canvas.style.fontSize = `${newFontSize}px`;
+        cellDimensions = Utils.getCharacterDimensions(elements.canvas.style.font);
+        elements.canvas.style.backgroundSize = `${cellDimensions.width}px ${cellDimensions.height}px`;
 
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
@@ -393,6 +408,7 @@ const PaintManager = (() => {
     let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
     let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 };
     let currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
+    let zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
     let isGridVisible = false;
     let shapeStartCoords = null;
@@ -403,7 +419,6 @@ const PaintManager = (() => {
     let pointsToDraw = [];
     let isFrameScheduled = false;
 
-    // --- FIX: Add state for dynamic canvas dimensions ---
     let currentCanvasWidth = 0;
     let currentCanvasHeight = 0;
 
@@ -412,6 +427,7 @@ const PaintManager = (() => {
         onSave: _handleSave, onExit: () => exit(), onUndo: _performUndo, onRedo: _performRedo,
         onGridToggle: _toggleGrid, onCharSelectOpen: _openCharSelect, onColorSelectOpen: _openColorSelect,
         onBrushSizeUp: () => _setBrushSize(1), onBrushSizeDown: () => _setBrushSize(-1),
+        onZoomIn: _handleZoomIn, onZoomOut: _handleZoomOut, onZoomReset: _resetZoom,
         onCustomHexSet: _setCustomHexColor,
         onCustomSwatchClick: () => {
             if (customColorValue) {
@@ -491,7 +507,7 @@ const PaintManager = (() => {
         const currentState = undoStack.pop();
         redoStack.push(currentState);
         canvasData = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
-        PaintUI.renderCanvas(canvasData);
+        PaintUI.renderCanvas(canvasData, zoomLevel);
         _updateToolbarState();
     }
     function _performRedo() {
@@ -499,7 +515,7 @@ const PaintManager = (() => {
         const nextState = redoStack.pop();
         undoStack.push(nextState);
         canvasData = JSON.parse(JSON.stringify(nextState));
-        PaintUI.renderCanvas(canvasData);
+        PaintUI.renderCanvas(canvasData, zoomLevel);
         _updateToolbarState();
     }
     function _toggleGrid() { isGridVisible = !isGridVisible; PaintUI.toggleGrid(isGridVisible); _updateToolbarState(); }
@@ -508,7 +524,7 @@ const PaintManager = (() => {
     function _setDrawCharFromSelection(char) {
         drawChar = char;
         PaintUI.hideCharSelect();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     function _setCustomHexColor(hex) {
@@ -524,7 +540,23 @@ const PaintManager = (() => {
         const newSize = currentBrushSize + delta;
         currentBrushSize = Math.max(PaintAppConfig.BRUSH.MIN_SIZE, Math.min(newSize, PaintAppConfig.BRUSH.MAX_SIZE));
         _updateToolbarState();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
+    }
+
+    function _handleZoomIn() {
+        zoomLevel = Math.min(zoomLevel + PaintAppConfig.ZOOM.ZOOM_STEP, PaintAppConfig.ZOOM.MAX_ZOOM);
+        PaintUI.renderCanvas(canvasData, zoomLevel);
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
+    }
+    function _handleZoomOut() {
+        zoomLevel = Math.max(zoomLevel - PaintAppConfig.ZOOM.ZOOM_STEP, PaintAppConfig.ZOOM.MIN_ZOOM);
+        PaintUI.renderCanvas(canvasData, zoomLevel);
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
+    }
+    function _resetZoom() {
+        zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
+        PaintUI.renderCanvas(canvasData, zoomLevel);
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     function _drawOnCanvas(x, y, targetCanvas = null) {
@@ -607,7 +639,7 @@ const PaintManager = (() => {
             pointsToDraw.push(coords);
             _drawOnCanvas(coords.x, coords.y);
         }
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     function onMouseMove(e) {
@@ -618,7 +650,7 @@ const PaintManager = (() => {
 
         if (coords) {
             lastCoords = coords;
-            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize });
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
         }
         if (!isDrawing || !coords) return;
 
@@ -639,7 +671,7 @@ const PaintManager = (() => {
                 points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
             }
             points.forEach(p => _drawOnCanvas(p.x, p.y, tempCanvasData));
-            PaintUI.renderCanvas(tempCanvasData);
+            PaintUI.renderCanvas(tempCanvasData, zoomLevel);
         }
     }
 
@@ -685,6 +717,7 @@ const PaintManager = (() => {
         isDrawing = false; currentTool = 'pencil'; drawChar = PaintAppConfig.DEFAULT_CHAR;
         fgColor = PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
         currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
+        zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
         undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         customColorValue = null;
@@ -838,10 +871,10 @@ const PaintManager = (() => {
         }
 
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
-        PaintUI.renderCanvas(canvasData);
+        PaintUI.renderCanvas(canvasData, zoomLevel);
         PaintUI.toggleGrid(isGridVisible);
         _updateToolbarState();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     async function exit() {
@@ -884,6 +917,9 @@ const PaintManager = (() => {
             else if (key === 'y' || (key === 'z' && event.shiftKey)) { event.preventDefault(); _performRedo(); }
             else if (key === 's') { event.preventDefault(); void _handleSave(); }
             else if (key === 'o') { event.preventDefault(); void exit(); }
+            else if (key === '=' || key === '+') { event.preventDefault(); _handleZoomIn(); }
+            else if (key === '-') { event.preventDefault(); _handleZoomOut(); }
+            else if (key === '0') { event.preventDefault(); _resetZoom(); }
             return;
         }
         const key = event.key.toLowerCase();
@@ -913,7 +949,7 @@ const PaintManager = (() => {
             event.preventDefault();
             drawChar = event.key;
         }
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize });
+        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     return { enter, exit, isActive: () => isActiveState };
