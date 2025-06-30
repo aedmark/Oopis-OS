@@ -144,9 +144,8 @@ const PaintUI = (() => {
         elements.saveBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
         elements.exitBtn = Utils.createElement('button', { className: 'paint-tool paint-exit-btn', textContent: 'Exit', title: 'Exit Application (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, elements.charSelectBtn);        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group paint-session-group'}, elements.saveBtn, elements.exitBtn);
-
-        elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer, rightGroup);
+        const leftGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, elements.charSelectBtn);
+        elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, elements.colorPalleteBtn, colorPaletteContainer);
 
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
         const canvasStyles = window.getComputedStyle(elements.canvas);
@@ -163,9 +162,14 @@ const PaintUI = (() => {
         document.addEventListener('touchend', eventCallbacks.onMouseUp, { passive: false });
 
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
-        elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' });
+
+        // MODIFICATION 2: Reconstruct the status bar as a footer
+        elements.statusBarText = Utils.createElement('span', { id: 'paint-status-text' });
+        const rightGroup = Utils.createElement('div', {className: 'paint-toolbar-group'}, elements.saveBtn, elements.exitBtn);
+        elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' }, elements.statusBarText, rightGroup);
 
         elements.charSelectGrid = Utils.createElement('div', { id: 'paint-char-select-grid' });
+
         elements.charSelectModal = Utils.createElement('div', { id: 'paint-char-select-modal', className: 'paint-modal-overlay hidden', eventListeners: { click: e => { if (e.target === elements.charSelectModal) hideCharSelect(); } } },
             Utils.createElement('div', { className: 'paint-modal-content' },
                 Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Character' }),
@@ -271,10 +275,10 @@ const PaintUI = (() => {
     }
 
     function updateStatusBar(status) {
-        if (!elements.statusBar) return;
+        if (!elements.statusBarText) return;
         const paletteEntry = PaintAppConfig.PALETTE.find(p => p.value === status.fg);
         const colorName = paletteEntry ? paletteEntry.name : (status.fg.startsWith('rgb') ? 'custom' : status.fg);
-        elements.statusBar.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Brush: ${status.brushSize} | Coords: ${status.coords.x},${status.coords.y}`;
+        elements.statusBarText.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Brush: ${status.brushSize} | Coords: ${status.coords.x},${status.coords.y}`;
     }
 
     function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive, brushSize) {

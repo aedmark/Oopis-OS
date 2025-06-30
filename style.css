@@ -2179,11 +2179,14 @@ body {
   padding: 0.25rem 0.5rem;
   border-top: 1px solid #3a3a3d;
   font-size: 1rem;
-  text-align: center;
   background-color: #1f1f22;
   color: #a3a3a3;
-  height: 2rem;
+  height: auto;
+  min-height: 2rem;
   line-height: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 #paint-toolbar {
   display: flex;
@@ -2194,6 +2197,7 @@ body {
   border-bottom: 1px solid #3a3a3d;
   flex-shrink: 0;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 .paint-toolbar-group {
   display: flex;
