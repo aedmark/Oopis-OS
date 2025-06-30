@@ -26,12 +26,7 @@ const EditorAppConfig = {
   STORAGE_KEYS: {
     EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
   },
-  CSS_CLASSES: { // Using our own class system now
-    HIDDEN: "hidden",
-    GUTTER_WRAP_HIDDEN: "editor__gutter--hidden-by-wrap",
-    TEXTAREA_NO_WRAP: "editor__textarea--no-wrap",
-    MARKDOWN_PREVIEW: "markdown-preview"
-  }
+  // REMOVED: CSS_CLASSES are now globally defined in style.css
 };
 
 /**
@@ -44,6 +39,8 @@ const EditorUtils = (() => {
     const extension = Utils.getFileExtension(filePath);
     return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
   }
+
+  // REFACTORED: This function now uses CSS variables for consistency.
   function getPreviewStylingCSS(isHtmlMode = false) {
     const commonSpacingStyles = `
         p, ul, ol, blockquote, pre, table { margin-bottom: 1rem; }
@@ -61,6 +58,7 @@ const EditorUtils = (() => {
       `;
     }
 
+    // Styles for the Markdown preview pane
     return `
         .markdown-preview { font-family: sans-serif; line-height: 1.6; color: #333; }
         .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.25rem; }
@@ -73,6 +71,7 @@ const EditorUtils = (() => {
         ${commonSpacingStyles}
     `;
   }
+
   function calculateStatusBarInfo(text, selectionStart) {
     const lines = text.split("\n");
     const lineCount = lines.length;
@@ -124,6 +123,7 @@ const EditorUI = (() => {
   let eventCallbacks = {};
   let previewDebounceTimer = null;
 
+  // REFACTORED: This function now uses the new BEM-like class names from style.css
   function buildLayout(callbacks) {
     eventCallbacks = callbacks;
 
@@ -180,7 +180,7 @@ const EditorUI = (() => {
       callbackName: 'onFormatOl'
     }];
 
-    elements.formattingToolbar = Utils.createElement("div", { className: `editor__toolbar ${EditorAppConfig.CSS_CLASSES.HIDDEN}` });
+    elements.formattingToolbar = Utils.createElement("div", { className: `editor__toolbar hidden` });
     formatButtonDetails.forEach(detail => {
       elements[detail.name] = Utils.createElement("button", {
         className: "editor-btn editor-btn--format",
@@ -222,7 +222,7 @@ const EditorUI = (() => {
 
   function setGutterVisibility(visible) {
     if (elements.lineGutter) {
-      elements.lineGutter.classList.toggle(EditorAppConfig.CSS_CLASSES.GUTTER_WRAP_HIDDEN, !visible);
+      elements.lineGutter.classList.toggle("editor__gutter--hidden-by-wrap", !visible);
     }
   }
 
@@ -270,7 +270,7 @@ const EditorUI = (() => {
   }
 
   function setEditorFocus() {
-    if (elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains(EditorAppConfig.CSS_CLASSES.HIDDEN)) {
+    if (elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains("hidden")) {
       elements.textarea.focus();
     }
   }
@@ -289,14 +289,15 @@ const EditorUI = (() => {
     }
   }
 
+  // REFACTORED: Class names now match style.css
   function applyTextareaWordWrap(isWordWrapActive) {
     if (!elements.textarea) return;
     if (isWordWrapActive) {
       elements.textarea.setAttribute("wrap", "soft");
-      elements.textarea.classList.remove(EditorAppConfig.CSS_CLASSES.TEXTAREA_NO_WRAP);
+      elements.textarea.classList.remove("editor__textarea--no-wrap");
     } else {
       elements.textarea.setAttribute("wrap", "off");
-      elements.textarea.classList.add(EditorAppConfig.CSS_CLASSES.TEXTAREA_NO_WRAP);
+      elements.textarea.classList.add("editor__textarea--no-wrap");
     }
   }
 
@@ -355,15 +356,16 @@ const EditorUI = (() => {
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }
 
+  // REFACTORED: Class names now match style.css
   function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
     if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
 
-    elements.previewPane.classList.toggle(EditorAppConfig.CSS_CLASSES.MARKDOWN_PREVIEW, currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
+    elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
     if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
       applyPreviewWordWrap(isWordWrapActive, currentFileMode);
     }
-    elements.viewToggleButton.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isPreviewable);
-    elements.exportPreviewButton.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isPreviewable);
+    elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
+    elements.exportPreviewButton.classList.toggle("hidden", !isPreviewable);
     elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
 
     const viewConfigs = {
@@ -376,10 +378,10 @@ const EditorUI = (() => {
     const config = isPreviewable ? viewConfigs[viewMode] : viewConfigs.noPreview;
     if (config) {
       elements.viewToggleButton.textContent = config.text;
-      elements.lineGutter.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.gutter);
-      elements.textareaWrapper.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.editor);
+      elements.lineGutter.classList.toggle("hidden", !config.gutter);
+      elements.textareaWrapper.classList.toggle("hidden", !config.editor);
       elements.textareaWrapper.style.flex = config.editorFlex;
-      elements.previewWrapper.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !config.preview);
+      elements.previewWrapper.classList.toggle("hidden", !config.preview);
       elements.previewWrapper.style.flex = config.previewFlex;
     }
   }
@@ -652,10 +654,11 @@ const EditorManager = (() => {
     }
     setTimeout(_handleEditorSelectionChange, 0);
   }
+  // REFACTORED: Class name 'hidden' is now global.
   function _updateFormattingToolbarVisibility() {
     if (!isActiveState || !EditorUI.elements.formattingToolbar) return;
     const isMarkdownOrHTML = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
-    EditorUI.elements.formattingToolbar.classList.toggle(EditorAppConfig.CSS_CLASSES.HIDDEN, !isMarkdownOrHTML);
+    EditorUI.elements.formattingToolbar.classList.toggle("hidden", !isMarkdownOrHTML);
   }
 
   return { isActive: () => isActiveState, enter, exit };

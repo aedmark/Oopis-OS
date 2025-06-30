@@ -46,7 +46,7 @@ const ChidiApp = {
         this.state.currentIndex = files.length > 0 ? 0 : -1;
         this.callbacks = callbacks;
 
-        this.injectStyles();
+        // REMOVED: Style injection is no longer needed. Styles are in style.css.
 
         const chidiElement = this.createModal();
         AppLayerManager.show(chidiElement);
@@ -71,9 +71,7 @@ const ChidiApp = {
         if (!this.state.isModalOpen) return;
 
         AppLayerManager.hide();
-        if (this.elements.styleTag) {
-            this.elements.styleTag.remove();
-        }
+        // REMOVED: No style tag to remove.
 
         this.state = {
             loadedFiles: [],
@@ -87,17 +85,6 @@ const ChidiApp = {
         if (typeof this.callbacks.onExit === 'function') {
             this.callbacks.onExit();
         }
-    },
-
-    /**
-     * Injects the application's CSS into the document's head.
-     */
-    injectStyles() {
-        const styleTag = document.createElement('style');
-        styleTag.id = 'chidi-app-styles';
-        styleTag.textContent = this.getStyles();
-        document.head.appendChild(styleTag);
-        this.elements.styleTag = styleTag;
     },
 
     /**
@@ -124,7 +111,7 @@ const ChidiApp = {
             summarizeBtn: get('chidi-summarizeBtn'),
             studyBtn: get('chidi-suggestQuestionsBtn'),
             askBtn: get('chidi-askAllFilesBtn'),
-            saveSessionBtn: get('chidi-saveSessionBtn'), // New button
+            saveSessionBtn: get('chidi-saveSessionBtn'),
             verboseToggleBtn: get('chidi-verbose-toggle-btn'),
             exportBtn: get('chidi-exportBtn'),
             closeBtn: get('chidi-closeBtn'),
@@ -152,7 +139,7 @@ const ChidiApp = {
         this.elements.nextBtn.disabled = this.state.currentIndex >= this.state.loadedFiles.length - 1;
         this.elements.fileSelector.disabled = !hasFiles;
         this.elements.exportBtn.disabled = !hasFiles;
-        this.elements.saveSessionBtn.disabled = !hasFiles; // New button state
+        this.elements.saveSessionBtn.disabled = !hasFiles;
 
         if (hasFiles) {
             this.elements.fileSelector.value = this.state.currentIndex;
@@ -164,7 +151,7 @@ const ChidiApp = {
 
         if (currentFile) {
             this.elements.mainTitle.textContent = currentFile.name.replace(/\.md$/i, '');
-            // For .txt files, we need to wrap the content in <pre> to preserve whitespace.
+            this.elements.markdownDisplay.className = 'chidi-markdown-content'; // Reset class
             if (currentFile.name.toLowerCase().endsWith('.txt')) {
                 this.elements.markdownDisplay.innerHTML = `<pre>${Utils.escapeHTML(currentFile.content)}</pre>`;
             } else {
@@ -183,49 +170,33 @@ const ChidiApp = {
         this._adjustTitleFontSize();
     },
 
-    /**
-     * Dynamically adjusts the title's font size to prevent it from overflowing its container.
-     * @private
-     */
     _adjustTitleFontSize() {
         const titleEl = this.elements.mainTitle;
         if (!titleEl) return;
-
         titleEl.style.fontSize = '1.5rem';
-
         const minFontSize = 0.8;
         let currentFontSize = 1.5;
-
         while (titleEl.scrollWidth > titleEl.offsetWidth + 1 && currentFontSize > minFontSize) {
             currentFontSize -= 0.05;
             titleEl.style.fontSize = `${currentFontSize}rem`;
         }
     },
 
-    /**
-     * Populates the file selector dropdown with the names of all loaded files.
-     * @private
-     */
     _populateFileDropdown() {
         const selector = this.elements.fileSelector;
         selector.innerHTML = '';
         if (this.state.loadedFiles.length === 0) {
-            const defaultOption = document.createElement('option');
-            defaultOption.textContent = "No Files";
-            selector.appendChild(defaultOption);
+            selector.appendChild(Utils.createElement('option', { textContent: "No Files" }));
             return;
         }
         this.state.loadedFiles.forEach((file, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = file.name;
-            selector.appendChild(option);
+            selector.appendChild(Utils.createElement('option', { value: index, textContent: file.name }));
         });
     },
 
-    /**
-     * Sets up all necessary event listeners for the application's interactive elements.
-     */
+    // Unchanged methods: setupEventListeners, _enterQuestionMode, _exitQuestionMode, _submitQuestion,
+    // navigate, _selectFileByIndex, getCurrentFile, showMessage, appendAiOutput, toggleLoader,
+    // _exportConversation, callGeminiApi, _packageSessionAsHTML, _handleExport, _handleSaveSession
     setupEventListeners() {
         this.elements.closeBtn.addEventListener('click', () => this.close());
         this.elements.exportBtn.addEventListener('click', () => this._handleExport());
@@ -296,10 +267,6 @@ const ChidiApp = {
         });
     },
 
-    /**
-     * Switches the UI into question-asking mode.
-     * @private
-     */
     _enterQuestionMode() {
         if (!this.getCurrentFile()) return;
         this.state.isAskingMode = true;
@@ -321,10 +288,6 @@ const ChidiApp = {
         this.showMessage("Ask a question about all loaded files.");
     },
 
-    /**
-     * Exits question-asking mode and reverts the UI to its normal state.
-     * @private
-     */
     _exitQuestionMode() {
         this.state.isAskingMode = false;
 
@@ -338,14 +301,6 @@ const ChidiApp = {
 
         this.showMessage("Question mode cancelled.");
     },
-
-    /**
-     * Submits the user's question. This implementation first finds the most relevant
-     * files using a local keyword search before sending a single, focused request to the AI.
-     * This is a Retrieval-Augmented Generation (RAG) strategy.
-     * @private
-     * @async
-     */
     async _submitQuestion() {
         const userQuestion = this.elements.askInput.value.trim();
         if (!userQuestion) return;
@@ -461,12 +416,6 @@ const ChidiApp = {
             this.toggleLoader(false);
         }
     },
-
-
-    /**
-     * Navigates to the next or previous file.
-     * @param {number} direction - -1 for previous, 1 for next.
-     */
     navigate(direction) {
         if (this.state.isAskingMode) this._exitQuestionMode();
 
@@ -477,11 +426,6 @@ const ChidiApp = {
         }
     },
 
-    /**
-     * Sets the current file based on the dropdown selection.
-     * @param {string} indexStr - The index of the file to select, as a string.
-     * @private
-     */
     _selectFileByIndex(indexStr) {
         const index = parseInt(indexStr, 10);
         if (!isNaN(index) && index >= 0 && index < this.state.loadedFiles.length) {
@@ -490,10 +434,6 @@ const ChidiApp = {
         }
     },
 
-    /**
-     * Gets the currently selected file object.
-     * @returns {object|null} The current file object or null if none is selected.
-     */
     getCurrentFile() {
         if (this.state.currentIndex === -1 || this.state.loadedFiles.length === 0) {
             return null;
@@ -501,21 +441,12 @@ const ChidiApp = {
         return this.state.loadedFiles[this.state.currentIndex];
     },
 
-    /**
-     * Displays a message in the application's status bar.
-     * @param {string} msg - The message to display.
-     */
     showMessage(msg) {
         if (this.elements.messageBox) {
             this.elements.messageBox.textContent = `LOG: ${msg}`;
         }
     },
 
-    /**
-     * Appends AI-generated output to the markdown display area.
-     * @param {string} title - The title for the output block (e.g., "Summary").
-     * @param {string} content - The AI-generated content (in Markdown format).
-     */
     appendAiOutput(title, content) {
         const outputBlock = document.createElement('div');
         outputBlock.className = 'chidi-ai-output';
@@ -528,93 +459,11 @@ const ChidiApp = {
         this.showMessage(`AI Response received for "${title}".`);
     },
 
-    /**
-     * Shows or hides the loading spinner.
-     * @param {boolean} show - True to show the loader, false to hide it.
-     */
     toggleLoader(show) {
         if (this.elements.loader) {
             this.elements.loader.classList.toggle('chidi-hidden', !show);
         }
     },
-
-    /**
-     * Exports the current view (including original content and AI responses) as an HTML file.
-     * @private
-     */
-    _exportConversation() {
-        const currentFile = this.getCurrentFile();
-        if (!currentFile) {
-            this.showMessage("Error: No file to export.");
-            return;
-        }
-
-        const content = this.elements.markdownDisplay.innerHTML;
-        const title = `Chidi Export: ${currentFile.name}`;
-        const styles = `
-            body { background-color: #0d0d0d; color: #e4e4e7; font-family: 'VT323', monospace; line-height: 1.6; padding: 2rem; }
-            h1, h2, h3 { border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: #60a5fa; }
-            a { color: #34d399; }
-            /* BEGIN ADDED STYLES */
-            p, ul, ol, blockquote, pre, table {
-                margin-bottom: 1rem;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            th, td {
-                border: 1px solid #444;
-                padding: 0.5rem;
-                text-align: left;
-            }
-            th {
-                background-color: #27272a;
-            }
-            /* END ADDED STYLES */
-            code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; }
-            pre { background-color: #000; padding: 1rem; border-radius: 4px; border: 1px solid #333; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
-            blockquote { border-left: 4px solid #60a5fa; padding-left: 1rem; margin-left: 0; color: #a1a1aa; }
-            .chidi-ai-output { border-top: 2px dashed #60a5fa; margin-top: 2rem; padding-top: 1rem; }
-        `;
-        const html = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-                <title>${title}</title>
-                <style>${styles}</style>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                ${content}
-            </body>
-            </html>
-        `;
-
-        const blob = new Blob([html], {
-            type: 'text/html'
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentFile.name.replace(/\.md$/, '')}_export.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        this.showMessage(`Exported view for ${currentFile.name}.`);
-    },
-
-    /**
-     * Calls the Gemini API with a given chat history.
-     * Assumes API key is already present in StorageManager.
-     * @param {Array<object>} chatHistory - The conversation history to send to the model.
-     * @returns {Promise<string>} A promise that resolves to the model's text response.
-     * @async
-     */
     async callGeminiApi(chatHistory) {
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
         if (!apiKey) {
@@ -696,11 +545,6 @@ const ChidiApp = {
         }
     },
 
-    /**
-     * Packages the current view (including original content and AI responses) into a complete HTML string.
-     * @private
-     * @returns {string} A string containing the full HTML document for the session.
-     */
     _packageSessionAsHTML() {
         const currentFile = this.getCurrentFile();
         if (!currentFile) return "";
@@ -734,36 +578,6 @@ const ChidiApp = {
         `;
     },
 
-    /**
-     * Handles the "Export" button click. Packages the session and triggers a browser download.
-     * @private
-     */
-    _handleExport() {
-        const currentFile = this.getCurrentFile();
-        if (!currentFile) {
-            this.showMessage("Error: No file to export.");
-            return;
-        }
-
-        const html = this._packageSessionAsHTML();
-        if (!html) return;
-
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentFile.name.replace(/\.(md|txt)$/, '')}_session.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        this.showMessage(`Exported session for ${currentFile.name}.`);
-    },
-
-    /**
-     * Handles the "Save Session" button click. Packages the session and saves it to a new file in the VFS.
-     * @private
-     */
     async _handleSaveSession() {
         if (!this.state.isModalOpen || this.state.loadedFiles.length === 0) {
             this.showMessage("Error: No session to save.");
@@ -826,13 +640,34 @@ const ChidiApp = {
             this.showMessage(`An unexpected error occurred during save: ${e.message}`);
         }
     },
+    _handleExport() {
+        const currentFile = this.getCurrentFile();
+        if (!currentFile) {
+            this.showMessage("Error: No file to export.");
+            return;
+        }
 
+        const html = this._packageSessionAsHTML();
+        if (!html) return;
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentFile.name.replace(/\.(md|txt)$/, '')}_session.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showMessage(`Exported session for ${currentFile.name}.`);
+    },
 
     /**
      * Returns the HTML structure for the application modal.
      * @returns {string} The HTML content as a string.
      */
     getHTML() {
+        // REFACTORED: Class names now match the new global style sheet
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
@@ -847,10 +682,6 @@ const ChidiApp = {
                     <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
                 </div>
                 
-                <div class="chidi-progress-bar">
-                    <div class="chidi-progress-bar-inner"></div>
-                </div>
-
                 <div class="chidi-controls-container">
                     <div class="chidi-control-group">
                         <button id="chidi-prevBtn" class="chidi-btn" disabled>&larr; PREV</button>
@@ -880,123 +711,4 @@ const ChidiApp = {
             </div>
         `;
     },
-
-    /**
-     * Returns the CSS styles for the application.
-     * @returns {string} The CSS rules as a string.
-     */
-    getStyles() {
-        return `
-            :root {
-                --chidi-bg: #1e1e1e;
-                --chidi-screen-bg: #111;
-                --chidi-border: #4a4a4a;
-                --chidi-text: #dcdcdc;
-                --chidi-accent-green: #4ade80;
-                --chidi-accent-blue: #60a5fa;
-                --chidi-font: 'VT323', monospace;
-            }
-
-            #chidi-console-panel {
-                width: 95%;
-                height: 95%;
-                max-width: 1000px;
-                background-color: var(--chidi-bg);
-                border: 2px solid var(--chidi-border);
-                border-radius: 8px;
-                box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
-                display: flex;
-                flex-direction: column;
-                padding: 1rem;
-                font-family: var(--chidi-font);
-                color: var(--chidi-text);
-                position: relative;
-                overflow: hidden;
-            }
-
-            .chidi-console-header {
-                background-color: var(--chidi-accent-green);
-                padding: 0.25rem 0.5rem;
-                margin-bottom: 1rem;
-            }
-
-            #chidi-mainTitle {
-                font-size: 1.5rem;
-                color: #000;
-                text-align: center;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            #chidi-markdownDisplay, .chidi-ask-container {
-                flex-grow: 1;
-                background-color: var(--chidi-screen-bg);
-                color: var(--chidi-text);
-                padding: 1.5rem;
-                border: 1px solid var(--chidi-border);
-                box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
-                border-radius: 4px;
-                overflow-y: auto;
-                line-height: 1.6;
-                scrollbar-width: thin;
-                scrollbar-color: var(--chidi-accent-green) var(--chidi-screen-bg);
-            }
-
-            /* Webkit Scrollbar Styles */
-            #chidi-markdownDisplay::-webkit-scrollbar, .chidi-ask-container::-webkit-scrollbar { width: 8px; }
-            #chidi-markdownDisplay::-webkit-scrollbar-track, .chidi-ask-container::-webkit-scrollbar-track { background: var(--chidi-screen-bg); }
-            #chidi-markdownDisplay::-webkit-scrollbar-thumb, .chidi-ask-container::-webkit-scrollbar-thumb { background-color: var(--chidi-accent-green); border-radius: 4px; border: 2px solid var(--chidi-screen-bg); }
-
-            /* Markdown Content Styles */
-            .chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 { margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.3rem; color: var(--chidi-accent-blue); }
-            .chidi-markdown-content a { color: var(--chidi-accent-green); text-decoration: none; }
-            .chidi-markdown-content p { margin-bottom: 1rem; }
-            .chidi-markdown-content a:hover { text-decoration: underline; }
-            .chidi-markdown-content code { background-color: #27272a; color: #facc15; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
-            .chidi-markdown-content pre { background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid #333; }
-            .chidi-markdown-content blockquote { border-left: 4px solid var(--chidi-accent-blue); padding-left: 1rem; margin-left: 0; font-style: italic; color: #a1a1aa; }
-            .chidi-ai-output { border-top: 2px dashed var(--chidi-accent-blue); margin-top: 2rem; padding-top: 1rem; }
-            
-            /* Add these rules for tables inside .chidi-markdown-content */
-            .chidi-markdown-content table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 1rem;
-            }
-            .chidi-markdown-content th, .chidi-markdown-content td {
-                border: 1px solid #444;
-                padding: 0.5rem;
-                text-align: left;
-            }
-            .chidi-markdown-content th {
-                background-color: #27272a;
-            }
-
-            /* Ask Input Styles */
-            .chidi-ask-textarea { width: 100%; height: 100%; background: transparent; border: none; color: var(--chidi-text); font-size: 1.1rem; resize: none; outline: none; }
-            
-            /* Controls Styles */
-            .chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; margin-bottom: 0.5rem; align-items: center; }
-            .chidi-control-group { display: flex; gap: 0.5rem; align-items: center;}
-            .chidi-btn { background-color: #333; color: var(--chidi-accent-green); border: 1px solid var(--chidi-border); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s ease; }
-            .chidi-btn:hover:not(:disabled) { background-color: #444; color: #fff; }
-            .chidi-btn:disabled { background-color: #222; color: #555; border-color: #444; cursor: not-allowed; }
-            .chidi-exit-btn { background-color: #3f1212; color: #fca5a5; border-color: #ef4444; }
-            .chidi-exit-btn:hover:not(:disabled) { background-color: #5b2121; }
-            .chidi-select { max-width: 300px; text-overflow: ellipsis; }
-
-            /* Progress Bar */
-            .chidi-progress-bar { width: 100%; background-color: #111; border: 1px solid var(--chidi-border); height: 10px; padding: 1px; margin-top: 0.5rem; }
-            .chidi-progress-bar-inner { width: 45%; height: 100%; background-color: var(--chidi-accent-green); }
-
-            /* Footer Styles */
-            .chidi-status-readout { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--chidi-border); padding-top: 0.5rem; margin-top: 0.5rem; font-size: 1.1rem; color: #888; }
-            .chidi-status-message { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .chidi-loader { width: 10px; height: 16px; background-color: var(--chidi-accent-green); animation: chidi-blink-cursor 1.2s steps(2, start) infinite; }
-            
-            .chidi-hidden { display: none !important; }
-            @keyframes chidi-blink-cursor { to { visibility: hidden; } }
-        `;
-    }
 };

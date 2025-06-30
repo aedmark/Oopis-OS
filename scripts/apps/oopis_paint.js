@@ -114,14 +114,14 @@ const PaintUI = (() => {
             Utils.createElement('button', { className: 'paint-tool', innerHTML: ellipseSVG, title: 'Ellipse', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } })
         );
         elements.shapeToolBtn.addEventListener('click', () => {
-            elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+            elements.shapeDropdown.classList.toggle('paint-dropdown-active');
         });
 
         elements.shapeToolContainer.append(elements.shapeToolBtn, elements.shapeDropdown);
 
         elements.gridBtn = Utils.createElement('button', { className: 'paint-tool', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
         elements.zoomOutBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '-', title: 'Zoom Out (Ctrl+-)', eventListeners: { click: () => eventCallbacks.onZoomOut() }});
-        elements.zoomResetBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '100%', title: 'Reset Zoom (Ctrl+0)', eventListeners: { click: () => eventCallbacks.onZoomReset() }});
+        elements.zoomResetBtn = Utils.createElement('button', { className: 'paint-tool paint-zoom-display', textContent: '100%', title: 'Reset Zoom (Ctrl+0)', eventListeners: { click: () => eventCallbacks.onZoomReset() }});
         elements.zoomInBtn = Utils.createElement('button', { className: 'paint-tool', textContent: '+', title: 'Zoom In (Ctrl++)', eventListeners: { click: () => eventCallbacks.onZoomIn() }});
         const zoomContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.zoomOutBtn, elements.zoomResetBtn, elements.zoomInBtn);
 
@@ -207,10 +207,10 @@ const PaintUI = (() => {
 
         return elements.container;
     }
-
+    // ... all other functions in PaintUI remain the same
     function toggleGrid(isActive) {
         if (!elements.canvas) return;
-        elements.canvas.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
+        elements.canvas.classList.toggle('paint-grid-active', isActive);
     }
 
     function populateAndShowCharSelect(onSelectCallback) {
@@ -228,12 +228,12 @@ const PaintUI = (() => {
             fragment.appendChild(btn);
         }
         elements.charSelectGrid.appendChild(fragment);
-        elements.charSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        elements.charSelectModal.classList.remove('hidden');
     }
 
     function hideCharSelect() {
         if (elements.charSelectModal) {
-            elements.charSelectModal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+            elements.charSelectModal.classList.add('hidden');
         }
     }
 
@@ -263,12 +263,12 @@ const PaintUI = (() => {
             modalBody.appendChild(hexInputContainer);
         }
 
-        elements.colorSelectModal.classList.remove(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+        elements.colorSelectModal.classList.remove('hidden');
     }
 
     function hideColorSelect() {
         if (elements.colorSelectModal) {
-            elements.colorSelectModal.classList.add(PaintAppConfig.CSS_CLASSES.MODAL_HIDDEN);
+            elements.colorSelectModal.classList.add('hidden');
         }
     }
 
@@ -300,10 +300,10 @@ const PaintUI = (() => {
 
     function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive, brushSize) {
         if (!elements.pencilBtn) return;
-        elements.pencilBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'pencil');
-        elements.eraserBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, activeTool === 'eraser');
+        elements.pencilBtn.classList.toggle('paint-tool-active', activeTool === 'pencil');
+        elements.eraserBtn.classList.toggle('paint-tool-active', activeTool === 'eraser');
         const shapeTools = ['line', 'quad', 'ellipse'];
-        elements.shapeToolBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, shapeTools.includes(activeTool));
+        elements.shapeToolBtn.classList.toggle('paint-tool-active', shapeTools.includes(activeTool));
 
         if (activeTool === 'line') {
             elements.shapeToolBtn.innerHTML = lineSVG;
@@ -315,7 +315,7 @@ const PaintUI = (() => {
 
         elements.undoBtn.disabled = !undoPossible;
         elements.redoBtn.disabled = !redoPossible;
-        elements.gridBtn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isGridActive);
+        elements.gridBtn.classList.toggle('paint-tool-active', isGridActive);
 
         elements.brushSizeDisplay.textContent = brushSize;
         elements.brushSizeDownBtn.disabled = brushSize <= PaintAppConfig.BRUSH.MIN_SIZE;
@@ -328,13 +328,13 @@ const PaintUI = (() => {
             if (isActive) {
                 isCustomColorActive = false;
             }
-            btn.classList.toggle(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL, isActive);
+            btn.classList.toggle('paint-tool-active', isActive);
         });
         if (isCustomColorActive && activeColor) {
             elements.customColorSwatch.style.backgroundColor = activeColor;
-            elements.customColorSwatch.classList.add(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
+            elements.customColorSwatch.classList.add('paint-tool-active');
         } else {
-            elements.customColorSwatch.classList.remove(PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL);
+            elements.customColorSwatch.classList.remove('paint-tool-active');
         }
     }
 

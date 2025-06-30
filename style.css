@@ -643,3 +643,338 @@ body {
 .explorer-item-name { flex: 1; }
 .explorer-item-perms { font-size: var(--font-size-sm); color: var(--color-text-subtle); margin-right: var(--spacing-md); }
 .explorer-item-size { font-size: var(--font-size-sm); color: var(--color-text-subtle); width: 6rem; text-align: right; }
+
+/* 9. Paint Application Component
+/* ========================================================================== */
+
+#paint-container {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-medium);
+  border: var(--border-width-thick) solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  overflow: hidden;
+  width: 95%;
+  height: 95%;
+  padding: var(--spacing-sm);
+  gap: var(--spacing-sm);
+}
+
+#paint-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width) solid var(--color-border-primary);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.paint-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+#paint-canvas-wrapper {
+  flex-grow: 1;
+  background-color: var(--color-background-darkest);
+  box-shadow: var(--shadow-inset-light);
+  overflow: auto; /* Allow scrolling for zoomed canvas */
+  display: grid;
+  place-items: center;
+}
+
+#paint-canvas {
+  display: grid;
+  font-family: var(--font-family-mono);
+  line-height: 1;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-color: #000;
+  cursor: crosshair;
+}
+
+#paint-canvas.paint-grid-active {
+  outline: 1px solid rgba(255,255,255,0.1);
+}
+
+#paint-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-xs);
+  border-top: var(--border-width) solid var(--color-border-primary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
+}
+
+/* Paint-specific UI Elements */
+.paint-tool, .paint-hex-set-btn {
+  background-color: var(--color-background-light);
+  color: var(--color-text-secondary);
+  border: var(--border-width) solid var(--color-border-primary);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.paint-tool:hover:not(:disabled) {
+  background-color: var(--color-border-primary);
+  color: #fff;
+}
+
+.paint-tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paint-tool svg {
+  width: 20px;
+  height: 20px;
+}
+
+.paint-tool.paint-tool-active {
+  background-color: var(--color-info);
+  color: var(--color-background-darkest);
+  border-color: var(--color-info);
+}
+
+.paint-exit-btn {
+  width: auto;
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
+}
+
+.paint-brush-control {
+  display: flex;
+  align-items: center;
+  border: var(--border-width) solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.paint-brush-control .paint-tool {
+  border: none;
+  border-radius: 0;
+}
+
+.paint-size-display, .paint-zoom-display {
+  padding: 0 var(--spacing-sm);
+  background-color: var(--color-background-darkest);
+  color: var(--color-text-secondary);
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.paint-palette {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  border: var(--border-width) solid var(--color-border-primary);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.paint-color-swatch {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.paint-color-swatch:hover {
+  border-color: #fff;
+}
+
+.paint-color-swatch.paint-tool-active {
+  border-color: var(--color-accent-lime);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px var(--color-accent-lime);
+}
+
+/* Dropdown for shape tools */
+.paint-tool-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.paint-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: var(--color-background-light);
+  min-width: 40px;
+  box-shadow: var(--shadow-drop-medium);
+  z-index: 1;
+  border: var(--border-width) solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  bottom: 100%; /* Position above the button */
+  margin-bottom: var(--spacing-xs);
+}
+
+.paint-dropdown-content.paint-dropdown-active {
+  display: block;
+}
+
+/* Modals */
+.paint-modal-overlay {
+  position: absolute;
+  top:0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.7);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paint-modal-content {
+  background-color: var(--color-background-medium);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width) solid var(--color-border-primary);
+  max-width: 80%;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
+.paint-modal-title {
+  font-size: var(--font-size-lg);
+  color: var(--color-info);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+}
+
+.paint-modal-body {
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+}
+
+#paint-char-select-grid, #paint-color-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.paint-char-btn {
+  background-color: var(--color-background-light);
+  color: var(--color-text-secondary);
+  border: var(--border-width) solid var(--color-border-primary);
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  font-size: var(--font-size-xl);
+}
+.paint-char-btn:hover {
+  background-color: var(--color-info);
+  color: var(--color-background-darkest);
+}
+
+.paint-custom-hex-container {
+  margin-top: var(--spacing-md);
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.paint-hex-input {
+  flex-grow: 1;
+  background-color: var(--color-background-darkest);
+  border: var(--border-width) solid var(--color-border-primary);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+/* 10. Chidi Application Component
+/* ========================================================================== */
+
+#chidi-console-panel {
+  width: 95%;
+  height: 95%;
+  max-width: 1000px;
+  background-color: var(--color-background-medium);
+  border: var(--border-width-thick) solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-inset-dark);
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.chidi-console-header {
+  background-color: var(--color-accent-green);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+#chidi-mainTitle {
+  font-size: var(--font-size-2xl);
+  color: var(--color-background-darkest);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#chidi-markdownDisplay, .chidi-ask-container {
+  flex-grow: 1;
+  background-color: var(--color-background-darkest);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-border-secondary);
+  box-shadow: var(--shadow-inset-light);
+  border-radius: var(--border-radius-sm);
+  overflow-y: auto;
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent-green) var(--color-background-darkest);
+}
+
+#chidi-markdownDisplay::-webkit-scrollbar { width: 8px; }
+#chidi-markdownDisplay::-webkit-scrollbar-track { background: var(--color-background-darkest); }
+#chidi-markdownDisplay::-webkit-scrollbar-thumb { background-color: var(--color-accent-green); border-radius: 4px; border: 2px solid var(--color-background-darkest); }
+
+.chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 {
+  margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border-primary); padding-bottom: 0.3rem; color: var(--color-info);
+}
+.chidi-markdown-content a { color: var(--color-text-link); text-decoration: none; }
+.chidi-markdown-content a:hover { text-decoration: underline; }
+.chidi-markdown-content code:not(pre > code) { background-color: var(--color-background-medium); color: #fde047; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
+.chidi-markdown-content pre { background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid var(--color-border-secondary); }
+.chidi-markdown-content blockquote { border-left: 4px solid var(--color-info); padding-left: 1rem; margin-left: 0; font-style: italic; color: var(--color-text-subtle); }
+.chidi-markdown-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.chidi-markdown-content th, .chidi-markdown-content td { border: 1px solid var(--color-border-primary); padding: 0.5rem; text-align: left; }
+.chidi-markdown-content th { background-color: var(--color-background-light); }
+
+.chidi-ai-output { border-top: 2px dashed var(--color-info); margin-top: 2rem; padding-top: 1rem; }
+.chidi-ask-textarea { width: 100%; height: 100%; background: transparent; border: none; color: var(--color-text-primary); font-size: 1.1rem; resize: none; outline: none; }
+.chidi-controls-container { display: flex; justify-content: space-between; padding-top: 1rem; margin-bottom: 0.5rem; align-items: center; }
+.chidi-control-group { display: flex; gap: 0.5rem; align-items: center;}
+.chidi-btn { background-color: #333; color: var(--color-accent-green); border: 1px solid var(--color-border-primary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s ease; font-family: var(--font-family-mono); }
+.chidi-btn:hover:not(:disabled) { background-color: var(--color-background-light); color: #fff; }
+.chidi-btn:disabled { background-color: #222; color: #555; border-color: #444; cursor: not-allowed; }
+.chidi-exit-btn { background-color: #3f1212; color: #fca5a5; border-color: var(--color-error); }
+.chidi-exit-btn:hover:not(:disabled) { background-color: #5b2121; }
+.chidi-select { max-width: 300px; text-overflow: ellipsis; appearance: none; -webkit-appearance: none; text-align: center; }
+
+.chidi-status-readout { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--color-border-primary); padding-top: 0.5rem; margin-top: 0.5rem; font-size: 1.1rem; color: #888; }
+.chidi-status-message { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chidi-loader { width: 10px; height: 16px; background-color: var(--color-accent-green); animation: chidi-blink-cursor 1.2s steps(2, start) infinite; }
+.chidi-hidden { display: none !important; }
+@keyframes chidi-blink-cursor { to { visibility: hidden; } }

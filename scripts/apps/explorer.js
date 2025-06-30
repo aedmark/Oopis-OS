@@ -20,6 +20,7 @@ const ExplorerUI = (() => {
      */
     function buildLayout(cb) {
         callbacks = cb;
+        // REFACTORED: Using new BEM-style class names from style.css
         elements.treePane = Utils.createElement('div', { id: 'explorer-tree-pane', className: 'explorer__tree-pane' });
         elements.mainPane = Utils.createElement('div', { id: 'explorer-main-pane', className: 'explorer__main-pane' });
         elements.statusBar = Utils.createElement('div', { id: 'explorer-status-bar', className: 'explorer__status-bar' });
@@ -41,7 +42,7 @@ const ExplorerUI = (() => {
 
         elements.container = Utils.createElement('div', {
             id: 'explorer-container',
-            className: 'explorer-container'
+            className: 'explorer-container' // This top-level class name is correct as per style.css
         }, header, mainContainer, elements.statusBar);
 
         return elements.container;
@@ -123,6 +124,7 @@ const ExplorerUI = (() => {
         const list = Utils.createElement('ul', { className: 'explorer-file-list' });
         items.forEach(item => {
             const icon = Utils.createElement('span', { className: 'mr-2 w-4 inline-block', textContent: item.type === 'directory' ? '📁' : '📄' });
+            // REFACTORED: Using new BEM-style class names from style.css
             const name = Utils.createElement('span', { className: 'explorer-item-name', textContent: item.name });
             const perms = Utils.createElement('span', { className: 'explorer-item-perms', textContent: FileSystemManager.formatModeToString(item.node) });
             const size = Utils.createElement('span', { className: 'explorer-item-size', textContent: Utils.formatBytes(item.size) });
@@ -204,7 +206,7 @@ const ExplorerManager = (() => {
         const pathValidation = FileSystemManager.validatePath("explore", initialPath, { allowMissing: false });
 
         if (pathValidation.error) {
-            OutputManager.appendToOutput(`explore: ${pathValidation.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            OutputManager.appendToOutput(`explore: ${pathValidation.error}`, { typeClass: 'text-error' });
             return;
         }
 
