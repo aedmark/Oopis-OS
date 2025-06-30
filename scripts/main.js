@@ -187,8 +187,8 @@ window.onload = async () => {
     terminalBezel: document.getElementById("terminal-bezel"),
     terminalDiv: document.getElementById("terminal"),
     outputDiv: document.getElementById("output"),
-    inputLineContainerDiv: document.querySelector(".input-line-container"),
-    promptContainer: document.getElementById("prompt-container"), // CORRECTED
+    inputLineContainerDiv: document.querySelector(".terminal__input-line"),
+    promptContainer: document.getElementById("prompt-container"),
     editableInputContainer: document.getElementById("editable-input-container"),
     editableInputDiv: document.getElementById("editable-input"),
     adventureModal: document.getElementById("adventure-modal"),
