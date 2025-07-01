@@ -1,6 +1,6 @@
-# Welcome to OopisOS v3.1: "Keystone Prime"
+# Welcome to OopisOS v3.2: "Brass Monkey"
 
-#### Harder, Better, Faster, Stronger
+#### *"That Funky Monkey"*
 
 ```
 Guest@OopisOs:~$ echo "OopisOS is ready."  
@@ -35,6 +35,7 @@ OopisOS is ready.
 - [[#The Social Contract (aka The Boring Legal Bit)#Authorship and Contribution Acknowledgment|Authorship and Contribution Acknowledgment]]
 - [[#The Social Contract (aka The Boring Legal Bit)#License Grant|License Grant]]
 - [[#The Social Contract (aka The Boring Legal Bit)#Disclaimer of Warranty|Disclaimer of Warranty]]
+- 
 ## What is OopisOS?
 
 OopisOS is a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.

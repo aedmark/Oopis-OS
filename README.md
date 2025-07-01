@@ -13,7 +13,7 @@
 ```
 ![screenshot](https://img.itch.zone/aW1hZ2UvMzY0MjMwOS8yMTc5MjgxNi5wbmc=/original/xXB3J6.png)
 
-# OopisOS v3.0: The Keystone Release
+# OopisOS v3.2: Brass Monkey Edition
 
 Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
 
@@ -76,15 +76,15 @@ OopisOS v3.0 ("Keystone") is a major release focused on security, stability, and
 
 - **Application Suite:**
 
-   - `edit`: A powerful text editor with live Markdown preview.
+    - `edit`: A powerful text editor with live Markdown preview.
 
-   - `paint`: A character-based art studio for your inner artist.
+    - `paint`: A character-based art studio for your inner artist.
 
-   - `adventure`: A text-adventure game engine.
+    - `adventure`: A text-adventure game engine.
 
-   - `chidi`: An AI-powered document analysis tool.
+    - `chidi`: An AI-powered document analysis tool.
 
-   - `gemini`: A tool-using AI assistant for your terminal.
+    - `gemini`: A tool-using AI assistant for your terminal.
 
 
 ## Core Architectural Concepts

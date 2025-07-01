@@ -46,7 +46,7 @@
 
       // Construct the comprehensive backup object, initially without the checksum.
       const backupData = {
-        dataType: "OopisOS_System_State_Backup_v3.1", // For validation during restore.
+        dataType: "OopisOS_System_State_Backup_v3.2", // For validation during restore.
         osVersion: Config.OS.VERSION,
         timestamp: new Date().toISOString(),
         fsDataSnapshot: Utils.deepCopyNode(FileSystemManager.getFsData()),

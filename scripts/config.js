@@ -25,7 +25,7 @@ const Config = (() => {
         /** Core OS metadata. */
         OS: {
             NAME: "OopisOs",
-            VERSION: " 3.1",
+            VERSION: " 3.2",
             DEFAULT_HOST_NAME: "OopisOs",
         },
         /** User-related constants and constraints. */

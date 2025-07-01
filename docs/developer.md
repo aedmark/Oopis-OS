@@ -1,16 +1,16 @@
-# OopisOS v3.1 Architectural Documentation
+# OopisOS v3.2 Architectural Documentation
 
 - [[#1. Design Philosophy & Core Principles|1. Design Philosophy & Core Principles]]
 - [[#2. System Architecture|2. System Architecture]]
-    - [[#2. System Architecture#Layer 1: The System Bootstrap & Core Plane|Layer 1: The System Bootstrap & Core Plane]]
-    - [[#2. System Architecture#Layer 2: The Command Lifecycle & Execution Engine|Layer 2: The Command Lifecycle & Execution Engine]]
-    - [[#2. System Architecture#Layer 3: The State & Persistence Core|Layer 3: The State & Persistence Core]]
-    - [[#2. System Architecture#Layer 4: The Human-Interface Bridge|Layer 4: The Human-Interface Bridge]]
+  - [[#2. System Architecture#Layer 1: The System Bootstrap & Core Plane|Layer 1: The System Bootstrap & Core Plane]]
+  - [[#2. System Architecture#Layer 2: The Command Lifecycle & Execution Engine|Layer 2: The Command Lifecycle & Execution Engine]]
+  - [[#2. System Architecture#Layer 3: The State & Persistence Core|Layer 3: The State & Persistence Core]]
+  - [[#2. System Architecture#Layer 4: The Human-Interface Bridge|Layer 4: The Human-Interface Bridge]]
 - [[#3. Core Component Deep Dive|3. Core Component Deep Dive]]
-    - [[#3. Core Component Deep Dive#The Command System: Secure by Process|The Command System: Secure by Process]]
-    - [[#3. Core Component Deep Dive#The File System: A Bastion of State|The File System: A Bastion of State]]
-    - [[#3. Core Component Deep Dive#User & Credential Management|User & Credential Management]]
-    - [[#3. Core Component Deep Dive#Full-Screen Applications: Contained Ecosystems|Full-Screen Applications: Contained Ecosystems]]
+  - [[#3. Core Component Deep Dive#The Command System: Secure by Process|The Command System: Secure by Process]]
+  - [[#3. Core Component Deep Dive#The File System: A Bastion of State|The File System: A Bastion of State]]
+  - [[#3. Core Component Deep Dive#User & Credential Management|User & Credential Management]]
+  - [[#3. Core Component Deep Dive#Full-Screen Applications: Contained Ecosystems|Full-Screen Applications: Contained Ecosystems]]
 - [[#4. Extending the System: Adding New Commands|4. Extending the System: Adding New Commands]]
 
 ## 1. Design Philosophy & Core Principles
@@ -19,20 +19,15 @@ This document provides a comprehensive architectural overview of the OopisOS pro
 
 OopisOS is more than a simulated operating system; it is an exploration of a fully self-contained, secure, and persistent client-side application paradigm. Its design is governed by five foundational pillars. Every component and decision must be weighed against these principles:
 
-1. **Radical Self-Reliance**  
-   The system is 100% client-side. It has no dependency on a backend server for its core logic, state, or execution. All functionality—command execution, data storage, etc.—must be achievable within a modern web browser.
+1. **Radical Self-Reliance** The system is 100% client-side. It has no dependency on a backend server for its core logic, state, or execution. All functionality—command execution, data storage, etc.—must be achievable within a modern web browser.
 
-2. **Architected Persistence**  
-   The system state is not ephemeral. The virtual file system, user credentials, session data, and command history are all persisted locally. The user is the sole custodian of their data.
+2. **Architected Persistence** The system state is not ephemeral. The virtual file system, user credentials, session data, and command history are all persisted locally. The user is the sole custodian of their data.
 
-3. **Enforced Modularity**  
-   The system is composed of discrete, specialized components with clear responsibilities. Logic is never intermingled; it is orchestrated.
+3. **Enforced Modularity** The system is composed of discrete, specialized components with clear responsibilities. Logic is never intermingled; it is orchestrated.
 
-4. **Security by Design**  
-   Security is foundational. A strict permission model, sandboxed execution for untrusted content, input validation, and secure credential handling enforce the principle of least privilege.
+4. **Security by Design** Security is foundational. A strict permission model, sandboxed execution for untrusted content, input validation, and secure credential handling enforce the principle of least privilege.
 
-5. **Contained & Orchestrated Execution**  
-   All operations flow through controlled channels. The Command Executor handles processing, while the Output Manager controls display. This ensures predictability and prevents unintended side effects.
+5. **Contained & Orchestrated Execution** All operations flow through controlled channels. The Command Executor handles processing, while the Output Manager controls display. This ensures predictability and prevents unintended side effects.
 
 ---
 ## 2. System Architecture
@@ -133,8 +128,7 @@ The architecture is layered, ensuring a clear separation of concerns. Each layer
 ---
 ## 4. Extending the System: Adding New Commands
 
-**Step 1: Create the Command File**  
-Create `/scripts/commands/mycommand.js`. The filename must match the command name.
+**Step 1: Create the Command File** Create `/scripts/commands/mycommand.js`. The filename must match the command name.
 
 **Step 2: Define the Command Contract**
 
@@ -162,7 +156,3 @@ Create `/scripts/commands/mycommand.js`. The filename must match the command nam
     myCommandHelpText
   );
 })();
-```
-
-**Step 3: That’s it.**  
-There is no third step. Commands are now loaded on-demand and cached for the session.
