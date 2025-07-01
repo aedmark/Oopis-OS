@@ -102,7 +102,9 @@ const ChidiApp = {
         const get = (id) => document.getElementById(id);
         this.elements = {
             ...this.elements,
-            fileSelector: get('chidi-file-selector'),
+            customSelector: get('chidi-custom-selector'),
+            selectorTrigger: get('chidi-selector-trigger'),
+            selectorPanel: get('chidi-selector-panel'),
             summarizeBtn: get('chidi-summarizeBtn'),
             studyBtn: get('chidi-suggestQuestionsBtn'),
             askBtn: get('chidi-askAllFilesBtn'),
@@ -130,13 +132,12 @@ const ChidiApp = {
         const currentFile = this.getCurrentFile();
 
         this.elements.fileCountDisplay.textContent = `🖹 ${this.state.loadedFiles.length}`;
-        this.elements.fileSelector.disabled = !hasFiles || this.state.loadedFiles.length <= 1;
         this.elements.exportBtn.disabled = !hasFiles;
         this.elements.saveSessionBtn.disabled = !hasFiles;
 
-        if (hasFiles) {
-            this.elements.fileSelector.value = this.state.currentIndex;
-        }
+        const trigger = this.elements.selectorTrigger;
+        trigger.disabled = !hasFiles || this.state.loadedFiles.length <= 1;
+        trigger.textContent = currentFile ? currentFile.name : 'No Files Loaded';
 
         this.elements.summarizeBtn.disabled = !hasFiles;
         this.elements.studyBtn.disabled = !hasFiles;
@@ -164,18 +165,32 @@ const ChidiApp = {
     },
 
     _populateFileDropdown() {
-        const selector = this.elements.fileSelector;
-        selector.innerHTML = '';
+        const panel = this.elements.selectorPanel;
+        panel.innerHTML = ''; // Clear previous items
+
         if (this.state.loadedFiles.length === 0) {
-            selector.appendChild(Utils.createElement('option', { textContent: "No Files" }));
+            this.elements.selectorTrigger.textContent = "No Files";
             return;
         }
+
         this.state.loadedFiles.forEach((file, index) => {
-            selector.appendChild(Utils.createElement('option', {
-                value: index,
+            const item = Utils.createElement('button', {
+                className: 'chidi-selector-item',
                 textContent: file.name,
-                title: file.name // Add title attribute for hover tooltip
-            }));
+                title: file.path,
+                'data-index': index
+            });
+
+            if (index === this.state.currentIndex) {
+                item.classList.add('selected');
+            }
+
+            item.addEventListener('click', () => {
+                this._selectFileByIndex(index);
+                this._toggleDropdown(false); // Hide panel on selection
+            });
+
+            panel.appendChild(item);
         });
     },
 
@@ -190,20 +205,39 @@ const ChidiApp = {
             this.showMessage(`Verbose logging ${this.state.isVerbose ? 'enabled' : 'disabled'}.`, true);
         });
 
+        // Listener for the main trigger button
+        this.elements.selectorTrigger.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent the global click listener from immediately closing it
+            this._toggleDropdown();
+        });
+
+        // Modify the global keydown listener
         document.addEventListener('keydown', (e) => {
             if (!this.isActive()) return;
+
+            // Existing Escape logic...
             if (e.key === 'Escape') {
-                if (this.state.isAskingMode) {
-                    this._exitQuestionMode();
-                } else {
+                if (this.elements.selectorPanel.classList.contains('hidden')) {
                     this.close();
+                } else {
+                    this._toggleDropdown(false);
                 }
+            }
+
+            // New keyboard navigation logic
+            if (!this.elements.selectorPanel.classList.contains('hidden')) {
+                this._handleKeyboardNavigation(e);
             }
         });
 
-        this.elements.fileSelector.addEventListener('change', (e) => {
-            if (this.state.isAskingMode) this._exitQuestionMode();
-            this._selectFileByIndex(e.target.value);
+        // Add a new listener to handle clicks outside the dropdown
+        document.addEventListener('click', (e) => {
+            if (!this.isActive() || this.elements.selectorPanel.classList.contains('hidden')) {
+                return;
+            }
+            if (!this.elements.customSelector.contains(e.target)) {
+                this._toggleDropdown(false);
+            }
         });
 
         this.elements.summarizeBtn.addEventListener('click', async () => {
@@ -248,6 +282,48 @@ const ChidiApp = {
         });
     },
 
+    _toggleDropdown(forceState) {
+        const panel = this.elements.selectorPanel;
+        const shouldBeVisible = typeof forceState === 'boolean' ? forceState : panel.classList.contains('hidden');
+
+        if (shouldBeVisible) {
+            const triggerRect = this.elements.selectorTrigger.getBoundingClientRect();
+            const consoleRect = document.getElementById('chidi-console-panel').getBoundingClientRect();
+
+            // This is the fix for the dimensional rift.
+            // We constrain the dropdown's height to the available space below the trigger.
+            const maxHeight = consoleRect.bottom - triggerRect.bottom - 10; // 10px buffer
+            panel.style.maxHeight = `${maxHeight}px`;
+
+            panel.classList.remove('hidden');
+            // Focus the selected item when opening
+            const selected = panel.querySelector('.selected') || panel.firstChild;
+            if (selected) selected.focus();
+        } else {
+            panel.classList.add('hidden');
+        }
+    },
+
+    _handleKeyboardNavigation(e) {
+        const items = Array.from(this.elements.selectorPanel.querySelectorAll('.chidi-selector-item'));
+        if (items.length === 0) return;
+
+        const currentIndex = items.findIndex(item => item === document.activeElement);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = (currentIndex + 1) % items.length;
+            items[nextIndex].focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = (currentIndex - 1 + items.length) % items.length;
+            items[prevIndex].focus();
+        } else if (e.key === 'Enter' && currentIndex > -1) {
+            e.preventDefault();
+            items[currentIndex].click();
+        }
+    },
+
     _enterQuestionMode() {
         if (!this.getCurrentFile()) return;
         this.state.isAskingMode = true;
@@ -262,7 +338,8 @@ const ChidiApp = {
 
         this.elements.summarizeBtn.disabled = true;
         this.elements.exportBtn.disabled = true;
-        this.elements.fileSelector.disabled = true;
+        this.elements.selectorTrigger.disabled = true;
+
 
         this.showMessage("Ask a question about all loaded files.", true);
     },
@@ -370,7 +447,7 @@ const ChidiApp = {
 
             this.appendAiOutput(
                 "Constructed Prompt for Gemini",
-                "The following block contains the exact context and question being sent to the AI for analysis.\n\n```text\n" + finalPrompt + "\n```"
+                "The following block contains the exact context and question being sent to the AI for analysis.\n\n\`\`\`text\n" + finalPrompt + "\n\`\`\`"
             );
 
             const finalAnswer = await this.callGeminiApi([{
@@ -396,6 +473,7 @@ const ChidiApp = {
         if (!isNaN(index) && index >= 0 && index < this.state.loadedFiles.length) {
             this.state.currentIndex = index;
             this.updateUI();
+            this._populateFileDropdown(); // Re-populate to update the 'selected' class
         }
     },
 
@@ -637,42 +715,43 @@ const ChidiApp = {
      */
     getHTML() {
         return `
-            <div id="chidi-console-panel">
-                <header class="chidi-console-header">
-                    <div class="chidi-header-controls">
-                        <select id="chidi-file-selector" class="chidi-btn chidi-select"></select>
+            <header class="chidi-console-header">
+                <div class="chidi-header-controls">
+                    <div id="chidi-custom-selector" class="chidi-selector-container">
+                        <button id="chidi-selector-trigger" class="chidi-btn chidi-select"></button>
+                        <div id="chidi-selector-panel" class="chidi-selector-panel hidden"></div>
                     </div>
-                    <h1 id="chidi-mainTitle">chidi.md</h1>
-                    <div class="chidi-header-controls">
-                        <div class="chidi-control-group">
-                            <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
-                            <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
-                            <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
-                        </div>
-                        
-                    </div>
-                </header>
-
-                <main id="chidi-markdownDisplay" class="chidi-markdown-content">
-                    <p class="chidi-placeholder-text">Awaiting file selection...</p>
-                </main>
-
-                <div id="chidi-ask-input-container" class="chidi-ask-container chidi-hidden">
-                    <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
                 </div>
-                
-                <footer class="chidi-status-readout">
-                    <div id="chidi-fileCountDisplay" class="chidi-status-item">🖹 0</div>
-                    <div id="chidi-messageBox" class="chidi-status-message">֎ Standby.</div>
+                <h1 id="chidi-mainTitle">chidi.md</h1>
+                <div class="chidi-header-controls">
                     <div class="chidi-control-group">
-                        <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                        <button id="chidi-verbose-toggle-btn" class="chidi-btn" title="Toggle verbose operation log">Log: Off</button>
-                        <button id="chidi-saveSessionBtn" class="chidi-btn" title="Save current session to a new file">Save</button>
-                        <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
-                        <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
+                        <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
+                        <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
+                        <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
                     </div>
-                </footer>
+                    
+                </div>
+            </header>
+
+            <main id="chidi-markdownDisplay" class="chidi-markdown-content">
+                <p class="chidi-placeholder-text">Awaiting file selection...</p>
+            </main>
+
+            <div id="chidi-ask-input-container" class="chidi-ask-container chidi-hidden">
+                <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
             </div>
+            
+            <footer class="chidi-status-readout">
+                <div id="chidi-fileCountDisplay" class="chidi-status-item">🖹 0</div>
+                <div id="chidi-messageBox" class="chidi-status-message">֎ Standby.</div>
+                <div class="chidi-control-group">
+                    <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
+                    <button id="chidi-verbose-toggle-btn" class="chidi-btn" title="Toggle verbose operation log">Log: Off</button>
+                    <button id="chidi-saveSessionBtn" class="chidi-btn" title="Save current session to a new file">Save</button>
+                    <button id="chidi-exportBtn" class="chidi-btn" title="Export current view as HTML">Export</button>
+                    <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn" title="Close Chidi (Esc)">Exit</button>
+                </div>
+            </footer>
         `;
     },
 };

@@ -1260,3 +1260,74 @@ body {
   margin-top: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
 }
+
+/* 9. Chidi Application Component - Custom Selector Additions */
+/* ========================================================================== */
+
+.chidi-selector-container {
+  position: relative; /* Anchor for the dropdown panel */
+  min-width: 150px;
+  flex-shrink: 1; /* Allow it to shrink but not grow aggressively */
+}
+
+.chidi-selector-trigger {
+  /* Re-using chidi-btn and chidi-select for base styling */
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Gracefully handle long filenames */
+  padding-right: 2rem; /* Make space for a dropdown arrow */
+  position: relative;
+}
+
+.chidi-selector-trigger::after {
+  content: '▼';
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%) scale(0.8);
+  color: var(--color-text-secondary);
+  pointer-events: none; /* So it doesn't interfere with clicks */
+}
+
+.chidi-selector-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: var(--color-background-dark);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-xs);
+  z-index: 1000;
+  overflow-y: auto; /* This enables scrolling when max-height is exceeded */
+  box-shadow: var(--shadow-drop-medium);
+}
+
+.chidi-selector-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chidi-selector-item:hover,
+.chidi-selector-item:focus {
+  background-color: var(--color-info);
+  color: var(--color-background-darkest);
+  outline: none;
+}
+
+.chidi-selector-item.selected {
+  font-weight: bold;
+  color: var(--color-success);
+}
