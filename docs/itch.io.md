@@ -1,4 +1,4 @@
-## OopisOS v3.0: The OS is the Game
+## OopisOS v3.2: The OS is the Game
 
 A persistent, in-browser, retro-futuristic Operating System. Hack the system, build your own tools, or create entire narrative games from the command line. This isn't just a simulation; it's a sandbox for digital creation.
 
