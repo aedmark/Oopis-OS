@@ -97,7 +97,7 @@ const EditorUI = (() => {
         line-height: 1.5;
         color: #e5e7eb;
         background-color: #212121;
-        margin: 1rem;
+        margin: var(--spacing-xl); 
       }
       img {
         max-width: 100%;
