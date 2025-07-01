@@ -1158,3 +1158,190 @@ body {
   padding-left: var(--spacing-sm);
   caret-color: var(--color-text-primary);
 }
+
+/* 9. Paint Application Component (Refactored)
+/* ========================================================================== */
+
+#paint-container {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-medium);
+  border: var(--border-width-thick) solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  overflow: hidden;
+  width: 95%;
+  height: 95%;
+  padding: var(--spacing-sm);
+  gap: var(--spacing-sm);
+}
+
+#paint-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width) solid var(--color-border-primary);
+  flex-shrink: 0;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  gap: var(--spacing-md);
+}
+
+.paint-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: nowrap; /* Prevent individual groups from wrapping */
+}
+
+#paint-canvas-wrapper {
+  flex-grow: 1; /* This makes the canvas area fill available space */
+  background-color: var(--color-background-darkest);
+  box-shadow: var(--shadow-inset-light); /* Apply inset shadow for screen effect */
+  overflow: auto; /* Allow scrolling for zoomed canvas */
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+/* New class for toggling the grid */
+#paint-canvas-wrapper.grid-active #paint-canvas {
+  background-image:
+          linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+}
+
+#paint-canvas {
+  display: grid;
+  font-family: var(--font-family-mono);
+  line-height: 1;
+  background-color: #000;
+  cursor: crosshair;
+}
+
+#paint-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-xs);
+  border-top: var(--border-width) solid var(--color-border-primary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-subtle);
+  flex-shrink: 0; /* Prevent status bar from shrinking */
+}
+
+/* Refined button styles using the global .btn class */
+.paint-tool-dropdown, .paint-brush-control {
+  display: flex;
+  align-items: center;
+}
+
+.paint-tool-dropdown {
+  position: relative;
+}
+
+.paint-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: var(--color-background-light);
+  min-width: 40px;
+  box-shadow: var(--shadow-drop-medium);
+  z-index: 1;
+  border: var(--border-width) solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  bottom: 100%;
+  margin-bottom: var(--spacing-xs);
+}
+
+.paint-dropdown-active {
+  display: block;
+}
+
+
+/* Active state for tool buttons */
+.btn.active {
+  background-color: var(--color-info);
+  color: var(--color-background-darkest);
+  border-color: var(--color-info);
+}
+
+/* Keep specific paint component styles that are not covered by global classes */
+.paint-size-display, .paint-zoom-display {
+  padding: 0 var(--spacing-sm);
+  background-color: var(--color-background-darkest);
+  color: var(--color-text-secondary);
+  height: 36px;
+  display: flex;
+  align-items: center;
+  border-left: var(--border-width) solid var(--color-border-primary);
+  border-right: var(--border-width) solid var(--color-border-primary);
+}
+
+.paint-palette {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  border: var(--border-width) solid var(--color-border-primary);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.paint-color-swatch {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.paint-color-swatch:hover {
+  border-color: #fff;
+}
+
+.paint-color-swatch.active {
+  border-color: var(--color-accent-lime);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px var(--color-accent-lime);
+}
+
+/* Modal styles (now using global classes) for paint-specific modals */
+#paint-char-select-modal .modal-dialog,
+#paint-color-select-modal .modal-dialog {
+  /* Any specific overrides for paint modals would go here */
+}
+
+#paint-char-select-grid, #paint-color-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.paint-char-btn {
+  background-color: var(--color-background-light);
+  color: var(--color-text-secondary);
+  border: var(--border-width) solid var(--color-border-primary);
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  font-size: var(--font-size-xl);
+}
+.paint-char-btn:hover {
+  background-color: var(--color-info);
+  color: var(--color-background-darkest);
+}
+
+.paint-custom-hex-container {
+  margin-top: var(--spacing-md);
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.paint-hex-input {
+  flex-grow: 1;
+  background-color: var(--color-background-darkest);
+  border: var(--border-width) solid var(--color-border-primary);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+}
