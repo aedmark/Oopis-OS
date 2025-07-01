@@ -42,7 +42,7 @@
             }
             const testResult = await CommandExecutor.processSingleCommand(
                 commandToTest,
-                false
+                { isInteractive: false }
             );
             if (testResult.success) {
                 const failureMessage = `CHECK_FAIL: FAILURE - Command <${commandToTest}> unexpectedly SUCCEEDED.`;

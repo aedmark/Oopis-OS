@@ -58,7 +58,7 @@
                 );
                 if (!saveResult.success) return saveResult;
             } else if (childNode.type === 'directory') {
-                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${newPath}"`, false);
+                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${newPath}"`, { isInteractive: false });
                 if (!mkdirResult.success) {
                     return { success: false, error: `Could not create directory ${newPath}: ${mkdirResult.error}` };
                 }
@@ -113,7 +113,7 @@
             const resolvedDestPath = destValidation.resolvedPath;
 
             if (!destValidation.node) {
-                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${resolvedDestPath}"`, false);
+                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${resolvedDestPath}"`, { isInteractive: false });
                 if (!mkdirResult.success) {
                     return { success: false, error: `unzip: could not create destination directory: ${mkdirResult.error}` };
                 }

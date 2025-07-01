@@ -29,7 +29,7 @@ RULES:
 - Respond ONLY with a numbered list of the shell commands required.
 - Do not add any commentary, explanation, or greetings.
 - If no commands are needed (e.g., a general knowledge question), respond with the single word "ANSWER".
-- You may only use the commands and flags listed in the "Tool Manifest" below. Do not invent flags or commands like 'xargs'.
+- You may ONLY use the commands and flags explicitly listed in the "Tool Manifest" below. Do not invent flags or use any other commands, such as 'shuf' or 'xargs'.
 
 --- TOOL MANIFEST ---
 1. ls [FLAGS]: Lists files.
@@ -179,11 +179,11 @@ RULES:
             const userPrompt = args.join(" ");
 
             // --- 1. LOCAL TRIAGE ---
-            const lsResult = await CommandExecutor.processSingleCommand("ls -l", false);
+            const lsResult = await CommandExecutor.processSingleCommand("ls -l", { suppressOutput: true });
             const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
             const plannerPrompt = `User Prompt: "${userPrompt}"\n\n${localContext}`;
 
-            if (options.isInteractive && flags.verbose) {
+            if (options.isInteractive) {
                 await OutputManager.appendToOutput("Gemini is thinking...", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
 
@@ -223,12 +223,9 @@ RULES:
                     if (flags.verbose && options.isInteractive) {
                         await OutputManager.appendToOutput(`> ${commandStr}`, { typeClass: Config.CSS_CLASSES.EDITOR_MSG });
                     }
-                    const execResult = await CommandExecutor.processSingleCommand(commandStr, false);
+                    const execResult = await CommandExecutor.processSingleCommand(commandStr, { suppressOutput: !flags.verbose });
                     const output = execResult.success ? execResult.output : `Error: ${execResult.error}`;
 
-                    if (flags.verbose && options.isInteractive && output) {
-                        await OutputManager.appendToOutput(output);
-                    }
                     executedCommandsOutput += `--- Output of '${commandStr}' ---\n${output}\n\n`;
                 }
             }

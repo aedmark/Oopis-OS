@@ -19,7 +19,7 @@
             const fullCommandStr = args.join(' ');
 
             if (currentUser === 'root') {
-                return await CommandExecutor.processSingleCommand(fullCommandStr, options.isInteractive);
+                return await CommandExecutor.processSingleCommand(fullCommandStr, { isInteractive: options.isInteractive });
             }
 
             if (!SudoManager.canUserRunCommand(currentUser, commandToRun) && !SudoManager.canUserRunCommand(currentUser, 'ALL')) {

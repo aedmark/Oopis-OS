@@ -346,12 +346,15 @@ const CommandExecutor = (() => {
    * Executes a full pipeline of commands, handling I/O between segments and output redirection.
    * @private
    * @param {ParsedPipeline} pipeline - The parsed pipeline object.
-   * @param {boolean} isInteractive - Whether the command is being run from an interactive terminal session.
-   * @param {AbortSignal|null} signal - The AbortSignal for cancellation, used for background jobs.
-   * @param {object|null} scriptingContext - The context object if the command is being run from a script.
+   * @param {object} options - Execution options.
+   * @param {boolean} options.isInteractive - Whether the command is being run from an interactive terminal session.
+   * @param {AbortSignal|null} options.signal - The AbortSignal for cancellation, used for background jobs.
+   * @param {object|null} options.scriptingContext - The context object if the command is being run from a script.
+   * @param {boolean} options.suppressOutput - If true, the final output of the pipeline is not printed to the terminal.
    * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the pipeline.
    */
-  async function _executePipeline(pipeline, isInteractive, signal, scriptingContext) {
+  async function _executePipeline(pipeline, options) {
+    const { isInteractive, signal, scriptingContext, suppressOutput } = options;
     let currentStdin = null;
     let lastResult = {
       success: true,
@@ -595,8 +598,7 @@ const CommandExecutor = (() => {
           );
         }
       } else {
-        // For foreground jobs, always print the output, regardless of interactivity.
-        if (lastResult.output) {
+        if (lastResult.output && !suppressOutput) {
           await OutputManager.appendToOutput(lastResult.output, {
             typeClass: lastResult.messageType || null,
           });
@@ -635,11 +637,14 @@ const CommandExecutor = (() => {
    * Processes a complete command-line string. This is the main entry point for command execution.
    * It handles alias expansion, environment variable expansion, parsing, and execution of all pipelines.
    * @param {string} rawCommandText - The raw string entered by the user.
-   * @param {boolean} [isInteractive=true] - Whether the command is being run interactively.
-   * @param {object|null} [scriptingContext=null] - The context if the command is part of a script.
+   * @param {object} [options={}] - An object containing execution options.
+   * @param {boolean} [options.isInteractive=true] - Whether the command is being run interactively.
+   * @param {object|null} [options.scriptingContext=null] - The context if the command is part of a script.
+   * @param {boolean} [options.suppressOutput=false] - If true, the final output is not printed to the terminal.
    * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the entire command line.
    */
-  async function processSingleCommand(rawCommandText, isInteractive = true, scriptingContext = null) {
+  async function processSingleCommand(rawCommandText, options = {}) {
+    const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
     let overallResult = {
       success: true,
       output: "",
@@ -779,7 +784,7 @@ const CommandExecutor = (() => {
         // Execute background job asynchronously
         setTimeout(async () => {
           try {
-            const bgResult = await _executePipeline(pipeline, false, abortController.signal, scriptingContext);
+            const bgResult = await _executePipeline(pipeline, { isInteractive: false, signal: abortController.signal, scriptingContext, suppressOutput });
             const statusMsg = `[Job ${pipeline.jobId} ${
                 bgResult.success ? "finished" : "finished with error"
             }${
@@ -802,7 +807,7 @@ const CommandExecutor = (() => {
           }
         }, 0);
       } else {
-        overallResult = await _executePipeline(pipeline, isInteractive, null, scriptingContext);
+        overallResult = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
         if (!overallResult) {
           const err =
               "Critical: Pipeline execution returned an undefined result.";

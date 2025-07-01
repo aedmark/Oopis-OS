@@ -1,12 +1,13 @@
+/**
+ * @file Defines the 'run' command, which executes shell scripts within the OopisOS environment.
+ * It supports argument passing, environment variable expansion, and handles interactive prompts
+ * within scripts.
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 (() => {
     "use strict";
-    /**
-     * @file Defines the 'run' command, which executes shell scripts within the OopisOS environment.
-     * It supports argument passing, environment variable expansion, and handles interactive prompts
-     * within scripts.
-     * @author Andrew Edmark
-     * @author Gemini
-     */
 
     /**
      * @const {object} runCommandDefinition
@@ -157,7 +158,7 @@
                 processedLine = processedLine.replace(/\$@/g, scriptArgs.map(arg => arg.includes(" ") ? `"${arg}"` : arg).join(" "));
                 processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
 
-                const result = await CommandExecutor.processSingleCommand(processedLine.trim(), false, scriptingContext);
+                const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
 
                 if (scriptingContext.waitingForInput) {
                     let lineForInput = line;
