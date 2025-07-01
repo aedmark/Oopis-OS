@@ -116,7 +116,9 @@ body {
   flex-shrink: 0; /* Prevent footer from shrinking */
   text-align: center;
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-lg);
+  font-size: clamp(0.75rem, 1.6vw, 1.125rem); /* Dynamically scales font */
+  white-space: nowrap; /* Prevents wrapping */
+  overflow: hidden; /* Prevents overflow from breaking layout */
   color: var(--color-text-primary);
   padding-top: var(--spacing-sm);
 }
@@ -446,7 +448,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-  background-color: #f9fafb;
+  background-color: #989898;
   color: #111827;
   min-width: 0;
 }

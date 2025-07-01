@@ -493,7 +493,100 @@ const EditorManager = (() => {
     if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
     if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
   }
-  function _applyTextManipulation(type) { /* ... function is unchanged ... */ }
+  function _applyTextManipulation(type) {
+    if (!isActiveState || !EditorUI.elements.textarea) return;
+
+    const textarea = EditorUI.elements.textarea;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let manipulatedText = '';
+    let newStart = start;
+    let newEnd = end;
+
+    const manipulate = async () => {
+      switch (type) {
+        case 'bold':
+          manipulatedText = `**${selectedText}**`;
+          newStart = start + 2;
+          newEnd = end + 2;
+          break;
+        case 'italic':
+          manipulatedText = `*${selectedText}*`;
+          newStart = start + 1;
+          newEnd = end + 1;
+          break;
+        case 'code':
+          manipulatedText = `\`${selectedText}\``;
+          newStart = start + 1;
+          newEnd = end + 1;
+          break;
+        case 'quote':
+          const lines = selectedText.split('\n');
+          manipulatedText = lines.map(line => `> ${line}`).join('\n');
+          newStart = start;
+          newEnd = start + manipulatedText.length;
+          break;
+        case 'codeblock':
+          manipulatedText = `\`\`\`\n${selectedText}\n\`\`\``;
+          newStart = start + 3;
+          newEnd = start + 3 + selectedText.length;
+          break;
+        case 'ul':
+          const ulLines = selectedText.split('\n');
+          manipulatedText = ulLines.map(line => `* ${line}`).join('\n');
+          newStart = start;
+          newEnd = start + manipulatedText.length;
+          break;
+        case 'ol':
+          const olLines = selectedText.split('\n');
+          manipulatedText = olLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
+          newStart = start;
+          newEnd = start + manipulatedText.length;
+          break;
+        case 'link':
+          const url = await new Promise(resolve => {
+            ModalManager.request({
+              context: 'graphical-input',
+              messageLines: ["Enter URL for the link:"],
+              placeholder: "https://example.com",
+              confirmText: "Insert",
+              cancelText: "Cancel",
+              onConfirm: (value) => resolve(value.trim() || null),
+              onCancel: () => resolve(null)
+            });
+          });
+
+          if (url) {
+            manipulatedText = `[${selectedText}](${url})`;
+            newStart = start + 1;
+            newEnd = start + 1 + selectedText.length;
+          } else {
+            // User cancelled, so don't change anything
+            manipulatedText = selectedText;
+          }
+          break;
+        default:
+          manipulatedText = selectedText;
+      }
+
+      // Only update if there's a change
+      if (manipulatedText !== selectedText) {
+        const newText = text.substring(0, start) + manipulatedText + text.substring(end);
+        EditorUI.setTextareaContent(newText);
+        _handleEditorInput(); // This will handle dirty state, undo stack, and UI updates
+        EditorUI.setEditorFocus();
+        EditorUI.setTextareaSelection(newStart, newEnd);
+      } else {
+        EditorUI.setEditorFocus();
+        EditorUI.setTextareaSelection(start, end);
+      }
+    };
+
+    manipulate();
+  }
   function _toggleViewModeHandler() {
     if (!isActiveState) return;
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
