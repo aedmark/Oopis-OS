@@ -86,6 +86,7 @@ const urlsToCache = [
     './scripts/commands/useradd.js',
     './scripts/commands/usermod.js',
     './scripts/commands/visudo.js',
+    './scripts/commands/wc.js',
     './scripts/commands/wget.js',
     './scripts/commands/whoami.js',
     './scripts/commands/zip.js',

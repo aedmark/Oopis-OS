@@ -173,7 +173,7 @@ const Config = (() => {
             "removeuser", "reset", "restore", "rm", "run", "savefs",
             "savestate", "set", "shuf", "su", "sudo", "tail", "touch", "tree",
             "unalias", "unset", "unzip", "upload", "useradd", "usermod",
-            "visudo", "wget", "whoami", "zip, xargs"
+            "visudo", "wc", "wget", "whoami", "zip, xargs"
         ],
     };
 
