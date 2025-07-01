@@ -23,6 +23,7 @@ const urlsToCache = [
     './scripts/commands/registry.js',
     './scripts/commands/adventure.js',
     './scripts/commands/alias.js',
+    './scripts/commands/awk.js',
     './scripts/commands/backup.js',
     './scripts/commands/cat.js',
     './scripts/commands/cd.js',

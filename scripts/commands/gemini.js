@@ -33,7 +33,7 @@ RULES:
 - You may ONLY use the commands and flags explicitly listed in the "Tool Manifest" below.
 - CRITICAL: You CANNOT use command substitution (e.g., \`$(...)\` or backticks) or other advanced shell syntax. Each command must be simple and stand-alone.
 - To read a full file, you must use the 'cat' command with the full filename. Otherwise you can preview a file with head or tail commands, as described in the "Tool Manifest" below.
-- Do not hallucinate! If you try to use a command that does not exist, or if you try to use a flag that does not exist, respond with a message indicating that you could not find the information you were looking for or ask clarifying questions.
+- Do not hallucinate! OopisOS may LOOK like a UNIX shell, but it is not. Our commands have familiar names and flags, but they are not the same as the UNIX commands. Please refer to the "Tool Manifest" below for a complete list of commands and flags you are allowed to use.
 
 --- TOOL MANIFEST ---
 1. ls [FLAGS]: Lists files.
@@ -56,9 +56,13 @@ RULES:
 8. shuf [FLAGS]: Randomly permute input.
    -n COUNT: output at most COUNT lines.
    -e [ARG]...: treat each ARG as an input line.
+9. tail [FLAGS] [FILE]: Outputs the last part of files.
+10. xargs [FLAGS] [COMMAND]: Runs a command for each input line.
+11. echo [ARG]...: Prints the arguments to the screen.
+
 --- END MANIFEST ---
 
-To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. Do not attempt to process multiple files in one step.`;
+To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. Do not attempt to process multiple files in one step. DO NOT TAKE SHORTCUTS.`;
 
     /**
      * @private

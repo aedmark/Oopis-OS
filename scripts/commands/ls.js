@@ -127,6 +127,40 @@
                 return sortedItems;
             }
 
+            /**
+             * Formats an array of item names into a multi-column string.
+             * @param {string[]} names - Array of item names.
+             * @returns {string} Formatted multi-column string.
+             */
+            function formatToColumns(names) {
+                if (names.length === 0) return "";
+
+                const terminalWidth = DOM.terminalDiv?.clientWidth || 80 * 8; // Fallback width
+                const charWidth = Utils.getCharacterDimensions().width || 8; // Fallback char width
+                const displayableCols = Math.floor(terminalWidth / charWidth);
+
+                const longestName = names.reduce((max, name) => Math.max(max, name.length), 0);
+                const colWidth = longestName + 2; // 2 spaces for padding
+
+                const numColumns = Math.max(1, Math.floor(displayableCols / colWidth));
+                const numRows = Math.ceil(names.length / numColumns);
+                const grid = Array(numRows).fill(null).map(() => Array(numColumns).fill(""));
+
+                for (let i = 0; i < names.length; i++) {
+                    const row = i % numRows;
+                    const col = Math.floor(i / numRows);
+                    grid[row][col] = names[i];
+                }
+
+                return grid.map(row =>
+                    row.map((item, colIndex) => {
+                        if (colIndex === row.length - 1) return item; // No padding on last column
+                        return item.padEnd(colWidth);
+                    }).join("")
+                ).join("\n");
+            }
+
+
             // Determine paths to list: default to current path if no arguments provided.
             const pathsToList = args.length > 0 ? args : [FileSystemManager.getCurrentPath()];
             let outputBlocks = []; // Accumulates output for all paths/recursive calls.
@@ -186,21 +220,18 @@
                         itemDetailsList.forEach(item => {
                             currentPathOutputLines.push(formatLongListItem(item));
                         });
-                        // --- MODIFICATION FOR -1 ---
                     } else if (effectiveFlags.oneColumn) {
                         itemDetailsList.forEach(item => {
                             const nameSuffix = item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? Config.FILESYSTEM.PATH_SEPARATOR : "";
                             currentPathOutputLines.push(`${item.name}${nameSuffix}`);
                         });
-                        // --- END MODIFICATION ---
                     } else {
-                        // This part needs adjustment to format into columns, for now, we'll do a simple space-separated list.
-                        // A true multi-column format is a significant UI challenge.
-                        const simpleList = itemDetailsList.map(item => {
+                        // --- NEW MULTI-COLUMN LOGIC ---
+                        const namesToFormat = itemDetailsList.map(item => {
                             const nameSuffix = item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? Config.FILESYSTEM.PATH_SEPARATOR : "";
                             return `${item.name}${nameSuffix}`;
-                        }).join("  ");
-                        currentPathOutputLines.push(simpleList);
+                        });
+                        currentPathOutputLines.push(formatToColumns(namesToFormat));
                     }
                 }
                 return { success: true, output: currentPathOutputLines.join("\n"), items: itemDetailsList };
