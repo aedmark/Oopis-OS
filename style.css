@@ -104,14 +104,13 @@ body {
 #main-column {
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 75vw; /* 4:3 Aspect Ratio -> height = 0.75 * width */
-  max-height: 100vh;
-  max-width: 133.33vh; /* 4:3 Aspect Ratio -> width = 1.33 * height */
+  width: 100%;
+  aspect-ratio: 4 / 3;
   min-width: 480px;
   min-height: 360px;
+  max-width: 75%;
+  max-height: 100%;
 }
-
 #main-footer {
   flex-shrink: 0; /* Prevent footer from shrinking */
   text-align: center;
@@ -1001,6 +1000,7 @@ body {
 
 #paint-canvas-wrapper {
   flex-grow: 1; /* This makes the canvas area fill available space */
+aspect-ratio: 4 / 3;
   background-color: var(--color-background-darkest);
   box-shadow: var(--shadow-inset-light); /* Apply inset shadow for screen effect */
   overflow: auto; /* Allow scrolling for zoomed canvas */
