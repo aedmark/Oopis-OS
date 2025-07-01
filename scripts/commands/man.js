@@ -19,61 +19,53 @@
      * if essential data is missing.
      */
     function formatManPage(commandName, commandData) {
-        // Basic validation to ensure necessary command data is available.
-        if (!commandData || !commandData.handler || !commandData.handler.definition) {
+        // CORRECTED: Access the nested definition from the commandData object
+        const definition = commandData.definition;
+        if (!commandData || !definition) {
             return `No manual entry for ${commandName}`;
         }
 
-        const definition = commandData.handler.definition; // The command's internal definition.
-        const description = commandData.description || "No description available."; // Short description for NAME section.
-        const helpText = commandData.helpText || ""; // Detailed help text, typically for DESCRIPTION.
-        const output = []; // Array to build the man page lines.
+        const description = commandData.description || "No description available.";
+        const helpText = commandData.helpText || "";
+        const output = [];
 
-        // NAME section: command name - short description.
+        // NAME section
         output.push("NAME");
         output.push(`       ${commandName} - ${description}`);
         output.push("");
 
-        // SYNOPSIS section: Extracts the usage line from the help text.
+        // SYNOPSIS section
         const helpLines = helpText.split('\n');
         const synopsisLine = helpLines.find(line => line.trim().toLowerCase().startsWith('usage:'));
-        // If a "Usage:" line is found, use it; otherwise, provide a generic synopsis.
         const synopsis = synopsisLine || `       Usage: ${commandName} [options]`;
         output.push("SYNOPSIS");
-        // Remove "Usage: " prefix for cleaner synopsis display.
         output.push(`       ${synopsis.replace("Usage: ", "")}`);
         output.push("");
 
-        // DESCRIPTION section: Uses the rest of the help text.
-        // Skips the synopsis line if it was found.
+        // DESCRIPTION section
         const descriptionText = helpLines.slice(synopsisLine ? 1 : 0).join('\n').trim();
         if (descriptionText) {
             output.push("DESCRIPTION");
-            // Add each line of the description text, indented.
             descriptionText.split('\n').forEach(line => {
                 output.push(`       ${line}`);
             });
             output.push("");
         }
 
-        // OPTIONS section: Lists flags defined in the command's definition.
+        // OPTIONS section
         if (definition.flagDefinitions && definition.flagDefinitions.length > 0) {
             output.push("OPTIONS");
             definition.flagDefinitions.forEach(flag => {
                 let flagLine = "       ";
                 const short = flag.short;
                 const long = flag.long;
-
                 let flagIdentifiers = [];
                 if (short) flagIdentifiers.push(short);
                 if (long) flagIdentifiers.push(long);
-
-                flagLine += flagIdentifiers.join(', '); // Join short and long forms (e.g., -a, --all).
-
+                flagLine += flagIdentifiers.join(', ');
                 if (flag.takesValue) {
-                    flagLine += " <value>"; // Indicate if the flag expects a value.
+                    flagLine += " <value>";
                 }
-
                 output.push(flagLine);
             });
             output.push("");
@@ -108,10 +100,22 @@
         coreLogic: async (context) => {
             const { args } = context;
             const commandName = args[0];
-            // CORRECTED: Get definitions from the master CommandRegistry
+
+            // NEW: Dynamically load the command before trying to get its details.
+            const isLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
+
+            if (!isLoaded) {
+                return {
+                    success: false,
+                    error: `No manual entry for ${commandName}`,
+                };
+            }
+
+            // Now that it's loaded, get the full registry and find the data.
             const allCommands = CommandRegistry.getDefinitions();
             const commandData = allCommands[commandName];
 
+            // This should now always succeed if isLoaded is true.
             if (!commandData) {
                 return {
                     success: false,
@@ -119,12 +123,7 @@
                 };
             }
 
-            // The formatManPage function correctly uses the structure from the registry
-            const manPage = formatManPage(commandName, {
-                handler: commandData, // Pass the definition block
-                description: commandData.description,
-                helpText: commandData.helpText
-            });
+            const manPage = formatManPage(commandName, commandData);
 
             return {
                 success: true,

@@ -33,24 +33,34 @@
          */
         coreLogic: async (context) => {
             const { args } = context;
-            // CORRECTED: Get definitions from the master CommandRegistry
-            const commands = CommandRegistry.getDefinitions();
-            let output = "";
 
             if (args.length === 0) {
-                output += "OopisOS Help:\n\nAvailable commands:\n";
-                // Sort by the command name (the key)
+                // List only currently loaded/registered commands and explain the behavior.
+                const commands = CommandRegistry.getDefinitions();
+                let output = "OopisOS Help (showing currently loaded commands):\n\nAvailable commands:\n";
                 Object.keys(commands)
                     .sort()
                     .forEach((cmd) => {
-                        output += `  ${cmd.padEnd(15)} ${
-                            commands[cmd].description || ""
-                        }\n`;
+                        output += `  ${cmd.padEnd(15)} ${commands[cmd].description || ""}\n`;
                     });
-                output += "\nType 'help [command]' for syntax, or 'man [command]' for the full manual.";
+                output += "\nType 'help [command]' to see syntax for a specific command (this will load it if not already loaded).";
+                output += "\nType 'man [command]' for the full manual.";
+                return { success: true, output };
+
             } else {
                 const cmdName = args[0].toLowerCase();
-                const commandData = commands[cmdName];
+                // NEW: Dynamically load the command before trying to get its details.
+                const isLoaded = await CommandExecutor._ensureCommandLoaded(cmdName);
+
+                if (!isLoaded) {
+                    return {
+                        success: false,
+                        error: `help: command not found: ${cmdName}`,
+                    };
+                }
+
+                const commandData = CommandRegistry.getDefinitions()[cmdName];
+                let output = "";
 
                 if (commandData?.helpText) {
                     const helpLines = commandData.helpText.split('\n');
@@ -62,16 +72,14 @@
                     }
                     output += `\n\nFor more details, run 'man ${cmdName}'`;
                 } else {
+                    // This case is now a fallback, as !isLoaded should catch it first.
                     return {
                         success: false,
                         error: `help: command not found: ${args[0]}`,
                     };
                 }
+                return { success: true, output: output };
             }
-            return {
-                success: true,
-                output: output,
-            };
         },
     };
 
