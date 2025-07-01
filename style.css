@@ -768,7 +768,7 @@ body {
 #chidi-console-panel {
   width: 95%;
   height: 95%;
-  max-width: 1000px;
+  max-width: 1200px;
   background-color: var(--color-background-medium);
   border: var(--border-width-thick) solid var(--color-border-secondary);
   border-radius: var(--border-radius-md);
@@ -783,18 +783,28 @@ body {
 }
 
 .chidi-console-header {
-  background-color: var(--color-accent-green);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+  flex-wrap: nowrap;
+  padding-bottom: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
+  background-color: transparent;
+  border-bottom: 1px solid var(--color-border-secondary);
 }
 
 #chidi-mainTitle {
-  font-size: var(--font-size-xl);
-  color: var(--color-background-darkest);
-  text-align: center;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
+  color: var(--color-info);
+  font-size: var(--font-size-xl);
 }
 
 #chidi-markdownDisplay, .chidi-ask-container {
@@ -840,7 +850,18 @@ body {
 .chidi-btn:disabled { background-color: #222; color: #555; border-color: #444; cursor: not-allowed; }
 .chidi-exit-btn { background-color: #3f1212; color: #fca5a5; border-color: var(--color-error); }
 .chidi-exit-btn:hover:not(:disabled) { background-color: #5b2121; }
-.chidi-select { max-width: 300px; text-overflow: ellipsis; appearance: none; -webkit-appearance: none; text-align: center; }
+
+.chidi-select {
+  max-width: 300px;
+  min-width: 0;
+  flex-shrink: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: center;
+}
 
 .chidi-status-readout { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--color-border-primary); padding-top: 0.5rem; margin-top: 0.5rem; font-size: 1rem; color: #888; }
 .chidi-status-message { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -56,9 +56,9 @@ const ChidiApp = {
         this.updateUI();
 
         if (callbacks.isNewSession) {
-            this.showMessage("New session started. AI interaction history is cleared.");
+            this.showMessage("New session started. AI interaction history is cleared.", true);
         } else {
-            this.showMessage("Chidi.md initialized. " + files.length + " files loaded.");
+            this.showMessage("Chidi.md initialized. " + files.length + " files loaded.", true);
         }
     },
 
@@ -161,20 +161,6 @@ const ChidiApp = {
             this.elements.mainTitle.textContent = "chidi.md";
             this.elements.markdownDisplay.innerHTML = `<p class="chidi-placeholder-text">No files loaded.</p>`;
         }
-
-        this._adjustTitleFontSize();
-    },
-
-    _adjustTitleFontSize() {
-        const titleEl = this.elements.mainTitle;
-        if (!titleEl) return;
-        titleEl.style.fontSize = '1.5rem';
-        const minFontSize = 0.8;
-        let currentFontSize = 1.5;
-        while (titleEl.scrollWidth > titleEl.offsetWidth + 1 && currentFontSize > minFontSize) {
-            currentFontSize -= 0.05;
-            titleEl.style.fontSize = `${currentFontSize}rem`;
-        }
     },
 
     _populateFileDropdown() {
@@ -185,7 +171,11 @@ const ChidiApp = {
             return;
         }
         this.state.loadedFiles.forEach((file, index) => {
-            selector.appendChild(Utils.createElement('option', { value: index, textContent: file.name }));
+            selector.appendChild(Utils.createElement('option', {
+                value: index,
+                textContent: file.name,
+                title: file.name // Add title attribute for hover tooltip
+            }));
         });
     },
 
@@ -197,7 +187,7 @@ const ChidiApp = {
         this.elements.verboseToggleBtn.addEventListener('click', () => {
             this.state.isVerbose = !this.state.isVerbose;
             this.elements.verboseToggleBtn.textContent = this.state.isVerbose ? 'Log: On' : 'Log: Off';
-            this.showMessage(`Verbose logging ${this.state.isVerbose ? 'enabled' : 'disabled'}.`);
+            this.showMessage(`Verbose logging ${this.state.isVerbose ? 'enabled' : 'disabled'}.`, true);
         });
 
         document.addEventListener('keydown', (e) => {
@@ -274,7 +264,7 @@ const ChidiApp = {
         this.elements.exportBtn.disabled = true;
         this.elements.fileSelector.disabled = true;
 
-        this.showMessage("Ask a question about all loaded files.");
+        this.showMessage("Ask a question about all loaded files.", true);
     },
 
     _exitQuestionMode() {
@@ -288,7 +278,7 @@ const ChidiApp = {
 
         this.updateUI();
 
-        this.showMessage("Question mode cancelled.");
+        this.showMessage("Question mode cancelled.", true);
     },
 
     async _submitQuestion() {
@@ -297,9 +287,7 @@ const ChidiApp = {
 
         this._exitQuestionMode();
         this.toggleLoader(true);
-        if (this.state.isVerbose) {
-            this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
-        }
+        this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
 
         try {
             const questionLower = userQuestion.toLowerCase();
@@ -314,7 +302,7 @@ const ChidiApp = {
 
             if (keywords.length === 0 && bigrams.length === 0) {
                 this.toggleLoader(false);
-                this.showMessage("Your question is too generic. Please be more specific.");
+                this.showMessage("Your question is too generic. Please be more specific.", true);
                 this.appendAiOutput("Refine Your Question", "Please ask a more specific question so I can find relevant documents for you.");
                 return;
             }
@@ -371,11 +359,7 @@ const ChidiApp = {
                 }
             });
 
-            if (this.state.isVerbose) {
-                this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
-            } else {
-                this.showMessage("Asking Gemini...");
-            }
+            this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
 
             let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question. Prioritize information from the first document if it is relevant, but use all provided documents to form your answer.\n\n";
             relevantFiles.forEach(file => {
@@ -400,7 +384,7 @@ const ChidiApp = {
             this.appendAiOutput(`Answer for "${userQuestion}" (based on: ${fileNames})`, finalAnswer || "Could not generate a final answer based on the provided documents.");
 
         } catch (e) {
-            this.showMessage(`An unexpected error occurred: ${e.message}`);
+            this.showMessage(`An unexpected error occurred: ${e.message}`, true);
             this.appendAiOutput("Error", `An unexpected error occurred during processing: ${e.message}`);
         } finally {
             this.toggleLoader(false);
@@ -422,9 +406,11 @@ const ChidiApp = {
         return this.state.loadedFiles[this.state.currentIndex];
     },
 
-    showMessage(msg) {
-        if (this.elements.messageBox) {
-            this.elements.messageBox.textContent = `֎ ${msg}`;
+    showMessage(msg, forceShow = false) {
+        if (this.state.isVerbose || forceShow) {
+            if (this.elements.messageBox) {
+                this.elements.messageBox.textContent = `֎ ${msg}`;
+            }
         }
     },
 
@@ -437,7 +423,7 @@ const ChidiApp = {
             behavior: 'smooth',
             block: 'start'
         });
-        this.showMessage(`AI Response received for "${title}".`);
+        this.showMessage(`AI Response received for "${title}".`, true);
     },
 
     toggleLoader(show) {
@@ -450,7 +436,7 @@ const ChidiApp = {
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
         if (!apiKey) {
             const errorMsg = "API key not found. Please exit and run `chidi` again to set it.";
-            this.showMessage(`Error: ${errorMsg}`);
+            this.showMessage(`Error: ${errorMsg}`, true);
             this.appendAiOutput("API Error", errorMsg);
             return "";
         }
@@ -481,7 +467,7 @@ const ChidiApp = {
                     StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
                     errorMsg = "Invalid API key. It has been removed. Please exit and run `chidi` again to enter a new one.";
                 }
-                this.showMessage(`Error: ${errorMsg}`);
+                this.showMessage(`Error: ${errorMsg}`, true);
                 this.appendAiOutput("API Error", `Failed to get a response. Details: ${errorMsg}`);
                 return "";
             }
@@ -495,7 +481,7 @@ const ChidiApp = {
                     const blockReason = candidate.finishReason;
                     const safetyRatings = candidate.safetyRatings?.map(r => `${r.category}: ${r.probability}`).join(', ') || 'No details';
                     const errorMsg = `Request was blocked. Reason: ${blockReason}. Details: [${safetyRatings}]`;
-                    this.showMessage(`Error: ${errorMsg}`);
+                    this.showMessage(`Error: ${errorMsg}`, true);
                     this.appendAiOutput("API Error", errorMsg);
                     return "";
                 }
@@ -503,7 +489,7 @@ const ChidiApp = {
                 if (candidate.content && candidate.content.parts) {
                     const fullText = candidate.content.parts.map(part => part.text || "").join("");
                     if (fullText) {
-                        this.showMessage("Response received from Gemini.");
+                        this.showMessage("Response received from Gemini.", true);
                         return fullText;
                     }
                 }
@@ -511,7 +497,7 @@ const ChidiApp = {
 
             if (result.promptFeedback?.blockReason) {
                 const errorMsg = `Request was blocked. Reason: ${result.promptFeedback.blockReason}`;
-                this.showMessage(`Error: ${errorMsg}`);
+                this.showMessage(`Error: ${errorMsg}`, true);
                 this.appendAiOutput("API Error", errorMsg);
                 return "";
             }
@@ -521,7 +507,7 @@ const ChidiApp = {
 
         } catch (networkError) {
             this.toggleLoader(false);
-            this.showMessage(`Error: ${networkError.message}`);
+            this.showMessage(`Error: ${networkError.message}`, true);
             this.appendAiOutput("Network Error", networkError.message);
             return "";
         }
@@ -562,7 +548,7 @@ const ChidiApp = {
 
     async _handleSaveSession() {
         if (!this.state.isModalOpen || this.state.loadedFiles.length === 0) {
-            this.showMessage("Error: No session to save.");
+            this.showMessage("Error: No session to save.", true);
             return;
         }
 
@@ -581,13 +567,13 @@ const ChidiApp = {
         });
 
         if (!filename) {
-            this.showMessage("Save cancelled.");
+            this.showMessage("Save cancelled.", true);
             return;
         }
 
         const htmlContent = this._packageSessionAsHTML();
         if (!htmlContent) {
-            this.showMessage("Error: Could not package session for saving.");
+            this.showMessage("Error: Could not package session for saving.", true);
             return;
         }
 
@@ -597,7 +583,7 @@ const ChidiApp = {
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
 
             if (!primaryGroup) {
-                this.showMessage("Critical Error: Cannot determine primary group. Save failed.");
+                this.showMessage("Critical Error: Cannot determine primary group. Save failed.", true);
                 return;
             }
 
@@ -608,25 +594,25 @@ const ChidiApp = {
             );
 
             if (!saveResult.success) {
-                this.showMessage(`Error: ${saveResult.error}`);
+                this.showMessage(`Error: ${saveResult.error}`, true);
                 return;
             }
 
             if (!(await FileSystemManager.save())) {
-                this.showMessage("Critical Error: Failed to persist file system changes.");
+                this.showMessage("Critical Error: Failed to persist file system changes.", true);
                 return;
             }
 
-            this.showMessage(`Session saved to '${filename}'.`);
+            this.showMessage(`Session saved to '${filename}'.`, true);
         } catch (e) {
-            this.showMessage(`An unexpected error occurred during save: ${e.message}`);
+            this.showMessage(`An unexpected error occurred during save: ${e.message}`, true);
         }
     },
 
     _handleExport() {
         const currentFile = this.getCurrentFile();
         if (!currentFile) {
-            this.showMessage("Error: No file to export.");
+            this.showMessage("Error: No file to export.", true);
             return;
         }
 
@@ -642,7 +628,7 @@ const ChidiApp = {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        this.showMessage(`Exported session for ${currentFile.name}.`);
+        this.showMessage(`Exported session for ${currentFile.name}.`, true);
     },
 
     /**
@@ -653,14 +639,17 @@ const ChidiApp = {
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
-                    <h1 id="chidi-mainTitle">chidi.md</h1>
                     <div class="chidi-header-controls">
                         <select id="chidi-file-selector" class="chidi-btn chidi-select"></select>
+                    </div>
+                    <h1 id="chidi-mainTitle">chidi.md</h1>
+                    <div class="chidi-header-controls">
                         <div class="chidi-control-group">
                             <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
                             <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
                             <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
                         </div>
+                        
                     </div>
                 </header>
 
