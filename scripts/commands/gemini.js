@@ -12,7 +12,7 @@
 
     // --- STATE & CONFIGURATION ---
     let geminiConversationHistory = [];
-    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd'];
+    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf'];
 
     /**
      * @private

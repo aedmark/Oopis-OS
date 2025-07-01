@@ -108,10 +108,10 @@
         coreLogic: async (context) => {
             const { args } = context;
             const commandName = args[0];
-            const allCommands = CommandExecutor.getCommands(); // Get all registered command definitions.
-            const commandData = allCommands[commandName]; // Retrieve data for the requested command.
+            // CORRECTED: Get definitions from the master CommandRegistry
+            const allCommands = CommandRegistry.getDefinitions();
+            const commandData = allCommands[commandName];
 
-            // Check if the command exists in the registry.
             if (!commandData) {
                 return {
                     success: false,
@@ -119,8 +119,12 @@
                 };
             }
 
-            // Format the manual page content using the helper function.
-            const manPage = formatManPage(commandName, commandData);
+            // The formatManPage function correctly uses the structure from the registry
+            const manPage = formatManPage(commandName, {
+                handler: commandData, // Pass the definition block
+                description: commandData.description,
+                helpText: commandData.helpText
+            });
 
             return {
                 success: true,

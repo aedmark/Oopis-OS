@@ -33,45 +33,35 @@
          */
         coreLogic: async (context) => {
             const { args } = context;
-            const commands = CommandExecutor.getCommands(); // Retrieve all registered commands.
+            // CORRECTED: Get definitions from the master CommandRegistry
+            const commands = CommandRegistry.getDefinitions();
             let output = "";
 
             if (args.length === 0) {
-                // If no arguments, list all available commands.
                 output += "OopisOS Help:\n\nAvailable commands:\n";
+                // Sort by the command name (the key)
                 Object.keys(commands)
-                    .sort() // Sort command names alphabetically.
+                    .sort()
                     .forEach((cmd) => {
-                        // Format each command with its description.
                         output += `  ${cmd.padEnd(15)} ${
                             commands[cmd].description || ""
                         }\n`;
                     });
                 output += "\nType 'help [command]' for syntax, or 'man [command]' for the full manual.";
             } else {
-                // If an argument is provided, display help for that specific command.
-                const cmdName = args[0].toLowerCase(); // Convert to lowercase for lookup.
+                const cmdName = args[0].toLowerCase();
                 const commandData = commands[cmdName];
 
                 if (commandData?.helpText) {
-                    // If helpText is available, extract the usage line.
                     const helpLines = commandData.helpText.split('\n');
                     const usageLine = helpLines.find(line => line.trim().toLowerCase().startsWith('usage:'));
-
                     if (usageLine) {
-                        // If a usage line is found, use it as the primary output.
                         output = usageLine.trim();
                     } else {
-                        // Fallback if no explicit 'Usage:' line, use description.
                         output = `Synopsis for '${cmdName}':\n  ${commandData.description || 'No usage information available.'}`;
                     }
                     output += `\n\nFor more details, run 'man ${cmdName}'`;
-
-                } else if (commandData) {
-                    // If command exists but no specific helpText, provide description.
-                    output = `No usage information for '${cmdName}'.\nDescription: ${commandData.description || "N/A"}\n\nFor more details, run 'man ${cmdName}'`;
                 } else {
-                    // If command is not found.
                     return {
                         success: false,
                         error: `help: command not found: ${args[0]}`,
