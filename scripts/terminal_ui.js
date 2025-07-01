@@ -849,7 +849,7 @@ const AppLayerManager = (() => {
         appLayer.classList.add('hidden');
         if (currentAppContainer && appLayer.contains(currentAppContainer)) {
             // Instead of removing, just hide it so it can be re-shown
-            currentAppContainer.classList.add('hidden');
+            currentAppContainer.remove();
         }
 
         currentAppContainer = null;

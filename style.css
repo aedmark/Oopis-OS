@@ -238,6 +238,17 @@ body {
   text-align: center;
 }
 
+.modal-dialog--wide {
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+}
+
+.modal-dialog--wide .paint-modal-body {
+  max-height: calc(80vh - 150px);
+  overflow-y: auto;
+}
+
 .modal-dialog p {
   margin-bottom: var(--spacing-md);
   font-size: var(--font-size-lg);

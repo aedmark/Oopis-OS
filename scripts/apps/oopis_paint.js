@@ -216,7 +216,7 @@ const PaintUI = (() => {
         }
 
         // Use the global modal structure
-        const modalDialog = Utils.createElement('div', { className: 'modal-dialog' },
+        const modalDialog = Utils.createElement('div', { className: 'modal-dialog modal-dialog--wide' },
             Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Character' }),
             Utils.createElement('div', { className: 'paint-modal-body' }, charGrid)
         );
@@ -254,7 +254,7 @@ const PaintUI = (() => {
         });
         const hexInputContainer = Utils.createElement('div', { className: 'paint-custom-hex-container' }, hexInput, hexSetBtn);
 
-        const modalDialog = Utils.createElement('div', { className: 'modal-dialog' },
+        const modalDialog = Utils.createElement('div', { className: 'modal-dialog modal-dialog--wide' },
             Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Color' }),
             Utils.createElement('div', { className: 'paint-modal-body' }, colorGrid, hexInputContainer)
         );
@@ -877,56 +877,55 @@ const PaintManager = (() => {
         paintContainerElement = PaintUI.buildLayout(paintEventCallbacks);
         AppLayerManager.show(paintContainerElement);
 
+        setTimeout(() => {
+            if (fileContent) {
+                // CASE 1: LOADING AN EXISTING FILE
+                try {
+                    const parsedData = JSON.parse(fileContent);
+                    if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
+                        canvasData = parsedData.cells;
+                        // LOCK canvas dimensions from file metadata
+                        currentCanvasWidth = parsedData.width;
+                        currentCanvasHeight = parsedData.height;
+                    } else {
+                        throw new Error("Invalid .oopic file format.");
+                    }
+                } catch (e) {
+                    void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                    // Fallback to creating a new canvas if the file is corrupt
+                    _initializeNewCanvasDimensions();
+                }
+            } else {
+                // CASE 2: CREATING A NEW FILE
+                // The logic from the old _handleResize function is now called ONCE.
+                _initializeNewCanvasDimensions();
+            }
+
+            undoStack = [JSON.parse(JSON.stringify(canvasData))];
+            PaintUI.renderCanvas(canvasData, zoomLevel);
+            PaintUI.toggleGrid(isGridVisible);
+            _updateToolbarState();
+            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize, zoomLevel: zoomLevel });
+        }, 0);
+
+
         _boundGlobalClickListener = (e) => {
-            const dropdown = paintContainerElement.querySelector('.paint-dropdown-content');
-            const shapeContainer = paintContainerElement.querySelector('.paint-tool-dropdown');
-            if (dropdown && shapeContainer && !shapeContainer.contains(e.target)) {
-                dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+            if (paintContainerElement) {
+                const dropdown = paintContainerElement.querySelector('.paint-dropdown-content');
+                const shapeContainer = paintContainerElement.querySelector('.paint-tool-dropdown');
+                if (dropdown && shapeContainer && !shapeContainer.contains(e.target)) {
+                    dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+                }
             }
         };
         document.addEventListener('click', _boundGlobalClickListener);
         document.addEventListener('keydown', handleKeyDown);
 
         currentFilePath = filePath;
-
-        if (fileContent) {
-            // CASE 1: LOADING AN EXISTING FILE
-            try {
-                const parsedData = JSON.parse(fileContent);
-                if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
-                    canvasData = parsedData.cells;
-                    // LOCK canvas dimensions from file metadata
-                    currentCanvasWidth = parsedData.width;
-                    currentCanvasHeight = parsedData.height;
-                } else {
-                    throw new Error("Invalid .oopic file format.");
-                }
-            } catch (e) {
-                void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                // Fallback to creating a new canvas if the file is corrupt
-                _initializeNewCanvasDimensions();
-            }
-        } else {
-            // CASE 2: CREATING A NEW FILE
-            // The logic from the old _handleResize function is now called ONCE.
-            _initializeNewCanvasDimensions();
-        }
-
-        undoStack = [JSON.parse(JSON.stringify(canvasData))];
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        PaintUI.toggleGrid(isGridVisible);
-        _updateToolbarState();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     async function exit() {
         if (!isActiveState) return;
-
-        document.removeEventListener('keydown', handleKeyDown);
-        if (_boundGlobalClickListener) {
-            document.removeEventListener('click', _boundGlobalClickListener);
-            _boundGlobalClickListener = null;
-        }
 
         if (isDirty) {
             const confirmed = await new Promise(resolve => {
@@ -940,10 +939,13 @@ const PaintManager = (() => {
                 });
             });
             if (!confirmed) {
-                document.addEventListener('keydown', handleKeyDown);
-                document.addEventListener('click', _boundGlobalClickListener);
                 return;
             }
+        }
+
+        document.removeEventListener('keydown', handleKeyDown);
+        if (_boundGlobalClickListener) {
+            document.removeEventListener('click', _boundGlobalClickListener);
         }
 
         AppLayerManager.hide();
