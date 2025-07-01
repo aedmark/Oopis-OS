@@ -65,7 +65,7 @@ const EditorUtils = (() => {
         .markdown-preview code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937; }
         .markdown-preview pre { background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px; }
         .markdown-preview pre > code { display: block; padding: 0; background-color: transparent; color: inherit; }
-        .markdown-preview ul, .markdown-preview ol { margin-left: 20px; }
+        .markdown-preview ul, .markdown-preview ol { padding-left: 2em; }
         .markdown-preview blockquote { border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280; }
         .markdown-preview a { color: #0ea5e9; text-decoration: underline; }
         ${commonSpacingStyles}
@@ -536,7 +536,7 @@ const EditorManager = (() => {
           break;
         case 'ul':
           const ulLines = selectedText.split('\n');
-          manipulatedText = ulLines.map(line => `* ${line}`).join('\n');
+          manipulatedText = ulLines.map(line => `- ${line}`).join('\n');
           newStart = start;
           newEnd = start + manipulatedText.length;
           break;
