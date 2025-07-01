@@ -348,7 +348,12 @@ const PaintUI = (() => {
 
         const newFontSize = PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX * (zoomLevel / 100);
         elements.canvas.style.fontSize = `${newFontSize}px`;
-        cellDimensions = Utils.getCharacterDimensions(elements.canvas.style.font);
+
+        // CORRECTED LOGIC: Get the *actual* computed font style after setting the size.
+        const computedFontStyle = window.getComputedStyle(elements.canvas).font;
+        cellDimensions = Utils.getCharacterDimensions(computedFontStyle);
+
+        // Now, this line will work correctly with accurate dimensions.
         elements.canvas.style.backgroundSize = `${cellDimensions.width}px ${cellDimensions.height}px`;
 
         elements.canvas.innerHTML = '';
