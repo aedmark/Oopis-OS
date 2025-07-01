@@ -1,17 +1,17 @@
 # OopisOS v3.2 Architectural Documentation
 
-- [[#1. Design Philosophy & Core Principles|1. Design Philosophy & Core Principles]]
-- [[#2. System Architecture|2. System Architecture]]
-  - [[#2. System Architecture#Layer 1: The System Bootstrap & Core Plane|Layer 1: The System Bootstrap & Core Plane]]
-  - [[#2. System Architecture#Layer 2: The Command Lifecycle & Execution Engine|Layer 2: The Command Lifecycle & Execution Engine]]
-  - [[#2. System Architecture#Layer 3: The State & Persistence Core|Layer 3: The State & Persistence Core]]
-  - [[#2. System Architecture#Layer 4: The Human-Interface Bridge|Layer 4: The Human-Interface Bridge]]
-- [[#3. Core Component Deep Dive|3. Core Component Deep Dive]]
-  - [[#3. Core Component Deep Dive#The Command System: Secure by Process|The Command System: Secure by Process]]
-  - [[#3. Core Component Deep Dive#The File System: A Bastion of State|The File System: A Bastion of State]]
-  - [[#3. Core Component Deep Dive#User & Credential Management|User & Credential Management]]
-  - [[#3. Core Component Deep Dive#Full-Screen Applications: Contained Ecosystems|Full-Screen Applications: Contained Ecosystems]]
-- [[#4. Extending the System: Adding New Commands|4. Extending the System: Adding New Commands]]
+- [1. Design Philosophy & Core Principles](#1-design-philosophy--core-principles)
+- [2. System Architecture](#2-system-architecture)
+  - [Layer 1: The System Bootstrap & Core Plane](#2-system-architecture-layer-1-the-system-bootstrap--core-plane)
+  - [Layer 2: The Command Lifecycle & Execution Engine](#2-system-architecture-layer-2-the-command-lifecycle--execution-engine)
+  - [Layer 3: The State & Persistence Core](#2-system-architecture-layer-3-the-state--persistence-core)
+  - [Layer 4: The Human-Interface Bridge](#2-system-architecture-layer-4-the-human-interface-bridge)
+- [3. Core Component Deep Dive](#3-core-component-deep-dive)
+  - [The Command System: Secure by Process](#3-core-component-deep-dive-the-command-system-secure-by-process)
+  - [The File System: A Bastion of State](#3-core-component-deep-dive-the-file-system-a-bastion-of-state)
+  - [User & Credential Management](#3-core-component-deep-dive-user--credential-management)
+  - [Full-Screen Applications: Contained Ecosystems](#3-core-component-deep-dive-full-screen-applications-contained-ecosystems)
+- [4. Extending the System: Adding New Commands](#4-extending-the-system-adding-new-commands)
 
 ## 1. Design Philosophy & Core Principles
 

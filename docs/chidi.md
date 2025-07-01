@@ -1,11 +1,11 @@
 # OopisOS and Chidi: A Sandbox, Tool-Using AI Agent With Memory
 
-- [[#1. Executive Summary|1. Executive Summary]]
-- [[#**2. Core Functionality & User Experience**|**2. Core Functionality & User Experience**]]
-- [[#**3. Technical & Architectural Deep-Dive**|**3. Technical & Architectural Deep-Dive**]]
-- [[#**4. Synergy with the OopisOS Ecosystem**|**4. Synergy with the OopisOS Ecosystem**]]
-- [[#**5. Strengths & Opportunities**|**5. Strengths & Opportunities**]]
-- [[#**6. Conclusion**|**6. Conclusion**]]
+- [1. Executive Summary](#1-executive-summary)
+- [2. Core Functionality & User Experience](#2-core-functionality--user-experience)
+- [3. Technical & Architectural Deep-Dive](#3-technical--architectural-deep-dive)
+- [4. Synergy with the OopisOS Ecosystem](#4-synergy-with-the-oopisos-ecosystem)
+- [5. Strengths & Opportunities](#5-strengths--opportunities)
+- [6. Conclusion](#6-conclusion)
 
 #### 1. Executive Summary
 

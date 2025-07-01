@@ -1,13 +1,13 @@
 ### **El Código del Taco: A Layered Architectural Model for Radically Self-Reliant Client-Side Systems**
 
-- [[#**El Código del Taco: A Layered Architectural Model for Radically Self-Reliant Client-Side Systems**|**El Código del Taco: A Layered Architectural Model for Radically Self-Reliant Client-Side Systems**]]
-- [[#1. Introduction|1. Introduction]]
-- [[#2. The "El Código del Taco" Architectural Model|2. The "El Código del Taco" Architectural Model]]
-	- [[#2. The "El Código del Taco" Architectural Model#2.1. Foundational Paradigm: The Shell|2.1. Foundational Paradigm: The Shell]]
-	- [[#2. The "El Código del Taco" Architectural Model#2.2. The Anatomy of the Application: The Seven Layers|2.2. The Anatomy of the Application: The Seven Layers]]
-- [[#3. The Development Lifecycle as an Assembly Process|3. The Development Lifecycle as an Assembly Process]]
-- [[#4. Analysis and Discussion|4. Analysis and Discussion]]
-- [[#5. Conclusion|5. Conclusion]]
+- [**El Código del Taco: A Layered Architectural Model for Radically Self-Reliant Client-Side Systems**](#el-código-del-taco-a-layered-architectural-model-for-radically-self-reliant-client-side-systems)
+- [1. Introduction](#1-introduction)
+- [2. The "El Código del Taco" Architectural Model](#2-the-el-código-del-taco-architectural-model)
+	- [2.1. Foundational Paradigm: The Shell](#2-the-el-código-del-taco-architectural-model-21-foundational-paradigm-the-shell)
+	- [2.2. The Anatomy of the Application: The Seven Layers](#2-the-el-código-del-taco-architectural-model-22-the-anatomy-of-the-application-the-seven-layers)
+- [3. The Development Lifecycle as an Assembly Process](#3-the-development-lifecycle-as-an-assembly-process)
+- [4. Analysis and Discussion](#4-analysis-and-discussion)
+- [5. Conclusion](#5-conclusion)
 
 **Andrew Edmark, Gemini** _Oopis Development Group_
 

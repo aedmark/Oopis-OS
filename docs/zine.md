@@ -3,27 +3,27 @@ A COMPUTERWORLD SPECIAL INVESTIGATION
 
 _An Exhaustive Deep-Dive by Chip Sterling, Senior Editor_
 
-- [[#Chapter 1: The Lay of the Land|Chapter 1: The Lay of the Land]]
-    - [[#Chapter 1: The Lay of the Land#The Sandbox Philosophy: A Secure and Isolated World|The Sandbox Philosophy: A Secure and Isolated World]]
-    - [[#Chapter 1: The Lay of the Land#The Persistence Layer: A World with Memory|The Persistence Layer: A World with Memory]]
-    - [[#Chapter 1: The Lay of the Land#The Gateway: Your Command Line|The Gateway: Your Command Line]]
-- [[#Chapter 2: The Core Lexicon - Navigating Your World|Chapter 2: The Core Lexicon - Navigating Your World]]
-    - [[#Chapter 2: The Core Lexicon - Navigating Your World#`pwd` — Your Sense of Place|`pwd` — Your Sense of Place]]
-    - [[#Chapter 2: The Core Lexicon - Navigating Your World#`cd` — Your Method of Transport|`cd` — Your Method of Transport]]
-    - [[#Chapter 2: The Core Lexicon - Navigating Your World#`ls` — Your Eyes on the World|`ls` — Your Eyes on the World]]
-- [[#Chapter 3: The Spark of Creation|Chapter 3: The Spark of Creation]]
-    - [[#Chapter 3: The Spark of Creation#Command-Line Creation and Analysis|Command-Line Creation and Analysis]]
-    - [[#Chapter 3: The Spark of Creation#The Crown Jewel: The `edit` Command|The Crown Jewel: The `edit` Command]]
-    - [[#Chapter 3: The Spark of Creation#Command Reference|Command Reference]]
-- [[#Chapter 5: The System and the Self|Chapter 5: The System and the Self]]
-    - [[#Chapter 5: The System and the Self#The Social Fabric: User and Permission Management|The Social Fabric: User and Permission Management]]
-    - [[#Chapter 5: The System and the Self#An AI-Augmented Self: `gemini` and `chidi`|An AI-Augmented Self: `gemini` and `chidi`]]
-    - [[#Chapter 5: The System and the Self#A Bridge to the World: Networking|A Bridge to the World: Networking]]
-    - [[#Chapter 5: The System and the Self#The Creative Self: Digital Diversions|The Creative Self: Digital Diversions]]
-- [[#Getting Started: Your First Steps|Getting Started: Your First Steps]]
-    - [[#Getting Started: Your First Steps#Inflate Your World|Inflate Your World]]
-    - [[#Getting Started: Your First Steps#Explore Your New World|Explore Your New World]]
-- [[#Epilogue: The Soul of the New Machine|Epilogue: The Soul of the New Machine]]
+- [Chapter 1: The Lay of the Land](#chapter-1-the-lay-of-the-land)
+  - [The Sandbox Philosophy: A Secure and Isolated World](#chapter-1-the-lay-of-the-land-the-sandbox-philosophy-a-secure-and-isolated-world)
+  - [The Persistence Layer: A World with Memory](#chapter-1-the-lay-of-the-land-the-persistence-layer-a-world-with-memory)
+  - [The Gateway: Your Command Line](#chapter-1-the-lay-of-the-land-the-gateway-your-command-line)
+- [Chapter 2: The Core Lexicon - Navigating Your World](#chapter-2-the-core-lexicon---navigating-your-world)
+  - [`pwd` — Your Sense of Place](#chapter-2-the-core-lexicon---navigating-your-world-pwd--your-sense-of-place)
+  - [`cd` — Your Method of Transport](#chapter-2-the-core-lexicon---navigating-your-world-cd--your-method-of-transport)
+  - [`ls` — Your Eyes on the World](#chapter-2-the-core-lexicon---navigating-your-world-ls--your-eyes-on-the-world)
+- [Chapter 3: The Spark of Creation](#chapter-3-the-spark-of-creation)
+  - [Command-Line Creation and Analysis](#chapter-3-the-spark-of-creation-command-line-creation-and-analysis)
+  - [The Crown Jewel: The `edit` Command](#chapter-3-the-spark-of-creation-the-crown-jewel-the-edit-command)
+  - [Command Reference](#chapter-3-the-spark-of-creation-command-reference)
+- [Chapter 5: The System and the Self](#chapter-5-the-system-and-the-self)
+  - [The Social Fabric: User and Permission Management](#chapter-5-the-system-and-the-self-the-social-fabric-user-and-permission-management)
+  - [An AI-Augmented Self: `gemini` and `chidi`](#chapter-5-the-system-and-the-self-an-ai-augmented-self-gemini-and-chidi)
+  - [A Bridge to the World: Networking](#chapter-5-the-system-and-the-self-a-bridge-to-the-world-networking)
+  - [The Creative Self: Digital Diversions](#chapter-5-the-system-and-the-self-the-creative-self-digital-diversions)
+- [Getting Started: Your First Steps](#getting-started-your-first-steps)
+  - [Inflate Your World](#getting-started-your-first-steps-inflate-your-world)
+  - [Explore Your New World](#getting-started-your-first-steps-explore-your-new-world)
+- [Epilogue: The Soul of the New Machine](#epilogue-the-soul-of-the-new-machine)
 
 **Editor's Note:** When we first encountered OopisOS, we called it a "remarkable anomaly." With the release of version 3.2, the human-AI duo of Andrew Edmark and Gemini have moved beyond anomaly and into artistry. They haven't just added features; they've polished a gem into a crown jewel, creating a simulated OS that feels more robust, more intuitive, and more alive than ever. This isn't just an update; it's a statement about what a dedicated, focused development cycle can produce. Once again, we were granted unparalleled access. This is your guide to the new state of the art.
 

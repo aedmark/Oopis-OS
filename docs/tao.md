@@ -7,56 +7,47 @@
 ---
 # The Tao of Programming
 
-- [[#BOOK 1|BOOK 1]]
-- [[#_The Silent Void_|The Silent Void]]
-	- [[#BOOK 1#1.1|1.1]]
-	- [[#BOOK 1#1.2|1.2]]
-	- [[#BOOK 1#1.3|1.3]]
-	- [[#BOOK 1#1.4|1.4]]
-- [[#_The Silent Void_#BOOK 2|BOOK 2]]
-- [[#_The Ancient Masters_|The Ancient Masters]]
-	- [[#BOOK 2#2.1|2.1]]
-	- [[#BOOK 2#2.2|2.2]]
-	- [[#BOOK 2#2.3|2.3]]
-	- [[#BOOK 2#2.4|2.4]]
-- [[#_The Ancient Masters_#BOOK 3|BOOK 3]]
-- [[#_Design_|Design]]
-	- [[#BOOK 3#3.1|3.1]]
-	- [[#BOOK 3#3.2|3.2]]
-	- [[#BOOK 3#3.3|3.3]]
-	- [[#BOOK 3#3.4|3.4]]
-- [[#_Design_#BOOK 4|BOOK 4]]
-- [[#_Coding_|Coding]]
-	- [[#BOOK 4#4.1|4.1]]
-	- [[#BOOK 4#4.2|4.2]]
-	- [[#BOOK 4#4.3|4.3]]
-	- [[#BOOK 4#4.4|4.4]]
-- [[#_Coding_#BOOK 5|BOOK 5]]
-- [[#_Maintenance_|Maintenance]]
-	- [[#BOOK 5#5.1|5.1]]
-	- [[#BOOK 5#5.2|5.2]]
-	- [[#BOOK 5#5.3|5.3]]
-	- [[#BOOK 5#5.4|5.4]]
-- [[#_Maintenance_#BOOK 6|BOOK 6]]
-- [[#_Management_|Management]]
-	- [[#BOOK 6#6.1|6.1]]
-	- [[#BOOK 6#6.2|6.2]]
-	- [[#BOOK 6#6.3|6.3]]
-	- [[#BOOK 6#6.4|6.4]]
-- [[#_Management_#BOOK 7|BOOK 7]]
-- [[#_Corporate Wisdom_|Corporate Wisdom]]
-	- [[#BOOK 7#7.1|7.1]]
-	- [[#BOOK 7#7.2|7.2]]
-	- [[#BOOK 7#7.3|7.3]]
-	- [[#BOOK 7#7.4|7.4]]
-- [[#_Corporate Wisdom_#BOOK 8|BOOK 8]]
-- [[#_Hardware and Software_|Hardware and Software]]
-	- [[#BOOK 8#8.1|8.1]]
-	- [[#BOOK 8#8.2|8.2]]
-	- [[#BOOK 8#8.3|8.3]]
-	- [[#BOOK 8#8.4|8.4]]
-- [[#_Hardware and Software_#BOOK 9|BOOK 9]]
-- [[#_Epilogue_|Epilogue]]
+- [BOOK 1: *The Silent Void*](#book-1-the-silent-void)
+	- [1.1](#book-1-the-silent-void-11)
+	- [1.2](#book-1-the-silent-void-12)
+	- [1.3](#book-1-the-silent-void-13)
+	- [1.4](#book-1-the-silent-void-14)
+- [BOOK 2: *The Ancient Masters*](#book-2-the-ancient-masters)
+	- [2.1](#book-2-the-ancient-masters-21)
+	- [2.2](#book-2-the-ancient-masters-22)
+	- [2.3](#book-2-the-ancient-masters-23)
+	- [2.4](#book-2-the-ancient-masters-24)
+- [BOOK 3: *Design*](#book-3-design)
+	- [3.1](#book-3-design-31)
+	- [3.2](#book-3-design-32)
+	- [3.3](#book-3-design-33)
+	- [3.4](#book-3-design-34)
+- [BOOK 4: *Coding*](#book-4-coding)
+	- [4.1](#book-4-coding-41)
+	- [4.2](#book-4-coding-42)
+	- [4.3](#book-4-coding-43)
+	- [4.4](#book-4-coding-44)
+- [BOOK 5: *Maintenance*](#book-5-maintenance)
+	- [5.1](#book-5-maintenance-51)
+	- [5.2](#book-5-maintenance-52)
+	- [5.3](#book-5-maintenance-53)
+	- [5.4](#book-5-maintenance-54)
+- [BOOK 6: *Management*](#book-6-management)
+	- [6.1](#book-6-management-61)
+	- [6.2](#book-6-management-62)
+	- [6.3](#book-6-management-63)
+	- [6.4](#book-6-management-64)
+- [BOOK 7: *Corporate Wisdom*](#book-7-corporate-wisdom)
+	- [7.1](#book-7-corporate-wisdom-71)
+	- [7.2](#book-7-corporate-wisdom-72)
+	- [7.3](#book-7-corporate-wisdom-73)
+	- [7.4](#book-7-corporate-wisdom-74)
+- [BOOK 8: *Hardware and Software*](#book-8-hardware-and-software)
+	- [8.1](#book-8-hardware-and-software-81)
+	- [8.2](#book-8-hardware-and-software-82)
+	- [8.3](#book-8-hardware-and-software-83)
+	- [8.4](#book-8-hardware-and-software-84)
+- [BOOK 9: *Epilogue*](#book-9-epilogue)
 
 ### BOOK 1
 

@@ -7,34 +7,34 @@ Guest@OopisOs:~$ echo "OopisOS is ready."
 OopisOS is ready.
 ```
 ## Table of Contents
-- [[#Table of Contents|Table of Contents]]
-- [[#Harder, Better, Faster, Stronger|Harder, Better, Faster, Stronger]]
-- [[#What is OopisOS?|What is OopisOS?]]
-- [[#Key Features at a Glance|Key Features at a Glance]]
-- [[#Essential Commands|Essential Commands]]
-- [[#Application Suite|Application Suite]]
-- [[#Application Suite#`explore [path]`|`explore [path]`]]
-- [[#Application Suite#`edit [file]`|`edit [file]`]]
-- [[#Application Suite#`paint [file.oopic]`|`paint [file.oopic]`]]
-- [[#Application Suite#`chidi [path]`|`chidi [path]`]]
-- [[#Application Suite#`adventure [file.json]`|`adventure [file.json]`]]
-- [[#Shell Customization: The `PS1` Variable|Shell Customization: The `PS1` Variable]]
-- [[#Privilege Escalation: `sudo` and `visudo`|Privilege Escalation: `sudo` and `visudo`]]
-- [[#`adventure [file.json]`#`sudo [command]`|`sudo [command]`]]
-- [[#`adventure [file.json]`#`visudo`|`visudo`]]
-- [[#File Archival: `zip` and `unzip`|File Archival: `zip` and `unzip`]]
-- [[#`adventure [file.json]`#`zip [archive.zip] [path_to_zip]`|`zip [archive.zip] [path_to_zip]`]]
-- [[#`adventure [file.json]`#`unzip [archive.zip] [destination_path]`|`unzip [archive.zip] [destination_path]`]]
-- [[#The Command Contract|The Command Contract]]
-- [[#On-Demand Command Loading|On-Demand Command Loading]]
-- [[#The World-Builder: `inflate.sh`|The World-Builder: `inflate.sh`]]
-- [[#The Gauntlet: `diag.sh`|The Gauntlet: `diag.sh`]]
-- [[#The Creators|The Creators]]
-- [[#The Social Contract (aka The Boring Legal Bit)|The Social Contract (aka The Boring Legal Bit)]]
-- [[#The Social Contract (aka The Boring Legal Bit)#Preamble|Preamble]]
-- [[#The Social Contract (aka The Boring Legal Bit)#Authorship and Contribution Acknowledgment|Authorship and Contribution Acknowledgment]]
-- [[#The Social Contract (aka The Boring Legal Bit)#License Grant|License Grant]]
-- [[#The Social Contract (aka The Boring Legal Bit)#Disclaimer of Warranty|Disclaimer of Warranty]]
+- [Table of Contents](#table-of-contents)
+- [Harder, Better, Faster, Stronger](#harder-better-faster-stronger)
+- [What is OopisOS?](#what-is-oopisos)
+- [Key Features at a Glance](#key-features-at-a-glance)
+- [Essential Commands](#essential-commands)
+- [Application Suite](#application-suite)
+  - [`explore [path]`](#application-suite-explore-path)
+  - [`edit [file]`](#application-suite-edit-file)
+  - [`paint [file.oopic]`](#application-suite-paint-fileoopic)
+  - [`chidi [path]`](#application-suite-chidi-path)
+  - [`adventure [file.json]`](#application-suite-adventure-filejson)
+- [Shell Customization: The `PS1` Variable](#shell-customization-the-ps1-variable)
+- [Privilege Escalation: `sudo` and `visudo`](#privilege-escalation-sudo-and-visudo)
+  - [`sudo [command]`](#privilege-escalation-sudo-and-visudo-sudo-command)
+  - [`visudo`](#privilege-escalation-sudo-and-visudo-visudo)
+- [File Archival: `zip` and `unzip`](#file-archival-zip-and-unzip)
+  - [`zip [archive.zip] [path_to_zip]`](#file-archival-zip-and-unzip-zip-archivezip-path_to_zip)
+  - [`unzip [archive.zip] [destination_path]`](#file-archival-zip-and-unzip-unzip-archivezip-destination_path)
+- [The Command Contract](#the-command-contract)
+- [On-Demand Command Loading](#on-demand-command-loading)
+- [The World-Builder: `inflate.sh`](#the-world-builder-inflatesh)
+- [The Gauntlet: `diag.sh`](#the-gauntlet-diagsh)
+- [The Creators](#the-creators)
+- [The Social Contract (aka The Boring Legal Bit)](#the-social-contract-aka-the-boring-legal-bit)
+  - [Preamble](#the-social-contract-aka-the-boring-legal-bit-preamble)
+  - [Authorship and Contribution Acknowledgment](#the-social-contract-aka-the-boring-legal-bit-authorship-and-contribution-acknowledgment)
+  - [License Grant](#the-social-contract-aka-the-boring-legal-bit-license-grant)
+  - [Disclaimer of Warranty](#the-social-contract-aka-the-boring-legal-bit-disclaimer-of-warranty)
 - 
 ## What is OopisOS?
 

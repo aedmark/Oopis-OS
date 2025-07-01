@@ -1,13 +1,13 @@
 # OopisOS Security Policy
 
-- [[#I. Philosophy|I. Philosophy]]
-- [[#II. Core Security Components|II. Core Security Components]]
-  - [[#II. Core Security Components#Authentication (`UserManager`)|Authentication (`UserManager`)]]
-  - [[#II. Core Security Components#Authorization (`FileSystemManager`)|Authorization (`FileSystemManager`)]]
-  - [[#II. Core Security Components#Privilege Escalation (`SudoManager`)|Privilege Escalation (`SudoManager`)]]
-- [[#III. Data Privacy & Persistence|III. Data Privacy & Persistence]]
-- [[#IV. Best Practices for Users|IV. Best Practices for Users]]
-- [[#V. Reporting a Vulnerability|V. Reporting a Vulnerability]]
+- [I. Philosophy](#i-philosophy)
+- [II. Core Security Components](#ii-core-security-components)
+  - [Authentication (`UserManager`)](#authentication-usermanager)
+  - [Authorization (`FileSystemManager`)](#authorization-filesystemmanager)
+  - [Privilege Escalation (`SudoManager`)](#privilege-escalation-sudomanager)
+- [III. Data Privacy & Persistence](#iii-data-privacy--persistence)
+- [IV. Best Practices for Users](#iv-best-practices-for-users)
+- [V. Reporting a Vulnerability](#v-reporting-a-vulnerability)
 
 ## I. Philosophy
 
