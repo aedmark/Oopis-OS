@@ -482,6 +482,25 @@ const Utils = (() => {
             return null;
         }
     }
+
+    /**
+     * Converts a string into a URL-friendly "slug".
+     * @param {string} text - The text to convert.
+     * @returns {string} The slugified text.
+     */
+    function slugify(text) {
+        if (typeof text !== 'string') return '';
+        // Prepend a static prefix to ensure the ID is always valid
+        const prefix = 'section-';
+        const slug = text
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '') // Remove non-alphanumeric, spaces, or hyphens
+            .trim()
+            .replace(/\s+/g, '-')    // Replace spaces with -
+            .replace(/-+/g, '-');    // Replace multiple - with single -
+        return prefix + slug;
+    }
+
     return {
         calculateSHA256,
         formatConsoleArgs,
@@ -494,7 +513,8 @@ const Utils = (() => {
         validateUsernameFormat,
         parseFlags,
         globToRegex,
-        getCharacterDimensions
+        getCharacterDimensions,
+        slugify
     };
 })();
 

@@ -405,9 +405,22 @@ const EditorUI = (() => {
     if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
 
     previewDebounceTimer = setTimeout(() => {
+      // Create the custom renderer
+      const customRenderer = new marked.Renderer();
+
+      // Override the heading method
+      customRenderer.heading = function(text, level) {
+        const slug = Utils.slugify(text); // Use our new utility
+        return `
+              <h${level} id="${slug}">
+                  ${text}
+              </h${level}>
+          `;
+      };
+
       if (isMarkdownMode) {
         if (typeof marked !== "undefined") {
-          elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
+          elements.previewPane.innerHTML = marked.parse(content, { renderer: customRenderer, sanitize: true });
         } else {
           elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
         }
@@ -422,6 +435,26 @@ const EditorUI = (() => {
           elements.previewPane.appendChild(iframe);
         }
         iframe.srcdoc = `<!DOCTYPE html><html><head>${iframeStyles}</head><body>${content}</body></html>`;
+
+        // Add the click listener to the iframe after it loads
+        iframe.addEventListener('load', () => {
+          iframe.contentWindow.document.body.addEventListener('click', (e) => {
+            // Check if the click was on an anchor link
+            let target = e.target;
+            while (target && target.tagName !== 'A') {
+              target = target.parentElement;
+            }
+
+            if (target && target.getAttribute('href')?.startsWith('#')) {
+              e.preventDefault();
+              const targetId = target.getAttribute('href').substring(1);
+              const targetElement = iframe.contentWindow.document.getElementById(targetId);
+              if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
+          });
+        }, { once: true });
       }
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }
