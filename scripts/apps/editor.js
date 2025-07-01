@@ -26,7 +26,6 @@ const EditorAppConfig = {
   STORAGE_KEYS: {
     EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
   },
-  // REMOVED: CSS_CLASSES are now globally defined in style.css
 };
 
 /**
@@ -39,8 +38,6 @@ const EditorUtils = (() => {
     const extension = Utils.getFileExtension(filePath);
     return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
   }
-
-  // DELETED: The getPreviewStylingCSS function has been removed.
 
   function calculateStatusBarInfo(text, selectionStart) {
     const lines = text.split("\n");
@@ -93,12 +90,84 @@ const EditorUI = (() => {
   let eventCallbacks = {};
   let previewDebounceTimer = null;
 
-  // REFACTORED: This function now uses the new BEM-like class names from style.css
+  const iframeStyles = `
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        line-height: 1.5;
+        color: #e5e7eb;
+        background-color: #212121;
+        margin: 1rem;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        color: #38bdf8;
+        border-bottom: 1px solid #52525b;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.25rem;
+      }
+      p { margin-bottom: 1rem; }
+      a { color: #2dd4bf; text-decoration: underline; }
+      a:hover { color: #5eead4; }
+      ul, ol { padding-left: 2rem; margin-bottom: 1rem; }
+      blockquote {
+        border-left: 4px solid #38bdf8;
+        padding-left: 1rem;
+        margin-left: 0;
+        font-style: italic;
+        color: #737373;
+      }
+      code:not(pre > code) {
+        background-color: #27272a;
+        color: #fde047;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-family: 'VT323', monospace;
+        font-size: 0.9em;
+      }
+      pre {
+        background-color: #0a0a0a;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        overflow-x: auto;
+        border: 1px solid #3f3f46;
+        font-family: 'VT323', monospace;
+        color: #e5e7eb;
+      }
+      pre > code {
+          padding: 0;
+          background-color: transparent;
+          color: inherit;
+          font-size: 1em;
+      }
+      table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 1rem;
+      }
+      th, td {
+          border: 1px solid #52525b;
+          padding: 0.5rem;
+          text-align: left;
+      }
+      th { background-color: #3f3f46; }
+    </style>
+  `;
+
+  function _updateFormattingToolbarVisibility(mode) {
+    if (elements.formattingToolbar) {
+      elements.formattingToolbar.classList.toggle('hidden', mode !== 'markdown');
+    }
+    if (elements.htmlFormattingToolbar) {
+      elements.htmlFormattingToolbar.classList.toggle('hidden', mode !== 'html');
+    }
+  }
+
   function buildLayout(callbacks) {
     eventCallbacks = callbacks;
 
-    // --- Toolbar Buttons ---
-    const formatButtonDetails = [{
+    // --- Markdown Toolbar Buttons ---
+    const mdButtonDetails = [{
       name: 'undoButton',
       iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="1em" height="1em"><path id="Vector" d="M10 8H5V3M5.29102 16.3569C6.22284 17.7918 7.59014 18.8902 9.19218 19.4907C10.7942 20.0913 12.547 20.1624 14.1925 19.6937C15.8379 19.225 17.2893 18.2413 18.3344 16.8867C19.3795 15.5321 19.963 13.878 19.9989 12.1675C20.0347 10.4569 19.5211 8.78001 18.5337 7.38281C17.5462 5.98561 16.1366 4.942 14.5122 4.40479C12.8878 3.86757 11.1341 3.86499 9.5083 4.39795C7.88252 4.93091 6.47059 5.97095 5.47949 7.36556" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
       title: 'Undo (Ctrl+Z)',
@@ -151,7 +220,7 @@ const EditorUI = (() => {
     }];
 
     elements.formattingToolbar = Utils.createElement("div", { className: `editor__toolbar hidden` });
-    formatButtonDetails.forEach(detail => {
+    mdButtonDetails.forEach(detail => {
       elements[detail.name] = Utils.createElement("button", {
         className: "editor-btn editor-btn--format",
         innerHTML: detail.iconHTML.replace(/#3eca02/g, 'currentColor'),
@@ -161,6 +230,27 @@ const EditorUI = (() => {
       elements.formattingToolbar.appendChild(elements[detail.name]);
     });
 
+    // --- HTML Toolbar Buttons ---
+    const htmlButtonDetails = [
+      { name: 'h1Button', text: 'H1', title: 'Header 1', callbackName: 'onFormatH1' },
+      { name: 'pButton', text: 'P', title: 'Paragraph', callbackName: 'onFormatP' },
+      { name: 'aButton', text: 'A', title: 'Link', callbackName: 'onFormatA' },
+      { name: 'bButton', text: 'B', title: 'Bold', callbackName: 'onFormatB' },
+      { name: 'iButton', text: 'I', title: 'Italic', callbackName: 'onFormatI_html' }
+    ];
+
+    elements.htmlFormattingToolbar = Utils.createElement("div", { className: "editor__toolbar hidden" });
+    htmlButtonDetails.forEach(detail => {
+      elements[detail.name] = Utils.createElement("button", {
+        className: "editor-btn editor-btn--format",
+        textContent: detail.text,
+        title: detail.title,
+        eventListeners: { click: eventCallbacks[detail.callbackName] }
+      });
+      elements.htmlFormattingToolbar.appendChild(elements[detail.name]);
+    });
+
+
     // --- Control Buttons ---
     elements.wordWrapToggleButton = Utils.createElement("button", { id: "editor-word-wrap-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onWordWrapToggle } });
     elements.viewToggleButton = Utils.createElement("button", { id: "editor-view-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onViewToggle } });
@@ -168,8 +258,9 @@ const EditorUI = (() => {
     elements.exitButton = Utils.createElement("button", { id: "editor-exit-btn", className: "editor-btn", textContent: "Exit", title: "Exit (prompts to save if unsaved)", eventListeners: { click: eventCallbacks.onExitButtonClick } });
 
     // --- Layout Structure ---
+    const controlsLeftGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.formattingToolbar, elements.htmlFormattingToolbar);
     const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
-    elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, elements.formattingToolbar, controlsRightGroup);
+    elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
     elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
     elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
     elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.textarea);
@@ -259,7 +350,6 @@ const EditorUI = (() => {
     }
   }
 
-  // REFACTORED: Class names now match style.css
   function applyTextareaWordWrap(isWordWrapActive) {
     if (!elements.textarea) return;
     if (isWordWrapActive) {
@@ -301,11 +391,14 @@ const EditorUI = (() => {
     if (!elements.previewPane) return;
     const isHtmlMode = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     const isMarkdownMode = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
+
     if (!isHtmlMode && !isMarkdownMode) {
       elements.previewPane.innerHTML = "";
       return;
     }
+
     if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+
     previewDebounceTimer = setTimeout(() => {
       if (isMarkdownMode) {
         if (typeof marked !== "undefined") {
@@ -313,24 +406,25 @@ const EditorUI = (() => {
         } else {
           elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
         }
-        // DELETED: applyPreviewWordWrap call is no longer needed here.
       } else if (isHtmlMode) {
         let iframe = elements.previewPane.querySelector("iframe");
         if (!iframe) {
-          iframe = Utils.createElement("iframe", { className: "w-full h-full border-none bg-white", sandbox: "allow-same-origin allow-popups allow-forms" });
+          iframe = Utils.createElement("iframe", {
+            style: { width: '100%', height: '100%', border: 'none' },
+            sandbox: ""
+          });
           elements.previewPane.innerHTML = "";
           elements.previewPane.appendChild(iframe);
         }
-        iframe.srcdoc = content;
+        iframe.srcdoc = `<!DOCTYPE html><html><head>${iframeStyles}</head><body>${content}</body></html>`;
       }
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }
 
-  // REFACTORED: Class names now match style.css and logic is updated.
+
   function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
     if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
 
-    // ADDED: Apply the .markdown-preview class here.
     elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
 
     elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
@@ -347,7 +441,7 @@ const EditorUI = (() => {
     const config = isPreviewable ? viewConfigs[viewMode] : viewConfigs.noPreview;
     if (config) {
       elements.viewToggleButton.textContent = config.text;
-      elements.lineGutter.classList.toggle("hidden", !config.gutter);
+      elements.lineGutter.classList.toggle("hidden", !config.gutter || (isWordWrapActive && config.gutter));
       elements.textareaWrapper.classList.toggle("hidden", !config.editor);
       elements.textareaWrapper.style.flex = config.editorFlex;
       elements.previewWrapper.classList.toggle("hidden", !config.preview);
@@ -359,7 +453,7 @@ const EditorUI = (() => {
     buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncLineGutterScroll,
     setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
     applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
-    getPreviewPaneHTML, setGutterVisibility, elements,
+    getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility
   };
 })();
 
@@ -387,7 +481,6 @@ const EditorManager = (() => {
     isWordWrapActive = !isWordWrapActive;
     _saveWordWrapSetting();
     EditorUI.applyTextareaWordWrap(isWordWrapActive);
-    // DELETED: applyPreviewWordWrap call is no longer needed here.
     if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
     }
@@ -515,6 +608,44 @@ const EditorManager = (() => {
           newStart = start;
           newEnd = start + manipulatedText.length;
           break;
+        case 'h1':
+          manipulatedText = `<h1>${selectedText}</h1>`;
+          newStart = start + 4;
+          newEnd = end + 4;
+          break;
+        case 'p':
+          manipulatedText = `<p>${selectedText}</p>`;
+          newStart = start + 3;
+          newEnd = end + 3;
+          break;
+        case 'b':
+          manipulatedText = `<b>${selectedText}</b>`;
+          newStart = start + 3;
+          newEnd = end + 3;
+          break;
+        case 'i_html':
+          manipulatedText = `<i>${selectedText}</i>`;
+          newStart = start + 3;
+          newEnd = end + 3;
+          break;
+        case 'a':
+          const url_html = await new Promise(resolve => {
+            ModalManager.request({
+              context: 'graphical-input',
+              messageLines: ["Enter URL for the link:"],
+              placeholder: "https://example.com",
+              onConfirm: (value) => resolve(value.trim() || null),
+              onCancel: () => resolve(null)
+            });
+          });
+          if (url_html) {
+            manipulatedText = `<a href="${url_html}">${selectedText}</a>`;
+            newStart = start;
+            newEnd = start + manipulatedText.length;
+          } else {
+            manipulatedText = selectedText;
+          }
+          break;
         case 'link':
           const url = await new Promise(resolve => {
             ModalManager.request({
@@ -533,7 +664,6 @@ const EditorManager = (() => {
             newStart = start + 1;
             newEnd = start + 1 + selectedText.length;
           } else {
-            // User cancelled, so don't change anything
             manipulatedText = selectedText;
           }
           break;
@@ -541,11 +671,10 @@ const EditorManager = (() => {
           manipulatedText = selectedText;
       }
 
-      // Only update if there's a change
       if (manipulatedText !== selectedText) {
         const newText = text.substring(0, start) + manipulatedText + text.substring(end);
         EditorUI.setTextareaContent(newText);
-        _handleEditorInput(); // This will handle dirty state, undo stack, and UI updates
+        _handleEditorInput();
         EditorUI.setEditorFocus();
         EditorUI.setTextareaSelection(newStart, newEnd);
       } else {
@@ -601,6 +730,11 @@ const EditorManager = (() => {
         onFormatCodeBlock: () => _applyTextManipulation('codeblock'),
         onFormatUl: () => _applyTextManipulation('ul'),
         onFormatOl: () => _applyTextManipulation('ol'),
+        onFormatH1: () => _applyTextManipulation('h1'),
+        onFormatP: () => _applyTextManipulation('p'),
+        onFormatA: () => _applyTextManipulation('a'),
+        onFormatB: () => _applyTextManipulation('b'),
+        onFormatI_html: () => _applyTextManipulation('i_html'),
         onUndo: _performUndo.bind(this),
         onRedo: _performRedo.bind(this)
       };
@@ -613,7 +747,7 @@ const EditorManager = (() => {
       EditorUI.updateWordWrapButtonText(isWordWrapActive);
       EditorUI.setTextareaContent(content);
       EditorUI.setTextareaSelection(0, 0);
-      _updateFormattingToolbarVisibility();
+      EditorUI._updateFormattingToolbarVisibility(currentFileMode);
       _updateFullEditorUI();
       EditorUI.setEditorFocus();
       _updateUndoRedoButtonStates();
@@ -716,11 +850,9 @@ const EditorManager = (() => {
     }
     setTimeout(_handleEditorSelectionChange, 0);
   }
-  // REFACTORED: Class name 'hidden' is now global.
   function _updateFormattingToolbarVisibility() {
     if (!isActiveState || !EditorUI.elements.formattingToolbar) return;
-    const isMarkdownOrHTML = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
-    EditorUI.elements.formattingToolbar.classList.toggle("hidden", !isMarkdownOrHTML);
+    EditorUI._updateFormattingToolbarVisibility(currentFileMode);
   }
 
   return { isActive: () => isActiveState, enter, exit };
