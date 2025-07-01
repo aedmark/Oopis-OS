@@ -204,7 +204,7 @@ const PaintUI = (() => {
         for (let i = START; i <= END; i++) {
             const char = String.fromCharCode(i);
             const btn = Utils.createElement('button', {
-                className: 'paint-char-btn',
+                className: 'btn paint-char-btn',
                 textContent: char,
                 eventListeners: { click: () => {
                         onSelectCallback(char);
