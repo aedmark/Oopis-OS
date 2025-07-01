@@ -461,18 +461,89 @@ body {
   flex-grow: 1;
 }
 
-/* Markdown-specific styling for the preview pane */
-.markdown-preview h1, .markdown-preview h2, .markdown-preview h3 {
-  color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.25rem;
+.markdown-preview {
+  font-family: var(--font-family-sans);
+  line-height: var(--line-height-base);
+  color: #e5e7eb; /* A light grey for body text */
 }
-.markdown-preview code {
-  background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937;
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  color: var(--color-info);
+  border-bottom: var(--border-width) solid var(--color-border-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.25rem;
 }
-.markdown-preview pre {
-  background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px;
+
+.markdown-preview p {
+  margin-bottom: 1rem;
 }
+
+.markdown-preview a {
+  color: var(--color-text-link);
+  text-decoration: underline;
+}
+
+.markdown-preview a:hover {
+  color: var(--color-text-link-hover);
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
 .markdown-preview blockquote {
-  border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280;
+  border-left: 4px solid var(--color-info);
+  padding-left: 1rem;
+  margin-left: 0;
+  font-style: italic;
+  color: var(--color-text-subtle);
+}
+
+.markdown-preview code:not(pre > code) {
+  background-color: var(--color-background-medium);
+  color: #fde047; /* A gold/yellow for code */
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+}
+
+.markdown-preview pre {
+  background-color: var(--color-background-darkest);
+  padding: 1rem;
+  border-radius: var(--border-radius-sm);
+  overflow-x: auto;
+  border: var(--border-width) solid var(--color-border-secondary);
+  font-family: var(--font-family-mono);
+}
+
+.markdown-preview pre > code {
+  padding: 0;
+  background-color: transparent;
+  color: inherit;
+  font-size: 1em;
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  border: 1px solid var(--color-border-primary);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-preview th {
+  background-color: var(--color-background-light);
 }
 
 /* Locate this existing rule */

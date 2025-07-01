@@ -40,37 +40,7 @@ const EditorUtils = (() => {
     return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
   }
 
-  // REFACTORED: This function now uses CSS variables for consistency.
-  function getPreviewStylingCSS(isHtmlMode = false) {
-    const commonSpacingStyles = `
-        p, ul, ol, blockquote, pre, table { margin-bottom: 1rem; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #d1d5db; padding: 0.5rem; text-align: left; }
-        th { background-color: #f3f4f6; }
-    `;
-
-    if (isHtmlMode) {
-      return `
-        html { box-sizing: border-box; }
-        *, *::before, *::after { box-sizing: inherit; }
-        body { font-family: sans-serif; margin: 20px; line-height: 1.6; background-color: #fff; color: #333; }
-        ${commonSpacingStyles}
-      `;
-    }
-
-    // Styles for the Markdown preview pane
-    return `
-        .markdown-preview { font-family: sans-serif; line-height: 1.6; color: #333; }
-        .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: #0284c7; border-bottom: 1px solid #e5e7eb; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.25rem; }
-        .markdown-preview code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 3px; font-family: monospace; color: #1f2937; }
-        .markdown-preview pre { background-color: #f3f4f6; padding: 10px; overflow-x: auto; border-radius: 3px; }
-        .markdown-preview pre > code { display: block; padding: 0; background-color: transparent; color: inherit; }
-        .markdown-preview ul, .markdown-preview ol { padding-left: 2em; }
-        .markdown-preview blockquote { border-left: 3px solid #d1d5db; padding-left: 10px; margin-left: 0; color: #6b7280; }
-        .markdown-preview a { color: #0ea5e9; text-decoration: underline; }
-        ${commonSpacingStyles}
-    `;
-  }
+  // DELETED: The getPreviewStylingCSS function has been removed.
 
   function calculateStatusBarInfo(text, selectionStart) {
     const lines = text.split("\n");
@@ -110,7 +80,7 @@ const EditorUtils = (() => {
     const lines = text.split("\n").length;
     return Array.from({ length: lines }, (_, i) => i + 1);
   }
-  return { determineMode, getPreviewStylingCSS, calculateStatusBarInfo, generateLineNumbersArray };
+  return { determineMode, calculateStatusBarInfo, generateLineNumbersArray };
 })();
 
 /**
@@ -343,7 +313,7 @@ const EditorUI = (() => {
         } else {
           elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
         }
-        applyPreviewWordWrap(isWordWrapActive, currentFileMode);
+        // DELETED: applyPreviewWordWrap call is no longer needed here.
       } else if (isHtmlMode) {
         let iframe = elements.previewPane.querySelector("iframe");
         if (!iframe) {
@@ -356,14 +326,13 @@ const EditorUI = (() => {
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }
 
-  // REFACTORED: Class names now match style.css
+  // REFACTORED: Class names now match style.css and logic is updated.
   function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
     if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
 
+    // ADDED: Apply the .markdown-preview class here.
     elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
-    if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
-      applyPreviewWordWrap(isWordWrapActive, currentFileMode);
-    }
+
     elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
     elements.exportPreviewButton.classList.toggle("hidden", !isPreviewable);
     elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
@@ -418,7 +387,7 @@ const EditorManager = (() => {
     isWordWrapActive = !isWordWrapActive;
     _saveWordWrapSetting();
     EditorUI.applyTextareaWordWrap(isWordWrapActive);
-    EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
+    // DELETED: applyPreviewWordWrap call is no longer needed here.
     if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
     }
