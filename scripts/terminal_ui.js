@@ -686,15 +686,13 @@ const TabCompletionManager = (() => {
         let suggestions = [];
 
         if (isCompletingCommand) {
-            // This now ensures commands are loaded before trying to get them
-            const commands = await Promise.all(
-                Object.keys(CommandRegistry.getDefinitions()).map(cmd => CommandExecutor._ensureCommandLoaded(cmd))
-            ).then(() => CommandExecutor.getCommands());
-
-            suggestions = Object.keys(commands)
+            // CORRECTED: Use the static command manifest for suggestions.
+            suggestions = Config.COMMANDS_MANIFEST
                 .filter((cmd) => cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                 .sort();
         } else {
+            // This part remains the same, as it correctly handles path/user completion
+            // after a command has already been typed.
             const commandLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
             if (!commandLoaded) return [];
 

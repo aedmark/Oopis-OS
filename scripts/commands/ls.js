@@ -26,6 +26,8 @@
             { name: "sortByExtension", short: "-X" }, // Sort by file extension.
             { name: "noSort", short: "-U" }, // Do not sort.
             { name: "dirsOnly", short: "-d" }, // List directories themselves, not their contents.
+            { name: "oneColumn", short: "-1" }, // The flag that started it all!
+            { name: "humanReadable", short: "-h", long: "--human-readable" } // A very useful addition for -l
         ],
         /**
          * The core logic for the 'ls' command.
@@ -76,8 +78,9 @@
                 const perms = FileSystemManager.formatModeToString(itemDetails.node); // Get permission string (e.g., 'drwxr-xr-x').
                 const owner = (itemDetails.node.owner || "unknown").padEnd(10);
                 const group = (itemDetails.node.group || "unknown").padEnd(10);
-                const size = Utils.formatBytes(itemDetails.size).padStart(8); // Format size to human-readable.
-                let dateStr = "            "; // Default empty date string.
+                const size = flags.humanReadable
+                    ? Utils.formatBytes(itemDetails.size).padStart(8)
+                    : String(itemDetails.size).padStart(8);                let dateStr = "            "; // Default empty date string.
                 if (itemDetails.mtime && itemDetails.mtime.getTime() !== 0) {
                     const d = itemDetails.mtime;
                     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -178,12 +181,27 @@
                 if (singleItemResultOutput !== null) {
                     currentPathOutputLines.push(singleItemResultOutput);
                 } else if (targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE && !effectiveFlags.dirsOnly) {
-                    // Add "total" line for long format listings of directories.
-                    if (effectiveFlags.long && itemDetailsList.length > 0) currentPathOutputLines.push(`total ${itemDetailsList.length}`);
-                    itemDetailsList.forEach(item => {
-                        const nameSuffix = item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? Config.FILESYSTEM.PATH_SEPARATOR : "";
-                        currentPathOutputLines.push(effectiveFlags.long ? formatLongListItem(item) : `${item.name}${nameSuffix}`);
-                    });
+                    if (effectiveFlags.long) {
+                        if (itemDetailsList.length > 0) currentPathOutputLines.push(`total ${itemDetailsList.length}`);
+                        itemDetailsList.forEach(item => {
+                            currentPathOutputLines.push(formatLongListItem(item));
+                        });
+                        // --- MODIFICATION FOR -1 ---
+                    } else if (effectiveFlags.oneColumn) {
+                        itemDetailsList.forEach(item => {
+                            const nameSuffix = item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? Config.FILESYSTEM.PATH_SEPARATOR : "";
+                            currentPathOutputLines.push(`${item.name}${nameSuffix}`);
+                        });
+                        // --- END MODIFICATION ---
+                    } else {
+                        // This part needs adjustment to format into columns, for now, we'll do a simple space-separated list.
+                        // A true multi-column format is a significant UI challenge.
+                        const simpleList = itemDetailsList.map(item => {
+                            const nameSuffix = item.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? Config.FILESYSTEM.PATH_SEPARATOR : "";
+                            return `${item.name}${nameSuffix}`;
+                        }).join("  ");
+                        currentPathOutputLines.push(simpleList);
+                    }
                 }
                 return { success: true, output: currentPathOutputLines.join("\n"), items: itemDetailsList };
             }
@@ -290,7 +308,12 @@ OPTIONS
        -X
               Sort alphabetically by entry extension.
        -U
-              Do not sort; list entries in directory order.`;
+              Do not sort; list entries in directory order.
+       -1
+              List one file per line.
+       -h, --human-readable
+              With -l, print sizes in human-readable format (e.g., 1K 234M 2G).`;
+
 
     CommandRegistry.register("ls", lsCommandDefinition, lsDescription, lsHelpText);
 })();

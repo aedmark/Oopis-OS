@@ -75,6 +75,7 @@ const urlsToCache = [
     './scripts/commands/shuf.js',
     './scripts/commands/su.js',
     './scripts/commands/sudo.js',
+    './scripts/commands/tail.js',
     './scripts/commands/touch.js',
     './scripts/commands/tree.js',
     './scripts/commands/unalias.js',

@@ -7,82 +7,60 @@
 (() => {
     "use strict";
 
-    /**
-     * @const {object} catCommandDefinition
-     * @description The command definition for the 'cat' command.
-     */
     const catCommandDefinition = {
         commandName: "cat",
-        /**
-         * The core logic for the 'cat' command.
-         * It reads content from standard input (if provided via a pipe) and then
-         * reads and concatenates the content of each file specified in the arguments.
-         * It ensures a newline is present between concatenated file contents if needed.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @param {string[]} context.args - The file paths provided as arguments.
-         * @param {object} context.options - Execution options, including stdin content.
-         * @param {string} context.currentUser - The name of the current user.
-         * @returns {Promise<object>} A promise that resolves to a command result object.
-         */
+        // --- NEW FLAGS START ---
+        flagDefinitions: [
+            { name: "numberLines", short: "-n", long: "--number" }
+        ],
+        // --- NEW FLAGS END ---
         coreLogic: async (context) => {
-            const { args, options, currentUser } = context;
+            const { args, flags, options, currentUser } = context; // Added 'flags'
 
-            // If there are no file arguments and no piped input, do nothing.
-            if (
-                args.length === 0 &&
-                (options.stdinContent === null || options.stdinContent === undefined)
-            ) {
-                return {
-                    success: true,
-                    output: "",
-                };
+            if (args.length === 0 && (options.stdinContent === null || options.stdinContent === undefined)) {
+                return { success: true, output: "" };
             }
 
             let outputContent = "";
             let firstFile = true;
+            let lineCounter = 1; // For the -n flag
 
-            // First, process any standard input from a pipe.
-            if (options.stdinContent !== null && options.stdinContent !== undefined) {
-                outputContent += options.stdinContent;
-                firstFile = false;
-            }
-
-            // Then, process each file argument.
-            for (const pathArg of args) {
-                const pathValidation = FileSystemManager.validatePath("cat", pathArg, {
-                    expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-                });
-                if (pathValidation.error)
-                    return {
-                        success: false,
-                        error: pathValidation.error,
-                    };
-
-                if (
-                    !FileSystemManager.hasPermission(
-                        pathValidation.node,
-                        currentUser,
-                        "read"
-                    )
-                )
-                    return {
-                        success: false,
-                        error: `cat: '${pathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-                    };
-
-                // Ensure there's a newline between concatenated file contents if the previous content didn't end with one.
-                if (!firstFile && outputContent && !outputContent.endsWith("\n"))
-                    outputContent += "\n";
-
-                outputContent += pathValidation.node.content || "";
-                firstFile = false;
-            }
-
-            return {
-                success: true,
-                output: outputContent,
+            // --- NEW HELPER FUNCTION ---
+            const processAndNumberContent = (content) => {
+                if (!flags.numberLines) {
+                    return content;
+                }
+                const lines = content.split('\n');
+                // Don't number a final empty line if the file ends with a newline
+                const processedLines = (lines.at(-1) === '' ? lines.slice(0, -1) : lines);
+                return processedLines.map(line => `     ${lineCounter++}  ${line}`).join('\n');
             };
+            // --- END NEW HELPER ---
+
+            if (options.stdinContent !== null && options.stdinContent !== undefined) {
+                // --- MODIFICATION FOR -n ---
+                outputContent += processAndNumberContent(options.stdinContent);
+                // --- END MODIFICATION ---
+                firstFile = false;
+            }
+
+            for (const pathArg of args) {
+                const pathValidation = FileSystemManager.validatePath("cat", pathArg, { expectedType: 'file' });
+                if (pathValidation.error) return { success: false, error: pathValidation.error };
+                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
+                    return { success: false, error: `cat: '${pathArg}': Permission denied` };
+                }
+
+                if (!firstFile && outputContent && !outputContent.endsWith("\n")) outputContent += "\n";
+
+                // --- MODIFICATION FOR -n ---
+                const fileContent = pathValidation.node.content || "";
+                outputContent += processAndNumberContent(fileContent);
+                // --- END MODIFICATION ---
+                firstFile = false;
+            }
+
+            return { success: true, output: outputContent };
         },
     };
 
@@ -120,7 +98,10 @@ EXAMPLES
               
        ls -l | cat
               Displays the output of the 'ls -l' command, demonstrating
-              how cat handles piped input.`;
+              how cat handles piped input.
+       -n, --number
+              Number all output lines, starting from 1.`;
+
 
     // Register the command with the system
     CommandRegistry.register("cat", catCommandDefinition, catDescription, catHelpText);

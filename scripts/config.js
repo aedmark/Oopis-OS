@@ -162,6 +162,19 @@ const Config = (() => {
         API: {
             GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
         },
+        COMMANDS_MANIFEST: [
+            "adventure", "alias", "backup", "cat", "cd", "check_fail",
+            "chgrp", "chidi", "chmod", "chown", "clear", "clearfs", "cp",
+            "curl", "date", "delay", "diff", "echo", "edit", "explore",
+            "export", "find", "gemini", "grep", "groupadd", "groupdel",
+            "groups", "head", "help", "history", "kill", "listusers",
+            "loadstate", "login", "logout", "ls", "man", "mkdir", "mv",
+            "paint", "passwd", "printscreen", "ps", "pwd", "reboot",
+            "removeuser", "reset", "restore", "rm", "run", "savefs",
+            "savestate", "set", "shuf", "su", "sudo", "tail", "touch", "tree",
+            "unalias", "unset", "unzip", "upload", "useradd", "usermod",
+            "visudo", "wget", "whoami", "zip, xargs"
+        ],
     };
 
     /**
