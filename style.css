@@ -856,11 +856,6 @@ body {
   overflow: hidden;
 }
 
-.paint-brush-control .paint-tool {
-  border: none;
-  border-radius: 0;
-}
-
 .paint-size-display, .paint-zoom-display {
   padding: 0 var(--spacing-sm);
   background-color: var(--color-background-darkest);
@@ -1070,3 +1065,96 @@ body {
 .chidi-loader { width: 10px; height: 16px; background-color: var(--color-accent-green); animation: chidi-blink-cursor 1.2s steps(2, start) infinite; }
 .chidi-hidden { display: none !important; }
 @keyframes chidi-blink-cursor { to { visibility: hidden; } }
+
+/* 11. Adventure Game Component */
+/* ========================================================================== */
+
+#adventure-container {
+  /* Adopts the core modal/app structure */
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 800px;
+  height: 80%;
+  background-color: var(--color-background-medium);
+  border: var(--border-width-thick) solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+}
+
+#adventure-header {
+  /* The "Infocom" status line */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  border-bottom: var(--border-width) solid var(--color-border-primary);
+  flex-shrink: 0;
+}
+
+#adventure-title {
+  font-weight: bold;
+}
+
+#adventure-close-btn {
+  /* Uses existing button classes defined in the core styles */
+}
+
+#adventure-output {
+  flex-grow: 1;
+  overflow-y: auto;
+  background-color: var(--color-background-darkest);
+  box-shadow: var(--shadow-inset-light);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  line-height: var(--line-height-terminal);
+}
+
+#adventure-output p {
+  margin-bottom: var(--spacing-sm); /* Consistent spacing for all output lines */
+}
+
+/* New semantic classes for game text */
+.adv-room-name {
+  color: var(--color-info);
+  font-weight: bold;
+}
+
+.adv-room-desc {
+  color: var(--color-text-primary);
+}
+
+.adv-system {
+  color: var(--color-text-secondary);
+}
+
+.adv-error {
+  color: var(--color-error);
+}
+
+.adv-exits, .adv-items {
+  color: var(--color-text-subtle);
+}
+
+#adventure-input-container {
+  display: flex;
+  padding-top: var(--spacing-md);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+
+#adventure-input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  padding-left: var(--spacing-sm);
+  caret-color: var(--color-text-primary);
+}

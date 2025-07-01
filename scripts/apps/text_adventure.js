@@ -83,10 +83,11 @@ const TextAdventureModal = (() => {
    * @returns {HTMLElement} The root element for the adventure modal.
    */
   function _buildLayout() {
-    // Create elements using Utils.createElement for robustness
+    // Create elements using new CSS classes
     elements.adventureTitle = Utils.createElement('span', { id: 'adventure-title' });
+    // Apply standard button classes, plus a specific cancel modifier for thematic consistency
     elements.adventureCloseBtn = Utils.createElement('button', { id: 'adventure-close-btn', className: 'btn btn--cancel', textContent: 'Exit Adventure' });
-    elements.adventureHeader = Utils.createElement('div', { id: 'adventure-header', className: 'modal-dialog__header' }, [elements.adventureTitle, elements.adventureCloseBtn]);
+    elements.adventureHeader = Utils.createElement('div', { id: 'adventure-header' }, [elements.adventureTitle, elements.adventureCloseBtn]);
 
     elements.adventureOutput = Utils.createElement('div', { id: 'adventure-output' });
     elements.adventureInput = Utils.createElement('input', { id: 'adventure-input', type: 'text', spellcheck: 'false', autocomplete: 'off' });
@@ -95,37 +96,14 @@ const TextAdventureModal = (() => {
       elements.adventureInput
     ]);
 
-    // Main container, styled like a modal dialog for consistency
-    const adventureContainer = Utils.createElement('div', { id: 'adventure-container', className: 'modal-dialog' }, [
+    // Main container now just needs its ID; all styling is in the CSS.
+    const adventureContainer = Utils.createElement('div', { id: 'adventure-container' }, [
       elements.adventureHeader,
       elements.adventureOutput,
       elements.adventureInputContainer
     ]);
 
-    // Add custom adventure game styles for better presentation
-    adventureContainer.style.width = '90%';
-    adventureContainer.style.maxWidth = '800px';
-    adventureContainer.style.height = '80%';
-    adventureContainer.style.display = 'flex';
-    adventureContainer.style.flexDirection = 'column';
-    elements.adventureOutput.style.flexGrow = '1';
-    elements.adventureOutput.style.overflowY = 'auto';
-    elements.adventureOutput.style.textAlign = 'left';
-    elements.adventureOutput.style.padding = 'var(--spacing-md)';
-    elements.adventureOutput.style.border = '1px solid var(--color-border-primary)';
-    elements.adventureOutput.style.marginBottom = 'var(--spacing-md)';
-    elements.adventureInputContainer.style.display = 'flex';
-    elements.adventureInput.style.flexGrow = '1';
-    elements.adventureInput.style.background = 'transparent';
-    elements.adventureInput.style.border = 'none';
-    elements.adventureInput.style.color = 'var(--color-text-primary)';
-    elements.adventureInput.style.fontFamily = 'var(--font-family-mono)';
-    elements.adventureInput.style.outline = 'none';
-    elements.adventureHeader.style.display = 'flex';
-    elements.adventureHeader.style.justifyContent = 'space-between';
-    elements.adventureHeader.style.alignItems = 'center';
-    elements.adventureHeader.style.marginBottom = 'var(--spacing-md)';
-
+    // All inline style definitions have been removed.
 
     return adventureContainer;
   }
@@ -250,11 +228,13 @@ const TextAdventureModal = (() => {
   /**
    * Appends a line of text to the adventure output screen.
    * @param {string} text - The text to display.
-   * @param {string} [type='room-desc'] - The CSS class to apply for styling (e.g., 'error', 'info').
+   * @param {string} [type='room-desc'] - The semantic type of the message, maps to a CSS class.
    */
   function appendOutput(text, type = 'room-desc') {
     if (!elements.adventureOutput) return;
-    const p = Utils.createElement('p', { textContent: text, className: type });
+    // The 'type' parameter now directly corresponds to our new BEM-style classes.
+    const className = `adv-${type}`;
+    const p = Utils.createElement('p', { textContent: text, className: className });
     elements.adventureOutput.appendChild(p);
     elements.adventureOutput.scrollTop = elements.adventureOutput.scrollHeight;
   }
