@@ -173,6 +173,7 @@ body {
   white-space: pre-wrap;
   min-height: var(--line-height-terminal);
   line-height: var(--line-height-terminal);
+  margin-bottom: var(--spacing-xs);
 }
 
 .terminal__input-line {
@@ -810,6 +811,10 @@ body {
   scrollbar-color: var(--color-accent-green) var(--color-background-darkest);
 }
 
+.chidi-markdown-content > * + * {
+  margin-top: var(--spacing-md);
+}
+
 #chidi-markdownDisplay::-webkit-scrollbar { width: 8px; }
 #chidi-markdownDisplay::-webkit-scrollbar-track { background: var(--color-background-darkest); }
 #chidi-markdownDisplay::-webkit-scrollbar-thumb { background-color: var(--color-accent-green); border-radius: 4px; border: 2px solid var(--color-background-darkest); }
@@ -1216,4 +1221,20 @@ body {
 /* Ensure button text does not wrap */
 .chidi-btn {
   white-space: nowrap;
+}
+
+.markdown-preview img,
+.chidi-markdown-content img {
+  /* This is the key rule: an image can be, at most, the full width of its container. */
+  max-width: 100%;
+
+  /* This maintains the image's aspect ratio as it scales. */
+  height: auto;
+
+  /* This can help prevent extra space below the image. */
+  display: block;
+
+  /* Add a little vertical space for aesthetics. */
+  margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }

@@ -99,6 +99,11 @@ const EditorUI = (() => {
         background-color: #212121;
         margin: 1rem;
       }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
       h1, h2, h3, h4, h5, h6 {
         color: #38bdf8;
         border-bottom: 1px solid #52525b;
