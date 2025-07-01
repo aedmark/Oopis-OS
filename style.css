@@ -1021,8 +1021,8 @@ body {
   z-index: 1;
   border: var(--border-width) solid var(--color-border-primary);
   border-radius: var(--border-radius-sm);
-  bottom: 100%;
-  margin-bottom: var(--spacing-xs);
+  top: 100%;
+  margin-top: var(--spacing-xs);
 }
 
 .paint-dropdown-content.paint-dropdown-active {

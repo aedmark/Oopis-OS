@@ -772,7 +772,7 @@ const PaintManager = (() => {
         fgColor = PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
         currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
         zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
-        undoStack = []; redoStack = []; isGridVisible = false;
+        undoStack = []; redoStack = [], isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         customColorValue = null;
         currentCanvasWidth = 0;
