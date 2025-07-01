@@ -515,30 +515,40 @@ const PaintManager = (() => {
         const canvasEl = document.getElementById('paint-canvas');
 
         if (!wrapper || !canvasEl) {
-            // Fallback to default if DOM isn't ready
             currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
             currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
             canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
             return;
         }
 
-        // Use a base font size for a consistent initial measurement
         canvasEl.style.fontSize = `${PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX}px`;
         const charDims = Utils.getCharacterDimensions(canvasEl.style.font);
 
         if (charDims.width <= 0 || charDims.height <= 0) {
-            // Fallback if measurement fails
             currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
             currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
         } else {
-            // This is the one-time calculation for a new canvas grid
             const availableWidth = wrapper.clientWidth;
             const availableHeight = wrapper.clientHeight;
-            currentCanvasWidth = Math.floor(availableWidth / charDims.width);
-            currentCanvasHeight = Math.floor(availableHeight / charDims.height);
+            const targetAspectRatio = 4 / 3;
+
+            let newCanvasPixelWidth, newCanvasPixelHeight;
+
+            // Determine if the canvas should be letterboxed or pillarboxed
+            if (availableWidth / availableHeight > targetAspectRatio) {
+                // Container is wider than the target aspect ratio (pillarbox)
+                newCanvasPixelHeight = availableHeight;
+                newCanvasPixelWidth = newCanvasPixelHeight * targetAspectRatio;
+            } else {
+                // Container is taller than the target aspect ratio (letterbox)
+                newCanvasPixelWidth = availableWidth;
+                newCanvasPixelHeight = newCanvasPixelWidth / targetAspectRatio;
+            }
+
+            currentCanvasWidth = Math.floor(newCanvasPixelWidth / charDims.width);
+            currentCanvasHeight = Math.floor(newCanvasPixelHeight / charDims.height);
         }
 
-        // Create the blank canvas data with the now-locked dimensions
         canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
     }
 
