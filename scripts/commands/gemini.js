@@ -12,7 +12,7 @@
 
     // --- STATE & CONFIGURATION ---
     let geminiConversationHistory = [];
-    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs'];
+    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail'];
 
     /**
      * @private
@@ -30,6 +30,7 @@ RULES:
 - If no commands are needed (e.g., a general knowledge question), respond the way you would normally without the context of the filesystem.
 - ONLY use the commands and flags explicitly listed in the "Tool Manifest" below, do not deviate or try weird tricks. Each command must be simple and stand-alone.
 - CRITICAL: You CANNOT use command substitution (e.g., \`$(...)\` or backticks) or other advanced shell syntax. Once again: Each command must be simple and stand-alone.
+- CRITICAL: When using a command with an argument that contains spaces (like a filename), you MUST enclose that argument in double quotes. For example: cat "My File.txt".
 - Do not hallucinate! OopisOS may LOOK like a UNIX shell, but it is not. Our commands have familiar names and flags, but they are not the same as the UNIX commands. Please refer to the "Tool Manifest" below for a complete list of commands and flags you are allowed to use.
 
 --- TOOL MANIFEST ---
@@ -56,10 +57,9 @@ RULES:
 9. tail [FLAGS] [FILE]: Outputs the last part of files.
 10. xargs [FLAGS] [COMMAND]: Runs a command for each input line.
 11. echo [ARG]...: Prints the arguments to the screen.
-
 --- END MANIFEST ---
 
-To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. Do not attempt to process multiple files in one step. DO NOT TAKE SHORTCUTS.`;
+To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. DO NOT TAKE SHORTCUTS.`;
 
     /**
      * @private
