@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-os-cache-v3.2';
+const CACHE_NAME = 'oopis-os-cache-v3.21';
 const urlsToCache = [
     './',
     './index.html',
@@ -47,6 +47,7 @@ const urlsToCache = [
     './scripts/commands/groupadd.js',
     './scripts/commands/groupdel.js',
     './scripts/commands/groups.js',
+    './scripts/commands/head.js',
     './scripts/commands/help.js',
     './scripts/commands/history.js',
     './scripts/commands/kill.js',
