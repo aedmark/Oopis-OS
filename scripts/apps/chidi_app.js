@@ -105,8 +105,6 @@ const ChidiApp = {
         const get = (id) => document.getElementById(id);
         this.elements = {
             ...this.elements,
-            prevBtn: get('chidi-prevBtn'),
-            nextBtn: get('chidi-nextBtn'),
             fileSelector: get('chidi-file-selector'),
             summarizeBtn: get('chidi-summarizeBtn'),
             studyBtn: get('chidi-suggestQuestionsBtn'),
@@ -135,9 +133,7 @@ const ChidiApp = {
         const currentFile = this.getCurrentFile();
 
         this.elements.fileCountDisplay.textContent = `FILES: ${this.state.loadedFiles.length}`;
-        this.elements.prevBtn.disabled = this.state.currentIndex <= 0;
-        this.elements.nextBtn.disabled = this.state.currentIndex >= this.state.loadedFiles.length - 1;
-        this.elements.fileSelector.disabled = !hasFiles;
+        this.elements.fileSelector.disabled = !hasFiles || this.state.loadedFiles.length <= 1;
         this.elements.exportBtn.disabled = !hasFiles;
         this.elements.saveSessionBtn.disabled = !hasFiles;
 
@@ -218,8 +214,6 @@ const ChidiApp = {
             }
         });
 
-        this.elements.prevBtn.addEventListener('click', () => this.navigate(-1));
-        this.elements.nextBtn.addEventListener('click', () => this.navigate(1));
         this.elements.fileSelector.addEventListener('change', (e) => {
             if (this.state.isAskingMode) this._exitQuestionMode();
             this._selectFileByIndex(e.target.value);
@@ -281,8 +275,6 @@ const ChidiApp = {
 
         this.elements.summarizeBtn.disabled = true;
         this.elements.exportBtn.disabled = true;
-        this.elements.prevBtn.disabled = true;
-        this.elements.nextBtn.disabled = true;
         this.elements.fileSelector.disabled = true;
 
         this.showMessage("Ask a question about all loaded files.");
@@ -414,15 +406,6 @@ const ChidiApp = {
             this.appendAiOutput("Error", `An unexpected error occurred during processing: ${e.message}`);
         } finally {
             this.toggleLoader(false);
-        }
-    },
-    navigate(direction) {
-        if (this.state.isAskingMode) this._exitQuestionMode();
-
-        const newIndex = this.state.currentIndex + direction;
-        if (newIndex >= 0 && newIndex < this.state.loadedFiles.length) {
-            this.state.currentIndex = newIndex;
-            this.updateUI();
         }
     },
 
@@ -668,10 +651,19 @@ const ChidiApp = {
      */
     getHTML() {
         // REFACTORED: Class names now match the new global style sheet
+        // REFACTORED AGAIN: Removed Prev/Next, moved selector to header
         return `
             <div id="chidi-console-panel">
                 <header class="chidi-console-header">
                     <h1 id="chidi-mainTitle">chidi.md</h1>
+                    <div class="chidi-header-controls">
+                        <select id="chidi-file-selector" class="chidi-btn chidi-select"></select>
+                        <div class="chidi-control-group">
+                            <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
+                            <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
+                            <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
+                        </div>
+                    </div>
                 </header>
 
                 <main id="chidi-markdownDisplay" class="chidi-markdown-content">
@@ -682,21 +674,6 @@ const ChidiApp = {
                     <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
                 </div>
                 
-                <div class="chidi-controls-container">
-                    <div class="chidi-control-group">
-                        <button id="chidi-prevBtn" class="chidi-btn" disabled>&larr; PREV</button>
-                        <button id="chidi-nextBtn" class="chidi-btn" disabled>NEXT &rarr;</button>
-                    </div>
-                    <div class="chidi-control-group">
-                        <select id="chidi-file-selector" class="chidi-btn chidi-select"></select>
-                    </div>
-                    <div class="chidi-control-group">
-                        <button id="chidi-summarizeBtn" class="chidi-btn" title="Summarize the current document">Summarize</button>
-                        <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
-                        <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
-                    </div>
-                </div>
-
                 <footer class="chidi-status-readout">
                     <div id="chidi-fileCountDisplay" class="chidi-status-item">FILES: 0</div>
                     <div id="chidi-messageBox" class="chidi-status-message">SYSTEM LOG: Standby.</div>

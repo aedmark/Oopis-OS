@@ -1157,3 +1157,63 @@ body {
   transform: scale(1.1);
   box-shadow: 0 0 8px var(--color-accent-lime);
 }
+/* Make the main Chidi panel a flex column */
+#chidi-console-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the main content area grows to fill space */
+#chidi-markdownDisplay, .chidi-ask-container {
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* Style the header as a non-wrapping flex row */
+.chidi-console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+  flex-wrap: nowrap;
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  background-color: transparent;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+#chidi-mainTitle {
+  padding: 0;
+  margin: 0;
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  color: var(--color-info);
+  font-size: var(--font-size-xl);
+}
+
+/* NEW: A container for all controls on the right side of the header */
+.chidi-header-controls {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0; /* Prevent this group from shrinking */
+  gap: var(--spacing-md);
+}
+
+/* Style the footer */
+.chidi-status-readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: var(--spacing-md);
+}
+
+/* Ensure button text does not wrap */
+.chidi-btn {
+  white-space: nowrap;
+}
