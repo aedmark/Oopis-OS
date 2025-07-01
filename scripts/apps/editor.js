@@ -453,7 +453,7 @@ const EditorUI = (() => {
     buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncLineGutterScroll,
     setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
     applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
-    getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility
+    getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles
   };
 })();
 
@@ -517,7 +517,42 @@ const EditorManager = (() => {
     const selection = EditorUI.getTextareaSelection();
     EditorUI.updateStatusBar(textContent, selection.start);
   }
-  async function exportPreviewAsHtml() { /* ... function is unchanged ... */ }
+  async function exportPreviewAsHtml() {
+    if (!isActiveState) return;
+    const baseName = (currentFilePath || "untitled").split('/').pop().split('.').slice(0, -1).join('.') || "export";
+    let blob;
+    let fileName;
+
+    if (currentFileMode === EditorAppConfig.EDITOR.MODES.TEXT) {
+      const rawContent = EditorUI.getTextareaContent();
+      blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
+      fileName = `${baseName}.txt`;
+    } else { // Handles 'markdown' and 'html'
+      const renderedContent = EditorUI.getPreviewPaneHTML();
+      const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Exported: ${baseName}</title>
+    ${EditorUI.iframeStyles}
+</head>
+<body>
+    ${renderedContent}
+</body>
+</html>`;
+      blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+      fileName = `${baseName}.html`;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = Utils.createElement('a', { href: url, download: fileName });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
+  }
   function _saveUndoState(content) {
     if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== content) {
       undoStack.push(content);
