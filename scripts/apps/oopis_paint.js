@@ -155,20 +155,22 @@ const PaintUI = (() => {
             eventListeners: { click: () => eventCallbacks.onColorSelectOpen() }
         });
 
-        // Use standard button classes for save/exit
         elements.saveBtn = Utils.createElement('button', { className: 'btn btn--confirm', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
         elements.exitBtn = Utils.createElement('button', { className: 'btn btn--cancel', textContent: 'Exit', title: 'Exit Application (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        // Assemble toolbar using flexbox groups
+        // Assemble toolbar
         const leftGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, zoomContainer, elements.charSelectBtn);
-        const rightGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.colorPalleteBtn, colorPaletteContainer, elements.saveBtn, elements.exitBtn);
+        const rightGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.colorPalleteBtn, colorPaletteContainer);
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, rightGroup);
 
-        // Assemble canvas and status bar
+        // Assemble status bar / footer
+        elements.statusBarText = Utils.createElement('span', { id: 'paint-status-text' });
+        const footerButtonGroup = Utils.createElement('div', { className: 'paint-toolbar-group'}, elements.saveBtn, elements.exitBtn);
+        elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' }, elements.statusBarText, footerButtonGroup);
+
+        // Assemble canvas
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
-        elements.statusBarText = Utils.createElement('span', { id: 'paint-status-text' });
-        elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' }, elements.statusBarText);
 
         // Add event listeners to canvas
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
@@ -180,7 +182,7 @@ const PaintUI = (() => {
         document.addEventListener('mouseup', eventCallbacks.onMouseUp);
         document.addEventListener('touchend', eventCallbacks.onMouseUp, { passive: false });
 
-        // Assemble the final container using flexbox layout
+        // Assemble the final container
         elements.container = Utils.createElement('div', { id: 'paint-container' },
             elements.toolbar,
             elements.canvasWrapper,
@@ -395,12 +397,18 @@ const PaintUI = (() => {
         }
     }
 
+    function handleResize() {
+        if (eventCallbacks.onResize) {
+            eventCallbacks.onResize();
+        }
+    }
+
     function reset() {
         elements = {};
         gridDimensions = { width: 0, height: 0 };
     }
 
-    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, renderCanvas, updateCell };
+    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, renderCanvas, updateCell, handleResize };
 })();
 
 /**
@@ -441,6 +449,7 @@ const PaintManager = (() => {
                 _openColorSelect();
             }
         },
+        onResize: _handleResize,
     };
 
     function _getLinePoints(x0, y0, x1, y1) {
@@ -495,6 +504,46 @@ const PaintManager = (() => {
         }
         return data;
     }
+
+    function _handleResize() {
+        if (!isActiveState) return;
+
+        const oldWidth = currentCanvasWidth;
+        const oldHeight = currentCanvasHeight;
+        const wrapper = document.getElementById('paint-canvas-wrapper');
+        const canvasEl = document.getElementById('paint-canvas');
+        if (!wrapper || !canvasEl) return;
+
+        const canvasStyles = window.getComputedStyle(canvasEl);
+        const charDims = Utils.getCharacterDimensions(canvasStyles.font);
+
+        if (charDims.width <= 0 || charDims.height <= 0) return;
+
+        const availableWidth = wrapper.clientWidth;
+        const availableHeight = wrapper.clientHeight;
+
+        const newWidth = Math.floor(availableWidth / charDims.width);
+        const newHeight = Math.floor(availableHeight / charDims.height);
+
+        if (newWidth === oldWidth && newHeight === oldHeight) return;
+
+        const newCanvasData = _createBlankCanvas(newWidth, newHeight);
+        for (let y = 0; y < Math.min(oldHeight, newHeight); y++) {
+            for (let x = 0; x < Math.min(oldWidth, newWidth); x++) {
+                if (canvasData[y] && canvasData[y][x]) {
+                    newCanvasData[y][x] = canvasData[y][x];
+                }
+            }
+        }
+
+        canvasData = newCanvasData;
+        currentCanvasWidth = newWidth;
+        currentCanvasHeight = newHeight;
+
+        PaintUI.renderCanvas(canvasData, zoomLevel);
+        _saveUndoState();
+    }
+
 
     function _updateToolbarState() { PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible, currentBrushSize); }
     function _saveUndoState() {
@@ -726,7 +775,8 @@ const PaintManager = (() => {
         undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         customColorValue = null;
-        currentCanvasWidth = 0; currentCanvasHeight = 0;
+        currentCanvasWidth = 0;
+        currentCanvasHeight = 0;
         pointsToDraw = [];
         isFrameScheduled = false;
         if (saveUndoStateTimeout) { clearTimeout(saveUndoStateTimeout); saveUndoStateTimeout = null; }
@@ -854,25 +904,7 @@ const PaintManager = (() => {
                 canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
             }
         } else {
-            const wrapper = document.getElementById('paint-canvas-wrapper');
-            const canvasEl = document.getElementById('paint-canvas');
-            const wrapperStyles = window.getComputedStyle(wrapper);
-            const canvasStyles = window.getComputedStyle(canvasEl);
-            const paddingX = parseFloat(wrapperStyles.paddingLeft) + parseFloat(wrapperStyles.paddingRight);
-            const paddingY = parseFloat(wrapperStyles.paddingTop) + parseFloat(wrapperStyles.paddingBottom);
-            const availableWidth = wrapper.clientWidth - paddingX;
-            const availableHeight = wrapper.clientHeight - paddingY;
-            const charDims = Utils.getCharacterDimensions(canvasStyles.font);
-
-            if (charDims.width > 0 && charDims.height > 0) {
-                currentCanvasWidth = Math.floor(availableWidth / charDims.width);
-                currentCanvasHeight = Math.floor(availableHeight / charDims.height);
-            } else {
-                currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-                currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-            }
-
-            canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
+            _handleResize(); // Initial sizing for a new canvas
         }
 
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
