@@ -14,13 +14,6 @@
     let geminiConversationHistory = [];
     const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail'];
 
-    /**
-     * @private
-     * @const {string} PLANNER_SYSTEM_PROMPT
-     * @description The system instruction for the "Planner" stage. It instructs the AI
-     * to analyze the user's request and the local file context, then formulate a plan
-     * of shell commands to gather necessary information.
-     */
     const PLANNER_SYSTEM_PROMPT = `You are a helpful and witty digital archivist embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions about their file system, but you are also able to gather answers from outside sources when relevant.
 
 Your primary task is to analyze the user's prompt and the provided local file context.
@@ -61,13 +54,6 @@ RULES:
 
 To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. DO NOT TAKE SHORTCUTS.`;
 
-    /**
-     * @private
-     * @const {string} SYNTHESIZER_SYSTEM_PROMPT
-     * @description The system instruction for the "Synthesizer" stage. It instructs the AI
-     * to take the original question and the results of the executed command plan, and
-     * synthesize a final, user-facing answer.
-     */
     const SYNTHESIZER_SYSTEM_PROMPT = `You are a helpful and witty digital librarian embedded in the OopisOS terminal environment.
 
 Your SECOND task is to synthesize a final answer for the user.
@@ -80,10 +66,6 @@ RULES:
 - Be friendly, conversational, and helpful in your final response.`;
 
 
-    /**
-     * @const {object} geminiCommandDefinition
-     * @description The command definition for the 'gemini' command.
-     */
     const geminiCommandDefinition = {
         commandName: "gemini",
         flagDefinitions: [
@@ -200,7 +182,13 @@ RULES:
             }
 
             // --- 2. STAGE 1: PLANNER ---
-            const plannerResult = await _callGeminiApi(apiKey, [{ role: "user", parts: [{ text: plannerPrompt }] }], PLANNER_SYSTEM_PROMPT);
+            // MODIFICATION: Pass the entire conversation history to the planner
+            const plannerConversation = [
+                ...geminiConversationHistory,
+                { role: "user", parts: [{ text: plannerPrompt }] }
+            ];
+            const plannerResult = await _callGeminiApi(apiKey, plannerConversation, PLANNER_SYSTEM_PROMPT);
+
 
             if (!plannerResult.success) {
                 if (plannerResult.error === "INVALID_API_KEY") {
