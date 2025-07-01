@@ -505,43 +505,43 @@ const PaintManager = (() => {
         return data;
     }
 
-    function _handleResize() {
-        if (!isActiveState) return;
-
-        const oldWidth = currentCanvasWidth;
-        const oldHeight = currentCanvasHeight;
+    function _initializeNewCanvasDimensions() {
         const wrapper = document.getElementById('paint-canvas-wrapper');
         const canvasEl = document.getElementById('paint-canvas');
-        if (!wrapper || !canvasEl) return;
 
-        const canvasStyles = window.getComputedStyle(canvasEl);
-        const charDims = Utils.getCharacterDimensions(canvasStyles.font);
-
-        if (charDims.width <= 0 || charDims.height <= 0) return;
-
-        const availableWidth = wrapper.clientWidth;
-        const availableHeight = wrapper.clientHeight;
-
-        const newWidth = Math.floor(availableWidth / charDims.width);
-        const newHeight = Math.floor(availableHeight / charDims.height);
-
-        if (newWidth === oldWidth && newHeight === oldHeight) return;
-
-        const newCanvasData = _createBlankCanvas(newWidth, newHeight);
-        for (let y = 0; y < Math.min(oldHeight, newHeight); y++) {
-            for (let x = 0; x < Math.min(oldWidth, newWidth); x++) {
-                if (canvasData[y] && canvasData[y][x]) {
-                    newCanvasData[y][x] = canvasData[y][x];
-                }
-            }
+        if (!wrapper || !canvasEl) {
+            // Fallback to default if DOM isn't ready
+            currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+            currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+            canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
+            return;
         }
 
-        canvasData = newCanvasData;
-        currentCanvasWidth = newWidth;
-        currentCanvasHeight = newHeight;
+        // Use a base font size for a consistent initial measurement
+        canvasEl.style.fontSize = `${PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX}px`;
+        const charDims = Utils.getCharacterDimensions(canvasEl.style.font);
 
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        _saveUndoState();
+        if (charDims.width <= 0 || charDims.height <= 0) {
+            // Fallback if measurement fails
+            currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+            currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+        } else {
+            // This is the one-time calculation for a new canvas grid
+            const availableWidth = wrapper.clientWidth;
+            const availableHeight = wrapper.clientHeight;
+            currentCanvasWidth = Math.floor(availableWidth / charDims.width);
+            currentCanvasHeight = Math.floor(availableHeight / charDims.height);
+        }
+
+        // Create the blank canvas data with the now-locked dimensions
+        canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
+    }
+
+    function _handleResize() {
+        // This function must no longer recalculate grid dimensions.
+        // CSS (`overflow: auto` on the wrapper) now handles scrolling.
+        // The function is left as a placeholder for the event listener but does nothing.
+        return;
     }
 
 
@@ -890,21 +890,26 @@ const PaintManager = (() => {
         currentFilePath = filePath;
 
         if (fileContent) {
+            // CASE 1: LOADING AN EXISTING FILE
             try {
                 const parsedData = JSON.parse(fileContent);
                 if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
                     canvasData = parsedData.cells;
+                    // LOCK canvas dimensions from file metadata
                     currentCanvasWidth = parsedData.width;
                     currentCanvasHeight = parsedData.height;
-                } else { throw new Error("Invalid .oopic file format."); }
+                } else {
+                    throw new Error("Invalid .oopic file format.");
+                }
             } catch (e) {
                 void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-                currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-                canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
+                // Fallback to creating a new canvas if the file is corrupt
+                _initializeNewCanvasDimensions();
             }
         } else {
-            _handleResize(); // Initial sizing for a new canvas
+            // CASE 2: CREATING A NEW FILE
+            // The logic from the old _handleResize function is now called ONCE.
+            _initializeNewCanvasDimensions();
         }
 
         undoStack = [JSON.parse(JSON.stringify(canvasData))];
