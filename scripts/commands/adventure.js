@@ -6,7 +6,7 @@
 (() => {
     "use strict";
 
-    // The default, built-in adventure game data.
+    // The default, built-in adventure game data, now with more properties.
     const defaultAdventureData = {
         "title": "The Lost Key of Oopis",
         "startingRoomId": "west_of_house",
@@ -20,11 +20,11 @@
             "west_of_house": {
                 "name": "West of House",
                 "description": "You are standing in an open field west of a white house, with a boarded front door. There is a small mailbox here.",
-                "exits": { "north": "north_of_house", "south": "south_of_house" }
+                "exits": { "north": "north_of_house", "south": "south_of_house", "east": "front_door" }
             },
             "north_of_house": {
                 "name": "North of House",
-                "description": "You are in a forest, with trees surrounding you. A rusty key is lying on the ground.",
+                "description": "You are in a forest, with trees surrounding you. A rusty key is lying on the ground next to an old brass lantern.",
                 "exits": { "south": "west_of_house" }
             },
             "south_of_house": {
@@ -39,9 +39,30 @@
             }
         },
         "items": {
-            "mailbox": { "id": "mailbox", "name": "small mailbox", "noun": "mailbox", "adjectives": ["small"], "description": "It's a small, standard-issue mailbox. It's empty.", "location": "west_of_house", "canTake": false },
-            "key": { "id": "key", "name": "rusty key", "noun": "key", "adjectives": ["rusty", "old"], "description": "It's an old, rusty key. It looks like it might fit the lock on the front door.", "location": "north_of_house", "canTake": true },
-            "door": { "id": "door", "name": "boarded front door", "noun": "door", "adjectives": ["boarded", "front"], "description": "The door is made of sturdy oak, but has been boarded up. It is locked.", "location": "front_door", "canTake": false }
+            "mailbox": {
+                "id": "mailbox", "name": "small mailbox", "noun": "mailbox", "adjectives": ["small"],
+                "description": "It's a small, standard-issue mailbox.", "location": "west_of_house", "canTake": false,
+                "isOpenable": true, "isContainer": true, "isOpen": false, "capacity": 3, "contains": ["leaflet"]
+            },
+            "leaflet": {
+                "id": "leaflet", "name": "leaflet", "noun": "leaflet", "adjectives": ["small", "folded"],
+                "description": "A small, folded leaflet. It reads: 'OopisOS v3.2 - Now with more adventure!'", "location": "mailbox", "canTake": true
+            },
+            "key": {
+                "id": "key", "name": "rusty key", "noun": "key", "adjectives": ["rusty", "old"],
+                "description": "It's an old, rusty key. It looks like it might fit the lock on the front door.", "location": "north_of_house", "canTake": true,
+                "unlocks": "door"
+            },
+            "door": {
+                "id": "door", "name": "boarded front door", "noun": "door", "adjectives": ["boarded", "front", "white"],
+                "description": "The door is made of sturdy oak, but has been boarded up. It is locked.", "location": "front_door", "canTake": false,
+                "isOpenable": true, "isLocked": true, "isOpen": false
+            },
+            "lantern": {
+                "id": "lantern", "name": "brass lantern", "noun": "lantern", "adjectives": ["brass", "old"],
+                "description": "An old brass lantern. It's currently unlit.", "location": "north_of_house", "canTake": true,
+                "isLightSource": true, "isLit": false
+            }
         }
     };
 
@@ -108,7 +129,7 @@
             await TextAdventureEngine.startAdventure(adventureToLoad, { scriptingContext: scriptingContext });
 
             if (scriptingContext && scriptingContext.isScripting) {
-                while (scriptingContext.currentLineIndex < scriptingContext.lines.length - 1 && TextAdventureModal.isActive()) {
+                while (scriptingContext.currentLineIndex < scriptContext.lines.length - 1 && TextAdventureModal.isActive()) {
                     let nextCommand = await TextAdventureModal.requestInput("");
                     if(nextCommand === null) break;
                     await TextAdventureEngine.processCommand(nextCommand);

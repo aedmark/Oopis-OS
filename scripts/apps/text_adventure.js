@@ -146,7 +146,7 @@ const TextAdventureEngine = (() => {
   let lastReferencedItemId = null;
 
   const defaultVerbs = {
-    look: { action: 'look', aliases: ['l', 'examine', 'x'] },
+    look: { action: 'look', aliases: ['l', 'examine', 'x', 'look at', 'look in', 'look inside'] },
     go: { action: 'go', aliases: ['north', 'south', 'east', 'west', 'up', 'down', 'n', 's', 'e', 'w', 'u', 'd', 'enter', 'exit'] },
     take: { action: 'take', aliases: ['get', 'grab', 'pick up'] },
     drop: { action: 'drop', aliases: [] },
@@ -158,7 +158,15 @@ const TextAdventureEngine = (() => {
     load: { action: 'load', aliases: [] },
     dance: { action: 'dance', aliases: [] },
     sing: { action: 'sing', aliases: [] },
-    jump: { action: 'jump', aliases: [] }
+    jump: { action: 'jump', aliases: [] },
+    open: { action: 'open', aliases: [] },
+    close: { action: 'close', aliases: [] },
+    unlock: { action: 'unlock', aliases: [] },
+    lock: { action: 'lock', aliases: [] },
+    eat: { action: 'eat', aliases: [] },
+    wear: { action: 'wear', aliases: [] },
+    light: { action: 'light', aliases: [] },
+    put: { action: 'put', aliases: [] }
   };
 
   function getScriptingContext() {
@@ -336,7 +344,10 @@ const TextAdventureEngine = (() => {
         case 'go': _handleGo(directObject); break;
         case 'take': _handleTake(directObject, onDisambiguation); break;
         case 'drop': _handleDrop(directObject, onDisambiguation); break;
-        case 'use': _handleUse(directObject, indirectObject); break;
+        case 'use': _handleUse(directObject, indirectObject, onDisambiguation); break;
+        case 'open': _handleOpen(directObject, onDisambiguation); break;
+        case 'close': _handleClose(directObject, onDisambiguation); break;
+        case 'unlock': _handleUnlock(directObject, indirectObject, onDisambiguation); break;
         case 'inventory': _handleInventory(); break;
         case 'help': _handleHelp(); break;
         case 'quit': TextAdventureModal.hide(); stopProcessing = true; break;
@@ -436,17 +447,120 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  function _handleUse(directObjectStr, indirectObjectStr) {
+  function _handleUse(directObjectStr, indirectObjectStr, onDisambiguation) {
     if (!directObjectStr || !indirectObjectStr) {
       TextAdventureModal.appendOutput("What do you want to use on what?", 'error');
       return;
     }
     TextAdventureModal.appendOutput(`(Pretending to use ${directObjectStr} on ${indirectObjectStr})`, 'system');
-    // After finding the direct object successfully, you would set the pronoun reference
-    // const directObjectResult = _findItem(directObjectStr, player.inventory);
-    // if (directObjectResult.found.length === 1) {
-    //   lastReferencedItemId = directObjectResult.found[0].id;
-    // }
+  }
+
+  function _handleOpen(target, onDisambiguation) {
+    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see any "${target}" here.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: _performOpen } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you mean, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performOpen(result.found[0]);
+  }
+
+  function _performOpen(item) {
+    if (!item.isOpenable) {
+      TextAdventureModal.appendOutput("You can't open that.", 'error');
+      return;
+    }
+    if (item.isLocked) {
+      TextAdventureModal.appendOutput(`The ${item.name} is locked.`, 'info');
+      return;
+    }
+    if (item.isOpen) {
+      TextAdventureModal.appendOutput(`The ${item.name} is already open.`, 'info');
+      return;
+    }
+    item.isOpen = true;
+    TextAdventureModal.appendOutput(`You open the ${item.name}.`, 'info');
+    lastReferencedItemId = item.id;
+    if (item.isContainer && item.contains.length > 0) {
+      const contents = item.contains.map(id => adventure.items[id].name).join(', ');
+      TextAdventureModal.appendOutput(`Inside, you see: ${contents}.`, 'items');
+    } else if (item.isContainer) {
+      TextAdventureModal.appendOutput(`The ${item.name} is empty.`, 'info');
+    }
+  }
+
+  function _handleClose(target, onDisambiguation) {
+    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see any "${target}" here.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: _performClose } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you mean, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performClose(result.found[0]);
+  }
+
+  function _performClose(item) {
+    if (!item.isOpenable) {
+      TextAdventureModal.appendOutput("You can't close that.", 'error');
+      return;
+    }
+    if (!item.isOpen) {
+      TextAdventureModal.appendOutput(`The ${item.name} is already closed.`, 'info');
+      return;
+    }
+    item.isOpen = false;
+    TextAdventureModal.appendOutput(`You close the ${item.name}.`, 'info');
+    lastReferencedItemId = item.id;
+  }
+
+  function _handleUnlock(target, key, onDisambiguation) {
+    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const targetResult = _findItem(target, scope);
+
+    if (targetResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see any "${target}" here.`, 'error');
+      return;
+    }
+
+    const keyResult = _findItem(key, player.inventory.map(id => adventure.items[id]));
+    if (keyResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't have a "${key}".`, 'error');
+      return;
+    }
+
+    const targetItem = targetResult.found[0];
+    const keyItem = keyResult.found[0];
+
+    if (!targetItem.isLocked) {
+      TextAdventureModal.appendOutput(`The ${targetItem.name} is not locked.`, 'info');
+      return;
+    }
+
+    if (keyItem.unlocks === targetItem.id) {
+      targetItem.isLocked = false;
+      TextAdventureModal.appendOutput(`You unlock the ${targetItem.name} with the ${keyItem.name}.`, 'info');
+      lastReferencedItemId = targetItem.id;
+    } else {
+      TextAdventureModal.appendOutput(`The ${keyItem.name} doesn't seem to fit the lock.`, 'error');
+    }
   }
 
   function _resolveVerb(verbWord) {
@@ -515,6 +629,33 @@ const TextAdventureEngine = (() => {
     TextAdventureModal.appendOutput(helpText, 'system');
   }
 
+  function _getTakableItems() {
+    const takable = [];
+    const roomItems = _getItemsInLocation(player.currentLocation);
+    const queue = [...roomItems];
+    const visitedContainers = new Set();
+
+    while(queue.length > 0) {
+      const item = queue.shift();
+      if (item.isContainer && item.isOpen && !visitedContainers.has(item.id)) {
+        visitedContainers.add(item.id);
+        if (item.contains && item.contains.length > 0) {
+          item.contains.forEach(itemId => {
+            if (adventure.items[itemId]) {
+              takable.push(adventure.items[itemId]);
+              // Add newly found container to the queue to check its contents
+              if (adventure.items[itemId].isContainer) {
+                queue.push(adventure.items[itemId]);
+              }
+            }
+          });
+        }
+      }
+    }
+    return [...roomItems, ...takable];
+  }
+
+
   function _handleLook(target) {
     if (!target) {
       _displayCurrentRoom();
@@ -527,6 +668,16 @@ const TextAdventureEngine = (() => {
       const item = result.found[0];
       TextAdventureModal.appendOutput(item.description, 'info');
       lastReferencedItemId = item.id;
+      if (item.isContainer && item.isOpen) {
+        if (item.contains && item.contains.length > 0) {
+          const contents = item.contains.map(id => adventure.items[id].name).join(', ');
+          TextAdventureModal.appendOutput(`Inside the ${item.name}, you see: ${contents}.`, 'items');
+        } else {
+          TextAdventureModal.appendOutput(`The ${item.name} is empty.`, 'info');
+        }
+      } else if (item.isContainer && !item.isOpen) {
+        TextAdventureModal.appendOutput(`The ${item.name} is closed.`, 'info');
+      }
     } else if (result.found.length > 1) {
       TextAdventureModal.appendOutput("You see several of those. Which one do you mean?", 'info');
     } else {
@@ -562,7 +713,7 @@ const TextAdventureEngine = (() => {
   }
 
   function _handleTake(target, onDisambiguation) {
-    const scope = _getItemsInLocation(player.currentLocation);
+    const scope = _getTakableItems();
     const result = _findItem(target, scope);
 
     if (result.found.length === 0) {
@@ -588,6 +739,13 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput(`You can't take the ${item.name}.`, 'info');
       return;
     }
+
+    const originalLocationId = item.location;
+    if (adventure.items[originalLocationId] && adventure.items[originalLocationId].isContainer) {
+      const container = adventure.items[originalLocationId];
+      container.contains = container.contains.filter(id => id !== item.id);
+    }
+
     player.inventory.push(item.id);
     adventure.items[item.id].location = 'player';
     TextAdventureModal.appendOutput(`You take the ${item.name}.`, 'info');
