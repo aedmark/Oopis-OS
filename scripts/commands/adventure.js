@@ -1,16 +1,54 @@
 /**
  * @file Defines the 'adventure' command, which launches the OopisOS text adventure game engine.
- * @author Andrew Edmark
- * @author Gemini
+ * @author Andrew Edmark & Gemini
  */
 
 (() => {
     "use strict";
 
+    // The default, built-in adventure game data.
+    const defaultAdventureData = {
+        "title": "The Lost Key of Oopis",
+        "startingRoomId": "west_of_house",
+        "winCondition": {
+            "type": "itemInRoom",
+            "itemId": "key",
+            "roomId": "front_door"
+        },
+        "winMessage": "\n*** With a satisfying click, you unlock the door. You have won! ***",
+        "rooms": {
+            "west_of_house": {
+                "name": "West of House",
+                "description": "You are standing in an open field west of a white house, with a boarded front door. There is a small mailbox here.",
+                "exits": { "north": "north_of_house", "south": "south_of_house" }
+            },
+            "north_of_house": {
+                "name": "North of House",
+                "description": "You are in a forest, with trees surrounding you. A rusty key is lying on the ground.",
+                "exits": { "south": "west_of_house" }
+            },
+            "south_of_house": {
+                "name": "South of House",
+                "description": "You are in a garden. There are beautiful flowers here.",
+                "exits": { "north": "west_of_house" }
+            },
+            "front_door": {
+                "name": "Front Door",
+                "description": "You are at the front door. It is boarded up but has a large, rusty lock.",
+                "exits": { "west": "west_of_house" }
+            }
+        },
+        "items": {
+            "mailbox": { "id": "mailbox", "name": "small mailbox", "noun": "mailbox", "adjectives": ["small"], "description": "It's a small, standard-issue mailbox. It's empty.", "location": "west_of_house", "canTake": false },
+            "key": { "id": "key", "name": "rusty key", "noun": "key", "adjectives": ["rusty", "old"], "description": "It's an old, rusty key. It looks like it might fit the lock on the front door.", "location": "north_of_house", "canTake": true },
+            "door": { "id": "door", "name": "boarded front door", "noun": "door", "adjectives": ["boarded", "front"], "description": "The door is made of sturdy oak, but has been boarded up. It is locked.", "location": "front_door", "canTake": false }
+        }
+    };
+
+
     /**
      * @const {object} adventureCommandDefinition
      * @description The command definition for the 'adventure' command.
-     * This object specifies how the command should be parsed and executed.
      */
     const adventureCommandDefinition = {
         commandName: "adventure",
@@ -30,12 +68,6 @@
         ],
         /**
          * The core logic for the 'adventure' command.
-         * It handles loading adventure data from a file or using a default,
-         * then launches the adventure modal and engine. It also manages scripted
-         * interaction for automated testing.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @returns {Promise<object>} A promise that resolves to a command result object.
          */
         coreLogic: async (context) => {
             const { args, currentUser, validatedPaths, options } = context;
@@ -68,29 +100,19 @@
                     return { success: false, error: `adventure: Error parsing adventure file '${filePath}': ${e.message}` };
                 }
             } else {
-                if (typeof window.sampleAdventure === "undefined") {
-                    return { success: false, error: "adventure: Default game data (window.sampleAdventure) not found." };
-                }
-                adventureToLoad = window.sampleAdventure;
+                adventureToLoad = defaultAdventureData;
             }
 
             const scriptingContext = options.scriptingContext || null;
 
-            // Start the adventure engine, which will show the modal.
-            // The `show` function now returns a promise that resolves when the game is hidden.
-            // This `await` is the key to making the `run` command wait.
             await TextAdventureEngine.startAdventure(adventureToLoad, { scriptingContext: scriptingContext });
 
-            // The game's main loop is now handled internally by the engine/modal via either
-            // the keydown listener (for interactive users) or the requestInput function (for scripted users).
-            // We just need to keep feeding it commands if we are in a script.
             if (scriptingContext && scriptingContext.isScripting) {
                 while (scriptingContext.currentLineIndex < scriptingContext.lines.length - 1 && TextAdventureModal.isActive()) {
-                    let nextCommand = await TextAdventureModal.requestInput(""); // requestInput is now the script-aware input source
-                    if(nextCommand === null) break; // End of script
+                    let nextCommand = await TextAdventureModal.requestInput("");
+                    if(nextCommand === null) break;
                     await TextAdventureEngine.processCommand(nextCommand);
                 }
-                // Ensure the modal is hidden if the script finishes without a 'quit' command
                 if (TextAdventureModal.isActive()) {
                     TextAdventureModal.hide();
                 }
@@ -103,16 +125,7 @@
         },
     };
 
-    /**
-     * @const {string} adventureDescription
-     * @description A brief, one-line description of the 'adventure' command for the 'help' command.
-     */
     const adventureDescription = "Starts an interactive text adventure game.";
-
-    /**
-     * @const {string} adventureHelpText
-     * @description The detailed help text for the 'adventure' command, used by 'man'.
-     */
     const adventureHelpText = `Usage: adventure [path_to_game.json]
 
 Launches the OopisOS interactive text adventure game engine. The game runs in a dedicated full-screen view.
@@ -129,8 +142,6 @@ GAMEPLAY COMMANDS
        use [item] on [target]
                           - Uses an inventory item on something in the room.
        inventory (or i)   - Shows what you are carrying.
-       open/close [target]
-                          - Opens or closes an item like a door or chest.
        save / load        - Saves or loads game progress to a file in the VFS.
        help               - Shows this list of gameplay commands.
        quit / exit        - Exits the game and returns to the terminal.
@@ -138,6 +149,5 @@ GAMEPLAY COMMANDS
 CUSTOM ADVENTURES
        You can create your own adventures using a specific JSON format. The JSON file must contain objects for 'rooms' and 'items', and specify a 'startingRoomId' and a 'winCondition'. Upload your .json file and run \`adventure /path/to/your_game.json\` to play.`;
 
-    // Register the command with the system
     CommandRegistry.register("adventure", adventureCommandDefinition, adventureDescription, adventureHelpText);
 })();
