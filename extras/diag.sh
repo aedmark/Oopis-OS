@@ -340,7 +340,7 @@ echo *.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW: Phase 13: Data Processing Utilities ---
+# --- Phase 13: Data Processing Utilities ---
 echo ""
 echo "===== NEW: Testing Data Processing (head, tail, wc, sort, uniq, awk, xargs) ====="
 delay 400
@@ -362,7 +362,7 @@ cat files_to_process.txt | xargs wc -l
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW: Phase 14: Archival Utilities ---
+# --- Phase 14: Archival Utilities ---
 echo ""
 echo "===== NEW: Testing Archival (zip, unzip) ====="
 delay 400
@@ -375,11 +375,11 @@ mkdir extract_here
 unzip test_archive.zip ./extract_here
 tree ./extract_here
 echo "Verifying unzipped content..."
-cat ./extract_here/archive_this/nested_dir/file2.txt
+cat ./extract_here/nested_dir/file2.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW: Phase 15: Disk Utilities ---
+# --- Phase 15: Disk Utilities ---
 echo ""
 echo "===== NEW: Testing Disk Utilities (df, du) ====="
 delay 400
@@ -392,7 +392,7 @@ du -sh .
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW: Phase 16: Backup & Restore Checks ---
+# --- Phase 16: Backup & Restore Checks ---
 echo ""
 echo "===== NEW: Testing Backup & Restore ====="
 delay 400

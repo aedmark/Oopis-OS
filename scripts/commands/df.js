@@ -31,9 +31,9 @@
             const separator = "----------  --------  --------  --------  ----  ----------";
             const data = [
                 "OopisVFS".padEnd(10),
-                format(totalSize).padStart(8),
-                format(usedSize).padStart(8),
-                format(availableSize).padStart(8),
+                String(format(totalSize)).padStart(8),
+                String(format(usedSize)).padStart(8),
+                String(format(availableSize)).padStart(8),
                 `${usePercentage}%`.padStart(4),
                 "/".padEnd(10)
             ].join("  ");
