@@ -7,136 +7,120 @@
     "use strict";
 
     const defaultAdventureData = {
-        "title": "The Lost Key of Oopis",
-        "startingRoomId": "west_of_house",
-        "maxScore": 100,
+        "title": "The Architect's Apprentice",
+        "startingRoomId": "test_chamber",
+        "maxScore": 50,
         "winCondition": {
-            "type": "itemInRoom",
-            "itemId": "key",
-            "roomId": "front_door"
+            "type": "itemUsedOn",
+            "itemId": "page",
+            "targetId": "terminal"
         },
-        "winMessage": "\n*** With a satisfying click, you unlock the door. You have won! ***",
+        "winMessage": "You touch the manual page to the terminal's screen. The text on the page dissolves into light, flowing into the terminal. The room shimmers, and the placeholder textures resolve into solid, finished surfaces. The low hum ceases, replaced by a soft, pleasant ambiance.\n\nThe Architect smiles. 'Excellent work. Test complete.'",
         "rooms": {
-            "west_of_house": {
-                "name": "West of House",
-                "description": "You are standing in an open field west of a white house, with a boarded front door. There is a small mailbox here.",
-                "exits": { "north": "north_of_house", "south": "south_of_house", "east": "front_door" }
+            "test_chamber": {
+                "name": "Test Chamber",
+                "points": 0,
+                "description": "You are in a room that feels... unfinished. Some wall textures are flickering placeholders, and a low, persistent hum fills the air. There is a simple metal desk, a sturdy-looking chest, and a computer terminal with a dark screen. A single door is to the north. A shimmering, holographic figure watches you expectantly.",
+                "exits": { "north": "server_closet" }
             },
-            "north_of_house": {
-                "name": "North of House",
-                "description": "You are in a forest, with trees surrounding you. A rusty key is lying on the ground next to an old brass lantern.",
-                "exits": { "south": "west_of_house" }
-            },
-            "south_of_house": {
-                "name": "South of House",
-                "description": "You are in a garden. There are beautiful flowers here.",
-                "onSmell": "The air is sweet with the scent of blooming flowers.",
-                "exits": { "north": "west_of_house" }
-            },
-            "front_door": {
-                "name": "Front Door",
-                "description": "You are at the front door. It is boarded up but has a large, rusty lock.",
-                "onListen": "You hear the wind whistling through the cracks in the boards.",
-                "exits": { "west": "west_of_house" }
-            },
-            "kitchen": {
-                "name": "Kitchen",
-                "description": "You are in the kitchen of the white house. A passage leads to the west.",
-                "exits": { "west": "living_room" }
-            },
-            "living_room": {
-                "name": "Living Room",
-                "description": "You are in the living room. There is a doorway to the east leading back to the kitchen. A large, ornate rug covers most of the floor.",
-                "exits": { "east": "kitchen" }
-            },
-            "cellar": {
-                "name": "Cellar",
-                "description": "You are in a dark and damp cellar.",
+            "server_closet": {
+                "name": "Server Closet",
+                "description": "You have entered a small, dark closet. It is pitch black.",
                 "isDark": true,
-                "exits": { "up": "living_room" }
+                "onListen": "You hear the quiet whirring of server fans, somewhere in the darkness.",
+                "onSmell": "The air is stale and smells of hot electronics.",
+                "exits": { "south": "test_chamber" }
             }
         },
         "items": {
-            "mailbox": {
-                "id": "mailbox", "name": "small mailbox", "noun": "mailbox", "adjectives": ["small"],
-                "description": "It's a small, standard-issue mailbox.", "location": "west_of_house", "canTake": false,
-                "isOpenable": true, "isContainer": true, "isOpen": false, "capacity": 3, "contains": ["leaflet"]
-            },
-            "leaflet": {
-                "id": "leaflet", "name": "leaflet", "noun": "leaflet", "adjectives": ["small", "folded"],
-                "description": "A small, folded leaflet.", "location": "mailbox", "canTake": true,
-                "readDescription": "WELCOME TO ZORK!\n\nZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!",
-                "points": 5
+            "desk": {
+                "id": "desk", "name": "metal desk", "noun": "desk", "adjectives": ["metal", "simple"],
+                "description": "A simple metal desk. A small, brass key rests on its surface.", "location": "test_chamber", "canTake": false
             },
             "key": {
-                "id": "key", "name": "rusty key", "noun": "key", "adjectives": ["rusty", "old"],
-                "description": "It's an old, rusty key. It looks like it might fit the lock on the front door.", "location": "north_of_house", "canTake": true,
-                "unlocks": "door",
-                "onTouch": "The key feels cold and rough to the touch.",
-                "points": 10
+                "id": "key", "name": "brass key", "noun": "key", "adjectives": ["brass", "small"],
+                "description": "A small, plain brass key. It feels slightly warm.", "location": "test_chamber", "canTake": true,
+                "unlocks": "chest", "points": 10
             },
-            "door": {
-                "id": "door", "name": "boarded front door", "noun": "door", "adjectives": ["boarded", "front", "white"],
-                "description": "The door is made of sturdy oak, but has been boarded up. It is locked.", "location": "front_door", "canTake": false,
-                "isOpenable": true, "isLocked": true, "isOpen": false
+            "chest": {
+                "id": "chest", "name": "wooden chest", "noun": "chest", "adjectives": ["wooden", "sturdy"],
+                "description": "A sturdy wooden chest, firmly locked.", "location": "test_chamber", "canTake": false,
+                "isOpenable": true, "isLocked": true, "isOpen": false, "isContainer": true, "contains": ["page"]
             },
-            "lantern": {
-                "id": "lantern", "name": "brass lantern", "noun": "lantern", "adjectives": ["brass", "old"],
-                "description": "An old brass lantern. It's currently unlit.", "location": "north_of_house", "canTake": true,
-                "isLightSource": true, "isLit": false,
-                "onSmell": "It smells faintly of lamp oil.",
-                "points": 10
+            "page": {
+                "id": "page", "name": "manual page", "noun": "page", "adjectives": ["manual", "lost", "torn"],
+                "description": "A single page torn from a technical manual. It is covered in complex-looking code.", "location": "chest", "canTake": true,
+                "readDescription": "== COMPILATION SCRIPT v1.1 ==\nTo compile the target environment, apply this page directly to the primary terminal interface. Note: Ensure target system is adequately powered before initiating script.",
+                "points": 25
             },
-            "rug": {
-                "id": "rug",
-                "name": "large rug",
-                "noun": "rug",
-                "adjectives": ["large", "ornate"],
-                "location": "living_room",
-                "canTake": false,
-                "state": "default",
+            "terminal": {
+                "id": "terminal", "name": "computer terminal", "noun": "terminal", "adjectives": ["computer", "primary"],
+                "location": "test_chamber", "canTake": false, "state": "off",
                 "descriptions": {
-                    "default": "A large, ornate rug covers the center of the floor. The pattern is intricate, depicting a mythical beast of some kind.",
-                    "moved": "The large rug is rolled to one side of the room, revealing a dark trap door set into the floorboards."
+                    "off": "A computer terminal with a blank, dark screen. A small label at the base reads 'Primary Interface.' It appears to be powered down.",
+                    "on": "The terminal screen glows with a soft green light, displaying a command prompt: [COMPILE_TARGET:]"
                 },
-                "onPull": {
-                    "newState": "moved",
-                    "message": "With a great effort, you pull the heavy rug aside. It reveals a dark, iron-ringed trap door in the floor underneath! A gust of stale, musty air wafts up from the opening."
+                "onUse": {
+                    "page": {
+                        "conditions": [
+                            { "itemId": "terminal", "requiredState": "on" }
+                        ],
+                        "message": "",
+                        "failureMessage": "You touch the page to the dark screen, but nothing happens. The terminal seems to be off.",
+                        "destroyItem": true
+                    }
                 }
             },
-            "trap_door": {
-                "id": "trap_door",
-                "name": "trap door",
-                "noun": "door",
-                "adjectives": ["trap", "dark"],
-                "description": "It's a heavy-looking wooden trap door with a rusty iron ring for a handle.",
-                "location": "living_room",
-                "canTake": false,
-                "isOpenable": true,
-                "isOpen": false
+            "lantern": {
+                "id": "lantern", "name": "old lantern", "noun": "lantern", "adjectives": ["old", "brass"],
+                "description": "An old-fashioned brass lantern. It seems functional and ready to be lit.", "location": "server_closet", "canTake": true,
+                "isLightSource": true, "isLit": false, "points": 5
+            },
+            "power_box": {
+                "id": "power_box", "name": "power box", "noun": "box", "adjectives": ["power", "metal", "heavy"],
+                "location": "server_closet", "canTake": false, "state": "off",
+                "descriptions": {
+                    "off": "A heavy metal power box is bolted to the wall. A large lever on its front is set to the 'OFF' position.",
+                    "on": "The lever on the power box is now in the 'ON' position. The box emits a low electrical hum."
+                },
+                "onPush": {
+                    "newState": "on",
+                    "message": "You push the heavy lever. It clunks into the 'ON' position. You hear an electrical thrum, and a light from the other room flickers under the door.",
+                    "effects": [
+                        { "targetId": "terminal", "newState": "on" }
+                    ]
+                }
             }
         },
         "npcs": {
-            "wizard": {
-                "id": "wizard",
-                "name": "old wizard",
-                "noun": "wizard",
-                "adjectives": ["old", "wise"],
-                "description": "The wizard looks ancient, with a kind face and twinkling eyes. He seems to be waiting for someone to talk to.",
-                "location": "north_of_house",
-                "inventory": [],
+            "architect": {
+                "id": "architect", "name": "The Architect", "noun": "architect", "adjectives": ["shimmering", "holographic"],
+                "description": "A shimmering, semi-transparent figure paces around the room. It looks like a system projection, an architect of this digital space.",
+                "location": "test_chamber", "inventory": [],
                 "dialogue": {
-                    "default": "The wizard smiles. 'A lovely day for an adventure, isn't it?'",
-                    "hello": "The wizard nods. 'Greetings, traveler. What brings you to this part of the woods?'",
-                    "key": "The wizard's eyes twinkle. 'Ah, the key! A very important item indeed. It unlocks things, you see. Doors, primarily.'",
-                    "house": "'The house has been abandoned for years,' the wizard says sadly. 'A great treasure was lost within its walls.'",
-                    "treasure": "'The treasure of Zork! A fool's errand for most, but perhaps not for you. You'll need more than a key to find it, however. You'll need courage... and a light.'",
-                    "lantern": "He looks at the lantern. 'A source of light is crucial in the dark places of the world. Keep it safe.'"
+                    "default": "'Welcome, apprentice,' the holographic figure says. 'This test chamber is bugged. Your task is to find the Lost Manual Page and use it to compile the room correctly. The system is yours to explore.'",
+                    "terminal": "'The terminal is the key to compiling the environment,' the Architect explains, 'but it appears to be without power.'",
+                    "page": "'The Manual Page contains the final compilation script. You'll need to apply it to the terminal.'",
+                    "room": "'Just a sandbox,' it says, gesturing at the flickering walls. 'But a sandbox in need of a fix.'",
+                    "key": "'Every lock has its key. A simple principle, but effective.'"
                 },
                 "onShow": {
-                    "key": "The wizard peers at the key. 'Yes, that is the one. It will open a great many things, but not the final door. For that, you need more than simple metal.'",
-                    "lantern": "He nods approvingly. 'A fine lantern. It will be invaluable in the darkness below.'",
-                    "default": "The wizard looks at the item you're holding. 'Interesting,' he says noncommittally."
+                    "page": "The Architect's form stabilizes for a moment. 'Excellent! Now, use the page on the terminal to compile the room.'",
+                    "default": "The Architect glances at the item. 'An interesting tool, but is it what you need to complete the primary objective?'"
+                }
+            }
+        },
+        "daemons": {
+            "hint_daemon": {
+                "active": true,
+                "repeatable": true,
+                "trigger": {
+                    "type": "every_x_turns",
+                    "value": 10
+                },
+                "action": {
+                    "type": "message",
+                    "text": "The Architect looks at you thoughtfully. 'Remember to examine everything closely. ASK me about things if you get stuck. And if you find something that can be opened, look inside it.'"
                 }
             }
         }
@@ -227,7 +211,7 @@
 
 Launches the OopisOS interactive text adventure game engine. The game runs in a dedicated full-screen view.
 
-If no path to a custom game file is provided, the default built-in adventure, "The Lost Key of Oopis," will be started.
+If no path to a custom game file is provided, the default built-in adventure, "The Architect's Apprentice," will be started.
 
 GAMEPLAY COMMANDS
        The following commands are available while inside the adventure:

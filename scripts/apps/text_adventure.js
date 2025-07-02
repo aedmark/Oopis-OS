@@ -219,6 +219,10 @@ const TextAdventureEngine = (() => {
       moves: 0,
     };
 
+    if (adventure.winCondition) {
+      adventure.winCondition.triggered = false;
+    }
+
     for (const roomId in adventure.rooms) {
       adventure.rooms[roomId].visited = false;
     }
@@ -510,9 +514,8 @@ const TextAdventureEngine = (() => {
           stopProcessing = true;
       }
 
-      _processDaemons();
-
       if (!stopProcessing) {
+        _processDaemons();
         _checkWinConditions();
         if (parsedCommands.length > 1) {
           await new Promise(resolve => setTimeout(resolve, 350));
@@ -631,14 +634,70 @@ const TextAdventureEngine = (() => {
     item.isLit = true;
     TextAdventureModal.appendOutput(`You light the ${item.name}. It glows brightly.`, 'info');
     lastReferencedItemId = item.id;
+    // If we just lit a lamp in a dark room, re-describe the room.
+    if (adventure.rooms[player.currentLocation].isDark) {
+      _displayCurrentRoom();
+    }
   }
 
   function _handleUse(directObjectStr, indirectObjectStr, onDisambiguation) {
     if (!directObjectStr || !indirectObjectStr) {
-      TextAdventureModal.appendOutput("What do you want to use on what?", 'error');
+      TextAdventureModal.appendOutput("What do you want to use, and what do you want to use it on?", 'error');
       return;
     }
-    TextAdventureModal.appendOutput(`(Pretending to use ${directObjectStr} on ${indirectObjectStr})`, 'system');
+
+    const itemToUseResult = _findItem(directObjectStr, player.inventory.map(id => adventure.items[id]));
+    if (itemToUseResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't have a "${directObjectStr}".`, 'error');
+      return;
+    }
+    // Simplification: not handling disambiguation for the item being used.
+    const itemToUse = itemToUseResult.found[0];
+
+    const targetScope = [..._getItemsInLocation(player.currentLocation), ..._getNpcsInLocation(player.currentLocation)];
+    const targetItemResult = _findItem(indirectObjectStr, targetScope);
+
+    if (targetItemResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see a "${indirectObjectStr}" here.`, 'error');
+      return;
+    }
+    // Simplification: not handling disambiguation for the target item.
+    const targetItem = targetItemResult.found[0];
+
+    if (targetItem.onUse && targetItem.onUse[itemToUse.id]) {
+      const useAction = targetItem.onUse[itemToUse.id];
+
+      let conditionsMet = true;
+      if (useAction.conditions) {
+        for (const cond of useAction.conditions) {
+          const itemToCheck = adventure.items[cond.itemId];
+          if (!itemToCheck || itemToCheck.state !== cond.requiredState) {
+            conditionsMet = false;
+            break;
+          }
+        }
+      }
+
+      if (conditionsMet) {
+        if (useAction.message) {
+          TextAdventureModal.appendOutput(useAction.message, 'info');
+        }
+
+        if (adventure.winCondition.type === 'itemUsedOn' &&
+            adventure.winCondition.itemId === itemToUse.id &&
+            adventure.winCondition.targetId === targetItem.id) {
+          adventure.winCondition.triggered = true;
+        }
+
+        if (useAction.destroyItem) {
+          player.inventory = player.inventory.filter(id => id !== itemToUse.id);
+        }
+      } else {
+        TextAdventureModal.appendOutput(useAction.failureMessage || `You can't seem to use the ${itemToUse.name} on the ${targetItem.name} right now.`, 'info');
+      }
+    } else {
+      TextAdventureModal.appendOutput(`Nothing interesting happens when you use the ${itemToUse.name} on the ${targetItem.name}.`, 'info');
+    }
   }
 
   function _handleOpen(target, onDisambiguation) {
@@ -718,6 +777,10 @@ const TextAdventureEngine = (() => {
   }
 
   function _handleUnlock(target, key, onDisambiguation) {
+    if (!key) {
+      TextAdventureModal.appendOutput("What do you want to unlock that with?", 'error');
+      return;
+    }
     const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
     const targetResult = _findItem(target, scope);
 
@@ -827,22 +890,23 @@ const TextAdventureEngine = (() => {
 
     while(queue.length > 0) {
       const item = queue.shift();
+      takable.push(item);
       if (item.isContainer && item.isOpen && !visitedContainers.has(item.id)) {
         visitedContainers.add(item.id);
         if (item.contains && item.contains.length > 0) {
           item.contains.forEach(itemId => {
-            if (adventure.items[itemId]) {
-              takable.push(adventure.items[itemId]);
-              // Add newly found container to the queue to check its contents
-              if (adventure.items[itemId].isContainer) {
-                queue.push(adventure.items[itemId]);
-              }
+            const containedItem = adventure.items[itemId];
+            if (containedItem) {
+              // Set the location of the contained item to its container for scope checking
+              containedItem.location = item.id;
+              queue.push(containedItem);
             }
           });
         }
       }
     }
-    return [...roomItems, ...takable];
+    // Filter out items that are not takable at the end
+    return takable.filter(item => item.canTake);
   }
 
 
@@ -895,19 +959,16 @@ const TextAdventureEngine = (() => {
       return;
     }
 
+    // Before moving, check if the exit is blocked by an item (like a closed door)
+    const exitBlocker = Object.values(adventure.items).find(item => item.location === player.currentLocation && item.blocksExit && item.blocksExit[direction]);
+    if (exitBlocker && (!exitBlocker.isOpenable || !exitBlocker.isOpen)) {
+      TextAdventureModal.appendOutput(exitBlocker.lockedMessage || `The way is blocked by the ${exitBlocker.name}.`);
+      return;
+    }
+
     if (adventure.rooms[exitId]) {
       player.currentLocation = exitId;
       _displayCurrentRoom();
-    } else if (adventure.items[exitId]) {
-      const door = adventure.items[exitId];
-      if (door.state === 'open' && door.leadsTo) {
-        player.currentLocation = door.leadsTo;
-        _displayCurrentRoom();
-      } else if (door.state === 'locked') {
-        TextAdventureModal.appendOutput(door.lockedMessage || `The ${door.name} is locked.`, 'error');
-      } else {
-        TextAdventureModal.appendOutput(`The ${door.name} is closed.`, 'info');
-      }
     } else {
       TextAdventureModal.appendOutput("You can't go that way.", 'error');
     }
@@ -941,8 +1002,11 @@ const TextAdventureEngine = (() => {
       return;
     }
 
+    // Remove item from its original location (room or container)
     const originalLocationId = item.location;
-    if (adventure.items[originalLocationId] && adventure.items[originalLocationId].isContainer) {
+    if (adventure.rooms[originalLocationId]) {
+      // It was in a room, now it will be in player's inventory
+    } else if (adventure.items[originalLocationId] && adventure.items[originalLocationId].isContainer) {
       const container = adventure.items[originalLocationId];
       container.contains = container.contains.filter(id => id !== item.id);
     }
@@ -1036,12 +1100,13 @@ const TextAdventureEngine = (() => {
 
     if (dialogue) {
       const topicLower = topic.toLowerCase();
+      let bestMatch = null;
       for (const keyword in dialogue) {
         if (topicLower.includes(keyword)) {
-          response = dialogue[keyword];
-          break;
+          bestMatch = dialogue[keyword];
         }
       }
+      if (bestMatch) response = bestMatch;
     }
     TextAdventureModal.appendOutput(response, 'info');
   }
@@ -1231,10 +1296,19 @@ const TextAdventureEngine = (() => {
     if (item[effectProperty]) {
       const effect = item[effectProperty];
       if (typeof effect === 'object' && effect.newState) {
+        if(item.state === effect.newState) {
+          TextAdventureModal.appendOutput(`It is already in that state.`, 'info');
+          return;
+        }
         item.state = effect.newState;
         TextAdventureModal.appendOutput(effect.message, 'info');
-        if (item.id === 'rug' && item.state === 'moved') {
-          adventure.rooms['living_room'].exits['down'] = 'cellar';
+
+        if (effect.effects) {
+          effect.effects.forEach(e => {
+            if (adventure.items[e.targetId]) {
+              adventure.items[e.targetId].state = e.newState;
+            }
+          });
         }
       } else if (typeof effect === 'string') {
         TextAdventureModal.appendOutput(effect, 'info');
@@ -1355,6 +1429,8 @@ const TextAdventureEngine = (() => {
       won = true;
     } else if (wc.type === "playerHasItem" && player.inventory.includes(wc.itemId)) {
       won = true;
+    } else if (wc.type === "itemUsedOn" && wc.triggered) {
+      won = true;
     }
 
     if (won) {
@@ -1362,6 +1438,8 @@ const TextAdventureEngine = (() => {
       if(document.getElementById('adventure-input')) {
         document.getElementById('adventure-input').disabled = true;
       }
+      // Since the game has been won, prevent further commands
+      state.inputCallback = null;
     }
   }
 
