@@ -129,7 +129,7 @@
             await TextAdventureEngine.startAdventure(adventureToLoad, { scriptingContext: scriptingContext });
 
             if (scriptingContext && scriptingContext.isScripting) {
-                while (scriptingContext.currentLineIndex < scriptContext.lines.length - 1 && TextAdventureModal.isActive()) {
+                while (scriptContext.currentLineIndex < scriptContext.lines.length - 1 && TextAdventureModal.isActive()) {
                     let nextCommand = await TextAdventureModal.requestInput("");
                     if(nextCommand === null) break;
                     await TextAdventureEngine.processCommand(nextCommand);

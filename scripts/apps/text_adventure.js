@@ -272,11 +272,13 @@ const TextAdventureEngine = (() => {
     let indirectObject = null;
     let prepositionIndex = -1;
 
-    for (const prep of prepositions) {
-      const index = remainingWords.indexOf(prep);
-      if (index !== -1) {
-        prepositionIndex = index;
-        break;
+    if (verb.action !== 'look') {
+      for (const prep of prepositions) {
+        const index = remainingWords.indexOf(prep);
+        if (index !== -1) {
+          prepositionIndex = index;
+          break;
+        }
       }
     }
 
