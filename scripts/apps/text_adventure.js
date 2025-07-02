@@ -159,6 +159,7 @@ const TextAdventureEngine = (() => {
     talk: { action: 'talk', aliases: ['talk to', 'speak to', 'speak with'] },
     ask: { action: 'ask', aliases: [] },
     give: { action: 'give', aliases: [] },
+    show: { action: 'show', aliases: ['show to'] },
     read: { action: 'read', aliases: [] },
     eat: { action: 'eat', aliases: [] },
     drink: { action: 'drink', aliases: [] },
@@ -388,6 +389,7 @@ const TextAdventureEngine = (() => {
         case 'talk': _handleTalk(directObject, onDisambiguation); break;
         case 'ask': _handleAsk(directObject, indirectObject, onDisambiguation); break;
         case 'give': _handleGive(directObject, indirectObject, onDisambiguation); break;
+        case 'show': _handleShow(directObject, indirectObject, onDisambiguation); break;
         case 'read': _handleRead(directObject, onDisambiguation); break;
         case 'eat': _handleEatDrink('eat', directObject, onDisambiguation); break;
         case 'drink': _handleEatDrink('drink', directObject, onDisambiguation); break;
@@ -946,6 +948,54 @@ const TextAdventureEngine = (() => {
     item.location = npc.id;
     TextAdventureModal.appendOutput(`You give the ${item.name} to the ${npc.name}.`, 'info');
     TextAdventureModal.appendOutput(`The ${npc.name} takes it graciously. "Thank you," he says.`, 'info');
+  }
+
+  function _handleShow(itemTarget, npcTarget, onDisambiguation) {
+    if (!itemTarget || !npcTarget) {
+      TextAdventureModal.appendOutput("What do you want to show, and to whom?", 'error');
+      return;
+    }
+
+    const itemResult = _findItem(itemTarget, player.inventory.map(id => adventure.items[id]));
+    if (itemResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't have a "${itemTarget}".`, 'error');
+      return;
+    }
+
+    if (itemResult.found.length > 1) {
+      disambiguationContext = { found: itemResult.found, context: { callback: (item) => _handleShow(item.name, npcTarget, onDisambiguation) } };
+      const itemNames = itemResult.found.map(i => i.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${itemTarget} do you want to show, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    const itemToShow = itemResult.found[0];
+
+    const npcResult = _findItem(npcTarget, _getNpcsInLocation(player.currentLocation));
+    if (npcResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`There is no one here by the name of "${npcTarget}".`, 'error');
+      return;
+    }
+
+    if (npcResult.found.length > 1) {
+      disambiguationContext = { found: npcResult.found, context: { callback: (npc) => _performShow(itemToShow, npc) } };
+      const npcNames = npcResult.found.map(n => n.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${npcTarget} do you want to show it to, the ${npcNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    const targetNpc = npcResult.found[0];
+
+    _performShow(itemToShow, targetNpc);
+  }
+
+  function _performShow(item, npc) {
+    let response = npc.onShow?.default || `The ${npc.name} looks at the ${item.name} but doesn't react.`;
+    if (npc.onShow && npc.onShow[item.id]) {
+      response = npc.onShow[item.id];
+    }
+    TextAdventureModal.appendOutput(`You show the ${item.name} to the ${npc.name}.`, 'info');
+    TextAdventureModal.appendOutput(response, 'info');
   }
 
   function _performDrop(item) {
