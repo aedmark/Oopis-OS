@@ -144,12 +144,29 @@ const TextAdventureEngine = (() => {
   let scriptingContext = null;
   let disambiguationContext = null;
 
+  const defaultVerbs = {
+    look: { action: 'look', aliases: ['l', 'examine', 'x'] },
+    go: { action: 'go', aliases: ['north', 'south', 'east', 'west', 'up', 'down', 'n', 's', 'e', 'w', 'u', 'd', 'enter', 'exit'] },
+    take: { action: 'take', aliases: ['get', 'grab', 'pick up'] },
+    drop: { action: 'drop', aliases: [] },
+    use: { action: 'use', aliases: [] },
+    inventory: { action: 'inventory', aliases: ['i', 'inv'] },
+    help: { action: 'help', aliases: ['?'] },
+    quit: { action: 'quit', aliases: [] },
+    save: { action: 'save', aliases: [] },
+    load: { action: 'load', aliases: [] },
+    dance: { action: 'dance', aliases: [] },
+    sing: { action: 'sing', aliases: [] },
+    jump: { action: 'jump', aliases: [] }
+  };
+
   function getScriptingContext() {
     return scriptingContext;
   }
 
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
+    adventure.verbs = { ...defaultVerbs, ...adventure.verbs };
     scriptingContext = options.scriptingContext || null;
     disambiguationContext = null;
     player = {
@@ -195,6 +212,59 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  function _parseCommand(command) {
+    const words = command.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return { verb: null, directObject: null, indirectObject: null };
+
+    let verb = null;
+    let verbWordCount = 0;
+    for (let i = Math.min(words.length, 3); i > 0; i--) {
+      const potentialVerbPhrase = words.slice(0, i).join(' ');
+      const resolvedVerb = _resolveVerb(potentialVerbPhrase);
+      if (resolvedVerb) {
+        verb = resolvedVerb;
+        verbWordCount = i;
+        break;
+      }
+    }
+
+    if (!verb && words.length === 1) {
+      const potentialGoVerb = _resolveVerb(words[0]);
+      if (potentialGoVerb && potentialGoVerb.action === 'go') {
+        verb = potentialGoVerb;
+        return { verb, directObject: words[0], indirectObject: null };
+      }
+    }
+
+    if (!verb) {
+      return { verb: null, directObject: null, indirectObject: null };
+    }
+
+    const remainingWords = words.slice(verbWordCount);
+    const prepositions = ['on', 'in', 'at', 'with', 'using', 'to', 'under'];
+    let directObject = '';
+    let indirectObject = null;
+    let prepositionIndex = -1;
+    for (const prep of prepositions) {
+      const index = remainingWords.indexOf(prep);
+      if (index !== -1) {
+        prepositionIndex = index;
+        break;
+      }
+    }
+
+    const articles = new Set(['a', 'an', 'the']);
+    if (prepositionIndex !== -1) {
+      directObject = remainingWords.slice(0, prepositionIndex).filter(w => !articles.has(w)).join(' ');
+      indirectObject = remainingWords.slice(prepositionIndex + 1).filter(w => !articles.has(w)).join(' ');
+    } else {
+      directObject = remainingWords.filter(w => !articles.has(w)).join(' ');
+    }
+
+    return { verb, directObject, indirectObject };
+  }
+
+
   async function processCommand(command) {
     if (!command) return;
     const commandLower = command.toLowerCase().trim();
@@ -204,29 +274,118 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    const words = commandLower.split(/\s+/);
-    const verb = _resolveVerb(words[0]);
+    const { verb, directObject, indirectObject } = _parseCommand(command);
 
     if (!verb) {
       TextAdventureModal.appendOutput("I don't understand that verb. Try 'help'.", 'error');
       return;
     }
 
-    const directObjectStr = words.slice(1).join(' ');
-
     switch (verb.action) {
-      case 'look':      _handleLook(directObjectStr); break;
-      case 'go':        _handleGo(directObjectStr); break;
-      case 'take':      _handleTake(directObjectStr); break;
-      case 'drop':      _handleDrop(directObjectStr); break;
+      case 'look':      _handleLook(directObject); break;
+      case 'go':        _handleGo(directObject); break;
+      case 'take':      _handleTake(directObject); break;
+      case 'drop':      _handleDrop(directObject); break;
+      case 'use':       _handleUse(directObject, indirectObject); break;
       case 'inventory': _handleInventory(); break;
       case 'help':      _handleHelp(); break;
       case 'quit':      TextAdventureModal.hide(); break;
+      case 'save':      await _handleSave(directObject); break;
+      case 'load':      await _handleLoad(directObject); break;
+      case 'dance':     TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
+      case 'sing':      TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
+      case 'jump':      TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
       default:
         TextAdventureModal.appendOutput(`I don't know how to "${verb.action}".`, 'error');
     }
 
     _checkWinConditions();
+  }
+
+  async function _handleSave(filename) {
+    if (!filename) {
+      TextAdventureModal.appendOutput("You need to specify a filename to save to. (e.g., save mygame.json)", 'error');
+      return;
+    }
+
+    const saveState = {
+      saveVersion: "1.0",
+      playerState: JSON.parse(JSON.stringify(player)),
+      itemsState: JSON.parse(JSON.stringify(adventure.items))
+    };
+
+    const jsonContent = JSON.stringify(saveState, null, 2);
+    const currentUser = UserManager.getCurrentUser().name;
+    const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+
+    if (!primaryGroup) {
+      TextAdventureModal.appendOutput("Critical Error: Cannot determine primary group for user. Save failed.", 'error');
+      return;
+    }
+
+    const absPath = FileSystemManager.getAbsolutePath(filename);
+    const saveResult = await FileSystemManager.createOrUpdateFile(
+        absPath,
+        jsonContent,
+        { currentUser, primaryGroup }
+    );
+
+    if (!saveResult.success) {
+      TextAdventureModal.appendOutput(`Error saving game: ${saveResult.error}`, 'error');
+      return;
+    }
+
+    if (!(await FileSystemManager.save())) {
+      TextAdventureModal.appendOutput("Critical Error: Failed to persist file system changes.", 'error');
+      return;
+    }
+
+    TextAdventureModal.appendOutput(`Game saved successfully to '${filename}'.`, 'system');
+  }
+
+  async function _handleLoad(filename) {
+    if (!filename) {
+      TextAdventureModal.appendOutput("You need to specify a filename to load from. (e.g., load mygame.json)", 'error');
+      return;
+    }
+
+    const currentUser = UserManager.getCurrentUser().name;
+    const pathInfo = FileSystemManager.validatePath("adventure_load", filename, { expectedType: 'file' });
+
+    if (pathInfo.error) {
+      TextAdventureModal.appendOutput(`Error: ${pathInfo.error}`, 'error');
+      return;
+    }
+
+    if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
+      TextAdventureModal.appendOutput(`Cannot read file '${filename}': Permission denied.`, 'error');
+      return;
+    }
+
+    try {
+      const saveData = JSON.parse(pathInfo.node.content);
+      if (!saveData.playerState || !saveData.itemsState) {
+        throw new Error("Invalid save file format.");
+      }
+
+      player = JSON.parse(JSON.stringify(saveData.playerState));
+      adventure.items = JSON.parse(JSON.stringify(saveData.itemsState));
+
+      TextAdventureModal.appendOutput(`Game loaded successfully from '${filename}'.\n`, 'system');
+      _displayCurrentRoom();
+
+    } catch (e) {
+      TextAdventureModal.appendOutput(`Error loading game: ${e.message}`, 'error');
+    }
+  }
+
+  function _handleUse(directObjectStr, indirectObjectStr) {
+    if (!directObjectStr || !indirectObjectStr) {
+      TextAdventureModal.appendOutput("What do you want to use on what?", 'error');
+      return;
+    }
+    // This is a stub for future implementation. The parser is ready for it.
+    TextAdventureModal.appendOutput(`(Pretending to use ${directObjectStr} on ${indirectObjectStr})`, 'system');
   }
 
   function _resolveVerb(verbWord) {
@@ -291,7 +450,7 @@ const TextAdventureEngine = (() => {
 
   function _handleHelp() {
     const verbList = Object.keys(adventure.verbs).join(', ');
-    const helpText = `Try commands like 'look', 'go north', 'take key', 'drop trophy', 'inventory', or 'quit'.\nAvailable verbs: ${verbList}`;
+    const helpText = `Try commands like 'look', 'go north', 'take key', 'drop trophy', 'inventory', 'save [filename]', 'load [filename]', or 'quit'.\nAvailable verbs: ${verbList}`;
     TextAdventureModal.appendOutput(helpText, 'system');
   }
 
