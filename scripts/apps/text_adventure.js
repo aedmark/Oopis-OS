@@ -167,6 +167,9 @@ const TextAdventureEngine = (() => {
     turn: { action: 'turn', aliases: [] },
     wear: { action: 'wear', aliases: [] },
     remove: { action: 'remove', aliases: ['take off'] },
+    listen: { action: 'listen', aliases: [] },
+    smell: { action: 'smell', aliases: [] },
+    touch: { action: 'touch', aliases: [] },
     dance: { action: 'dance', aliases: [] },
     sing: { action: 'sing', aliases: [] },
     jump: { action: 'jump', aliases: [] },
@@ -393,6 +396,9 @@ const TextAdventureEngine = (() => {
         case 'turn': _handlePushPullTurn('turn', directObject, onDisambiguation); break;
         case 'wear': _handleWearRemove('wear', directObject, onDisambiguation); break;
         case 'remove': _handleWearRemove('remove', directObject, onDisambiguation); break;
+        case 'listen': _handleSensoryVerb('listen', directObject, onDisambiguation); break;
+        case 'smell': _handleSensoryVerb('smell', directObject, onDisambiguation); break;
+        case 'touch': _handleSensoryVerb('touch', directObject, onDisambiguation); break;
         case 'dance': TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
         case 'sing': TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
         case 'jump': TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
@@ -1077,6 +1083,55 @@ const TextAdventureEngine = (() => {
         TextAdventureModal.appendOutput(`You take off the ${item.name}.`, 'info');
       }
     }
+  }
+
+  function _handleSensoryVerb(verb, target, onDisambiguation) {
+    // If there's no target, the player is sensing the room.
+    if (!target) {
+      const room = adventure.rooms[player.currentLocation];
+      const property = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`; // e.g., onListen
+      const defaultMessages = {
+        listen: "You don't hear anything out of the ordinary.",
+        smell: "You don't smell anything unusual.",
+        touch: "You feel the air around you. It feels like... air."
+      };
+
+      const message = room[property] || defaultMessages[verb];
+      TextAdventureModal.appendOutput(message, 'info');
+      return;
+    }
+
+    // If there is a target, find the item.
+    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see any "${target}" to ${verb} here.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: (item) => _performSensoryVerb(verb, item) } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${target} do you want to ${verb}, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+
+    _performSensoryVerb(verb, result.found[0]);
+  }
+
+  function _performSensoryVerb(verb, item) {
+    const property = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`; // e.g., onTouch
+    const defaultMessages = {
+      listen: `The ${item.name} is silent.`,
+      smell: `The ${item.name} doesn't smell like anything in particular.`,
+      touch: `You touch the ${item.name}.`
+    };
+
+    const message = item[property] || defaultMessages[verb];
+    TextAdventureModal.appendOutput(message, 'info');
+    lastReferencedItemId = item.id;
   }
 
 

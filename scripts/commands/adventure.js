@@ -6,7 +6,7 @@
 (() => {
     "use strict";
 
-    // The default, built-in adventure game data, now with an NPC.
+    // The default, built-in adventure game data, now with more NPC interaction.
     const defaultAdventureData = {
         "title": "The Lost Key of Oopis",
         "startingRoomId": "west_of_house",
@@ -30,11 +30,13 @@
             "south_of_house": {
                 "name": "South of House",
                 "description": "You are in a garden. There are beautiful flowers here.",
+                "onSmell": "The air is sweet with the scent of blooming flowers.",
                 "exits": { "north": "west_of_house" }
             },
             "front_door": {
                 "name": "Front Door",
                 "description": "You are at the front door. It is boarded up but has a large, rusty lock.",
+                "onListen": "You hear the wind whistling through the cracks in the boards.",
                 "exits": { "west": "west_of_house" }
             }
         },
@@ -46,12 +48,14 @@
             },
             "leaflet": {
                 "id": "leaflet", "name": "leaflet", "noun": "leaflet", "adjectives": ["small", "folded"],
-                "description": "A small, folded leaflet. It reads: 'OopisOS v3.2 - Now with more adventure!'", "location": "mailbox", "canTake": true
+                "description": "A small, folded leaflet.", "location": "mailbox", "canTake": true,
+                "readDescription": "WELCOME TO ZORK!\n\nZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!"
             },
             "key": {
                 "id": "key", "name": "rusty key", "noun": "key", "adjectives": ["rusty", "old"],
                 "description": "It's an old, rusty key. It looks like it might fit the lock on the front door.", "location": "north_of_house", "canTake": true,
-                "unlocks": "door"
+                "unlocks": "door",
+                "onTouch": "The key feels cold and rough to the touch."
             },
             "door": {
                 "id": "door", "name": "boarded front door", "noun": "door", "adjectives": ["boarded", "front", "white"],
@@ -61,7 +65,8 @@
             "lantern": {
                 "id": "lantern", "name": "brass lantern", "noun": "lantern", "adjectives": ["brass", "old"],
                 "description": "An old brass lantern. It's currently unlit.", "location": "north_of_house", "canTake": true,
-                "isLightSource": true, "isLit": false
+                "isLightSource": true, "isLit": false,
+                "onSmell": "It smells faintly of lamp oil."
             }
         },
         "npcs": {
@@ -80,6 +85,11 @@
                     "house": "'The house has been abandoned for years,' the wizard says sadly. 'A great treasure was lost within its walls.'",
                     "treasure": "'The treasure of Zork! A fool's errand for most, but perhaps not for you. You'll need more than a key to find it, however. You'll need courage... and a light.'",
                     "lantern": "He looks at the lantern. 'A source of light is crucial in the dark places of the world. Keep it safe.'"
+                },
+                "onShow": {
+                    "key": "The wizard peers at the key. 'Yes, that is the one. It will open a great many things, but not the final door. For that, you need more than simple metal.'",
+                    "lantern": "He nods approvingly. 'A fine lantern. It will be invaluable in the darkness below.'",
+                    "default": "The wizard looks at the item you're holding. 'Interesting,' he says noncommittally."
                 }
             }
         }
@@ -176,14 +186,30 @@ GAMEPLAY COMMANDS
        The following commands are available while inside the adventure:
        
        look [target]      - Describes the room or a specific item/person.
+       listen             - Listen to the sounds of the room.
+       smell              - Smell the scents in the room.
+       touch [item]       - Touch an item.
        go [direction]     - Moves the player (e.g., go north).
        talk to [person]   - Start a conversation.
        ask [person] about [topic]
                           - Ask someone about a specific topic.
        give [item] to [person]
                           - Give an item from your inventory to someone.
+       show [item] to [person]
+                          - Show an item to someone without giving it away.
        take [item]        - Picks up an item from the room.
        drop [item]        - Drops an item from inventory.
+       read [item]        - Read a book, scroll, or leaflet.
+       eat [item]         - Eat an edible item.
+       drink [item]       - Drink a potable item.
+       open / close [item]
+                          - Open or close a container or door.
+       lock / unlock [item] with [key]
+                          - Lock or unlock something with a key.
+       push / pull / turn [item]
+                          - Interact with mechanisms.
+       wear / remove [item]
+                          - Wear or remove clothing/armor.
        use [item] on [target]
                           - Uses an inventory item on something in the room.
        inventory (or i)   - Shows what you are carrying.
