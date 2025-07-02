@@ -171,8 +171,8 @@ const Config = (() => {
             "loadstate", "login", "logout", "ls", "man", "mkdir", "mv",
             "paint", "passwd", "printscreen", "ps", "pwd", "reboot",
             "removeuser", "reset", "restore", "rm", "run", "savefs",
-            "savestate", "set", "shuf", "su", "sudo", "tail", "touch", "tree",
-            "unalias", "unset", "unzip", "upload", "useradd", "usermod",
+            "savestate", "set", "shuf", "sort", "su", "sudo", "tail", "touch", "tree",
+            "unalias", "uniq", "unset", "unzip", "upload", "useradd", "usermod",
             "visudo", "wc", "wget", "whoami", "zip, xargs"
         ],
     };

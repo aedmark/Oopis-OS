@@ -50,6 +50,8 @@ RULES:
 9. tail [FLAGS] [FILE]: Outputs the last part of files.
 10. xargs [FLAGS] [COMMAND]: Runs a command for each input line.
 11. echo [ARG]...: Prints the arguments to the screen.
+12. wc [FLAGS] [FILE]: Counts the number of lines, words, and characters in files.
+13. 
 --- END MANIFEST ---
 
 To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. DO NOT TAKE SHORTCUTS.`;
