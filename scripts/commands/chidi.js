@@ -65,7 +65,7 @@
         }],
         argValidation: {
             max: 1, // Allows 0 or 1 arguments.
-            error: "Usage: chidi [-n] [path_to_file_or_directory]"
+            error: "Usage: chidi [-n] [path] or <command> | chidi [-n]"
         },
         pathValidation: [{
             argIndex: 0,
@@ -137,76 +137,128 @@
                 apiKey = keyResult.key;
             }
 
-            let startPath;
-            let startNode;
-            let pathForMsgs;
+            let files = [];
+            let hadErrors = false;
 
-            if (args.length === 0) {
-                pathForMsgs = "the current directory";
-                startPath = FileSystemManager.getCurrentPath();
-                startNode = FileSystemManager.getNodeByPath(startPath);
-                if (!startNode) {
+            // --- New logic for piped input ---
+            if (options.stdinContent) {
+                if (args.length > 0) {
                     return {
                         success: false,
-                        error: "chidi: Critical error - cannot access current working directory."
+                        error: "chidi: does not accept file arguments when receiving piped input."
                     };
                 }
-            } else {
-                pathForMsgs = `'${args[0]}'`;
-                const pathInfo = validatedPaths[0];
-                startNode = pathInfo.node;
-                startPath = pathInfo.resolvedPath;
+                const pathsFromPipe = options.stdinContent.trim().split('\n');
+                for (const path of pathsFromPipe) {
+                    if (!path.trim()) continue;
+
+                    const pathValidation = FileSystemManager.validatePath("chidi (pipe)", path, {
+                        expectedType: 'file'
+                    });
+                    if (pathValidation.error) {
+                        await OutputManager.appendToOutput(`chidi: skipping '${path}': ${pathValidation.error}`, {
+                            typeClass: Config.CSS_CLASSES.WARNING_MSG
+                        });
+                        hadErrors = true;
+                        continue;
+                    }
+
+                    const node = pathValidation.node;
+                    if (!FileSystemManager.hasPermission(node, currentUser, "read")) {
+                        await OutputManager.appendToOutput(`chidi: skipping '${path}': Permission denied`, {
+                            typeClass: Config.CSS_CLASSES.WARNING_MSG
+                        });
+                        hadErrors = true;
+                        continue;
+                    }
+
+                    if (pathValidation.resolvedPath.toLowerCase().endsWith('.md')) {
+                        files.push({
+                            name: pathValidation.resolvedPath.split('/').pop(),
+                            path: pathValidation.resolvedPath,
+                            content: node.content || ''
+                        });
+                    }
+                }
+            } else { // --- Existing logic for argument-based input ---
+                let startPath;
+                let startNode;
+                let pathForMsgs;
+
+                if (args.length === 0) {
+                    pathForMsgs = "the current directory";
+                    startPath = FileSystemManager.getCurrentPath();
+                    startNode = FileSystemManager.getNodeByPath(startPath);
+                    if (!startNode) {
+                        return {
+                            success: false,
+                            error: "chidi: Critical error - cannot access current working directory."
+                        };
+                    }
+                } else {
+                    pathForMsgs = `'${args[0]}'`;
+                    const pathInfo = validatedPaths[0];
+                    startNode = pathInfo.node;
+                    startPath = pathInfo.resolvedPath;
+                }
+
+                try {
+                    files = await getMarkdownFiles(startPath, startNode, currentUser);
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: `chidi: ${error.message}`
+                    };
+                }
             }
 
-            try {
-                const files = await getMarkdownFiles(startPath, startNode, currentUser);
-
-                if (files.length === 0) {
-                    return {
-                        success: true,
-                        output: `No markdown (.md) files found in ${pathForMsgs}.`
-                    };
-                }
-
-                await new Promise(resolve => {
-                    ChidiApp.launch(files, {
-                        onExit: resolve,
-                        isNewSession: flags.new
-                    });
-                });
-
+            if (files.length === 0) {
                 return {
                     success: true,
-                    output: ""
-                };
-
-            } catch (error) {
-                return {
-                    success: false,
-                    error: `chidi: ${error.message}`
+                    output: `No valid markdown (.md) files found to open.`
                 };
             }
+
+            await new Promise(resolve => {
+                ChidiApp.launch(files, {
+                    onExit: resolve,
+                    isNewSession: flags.new
+                });
+            });
+
+            return {
+                success: !hadErrors,
+                output: ""
+            };
+
         }
     };
 
     const description = "Opens the Chidi.md Markdown reader for a specified file or directory.";
     const helpText = `
-Usage: chidi [-n|--new] [path]
+Usage: chidi [-n] [path] | <command> | chidi [-n]
 
 DESCRIPTION
     Launches a modal application to read and analyze Markdown (.md) files.
-    The path can be to a single .md file or a directory.
-    If a directory is provided, Chidi will recursively find and load all .md files within it.
+
+    In the first form, 'chidi' will recursively find all .md files within the
+    optional [path] (or the current directory if no path is given).
+
+    In the second form, 'chidi' reads a newline-separated list of file
+    paths from standard input (e.g., from 'find') and uses that as its
+    corpus, ignoring the file system's recursive discovery.
 
 OPTIONS
     -n, --new
-          Start a new session. Since Chidi's session is ephemeral and resets on
-          every launch, this flag serves to confirm that you are starting fresh.
+          Start a new session. This clears any cached state in the application.
 
-    Inside the application:
-    - Use PREV/NEXT to navigate between files if multiple are loaded.
-    - Use the buttons to interact with the Gemini API regarding the current document.
-    - Click the '×' button or press Esc to exit and return to the terminal.
+EXAMPLES
+    chidi /docs
+        Opens all .md files found inside the /docs directory.
+
+    find . -name "*.md" | chidi
+        Opens all .md files found by the 'find' command in the current
+        directory and its subdirectories.
 `;
 
     CommandRegistry.register(chidiCommandDefinition.commandName, chidiCommandDefinition, description, helpText);

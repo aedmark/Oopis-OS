@@ -20,6 +20,8 @@ const TokenType = {
   OPERATOR_PIPE: "OPERATOR_PIPE",
   OPERATOR_SEMICOLON: "OPERATOR_SEMICOLON",
   OPERATOR_BG: "OPERATOR_BG",
+  OPERATOR_AND: "OPERATOR_AND", // New
+  OPERATOR_OR: "OPERATOR_OR",   // New
   EOF: "EOF",
 };
 
@@ -85,8 +87,13 @@ class Lexer {
         continue;
       }
       if (char === "|") {
-        this.tokens.push(new Token(TokenType.OPERATOR_PIPE, "|", this.position));
-        this.position++;
+        if (this.input[this.position + 1] === "|") {
+          this.tokens.push(new Token(TokenType.OPERATOR_OR, "||", this.position));
+          this.position += 2;
+        } else {
+          this.tokens.push(new Token(TokenType.OPERATOR_PIPE, "|", this.position));
+          this.position++;
+        }
         continue;
       }
       if (char === ";") {
@@ -95,8 +102,13 @@ class Lexer {
         continue;
       }
       if (char === "&") {
-        this.tokens.push(new Token(TokenType.OPERATOR_BG, "&", this.position));
-        this.position++;
+        if (this.input[this.position + 1] === '&') {
+          this.tokens.push(new Token(TokenType.OPERATOR_AND, '&&', this.position));
+          this.position += 2;
+        } else {
+          this.tokens.push(new Token(TokenType.OPERATOR_BG, "&", this.position));
+          this.position++;
+        }
         continue;
       }
       let value = "";
@@ -200,7 +212,7 @@ class ParsedPipeline {
 
 /**
  * The Parser takes a stream of tokens from the Lexer and constructs
- * a structured, hierarchical representation (an array of ParsedPipeline objects).
+ * a structured, hierarchical representation (an array of logical command groups).
  */
 class Parser {
   /**
@@ -259,14 +271,14 @@ class Parser {
    * @returns {ParsedCommandSegment|null} The parsed command segment, or null if no command is found.
    */
   _parseSingleCommandSegment() {
-    const currentTokenType = this._currentToken().type;
-    if (currentTokenType === TokenType.EOF || currentTokenType === TokenType.OPERATOR_PIPE || currentTokenType === TokenType.OPERATOR_SEMICOLON || currentTokenType === TokenType.OPERATOR_BG) {
+    const terminators = [TokenType.EOF, TokenType.OPERATOR_PIPE, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR, TokenType.OPERATOR_GT, TokenType.OPERATOR_GTGT];
+    if (terminators.includes(this._currentToken().type)) {
       return null;
     }
     const cmdToken = this._expectAndConsume(TokenType.WORD);
     const command = cmdToken.value;
     const args = [];
-    while (this._currentToken().type !== TokenType.EOF && this._currentToken().type !== TokenType.OPERATOR_PIPE && this._currentToken().type !== TokenType.OPERATOR_SEMICOLON && this._currentToken().type !== TokenType.OPERATOR_GT && this._currentToken().type !== TokenType.OPERATOR_GTGT && this._currentToken().type !== TokenType.OPERATOR_BG) {
+    while (!terminators.includes(this._currentToken().type)) {
       const argToken = this._currentToken();
       if (argToken.type === TokenType.WORD || argToken.type === TokenType.STRING_DQ || argToken.type === TokenType.STRING_SQ) {
         args.push(argToken.value);
@@ -279,7 +291,7 @@ class Parser {
   }
 
   /**
-   * Parses a complete command pipeline, including pipes, redirection, and backgrounding.
+   * Parses a complete command pipeline, including pipes and redirection.
    * @private
    * @returns {ParsedPipeline|null} The parsed pipeline, or null if the pipeline is empty.
    */
@@ -288,9 +300,10 @@ class Parser {
     let currentSegment = this._parseSingleCommandSegment();
     if (currentSegment) {
       pipeline.segments.push(currentSegment);
-    } else if (this._currentToken().type !== TokenType.EOF && this._currentToken().type !== TokenType.OPERATOR_SEMICOLON && this._currentToken().type !== TokenType.OPERATOR_BG) {
+    } else if (![TokenType.EOF, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR].includes(this._currentToken().type)) {
       throw new Error(`Parser Error: Expected command at start of pipeline, but found ${this._currentToken().type}.`);
     }
+
     while (this._currentToken().type === TokenType.OPERATOR_PIPE) {
       this._nextToken();
       currentSegment = this._parseSingleCommandSegment();
@@ -299,6 +312,7 @@ class Parser {
       }
       pipeline.segments.push(currentSegment);
     }
+
     if (this._currentToken().type === TokenType.OPERATOR_GT || this._currentToken().type === TokenType.OPERATOR_GTGT) {
       const opToken = this._currentToken();
       this._nextToken();
@@ -311,50 +325,40 @@ class Parser {
         file: fileToken.value,
       };
     }
-    if (this._currentToken().type === TokenType.OPERATOR_BG) {
-      const nextSignificantToken = this.tokens[this.position + 1];
-      if (nextSignificantToken.type !== TokenType.EOF && nextSignificantToken.type !== TokenType.OPERATOR_SEMICOLON) {
-        throw new Error("Parser Error: Background operator '&' must be at the end of a command or before a semicolon.");
-      }
-      pipeline.isBackground = true;
-      this._nextToken();
-    }
-    return (pipeline.segments.length > 0 || pipeline.redirection || pipeline.isBackground) ? pipeline : null;
+
+    return pipeline.segments.length > 0 || pipeline.redirection ? pipeline : null;
   }
 
   /**
-   * The main parsing method. It processes the entire token stream and separates
-   * pipelines by semicolons.
-   * @returns {ParsedPipeline[]} An array of ParsedPipeline objects to be executed.
+   * The main parsing method. It processes the entire token stream and creates a
+   * sequence of pipelines and their connecting operators.
+   * @returns {Array<{pipeline: ParsedPipeline, operator: string|null}>} An array of pipeline-operator groups.
    */
   parse() {
-    const allPipelines = [];
+    const commandSequence = [];
     while (this._currentToken().type !== TokenType.EOF) {
       const pipeline = this._parseSinglePipeline();
-      if (pipeline) {
-        allPipelines.push(pipeline);
-      } else if (this._currentToken().type === TokenType.EOF) {
-        break;
-      } else if (this._currentToken().type !== TokenType.OPERATOR_SEMICOLON) {
-        throw new Error(`Parser Error: Unexpected token ${this._currentToken().type} ('${this._currentToken().value}') when expecting start of a command or semicolon.`);
-      }
-      if (this._currentToken().type === TokenType.OPERATOR_SEMICOLON) {
-        this._nextToken();
-        if (this._currentToken().type === TokenType.EOF) {
-          if (allPipelines.length === 0) {
-            allPipelines.push(new ParsedPipeline());
-          }
-          break;
+      if (!pipeline) {
+        if ([TokenType.OPERATOR_AND, TokenType.OPERATOR_OR, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG].includes(this._currentToken().type)) {
+          throw new Error(`Parser Error: Unexpected operator '${this._currentToken().value}' at start of command.`);
         }
-      } else if (this._currentToken().type !== TokenType.EOF) {
-        throw new Error(`Parser Error: Unexpected token ${this._currentToken().type} ('${this._currentToken().value}') after a command pipeline. Expected ';' or end of input.`);
+        break;
+      }
+
+      let operator = null;
+      const currentToken = this._currentToken();
+      if ([TokenType.OPERATOR_AND, TokenType.OPERATOR_OR, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG].includes(currentToken.type)) {
+        operator = currentToken.value;
+        this._nextToken();
+      }
+
+      commandSequence.push({ pipeline, operator });
+
+      if (this._currentToken().type === TokenType.EOF && (operator === '&&' || operator === '||' || operator === '&')) {
+        throw new Error(`Parser Error: Command expected after '${operator}' operator.`);
       }
     }
     this._expectAndConsume(TokenType.EOF);
-    if (allPipelines.length === 0 && this.tokens.length === 1 && this.tokens[0].type === TokenType.EOF) {
-      return [];
-    }
-    if (allPipelines.length === 0) {}
-    return allPipelines;
+    return commandSequence;
   }
 }

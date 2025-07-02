@@ -347,10 +347,6 @@ const CommandExecutor = (() => {
    * @private
    * @param {ParsedPipeline} pipeline - The parsed pipeline object.
    * @param {object} options - Execution options.
-   * @param {boolean} options.isInteractive - Whether the command is being run from an interactive terminal session.
-   * @param {AbortSignal|null} options.signal - The AbortSignal for cancellation, used for background jobs.
-   * @param {object|null} options.scriptingContext - The context object if the command is being run from a script.
-   * @param {boolean} options.suppressOutput - If true, the final output of the pipeline is not printed to the terminal.
    * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the pipeline.
    */
   async function _executePipeline(pipeline, options) {
@@ -638,47 +634,24 @@ const CommandExecutor = (() => {
    * It handles alias expansion, environment variable expansion, parsing, and execution of all pipelines.
    * @param {string} rawCommandText - The raw string entered by the user.
    * @param {object} [options={}] - An object containing execution options.
-   * @param {boolean} [options.isInteractive=true] - Whether the command is being run interactively.
-   * @param {object|null} [options.scriptingContext=null] - The context if the command is part of a script.
-   * @param {boolean} [options.suppressOutput=false] - If true, the final output is not printed to the terminal.
    * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the entire command line.
    */
   async function processSingleCommand(rawCommandText, options = {}) {
     const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
-    let overallResult = {
-      success: true,
-      output: "",
-      error: undefined,
-    };
 
-    // Prevent interactive commands while a script is running
-    if (
-        scriptExecutionInProgress &&
-        isInteractive &&
-        !ModalManager.isAwaiting()
-    ) {
-      await OutputManager.appendToOutput(
-          "Script execution in progress. Input suspended.",
-          {
-            typeClass: Config.CSS_CLASSES.WARNING_MSG,
-          }
-      );
-      return {
-        success: false,
-        error: "Script execution in progress.",
-      };
+    if (scriptExecutionInProgress && isInteractive && !ModalManager.isAwaiting()) {
+      await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+      return { success: false, error: "Script execution in progress." };
     }
 
-    // Handle input for modal dialogs (e.g., confirmations)
     if (ModalManager.isAwaiting()) {
       await ModalManager.handleTerminalInput(rawCommandText);
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return overallResult;
+      return { success: true, output: "" };
     }
 
-    if (EditorManager.isActive()) return overallResult;
+    if (EditorManager.isActive()) return { success: true, output: "" };
 
-    // Expand environment variables
     let expandedCommand = rawCommandText.trim();
     if (expandedCommand) {
       expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)}/g, (match, var1, var2) => {
@@ -687,26 +660,17 @@ const CommandExecutor = (() => {
       });
     }
 
-    // Expand aliases
     const aliasResult = AliasManager.resolveAlias(expandedCommand);
     if (aliasResult.error) {
-      await OutputManager.appendToOutput(aliasResult.error, {
-        typeClass: Config.CSS_CLASSES.ERROR_MSG,
-      });
+      await OutputManager.appendToOutput(aliasResult.error, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return {
-        success: false,
-        error: aliasResult.error,
-      };
+      return { success: false, error: aliasResult.error };
     }
 
-    // NEW: Expand Glob Patterns
     const commandAfterAliases = aliasResult.newCommand;
     const commandToParse = await _expandGlobPatterns(commandAfterAliases);
-
     const cmdToEcho = rawCommandText.trim();
 
-    // Echo the command to the output if interactive
     if (isInteractive) {
       DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
       const prompt = DOM.promptContainer.textContent;
@@ -715,122 +679,76 @@ const CommandExecutor = (() => {
 
     if (cmdToEcho === "") {
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return overallResult;
+      return { success: true, output: "" };
     }
 
     if (isInteractive) HistoryManager.add(cmdToEcho);
-    if (isInteractive && !TerminalUI.getIsNavigatingHistory())
-      HistoryManager.resetIndex();
+    if (isInteractive && !TerminalUI.getIsNavigatingHistory()) HistoryManager.resetIndex();
 
-    // Parse the command string into pipelines
-    let parsedPipelines;
+    let commandSequence;
     try {
-      parsedPipelines = new Parser(
-          new Lexer(commandToParse).tokenize()
-      ).parse();
-
-      if (
-          parsedPipelines.length === 0 ||
-          (parsedPipelines.length === 1 &&
-              parsedPipelines[0].segments.length === 0 &&
-              !parsedPipelines[0].redirection &&
-              !parsedPipelines[0].isBackground)
-      ) {
-        if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-        return {
-          success: true,
-          output: "",
-        };
-      }
+      commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
     } catch (e) {
-      await OutputManager.appendToOutput(e.message || "Command parse error.", {
-        typeClass: Config.CSS_CLASSES.ERROR_MSG,
-      });
+      await OutputManager.appendToOutput(e.message || "Command parse error.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return {
-        success: false,
-        error: e.message || "Command parse error.",
-      };
+      return { success: false, error: e.message || "Command parse error." };
     }
 
-    // Execute each pipeline
-    for (const pipeline of parsedPipelines) {
-      if (
-          pipeline.segments.length === 0 &&
-          !pipeline.redirection &&
-          !pipeline.isBackground
-      ) {
-        continue;
+    let lastPipelineSuccess = true;
+    let overallResult = { success: true, output: "" };
+
+    for (let i = 0; i < commandSequence.length; i++) {
+      const { pipeline, operator } = commandSequence[i];
+
+      if (i > 0) {
+        const prevOperator = commandSequence[i-1].operator;
+        if (prevOperator === '&&' && !lastPipelineSuccess) {
+          continue;
+        }
+        if (prevOperator === '||' && lastPipelineSuccess) {
+          continue;
+        }
       }
-      if (pipeline.isBackground) {
+
+      let result;
+      if (operator === '&') {
+        pipeline.isBackground = true;
         const jobId = ++backgroundProcessIdCounter;
         pipeline.jobId = jobId;
         const abortController = new AbortController();
-        activeJobs[jobId] = {
-          id: jobId,
-          command: cmdToEcho,
-          abortController: abortController,
-        };
-        await OutputManager.appendToOutput(
-            `${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`,
-            {
-              typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-            }
-        );
-        overallResult = {
-          success: true,
-          output: "",
-        };
-        // Execute background job asynchronously
+        activeJobs[jobId] = { id: jobId, command: cmdToEcho, abortController };
+        await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+
         setTimeout(async () => {
           try {
-            const bgResult = await _executePipeline(pipeline, { isInteractive: false, signal: abortController.signal, scriptingContext, suppressOutput });
-            const statusMsg = `[Job ${pipeline.jobId} ${
-                bgResult.success ? "finished" : "finished with error"
-            }${
-                bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`
-            }]`;
-            await OutputManager.appendToOutput(statusMsg, {
-              typeClass: bgResult.success
-                  ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
-                  : Config.CSS_CLASSES.WARNING_MSG,
-              isBackground: true,
-            });
-            if (!bgResult.success)
-              console.log(
-                  `Background job ${pipeline.jobId} error details: ${
-                      bgResult.error || "No specific error message."
-                  }`
-              );
+            const bgResult = await _executePipeline(pipeline, { isInteractive: false, signal: abortController.signal, scriptingContext, suppressOutput: true });
+            const statusMsg = `[Job ${pipeline.jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
+            await OutputManager.appendToOutput(statusMsg, { typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG, isBackground: true });
           } finally {
-            delete activeJobs[pipeline.jobId];
+            delete activeJobs[jobId];
           }
         }, 0);
+
+        result = { success: true };
       } else {
-        overallResult = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
-        if (!overallResult) {
-          const err =
-              "Critical: Pipeline execution returned an undefined result.";
-          console.error(err, "Pipeline:", pipeline);
-          overallResult = {
-            success: false,
-            error: err,
-          };
-        }
-        if (!overallResult.success) break; // Stop on first failed pipeline
+        result = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
       }
+
+      if (!result) {
+        const err = `Critical: Pipeline execution returned an undefined result.`;
+        console.error(err, "Pipeline:", pipeline);
+        result = { success: false, error: err };
+      }
+
+      lastPipelineSuccess = result.success;
+      overallResult = result;
     }
 
     if (isInteractive && !scriptExecutionInProgress) {
       await _finalizeInteractiveModeUI(rawCommandText);
     }
 
-    return (
-        overallResult || {
-          success: false,
-          error: "Fell through processSingleCommand logic.",
-        }
-    );
+    return overallResult;
   }
 
   /**
@@ -839,9 +757,6 @@ const CommandExecutor = (() => {
    * @returns {Object.<string, {handler: Function, description: string, helpText: string}>} The commands object.
    */
   function getCommands() {
-    // Note: This returns the currently *cached* commands. For a full list,
-    // one might need to inspect the CommandRegistry if it's made public,
-    // but for 'man' and 'help', we will adapt them to use this dynamic loading.
     return commands;
   }
 

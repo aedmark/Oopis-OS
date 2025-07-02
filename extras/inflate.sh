@@ -1,9 +1,9 @@
 #!/bin/oopis_shell
 
-# inflate.sh - The OopisOS Instant Universe Generator
+# inflate.sh - The OopisOS Instant Universe Generator (v3.2)
 # Run this and watch a sterile, empty void blossom into a bustling digital ecosystem.
 
-echo "Initiating World-Build Protocol v2.7..."
+echo "Initiating World-Build Protocol v3.2..."
 delay 500
 echo "Warning: Spontaneous generation of files and directories is imminent."
 delay 500
@@ -15,7 +15,7 @@ delay 500
 
 # --- Preparing the canvas (by burning the old one) ---
 echo "Sanitizing the area. Out with the old, in with the weird."
-rm -r -f docs src data reports games .secret_stuff net_practice
+rm -r -f docs src data reports games .secret_stuff net_practice archive_this my_archive.zip
 delay 300
 
 # --- Laying the foundations of your new digital kingdom ---
@@ -104,7 +104,7 @@ chmod 755 src/sys_check.sh
 
 delay 300
 
-# --- /data Directory ---
+# --- /data Directory (Expanded for Data Processing) ---
 echo "Generating juicy data and log files..."
 echo "The quick brown fox, known as Fred, deftly vaulted over Bartholomew, the astonishingly lazy bulldog." > ./data/pangrams.txt
 echo "This file contains the word 'fox' multiple times. A fox is a cunning creature. Fox." >> ./data/pangrams.txt
@@ -121,6 +121,19 @@ echo "[2025-06-08T21:05:16Z] [FATAL] Reality matrix desynchronized. Reboot advis
 touch ./data/old_data.tmp
 touch ./data/session.tmp
 
+echo "Creating files for data processing and xargs showcase..."
+echo "alpha" > ./data/data_stream.txt
+echo "gamma" >> ./data/data_stream.txt
+echo "beta" >> ./data/data_stream.txt
+echo "delta" >> ./data/data_stream.txt
+echo "gamma" >> ./data/data_stream.txt
+echo "100" >> ./data/data_stream.txt
+echo "50" >> ./data/data_stream.txt
+echo "200" >> ./data/data_stream.txt
+
+echo "./data/data_stream.txt" > ./data/files_to_process.txt
+echo "./data/pangrams.txt" >> ./data/files_to_process.txt
+
 delay 300
 
 # --- Networking Showcase ---
@@ -132,6 +145,13 @@ echo "Try this: \`wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master
 echo "# Q2 Financial Report: OopisCorp" > ./reports/financials_q2.txt
 echo "## Executive Summary" >> ./reports/financials_q2.txt
 echo "Q2 was a period of explosive growth. Revenue is up 150%, mostly from our strategic pivot to selling artisanal, gluten-free rubber ducks. The 'Unicorn Cursor' feature was also a minor success." >> ./reports/financials_q2.txt
+
+# --- Archival Showcase ---
+echo "Creating files for zip/unzip demonstration..."
+mkdir -p archive_this/nested
+echo "This is the first file." > archive_this/file1.txt
+echo "This is the second file, inside a nested directory." > archive_this/nested/file2.log
+echo "This is a secret file." > archive_this/.secret_in_archive.txt
 
 # --- Adventure Game Showcase ---
 echo "Installing custom adventure game 'Quest for the Lost Semicolon'..."
@@ -151,7 +171,7 @@ mkdir /shared_for_guest
 chown Guest /shared_for_guest
 chmod 777 /shared_for_guest
 echo "This is a shared space. Please clean up your files. Or don't. I'm a sign, not a cop." > /shared_for_guest/readme.txt
-echo "Welcome to OopisOS v2.7! Today's forecast: 100% chance of awesome." > /etc/motd
+echo "Welcome to OopisOS v3.2! Today's forecast: 100% chance of awesome." > /etc/motd
 echo "127.0.0.1 localhost oopis.local" > /etc/hosts
 chmod 644 /etc/motd
 chmod 644 /etc/hosts
@@ -173,6 +193,9 @@ echo " "
 echo "  > \`ls -R\` or \`tree\` to see the beautiful world we've built."
 echo "  > \`alias\` to see the cool shortcuts you now have."
 echo "  > \`grep -iR 'duck' .\` to begin your investigation."
+echo "  > \`sort ./data/data_stream.txt | uniq -c\` to test data processing."
+echo "  > \`cat ./data/files_to_process.txt | xargs wc -l\` to see xargs in action."
+echo "  > \`zip my_archive.zip ./archive_this\` and then \`unzip my_archive.zip\` to test archival."
 echo "  > \`cat /vault/top_secret.txt\` to test the security system (it'll fail)."
 echo "  > \`chidi ./docs\` to have the AI read you the new, improved manuals."
 echo "  > \`adventure ./games/quest.json\` to start your epic quest."
