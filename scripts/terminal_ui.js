@@ -698,8 +698,11 @@ const TabCompletionManager = (() => {
 
             const commandDefinition = CommandExecutor.getCommands()[commandName]?.handler.definition;
             if (!commandDefinition) return [];
-
-            if (commandDefinition.completionType === "users") {
+            if (commandDefinition.completionType === "commands") {
+                suggestions = Config.COMMANDS_MANIFEST
+                    .filter((cmd) => cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
+                    .sort();
+            } else if (commandDefinition.completionType === "users") {
                 const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
                 const userNames = Object.keys(users);
                 if (!userNames.includes(Config.USER.DEFAULT_NAME)) userNames.push(Config.USER.DEFAULT_NAME);

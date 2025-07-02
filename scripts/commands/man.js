@@ -82,6 +82,7 @@
      */
     const manCommandDefinition = {
         commandName: "man",
+        completionType: "commands",
         argValidation: {
             exact: 1, // Expects exactly one argument: the command name.
             error: "what manual page do you want?",
