@@ -1,4 +1,139 @@
 /**
+ * @file Manages the text adventure game engine and its associated user interface modal.
+ * @module TextAdventure
+ * @author Andrew Edmark & Gemini
+ * @author The Architect (UI Module Design)
+ */
+
+/**
+ * @module TextAdventureModal
+ * @description Manages all UI components and user interaction for the text adventure game.
+ */
+const TextAdventureModal = (() => {
+  "use strict";
+
+  let state = {
+    isModalOpen: false,
+    isActive: false,
+    inputCallback: null,
+    exitPromiseResolve: null
+  };
+
+  let elements = {};
+
+  function _createLayout(adventureData) {
+    const title = Utils.createElement('span', { id: 'adventure-title', textContent: adventureData.title });
+    const closeBtn = Utils.createElement('button', { id: 'adventure-close-btn', className: 'btn btn--cancel', textContent: 'Exit', eventListeners: { click: hide } });
+    const header = Utils.createElement('header', { id: 'adventure-header' }, title, closeBtn);
+    const output = Utils.createElement('div', { id: 'adventure-output' });
+    const inputPrompt = Utils.createElement('span', { id: 'adventure-prompt', textContent: '>' });
+    const input = Utils.createElement('input', { id: 'adventure-input', type: 'text', spellcheck: 'false', autocapitalize: 'none' });
+    const inputContainer = Utils.createElement('div', { id: 'adventure-input-container' }, inputPrompt, input);
+    const container = Utils.createElement('div', { id: 'adventure-container' }, header, output, inputContainer);
+
+    elements = { container, header, output, input };
+    return container;
+  }
+
+  function _handleInput(e) {
+    if (e.key !== 'Enter' || !state.inputCallback) return;
+    const command = elements.input.value;
+    elements.input.value = '';
+    appendOutput(`> ${command}`, 'system');
+    state.inputCallback(command);
+  }
+
+  function _setupEventListeners() {
+    elements.input.addEventListener('keydown', _handleInput);
+    document.addEventListener('keydown', _handleGlobalKeys);
+  }
+
+  function _removeEventListeners() {
+    if (elements.input) {
+      elements.input.removeEventListener('keydown', _handleInput);
+    }
+    document.removeEventListener('keydown', _handleGlobalKeys);
+  }
+
+  function _handleGlobalKeys(e) {
+    if (e.key === 'Escape' && state.isModalOpen) {
+      hide();
+    }
+  }
+
+  function show(adventureData, callbacks, scriptingContext) {
+    if (state.isModalOpen) return Promise.resolve();
+
+    const layout = _createLayout(adventureData);
+    AppLayerManager.show(layout);
+
+    state.isModalOpen = true;
+    state.isActive = true;
+    state.inputCallback = callbacks.processCommand;
+
+    _setupEventListeners();
+    elements.input.focus();
+
+    if (scriptingContext && scriptingContext.isScripting) {
+      elements.input.style.display = 'none';
+    }
+
+    return new Promise(resolve => {
+      state.exitPromiseResolve = resolve;
+    });
+  }
+
+  function hide() {
+    if (!state.isModalOpen) return;
+    _removeEventListeners();
+    AppLayerManager.hide();
+    const resolver = state.exitPromiseResolve;
+    state = { isModalOpen: false, isActive: false, inputCallback: null, exitPromiseResolve: null };
+    elements = {};
+
+    if (resolver) {
+      resolver();
+    }
+  }
+
+  function appendOutput(text, styleClass = '') {
+    if (!elements.output) return;
+    const p = Utils.createElement('p', { textContent: text });
+    if (styleClass) {
+      p.className = `adv-${styleClass}`;
+    }
+    elements.output.appendChild(p);
+    elements.output.scrollTop = elements.output.scrollHeight;
+  }
+
+  function requestInput(promptMessage) {
+    return new Promise(resolve => {
+      const scriptContext = TextAdventureEngine.getScriptingContext();
+      if (scriptContext && scriptContext.isScripting) {
+        while (scriptContext.currentLineIndex < scriptContext.lines.length - 1) {
+          scriptContext.currentLineIndex++;
+          const line = scriptContext.lines[scriptContext.currentLineIndex]?.trim();
+          if (line && !line.startsWith('#')) {
+            appendOutput(`> ${line}`, 'system');
+            resolve(line);
+            return;
+          }
+        }
+        resolve(null); // End of script
+      }
+    });
+  }
+
+  return {
+    show,
+    hide,
+    appendOutput,
+    requestInput,
+    isActive: () => state.isActive
+  };
+})();
+
+/**
  * @module TextAdventureEngine
  * @description The core engine for processing text adventure game logic.
  */
@@ -9,34 +144,24 @@ const TextAdventureEngine = (() => {
   let scriptingContext = null;
   let disambiguationContext = null;
 
-  /**
-   * Starts a new adventure game.
-   * @param {object} adventureData - The adventure data object.
-   * @param {object} [options={}] - Options for the game session.
-   * @returns {Promise<void>} A promise that resolves when the game session ends.
-   */
+  function getScriptingContext() {
+    return scriptingContext;
+  }
+
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
     scriptingContext = options.scriptingContext || null;
-    disambiguationContext = null; // Ensure context is cleared on new game start
+    disambiguationContext = null;
     player = {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
     };
 
-    // Initial display of the starting room
+    const gamePromise = TextAdventureModal.show(adventure, { processCommand }, scriptingContext);
     _displayCurrentRoom();
-
-    // The modal's show function returns a promise that resolves when the modal is hidden (game ends).
-    return TextAdventureModal.show(adventure, {
-      processCommand
-    }, scriptingContext);
+    return gamePromise;
   }
 
-  /**
-   * Finds all items located in a specific room or container.
-   * @private
-   */
   function _getItemsInLocation(locationId) {
     const items = [];
     for (const id in adventure.items) {
@@ -47,10 +172,6 @@ const TextAdventureEngine = (() => {
     return items;
   }
 
-  /**
-   * Displays the name, description, items, and exits of the current room.
-   * @private
-   */
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
     if (!room) {
@@ -74,10 +195,6 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  /**
-   * Processes a single command from the player.
-   * @param {string} command - The command string entered by the player.
-   */
   async function processCommand(command) {
     if (!command) return;
     const commandLower = command.toLowerCase().trim();
@@ -95,7 +212,6 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    // Simplified parsing for now. A more advanced parser would handle prepositions better.
     const directObjectStr = words.slice(1).join(' ');
 
     switch (verb.action) {
@@ -113,10 +229,6 @@ const TextAdventureEngine = (() => {
     _checkWinConditions();
   }
 
-  /**
-   * Resolves a verb word to its action by checking aliases.
-   * @private
-   */
   function _resolveVerb(verbWord) {
     if (!verbWord) return null;
     for (const verbKey in adventure.verbs) {
@@ -128,10 +240,6 @@ const TextAdventureEngine = (() => {
     return null;
   }
 
-  /**
-   * Finds an item by matching its noun and adjectives against a target string.
-   * @private
-   */
   function _findItem(targetString, scope) {
     if (!targetString) return { found: [] };
     const targetWords = new Set(targetString.toLowerCase().split(/\s+/).filter(Boolean));
@@ -160,10 +268,6 @@ const TextAdventureEngine = (() => {
     return { found: potentialItems.filter(p => p.score === topScore).map(p => p.item) };
   }
 
-  /**
-   * Handles user input when the engine is in a state of ambiguity.
-   * @private
-   */
   function _handleDisambiguation(response) {
     const { found, context } = disambiguationContext;
     const result = _findItem(response, found);
@@ -283,7 +387,6 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput(`Which do you mean to drop, the ${itemNames}?`, 'info');
       return;
     }
-
     _performDrop(result.found[0]);
   }
 
@@ -306,15 +409,15 @@ const TextAdventureEngine = (() => {
 
     if (won) {
       TextAdventureModal.appendOutput(`\n${adventure.winMessage}`, 'adv-success');
-      // Disable further input and show exit button clearly
-      const inputEl = document.getElementById('adventure-input');
-      if (inputEl) inputEl.disabled = true;
-      // The modal will be closed by the user or script completion.
+      if(document.getElementById('adventure-input')) {
+        document.getElementById('adventure-input').disabled = true;
+      }
     }
   }
 
   return {
     startAdventure,
     processCommand,
+    getScriptingContext,
   };
 })();
