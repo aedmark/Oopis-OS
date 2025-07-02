@@ -255,10 +255,23 @@ const TextAdventureEngine = (() => {
     return entity.description;
   }
 
+  function _hasLightSource() {
+    return player.inventory.some(itemId => {
+      const item = adventure.items[itemId];
+      return item && item.isLightSource && item.isLit;
+    });
+  }
+
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
     if (!room) {
       TextAdventureModal.appendOutput("Error: You have fallen into the void. The game cannot continue.", 'error');
+      return;
+    }
+
+    if (room.isDark && !_hasLightSource()) {
+      TextAdventureModal.updateStatusLine(room.name, player.score, player.moves);
+      TextAdventureModal.appendOutput("It is pitch black. You are likely to be eaten by a grue.", 'room-desc');
       return;
     }
 
@@ -459,6 +472,7 @@ const TextAdventureEngine = (() => {
         case 'dance': TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
         case 'sing': TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
         case 'jump': TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
+        case 'light': _handleLight(directObject, onDisambiguation); break;
         default:
           TextAdventureModal.appendOutput(`I don't know how to "${verb.action}".`, 'error');
           stopProcessing = true;
@@ -550,6 +564,39 @@ const TextAdventureEngine = (() => {
     } catch (e) {
       TextAdventureModal.appendOutput(`Error loading game: ${e.message}`, 'error');
     }
+  }
+
+  function _handleLight(target, onDisambiguation) {
+    const scope = player.inventory.map(id => adventure.items[id]);
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't have a "${target}" to light.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: _performLight } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you want to light, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performLight(result.found[0]);
+  }
+
+  function _performLight(item) {
+    if (!item.isLightSource) {
+      TextAdventureModal.appendOutput(`You can't light the ${item.name}.`, 'error');
+      return;
+    }
+    if (item.isLit) {
+      TextAdventureModal.appendOutput(`The ${item.name} is already lit.`, 'info');
+      return;
+    }
+    item.isLit = true;
+    TextAdventureModal.appendOutput(`You light the ${item.name}. It glows brightly.`, 'info');
+    lastReferencedItemId = item.id;
   }
 
   function _handleUse(directObjectStr, indirectObjectStr, onDisambiguation) {

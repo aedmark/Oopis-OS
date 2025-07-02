@@ -52,6 +52,7 @@
             "cellar": {
                 "name": "Cellar",
                 "description": "You are in a dark and damp cellar.",
+                "isDark": true,
                 "exits": { "up": "living_room" }
             }
         },
@@ -100,7 +101,7 @@
                 },
                 "onPull": {
                     "newState": "moved",
-                    "message": "With a great effort, you pull the heavy rug aside. It reveals a dark, iron-ringed trap door in the floor underneath!"
+                    "message": "With a great effort, you pull the heavy rug aside. It reveals a dark, iron-ringed trap door in the floor underneath! A gust of stale, musty air wafts up from the opening."
                 }
             },
             "trap_door": {
