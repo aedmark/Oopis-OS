@@ -82,7 +82,7 @@
     };
 
     const sortDescription = "Sorts lines of text from a file or standard input.";
-    const sortHelpText = \`Usage: sort [OPTION]... [FILE]...
+    const sortHelpText = `Usage: sort [OPTION]... [FILE]...
 
 Sort lines of text.
 
@@ -106,7 +106,7 @@ EXAMPLES
               
        ls | sort -r
               Displays the contents of the current directory in reverse
-              alphabetical order.\`;
+              alphabetical order.`;
 
     CommandRegistry.register("sort", sortCommandDefinition, sortDescription, sortHelpText);
 })();
