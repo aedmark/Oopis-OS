@@ -143,6 +143,7 @@ const TextAdventureEngine = (() => {
   let player;
   let scriptingContext = null;
   let disambiguationContext = null;
+  let lastReferencedItemId = null;
 
   const defaultVerbs = {
     look: { action: 'look', aliases: ['l', 'examine', 'x'] },
@@ -169,6 +170,7 @@ const TextAdventureEngine = (() => {
     adventure.verbs = { ...defaultVerbs, ...adventure.verbs };
     scriptingContext = options.scriptingContext || null;
     disambiguationContext = null;
+    lastReferencedItemId = null;
     player = {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
@@ -212,14 +214,28 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  function _parseCommand(command) {
-    const words = command.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    if (words.length === 0) return { verb: null, directObject: null, indirectObject: null };
+  function _parseSingleCommand(command, defaultVerb = null) {
+    const originalWords = command.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+    const resolvedWords = originalWords.map(word => {
+      if (word === 'it') {
+        if (lastReferencedItemId && adventure.items[lastReferencedItemId]) {
+          return adventure.items[lastReferencedItemId].noun;
+        }
+        return 'IT_ERROR_NO_REF';
+      }
+      return word;
+    });
+
+    if (resolvedWords.includes('IT_ERROR_NO_REF')) {
+      return { error: "You haven't referred to anything yet. What do you mean by 'it'?" };
+    }
 
     let verb = null;
     let verbWordCount = 0;
-    for (let i = Math.min(words.length, 3); i > 0; i--) {
-      const potentialVerbPhrase = words.slice(0, i).join(' ');
+
+    for (let i = Math.min(resolvedWords.length, 3); i > 0; i--) {
+      const potentialVerbPhrase = resolvedWords.slice(0, i).join(' ');
       const resolvedVerb = _resolveVerb(potentialVerbPhrase);
       if (resolvedVerb) {
         verb = resolvedVerb;
@@ -228,23 +244,26 @@ const TextAdventureEngine = (() => {
       }
     }
 
-    if (!verb && words.length === 1) {
-      const potentialGoVerb = _resolveVerb(words[0]);
-      if (potentialGoVerb && potentialGoVerb.action === 'go') {
-        verb = potentialGoVerb;
-        return { verb, directObject: words[0], indirectObject: null };
+    if (!verb) {
+      if (defaultVerb) {
+        verb = defaultVerb;
+        verbWordCount = 0;
+      } else if (resolvedWords.length === 1) {
+        const potentialGoVerb = _resolveVerb(resolvedWords[0]);
+        if (potentialGoVerb && potentialGoVerb.action === 'go') {
+          return { verb: potentialGoVerb, directObject: resolvedWords[0], indirectObject: null };
+        }
+      } else {
+        return { verb: null, error: `I don't understand the verb in "${command}".` };
       }
     }
 
-    if (!verb) {
-      return { verb: null, directObject: null, indirectObject: null };
-    }
-
-    const remainingWords = words.slice(verbWordCount);
+    const remainingWords = resolvedWords.slice(verbWordCount);
     const prepositions = ['on', 'in', 'at', 'with', 'using', 'to', 'under'];
     let directObject = '';
     let indirectObject = null;
     let prepositionIndex = -1;
+
     for (const prep of prepositions) {
       const index = remainingWords.indexOf(prep);
       if (index !== -1) {
@@ -265,41 +284,79 @@ const TextAdventureEngine = (() => {
   }
 
 
+  function _parseMultiCommand(command) {
+    const commands = [];
+    const separator = ';;;';
+    const commandString = command.toLowerCase().trim()
+        .replace(/\s*,\s*and\s*|\s*,\s*|\s+and\s+|\s+then\s+/g, separator);
+    const commandQueue = commandString.split(separator).filter(c => c.trim());
+
+    let lastVerb = null;
+    for (const subCommandStr of commandQueue) {
+      const parsed = _parseSingleCommand(subCommandStr, lastVerb);
+      if (parsed.verb) {
+        commands.push(parsed);
+        const firstWord = subCommandStr.split(/\s+/)[0];
+        if (_resolveVerb(firstWord)) {
+          lastVerb = parsed.verb;
+        }
+      } else {
+        commands.push({ error: parsed.error || `I don't understand "${subCommandStr}".` });
+        break;
+      }
+    }
+    return commands;
+  }
+
+
   async function processCommand(command) {
     if (!command) return;
-    const commandLower = command.toLowerCase().trim();
 
     if (disambiguationContext) {
-      _handleDisambiguation(commandLower);
+      _handleDisambiguation(command.toLowerCase().trim());
       return;
     }
 
-    const { verb, directObject, indirectObject } = _parseCommand(command);
+    const parsedCommands = _parseMultiCommand(command);
+    let stopProcessing = false;
 
-    if (!verb) {
-      TextAdventureModal.appendOutput("I don't understand that verb. Try 'help'.", 'error');
-      return;
+    for (const cmd of parsedCommands) {
+      if (stopProcessing) break;
+
+      if (cmd.error) {
+        TextAdventureModal.appendOutput(cmd.error, 'error');
+        break;
+      }
+
+      const { verb, directObject, indirectObject } = cmd;
+      const onDisambiguation = () => { stopProcessing = true; };
+
+      switch (verb.action) {
+        case 'look': _handleLook(directObject); break;
+        case 'go': _handleGo(directObject); break;
+        case 'take': _handleTake(directObject, onDisambiguation); break;
+        case 'drop': _handleDrop(directObject, onDisambiguation); break;
+        case 'use': _handleUse(directObject, indirectObject); break;
+        case 'inventory': _handleInventory(); break;
+        case 'help': _handleHelp(); break;
+        case 'quit': TextAdventureModal.hide(); stopProcessing = true; break;
+        case 'save': await _handleSave(directObject); break;
+        case 'load': await _handleLoad(directObject); break;
+        case 'dance': TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
+        case 'sing': TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
+        case 'jump': TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
+        default:
+          TextAdventureModal.appendOutput(`I don't know how to "${verb.action}".`, 'error');
+          stopProcessing = true;
+      }
+
+      if (!stopProcessing) {
+        _checkWinConditions();
+        if (parsedCommands.length > 1) {
+          await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      }
     }
-
-    switch (verb.action) {
-      case 'look':      _handleLook(directObject); break;
-      case 'go':        _handleGo(directObject); break;
-      case 'take':      _handleTake(directObject); break;
-      case 'drop':      _handleDrop(directObject); break;
-      case 'use':       _handleUse(directObject, indirectObject); break;
-      case 'inventory': _handleInventory(); break;
-      case 'help':      _handleHelp(); break;
-      case 'quit':      TextAdventureModal.hide(); break;
-      case 'save':      await _handleSave(directObject); break;
-      case 'load':      await _handleLoad(directObject); break;
-      case 'dance':     TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
-      case 'sing':      TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
-      case 'jump':      TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
-      default:
-        TextAdventureModal.appendOutput(`I don't know how to "${verb.action}".`, 'error');
-    }
-
-    _checkWinConditions();
   }
 
   async function _handleSave(filename) {
@@ -384,8 +441,12 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput("What do you want to use on what?", 'error');
       return;
     }
-    // This is a stub for future implementation. The parser is ready for it.
     TextAdventureModal.appendOutput(`(Pretending to use ${directObjectStr} on ${indirectObjectStr})`, 'system');
+    // After finding the direct object successfully, you would set the pronoun reference
+    // const directObjectResult = _findItem(directObjectStr, player.inventory);
+    // if (directObjectResult.found.length === 1) {
+    //   lastReferencedItemId = directObjectResult.found[0].id;
+    // }
   }
 
   function _resolveVerb(verbWord) {
@@ -463,7 +524,9 @@ const TextAdventureEngine = (() => {
     const result = _findItem(target, scope);
 
     if (result.found.length === 1) {
-      TextAdventureModal.appendOutput(result.found[0].description, 'info');
+      const item = result.found[0];
+      TextAdventureModal.appendOutput(item.description, 'info');
+      lastReferencedItemId = item.id;
     } else if (result.found.length > 1) {
       TextAdventureModal.appendOutput("You see several of those. Which one do you mean?", 'info');
     } else {
@@ -498,7 +561,7 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  function _handleTake(target) {
+  function _handleTake(target, onDisambiguation) {
     const scope = _getItemsInLocation(player.currentLocation);
     const result = _findItem(target, scope);
 
@@ -514,6 +577,7 @@ const TextAdventureEngine = (() => {
       };
       const itemNames = result.found.map(item => item.name).join(' or the ');
       TextAdventureModal.appendOutput(`Which do you mean, the ${itemNames}?`, 'info');
+      onDisambiguation();
       return;
     }
     _performTake(result.found[0]);
@@ -527,9 +591,10 @@ const TextAdventureEngine = (() => {
     player.inventory.push(item.id);
     adventure.items[item.id].location = 'player';
     TextAdventureModal.appendOutput(`You take the ${item.name}.`, 'info');
+    lastReferencedItemId = item.id;
   }
 
-  function _handleDrop(target) {
+  function _handleDrop(target, onDisambiguation) {
     const result = _findItem(target, player.inventory.map(id => adventure.items[id]));
 
     if (result.found.length === 0) {
@@ -544,6 +609,7 @@ const TextAdventureEngine = (() => {
       };
       const itemNames = result.found.map(item => item.name).join(' or the ');
       TextAdventureModal.appendOutput(`Which do you mean to drop, the ${itemNames}?`, 'info');
+      onDisambiguation();
       return;
     }
     _performDrop(result.found[0]);
@@ -553,6 +619,7 @@ const TextAdventureEngine = (() => {
     adventure.items[item.id].location = player.currentLocation;
     player.inventory = player.inventory.filter(id => id !== item.id);
     TextAdventureModal.appendOutput(`You drop the ${item.name}.`, 'info');
+    lastReferencedItemId = item.id;
   }
 
   function _checkWinConditions() {
