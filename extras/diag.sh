@@ -418,28 +418,30 @@ echo "Chain 1: Part 1" && echo "Chain 1: Part 2"
 echo ""
 delay 500
 
-echo "--- Test: false && true (expected: only first command runs and fails) ---"
-check_fail "echo 'succeeds'" && echo "Chain 2: THIS SHOULD NOT PRINT"
+echo "--- Test: false && true (expected: first command fails, second is skipped) ---"
+# We use 'mkdir /' which is a clean way to fail.
+# We add `|| echo ...` to catch the expected failure and prevent the script from halting.
+mkdir / && echo "Chain 2: THIS SHOULD NOT PRINT" || echo "Chain 2: Fallback executed correctly."
 echo ""
 delay 500
 
-echo "--- Test: true || false (expected: only first command runs) ---"
+echo "--- Test: true || false (expected: only first command runs, second is skipped) ---"
 echo "Chain 3: Part 1" || echo "Chain 3: THIS SHOULD NOT PRINT"
 echo ""
 delay 500
 
-echo "--- Test: false || true (expected: both commands run) ---"
-check_fail "echo 'succeeds'" || echo "Chain 4: Part 2 (Fallback)"
+echo "--- Test: false || true (expected: first fails, second runs) ---"
+mkdir / || echo "Chain 4: Part 2 (Fallback executed correctly)."
 echo ""
 delay 500
 
-echo "--- Test: Complex Chain (true && true) || false (expected: first two run) ---"
+echo "--- Test: Complex Chain (true && true) || false (expected: first two run, third skipped) ---"
 echo "Chain 5: Part A" && echo "Chain 5: Part B" || echo "Chain 5: THIS SHOULD NOT PRINT"
 echo ""
 delay 500
 
-echo "--- Test: Complex Chain (false && true) || true (expected: first fails, third runs) ---"
-check_fail "echo 'succeeds'" && echo "Chain 6: THIS SHOULD NOT PRINT" || echo "Chain 6: Part C (Fallback)"
+echo "--- Test: Complex Chain (false && true) || true (expected: first fails, second skipped, third runs) ---"
+mkdir / && echo "Chain 6: THIS SHOULD NOT PRINT" || echo "Chain 6: Part C (Fallback executed correctly)."
 echo ""
 delay 500
 echo "---------------------------------------------------------------------"
