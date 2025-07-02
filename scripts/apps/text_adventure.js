@@ -18,7 +18,7 @@ const TextAdventureEngine = (() => {
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
     scriptingContext = options.scriptingContext || null;
-    disambiguationContext = null;
+    disambiguationContext = null; // Ensure context is cleared on new game start
     player = {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
@@ -28,19 +28,19 @@ const TextAdventureEngine = (() => {
     _displayCurrentRoom();
 
     // The modal's show function returns a promise that resolves when the modal is hidden (game ends).
-    return TextAdventureModal.show(adventure, { processCommand }, scriptingContext);
+    return TextAdventureModal.show(adventure, {
+      processCommand
+    }, scriptingContext);
   }
 
   /**
-   * Finds all items located in a specific room.
+   * Finds all items located in a specific room or container.
    * @private
-   * @param {string} roomId - The ID of the room to check.
-   * @returns {Array<object>} An array of item objects found in the room.
    */
-  function _getItemsInRoom(roomId) {
+  function _getItemsInLocation(locationId) {
     const items = [];
     for (const id in adventure.items) {
-      if (adventure.items[id].location === roomId) {
+      if (adventure.items[id].location === locationId) {
         items.push(adventure.items[id]);
       }
     }
@@ -54,14 +54,14 @@ const TextAdventureEngine = (() => {
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
     if (!room) {
-      TextAdventureModal.appendOutput("Error: You are in an unknown void!", 'error');
+      TextAdventureModal.appendOutput("Error: You have fallen into the void. The game cannot continue.", 'error');
       return;
     }
 
     TextAdventureModal.appendOutput(`\n--- ${room.name} ---`, 'room-name');
     TextAdventureModal.appendOutput(room.description, 'room-desc');
 
-    const roomItems = _getItemsInRoom(player.currentLocation);
+    const roomItems = _getItemsInLocation(player.currentLocation);
     if (roomItems.length > 0) {
       TextAdventureModal.appendOutput("You see here: " + roomItems.map(item => item.name).join(", ") + ".", 'items');
     }
@@ -74,12 +74,12 @@ const TextAdventureEngine = (() => {
     }
   }
 
-
   /**
    * Processes a single command from the player.
    * @param {string} command - The command string entered by the player.
    */
   async function processCommand(command) {
+    if (!command) return;
     const commandLower = command.toLowerCase().trim();
 
     if (disambiguationContext) {
@@ -95,48 +95,33 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    const directObjectStr = [];
-    const indirectObjectStr = [];
-    let preposition = null;
-    let currentTarget = directObjectStr;
-    const prepositions = ["in", "on", "with", "at", "to", "under", "inside"];
-
-    for (let i = 1; i < words.length; i++) {
-      if (prepositions.includes(words[i])) {
-        preposition = words[i];
-        currentTarget = indirectObjectStr;
-      } else {
-        currentTarget.push(words[i]);
-      }
-    }
-
-    const directObject = directObjectStr.join(' ');
-    const indirectObject = indirectObjectStr.join(' ');
+    // Simplified parsing for now. A more advanced parser would handle prepositions better.
+    const directObjectStr = words.slice(1).join(' ');
 
     switch (verb.action) {
-      case 'look':      _handleLook(directObject); break;
-      case 'go':        _handleGo(directObject); break;
-      case 'take':      _handleTake(directObject); break;
-      case 'drop':      _handleDrop(directObject); break;
-      case 'put':       await _handlePut(directObject, indirectObject); break;
+      case 'look':      _handleLook(directObjectStr); break;
+      case 'go':        _handleGo(directObjectStr); break;
+      case 'take':      _handleTake(directObjectStr); break;
+      case 'drop':      _handleDrop(directObjectStr); break;
       case 'inventory': _handleInventory(); break;
       case 'help':      _handleHelp(); break;
       case 'quit':      TextAdventureModal.hide(); break;
       default:
-        TextAdventureModal.appendOutput("That's not a verb I recognize in this context.", 'error');
+        TextAdventureModal.appendOutput(`I don't know how to "${verb.action}".`, 'error');
     }
 
     _checkWinConditions();
   }
 
   /**
-   * Resolves a verb word to its action, checking aliases.
+   * Resolves a verb word to its action by checking aliases.
    * @private
    */
   function _resolveVerb(verbWord) {
+    if (!verbWord) return null;
     for (const verbKey in adventure.verbs) {
       const verbDef = adventure.verbs[verbKey];
-      if (verbKey === verbWord || verbDef.aliases.includes(verbWord)) {
+      if (verbKey === verbWord || verbDef.aliases?.includes(verbWord)) {
         return verbDef;
       }
     }
@@ -149,10 +134,10 @@ const TextAdventureEngine = (() => {
    */
   function _findItem(targetString, scope) {
     if (!targetString) return { found: [] };
+    const targetWords = new Set(targetString.toLowerCase().split(/\s+/).filter(Boolean));
+    if (targetWords.size === 0) return { found: [] };
 
-    const targetWords = new Set(targetString.toLowerCase().split(/\s+/));
     const potentialItems = [];
-
     for (const item of scope) {
       const itemAdjectives = new Set(item.adjectives?.map(a => a.toLowerCase()));
       const itemNoun = item.noun.toLowerCase();
@@ -182,20 +167,15 @@ const TextAdventureEngine = (() => {
   function _handleDisambiguation(response) {
     const { found, context } = disambiguationContext;
     const result = _findItem(response, found);
+    disambiguationContext = null;
 
     if (result.found.length === 1) {
-      const selectedItem = result.found[0];
-      disambiguationContext = null;
-      context.callback(selectedItem);
+      context.callback(result.found[0]);
     } else {
       TextAdventureModal.appendOutput("That's still not specific enough. Please try again.", 'info');
     }
   }
 
-  /**
-   * Logic for the 'inventory' command.
-   * @private
-   */
   function _handleInventory() {
     if (player.inventory.length === 0) {
       TextAdventureModal.appendOutput("You are not carrying anything.", 'info');
@@ -205,25 +185,18 @@ const TextAdventureEngine = (() => {
     TextAdventureModal.appendOutput("You are carrying:\n" + itemNames, 'info');
   }
 
-  /**
-   * Logic for the 'help' command.
-   * @private
-   */
   function _handleHelp() {
-    const helpText = `Available verbs: ${Object.keys(adventure.verbs).join(', ')}. Try commands like 'look', 'go north', 'take key', 'drop trophy', 'put key in chest', 'inventory', or 'quit'.`;
+    const verbList = Object.keys(adventure.verbs).join(', ');
+    const helpText = `Try commands like 'look', 'go north', 'take key', 'drop trophy', 'inventory', or 'quit'.\nAvailable verbs: ${verbList}`;
     TextAdventureModal.appendOutput(helpText, 'system');
   }
 
-  /**
-   * Logic for the 'look' command.
-   * @private
-   */
   function _handleLook(target) {
     if (!target) {
       _displayCurrentRoom();
       return;
     }
-    const scope = [..._getItemsInRoom(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
     const result = _findItem(target, scope);
 
     if (result.found.length === 1) {
@@ -235,10 +208,6 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  /**
-   * Logic for the 'go' command.
-   * @private
-   */
   function _handleGo(direction) {
     const room = adventure.rooms[player.currentLocation];
     const exitId = room.exits ? room.exits[direction] : null;
@@ -266,12 +235,8 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  /**
-   * Logic for the 'take' command, handling ambiguity.
-   * @private
-   */
   function _handleTake(target) {
-    const scope = _getItemsInRoom(player.currentLocation);
+    const scope = _getItemsInLocation(player.currentLocation);
     const result = _findItem(target, scope);
 
     if (result.found.length === 0) {
@@ -282,20 +247,15 @@ const TextAdventureEngine = (() => {
     if (result.found.length > 1) {
       disambiguationContext = {
         found: result.found,
-        context: { verb: 'take', callback: _performTake }
+        context: { callback: _performTake }
       };
       const itemNames = result.found.map(item => item.name).join(' or the ');
       TextAdventureModal.appendOutput(`Which do you mean, the ${itemNames}?`, 'info');
       return;
     }
-
     _performTake(result.found[0]);
   }
 
-  /**
-   * The core action of taking an item.
-   * @private
-   */
   function _performTake(item) {
     if (item.canTake === false) {
       TextAdventureModal.appendOutput(`You can't take the ${item.name}.`, 'info');
@@ -306,10 +266,6 @@ const TextAdventureEngine = (() => {
     TextAdventureModal.appendOutput(`You take the ${item.name}.`, 'info');
   }
 
-  /**
-   * Logic for the 'drop' command.
-   * @private
-   */
   function _handleDrop(target) {
     const result = _findItem(target, player.inventory.map(id => adventure.items[id]));
 
@@ -319,61 +275,24 @@ const TextAdventureEngine = (() => {
     }
 
     if (result.found.length > 1) {
-      TextAdventureModal.appendOutput("You have several of those. Please be more specific.", 'info');
+      disambiguationContext = {
+        found: result.found,
+        context: { callback: (item) => _performDrop(item) }
+      };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you mean to drop, the ${itemNames}?`, 'info');
       return;
     }
 
-    const item = result.found[0];
+    _performDrop(result.found[0]);
+  }
+
+  function _performDrop(item) {
     adventure.items[item.id].location = player.currentLocation;
     player.inventory = player.inventory.filter(id => id !== item.id);
     TextAdventureModal.appendOutput(`You drop the ${item.name}.`, 'info');
   }
 
-  /**
-   * Logic for the 'put' command.
-   * @private
-   */
-  async function _handlePut(directObjectStr, indirectObjectStr) {
-    if (!directObjectStr || !indirectObjectStr) {
-      TextAdventureModal.appendOutput("What do you want to put, and where?", 'error');
-      return;
-    }
-
-    const directObjectResult = _findItem(directObjectStr, player.inventory.map(id => adventure.items[id]));
-    if (directObjectResult.found.length !== 1) {
-      TextAdventureModal.appendOutput(`You don't have a "${directObjectStr}".`, 'error');
-      return;
-    }
-
-    const indirectObjectScope = _getItemsInRoom(player.currentLocation);
-    const indirectObjectResult = _findItem(indirectObjectStr, indirectObjectScope);
-    if (indirectObjectResult.found.length !== 1) {
-      TextAdventureModal.appendOutput(`You don't see a "${indirectObjectStr}" here.`, 'error');
-      return;
-    }
-
-    const directObject = directObjectResult.found[0];
-    const indirectObject = indirectObjectResult.found[0];
-
-    if (!indirectObject.isContainer) {
-      TextAdventureModal.appendOutput(`You can't put things in the ${indirectObject.name}.`, 'info');
-      return;
-    }
-
-    if (indirectObject.state !== 'open') {
-      TextAdventureModal.appendOutput(`The ${indirectObject.name} is closed.`, 'info');
-      return;
-    }
-
-    adventure.items[directObject.id].location = indirectObject.id;
-    player.inventory = player.inventory.filter(id => id !== directObject.id);
-    TextAdventureModal.appendOutput(`You put the ${directObject.name} in the ${indirectObject.name}.`, 'info');
-  }
-
-  /**
-   * Checks if any win conditions have been met.
-   * @private
-   */
   function _checkWinConditions() {
     const wc = adventure.winCondition;
     if (!wc) return;
@@ -386,8 +305,11 @@ const TextAdventureEngine = (() => {
     }
 
     if (won) {
-      TextAdventureModal.appendOutput(`\n${adventure.winMessage}`, 'success');
-      setTimeout(() => TextAdventureModal.hide(), 3000);
+      TextAdventureModal.appendOutput(`\n${adventure.winMessage}`, 'adv-success');
+      // Disable further input and show exit button clearly
+      const inputEl = document.getElementById('adventure-input');
+      if (inputEl) inputEl.disabled = true;
+      // The modal will be closed by the user or script completion.
     }
   }
 
