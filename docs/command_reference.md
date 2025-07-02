@@ -1,14 +1,14 @@
 # OopisOS v3.2 Command Reference
 
-- [OopisOS v3.2 Command Reference](https://www.google.com/search?q=%23oopisos-v32-command-reference)
-  - [A Note on the Structure of This Document](https://www.google.com/search?q=%23a-note-on-the-structure-of-this-document)
-- [1. Core Concepts: Observation & Security](https://www.google.com/search?q=%231-core-concepts-observation--security)
-- [2. The Social Fabric: User & Group Management](https://www.google.com/search?q=%232-the-social-fabric-user--group-management)
-- [3. The Workshop: Fundamental File Operations](https://www.google.com/search?q=%233-the-workshop-fundamental-file-operations)
-- [4. The Assembly Line: Text Processing & Automation](https://www.google.com/search?q=%234-the-assembly-line-text-processing--automation)
-- [5. The Bridge: Networking & System Integrity](https://www.google.com/search?q=%235-the-bridge-networking--system-integrity)
-- [6. The Cockpit: High-Level Applications](https://www.google.com/search?q=%236-the-cockpit-high-level-applications)
-- [7. The Environment: Shell & Session Control](https://www.google.com/search?q=%237-the-environment-shell--session-control)
+- [OopisOS v3.2 Command Reference](#oopisos-v32-command-reference)
+  + [A Note on the Structure of This Document](#a-note-on-the-structure-of-this-document)
+  * [1\. Core Concepts: Observation & Security](#1-core-concepts-observation--security)
+  * [2\. The Social Fabric: User & Group Management](#2-the-social-fabric-user--group-management)
+  * [3\. The Workshop: Fundamental File Operations](#3-the-workshop-fundamental-file-operations)
+  * [4\. The Assembly Line: Text Processing & Automation](#4-the-assembly-line-text-processing--automation)
+  * [5\. The Bridge: Networking & System Integrity](#5-the-bridge-networking--system-integrity)
+  * [6\. The Cockpit: High-Level Applications](#6-the-cockpit-high-level-applications)
+  * [7\. The Environment: Shell & Session Control](#7-the-environment-shell--session-control)
 
 ### A Note on the Structure of This Document
 

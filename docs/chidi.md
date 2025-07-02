@@ -1,13 +1,14 @@
 # OopisOS and Chidi: A Sandbox, Tool-Using AI Agent With Memory
 
-- [1. Executive Summary](#1-executive-summary)
-- [2. Core Functionality & User Experience](#2-core-functionality--user-experience)
-- [3. Technical & Architectural Deep-Dive](#3-technical--architectural-deep-dive)
-- [4. Synergy with the OopisOS Ecosystem](#4-synergy-with-the-oopisos-ecosystem)
-- [5. Strengths & Opportunities](#5-strengths--opportunities)
-- [6. Conclusion](#6-conclusion)
+- [OopisOS and Chidi: A Sandbox, Tool-Using AI Agent With Memory](#oopisos-and-chidi-a-sandbox-tool-using-ai-agent-with-memory)
+    - [1\. Executive Summary](#1-executive-summary)
+    - [**2. Core Functionality & User Experience**](#2-core-functionality--user-experience)
+    - [**3. Technical & Architectural Deep-Dive**](#3-technical--architectural-deep-dive)
+    - [**4. Synergy with the OopisOS Ecosystem**](#4-synergy-with-the-oopisos-ecosystem)
+    - [**5. Strengths & Opportunities**](#5-strengths--opportunities)
+    - [**6. Conclusion**](#6-conclusion)
 
-#### 1. Executive Summary
+#### 1\. Executive Summary
 
 The `chidi` command launches the Chidi.md application, a cornerstone of the OopisOS ecosystem that transforms the system from a mere collection of files into a cohesive, analyzable knowledge base. It is a purpose-built platform for deep work on a specific corpus of documents, integrating a clean reading environment with a powerful, multi-faceted AI toolkit.
 
@@ -47,7 +48,7 @@ The `chidi` command is deeply integrated with the OopisOS toolchain.
 * **Content Creation:** It is the perfect companion to the `edit` command. Users can create and organize documentation, then immediately use `chidi` to analyze that work.
 * **File Management:** It works in concert with `find`, `mkdir`, and `cp`, which are essential tools for organizing the document collections that `chidi` will consume.
 * **Demonstration & Onboarding:** The `inflate.sh` script creates a perfect, ready-made environment for users to immediately test the full power of `chidi` on the sample `/docs` directory.
-* **Complement to `gemini`:** It provides a clear functional distinction: `gemini` is a generalist conversational partner, while `chidi` is a specialist application for deep document analysis.
+* **Complement to `gemini`:** It provides a clear functional distinction: `gemini` is a generalist conversational partner that plans and executes shell commands to answer questions, while `chidi` is a specialist application for deep, context-aware analysis of a pre-defined set of documents.
 
 #### **5. Strengths & Opportunities**
 
@@ -67,5 +68,3 @@ The `chidi` command is deeply integrated with the OopisOS toolchain.
 #### **6. Conclusion**
 
 The `chidi` command and its associated application are an unqualified success. It is a robust, well-designed feature that adds immense value and a new dimension of utility to OopisOS. It elevates the platform from a simple shell simulation to a genuine productivity and learning environment. The implementation is sound, the user experience is polished, and its potential for future expansion is significant.
-
-This feature is ready for prime time. I anticipate it will become one of the most-used and most-loved applications in the entire system. Excellent work.
