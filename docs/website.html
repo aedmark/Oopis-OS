@@ -101,11 +101,13 @@
             <a href="#" onclick="showSection('home')">OopisOS</a>
         </div>
         <div class="hidden md:flex items-center space-x-6">
-            <a href="#" onclick="showSection('guide')" class="text-gray-600 hover:text-gray-900">User Guide</a>
+            <a href="#" onclick="showSection('guide')" class="text-gray-600 hover:text-gray-900">Guide</a>
             <a href="#" onclick="showSection('tutorials')" class="text-gray-600 hover:text-gray-900">Tutorials</a>
-            <a href="#" onclick="showSection('chidi')" class="text-gray-600 hover:text-gray-900">Chidi AI</a>
+            <a href="#" onclick="showSection('editor')" class="text-gray-600 hover:text-gray-900">Editor</a>
+            <a href="#" onclick="showSection('chidi')" class="text-gray-600 hover:text-gray-900">Chidi</a>
             <a href="#" onclick="showSection('adventure')" class="text-gray-600 hover:text-gray-900">Adventure</a>
-            <a href="#" onclick="showSection('developer')" class="text-gray-600 hover:text-gray-900">Developer</a>
+            <a href="#" onclick="showSection('paint')" class="text-gray-600 hover:text-gray-900">Paint</a>
+            <a href="#" onclick="showSection('developer')" class="text-gray-600 hover:text-gray-900">Dev</a>
             <a href="#" onclick="showSection('security')" class="text-gray-600 hover:text-gray-900">Security</a>
             <a href="#" onclick="showSection('reference')" class="text-gray-600 hover:text-gray-900">Commands</a>
             <a href="#" onclick="showSection('faq')" class="text-gray-600 hover:text-gray-900">FAQ</a>
@@ -118,11 +120,13 @@
         </div>
     </nav>
     <div id="mobile-menu" class="hidden md:hidden">
-        <a href="#" onclick="showSection('guide'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">User Guide</a>
+        <a href="#" onclick="showSection('guide'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Guide</a>
         <a href="#" onclick="showSection('tutorials'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Tutorials</a>
-        <a href="#" onclick="showSection('chidi'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Chidi AI</a>
+        <a href="#" onclick="showSection('editor'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Editor</a>
+        <a href="#" onclick="showSection('chidi'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Chidi</a>
         <a href="#" onclick="showSection('adventure'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Adventure</a>
-        <a href="#" onclick="showSection('developer'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Developer</a>
+        <a href="#" onclick="showSection('paint'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Paint</a>
+        <a href="#" onclick="showSection('developer'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Dev</a>
         <a href="#" onclick="showSection('security'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Security</a>
         <a href="#" onclick="showSection('reference'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Commands</a>
         <a href="#" onclick="showSection('faq'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">FAQ</a>
@@ -847,6 +851,70 @@ The model posits that any robust application can be deconstructed into a series 
   </div>
 </details>
     </textarea>
+<textarea id="md-chidi" class="hidden">
+# OopisOS and Chidi: A Sandbox, Tool-Using AI Agent With Memory
+
+#### 1\. Executive Summary
+
+The `chidi` command launches the Chidi.md application, a cornerstone of the OopisOS ecosystem that transforms the system from a mere collection of files into a cohesive, analyzable knowledge base. It is a purpose-built platform for deep work on a specific corpus of documents, integrating a clean reading environment with a powerful, multi-faceted AI toolkit.
+
+Unlike the generalist `gemini` command, `chidi` provides a focused, application-level experience. Its ability to recursively gather documents, present them in a dedicated modal interface, and run targeted AI analysis elevates it beyond a simple command into a flagship application for the entire OS.
+
+#### **2. Core Functionality & User Experience**
+
+The user's journey with `chidi` is designed for focus and power:
+
+1.  **Invocation:** The user invokes `chidi` with a path to a single `.md` file or, more powerfully, to a directory (e.g., `chidi /docs/api`).
+2.  **Recursive File Discovery:** The command's logic recursively traverses the specified path, gathering all `.md` files while respecting the current user's read and execute permissions. This builds the "corpus" for the application session.
+3.  **Modal Application Launch:** The `ChidiApp` launches in a full-screen modal view, deliberately removing the user from the terminal to allow for focused reading and analysis.
+4.  **The Chidi.md Interface:**
+    * **Navigation:** Users can navigate between multiple files using `PREV`/`NEXT` buttons or a dropdown file selector.
+    * **Clean Reading:** The main pane presents a beautifully rendered HTML view of the selected Markdown file via `marked.js`.
+    * **AI Toolkit:** A dedicated control panel offers primary AI-driven actions:
+        * **Summarize:** Generates a concise summary of the currently viewed document.
+        * **Study:** Generates a list of potential study questions or key topics.
+        * **Ask:** The most powerful feature. It allows the user to ask a natural language question across the *entire corpus* of loaded documents.
+    * **Session & Log Management:**
+        * **Save Session:** Users can save the entire state of their analysis—the original document plus all generated AI responses—to a new, self-contained HTML file in the virtual file system.
+        * **Verbose Log:** A toggle allows power users to view the AI's step-by-step reasoning, including which files it selected for context.
+5.  **Exit:** A clear "Exit" button or the `Esc` key closes the application, returning the user to their fully preserved terminal session.
+
+#### **3. Technical & Architectural Deep-Dive**
+
+The implementation of `chidi` adheres to our established modular design principles.
+
+* **Separation of Concerns:** A clear distinction exists between the command (`chidi.js`) and the application (`chidi_app.js`), which handles all UI, state, and API interaction.
+* **API Key Management:** The application correctly identifies its dependency on the Gemini API key and gracefully prompts the user for it if not found, ensuring a smooth onboarding experience.
+* **Intelligent Contextual Scoping (RAG):** The "Ask" feature employs a sophisticated Retrieval-Augmented Generation (RAG) strategy. Instead of naively sending all content to the API, it first performs a local keyword search to identify the most relevant documents. It then constructs a highly-focused prompt containing only the content of these top-scoring files. This approach optimizes for relevance, reduces API costs, and dramatically improves the quality and accuracy of the generated answer.
+
+#### **4. Synergy with the OopisOS Ecosystem**
+
+The `chidi` command is deeply integrated with the OopisOS toolchain.
+
+* **Content Creation:** It is the perfect companion to the `edit` command. Users can create and organize documentation, then immediately use `chidi` to analyze that work.
+* **File Management:** It works in concert with `find`, `mkdir`, and `cp`, which are essential tools for organizing the document collections that `chidi` will consume.
+* **Demonstration & Onboarding:** The `inflate.sh` script creates a perfect, ready-made environment for users to immediately test the full power of `chidi` on the sample `/docs` directory.
+* **Complement to `gemini`:** It provides a clear functional distinction: `gemini` is a generalist conversational partner that plans and executes shell commands to answer questions, while `chidi` is a specialist application for deep, context-aware analysis of a pre-defined set of documents.
+
+#### **5. Strengths & Opportunities**
+
+**Strengths:**
+
+* **Purpose-Built UI:** The modal interface provides a focused "application" experience.
+* **Multi-File Corpus:** The ability to analyze an entire directory of documents at once is its killer feature.
+* **Session Persistence:** The ability to save a complete analysis session (document + AI responses) to a new file transforms `chidi` from a simple reader into a genuine research and note-taking tool.
+* **Efficient AI Implementation:** The RAG strategy for the "Ask" feature is technically sophisticated and highly effective.
+* **Seamless Integration:** It feels like a natural and powerful extension of the core OS features.
+
+**Opportunities for Future Enhancement:**
+
+* **Expanded File Type Support:** While the renderer can display `.txt` files, the command's file discovery logic is currently limited to `.md`. Expanding this discovery to include `.txt` or even extracting comments from code files (`.js`, `.sh`) remains a clear opportunity for growth.
+* **Integration with `find`:** A future version could allow for more complex corpus creation, such as `find / -name "*-log.md" -mtime -7 | chidi`, piping a list of files directly into the application.
+
+#### **6. Conclusion**
+
+The `chidi` command and its associated application are an unqualified success. It is a robust, well-designed feature that adds immense value and a new dimension of utility to OopisOS. It elevates the platform from a simple shell simulation to a genuine productivity and learning environment. The implementation is sound, the user experience is polished, and its potential for future expansion is significant.
+    </textarea>
 <textarea id="md-adventure" class="hidden">
 # The OopisOS Text Adventure Engine
 
@@ -1233,69 +1301,173 @@ You have the manual page and the terminal is powered on. It's time to finish the
 
 If you've followed these steps, the game should conclude with the win message. Please report any deviations, errors, or unexpected behavior. Thank you for your help in testing!
     </textarea>
-<textarea id="md-chidi" class="hidden">
-# OopisOS and Chidi: A Sandbox, Tool-Using AI Agent With Memory
+<textarea id="md-paint" class="hidden">
+### OopisOS and Paint: The Digital Canvas
 
-#### 1\. Executive Summary
+#### 1. Executive Summary
 
-The `chidi` command launches the Chidi.md application, a cornerstone of the OopisOS ecosystem that transforms the system from a mere collection of files into a cohesive, analyzable knowledge base. It is a purpose-built platform for deep work on a specific corpus of documents, integrating a clean reading environment with a powerful, multi-faceted AI toolkit.
+The `paint` command launches the OopisOS character-based art studio, a surprisingly robust application for creating ASCII and ANSI art. It serves as a primary creative outlet within the OS, embodying the system's philosophy of providing powerful, self-contained tools that are both functional and fun. `paint` transforms the terminal from a purely textual interface into a visual canvas, offering users a unique way to express themselves and generate assets for other parts of the OopisOS ecosystem, such as the `adventure` game engine.
 
-Unlike the generalist `gemini` command, `chidi` provides a focused, application-level experience. Its ability to recursively gather documents, present them in a dedicated modal interface, and run targeted AI analysis elevates it beyond a simple command into a flagship application for the entire OS.
+#### 2. Core Functionality & User Experience
 
-#### **2. Core Functionality & User Experience**
+The paint application provides a focused, full-screen, modal experience for digital art creation.
 
-The user's journey with `chidi` is designed for focus and power:
+1. **Invocation:** The user launches the editor with `paint [filename.oopic]`. If the file exists, it's loaded onto the canvas; otherwise, a new canvas is created, ready to be saved to that filename.
 
-1.  **Invocation:** The user invokes `chidi` with a path to a single `.md` file or, more powerfully, to a directory (e.g., `chidi /docs/api`).
-2.  **Recursive File Discovery:** The command's logic recursively traverses the specified path, gathering all `.md` files while respecting the current user's read and execute permissions. This builds the "corpus" for the application session.
-3.  **Modal Application Launch:** The `ChidiApp` launches in a full-screen modal view, deliberately removing the user from the terminal to allow for focused reading and analysis.
-4.  **The Chidi.md Interface:**
-    * **Navigation:** Users can navigate between multiple files using `PREV`/`NEXT` buttons or a dropdown file selector.
-    * **Clean Reading:** The main pane presents a beautifully rendered HTML view of the selected Markdown file via `marked.js`.
-    * **AI Toolkit:** A dedicated control panel offers primary AI-driven actions:
-        * **Summarize:** Generates a concise summary of the currently viewed document.
-        * **Study:** Generates a list of potential study questions or key topics.
-        * **Ask:** The most powerful feature. It allows the user to ask a natural language question across the *entire corpus* of loaded documents.
-    * **Session & Log Management:**
-        * **Save Session:** Users can save the entire state of their analysis—the original document plus all generated AI responses—to a new, self-contained HTML file in the virtual file system.
-        * **Verbose Log:** A toggle allows power users to view the AI's step-by-step reasoning, including which files it selected for context.
-5.  **Exit:** A clear "Exit" button or the `Esc` key closes the application, returning the user to their fully preserved terminal session.
+2. **The Paint Interface:** The UI is composed of three main areas:
 
-#### **3. Technical & Architectural Deep-Dive**
+    - **Toolbar:** A comprehensive set of tools for creation, including a pencil, eraser, shape tools (line, rectangle, ellipse), character selector, color palette, brush size controls, zoom, and a grid toggle.
 
-The implementation of `chidi` adheres to our established modular design principles.
+    - **Canvas:** A fixed-size (80x24) grid where users draw by placing characters with specific foreground colors.
 
-* **Separation of Concerns:** A clear distinction exists between the command (`chidi.js`) and the application (`chidi_app.js`), which handles all UI, state, and API interaction.
-* **API Key Management:** The application correctly identifies its dependency on the Gemini API key and gracefully prompts the user for it if not found, ensuring a smooth onboarding experience.
-* **Intelligent Contextual Scoping (RAG):** The "Ask" feature employs a sophisticated Retrieval-Augmented Generation (RAG) strategy. Instead of naively sending all content to the API, it first performs a local keyword search to identify the most relevant documents. It then constructs a highly-focused prompt containing only the content of these top-scoring files. This approach optimizes for relevance, reduces API costs, and dramatically improves the quality and accuracy of the generated answer.
+    - **Status Bar:** Provides real-time feedback on the current tool, character, color, brush size, cursor coordinates, and zoom level.
 
-#### **4. Synergy with the OopisOS Ecosystem**
+3. **Core Tools & Features:**
 
-The `chidi` command is deeply integrated with the OopisOS toolchain.
+    - **Drawing Tools:** Users can select between a freehand `pencil`, an `eraser` to clear cells, and `shape` tools for drawing lines, rectangles, and ellipses.
 
-* **Content Creation:** It is the perfect companion to the `edit` command. Users can create and organize documentation, then immediately use `chidi` to analyze that work.
-* **File Management:** It works in concert with `find`, `mkdir`, and `cp`, which are essential tools for organizing the document collections that `chidi` will consume.
-* **Demonstration & Onboarding:** The `inflate.sh` script creates a perfect, ready-made environment for users to immediately test the full power of `chidi` on the sample `/docs` directory.
-* **Complement to `gemini`:** It provides a clear functional distinction: `gemini` is a generalist conversational partner that plans and executes shell commands to answer questions, while `chidi` is a specialist application for deep, context-aware analysis of a pre-defined set of documents.
+    - **Character & Color:** Any printable ASCII character can be selected for drawing. A default palette of colors is available, with an option to select any custom hex color.
 
-#### **5. Strengths & Opportunities**
+    - **Brush Size:** The pencil and eraser tools can be adjusted from a 1x1 to a 5x5 brush size for broader strokes.
+
+    - **Undo/Redo:** A multi-level undo/redo stack (`Ctrl+Z` / `Ctrl+Y`) allows for non-destructive editing.
+
+4. **Saving and File Format:** Artwork is saved to a custom `.oopic` file format. This is a JSON-based format that stores the canvas dimensions and a 2D array representing each cell's character and color, making it human-readable and easy to parse.
+
+5. **Keyboard-Driven Workflow:** The application is designed for power users, with keyboard shortcuts for nearly every action, including tool selection (`P`, `E`), color selection (`1-6`), and saving/exiting (`Ctrl+S`, `Ctrl+O`).
+
+
+#### 3. Technical & Architectural Deep-Dive
+
+The paint application is a model of the OopisOS modular design philosophy.
+
+- **Separation of Concerns:** The application logic is neatly divided between `PaintManager` and `PaintUI`.
+
+    - `PaintManager`: The "brain" that manages the application state, including the canvas data model (a 2D array of cell objects), tool selection, color, brush size, and the undo/redo stacks. It contains all the core drawing logic.
+
+    - `PaintUI`: The "hands" responsible for all DOM manipulation. It builds the layout, renders the canvas data into a grid of styled `<span>` elements, and forwards user input events to the `PaintManager`.
+
+- **Canvas Rendering:** The canvas is not a single `<canvas>` element but a CSS grid of individual `<span>` elements. This allows each character cell to be styled independently with its own color, making "ANSI" style art possible, and simplifies the logic for updating specific cells without redrawing the entire canvas.
+
+- **State Management:** The `undoStack` is a core component. Before a drawing action begins, the current state of the entire canvas is pushed onto the stack. This allows for simple and reliable undo/redo functionality.
+
+- **File Format (`.oopic`):** The choice of a JSON-based file format over a binary one is deliberate. It aligns with the transparent, text-based nature of OopisOS and allows users to inspect or even manually edit their artwork using standard tools like `cat` and `edit`.
+
+
+#### 4. Synergy with the OopisOS Ecosystem
+
+The `paint` application is not an isolated feature but a deeply integrated part of the creative toolchain.
+
+- **Asset Creation:** Its primary purpose is to allow users to create visual assets. These can be simple icons, title screens for scripts, or detailed maps and character portraits for custom games running on the `adventure` engine.
+
+- **Standard File Operations:** Art files (`.oopic`) are treated like any other file in the system. They can be listed with `ls`, moved with `mv`, copied with `cp`, and organized into directories with `mkdir`, fully integrating them into the user's workflow.
+
+- **Scripting and Automation:** A user could write a script using `run` that displays different `.oopic` files using the `cat` command (which would show the raw JSON) to create simple, frame-based animations or storyboards.
+
+
+#### 5. Strengths & Opportunities
 
 **Strengths:**
 
-* **Purpose-Built UI:** The modal interface provides a focused "application" experience.
-* **Multi-File Corpus:** The ability to analyze an entire directory of documents at once is its killer feature.
-* **Session Persistence:** The ability to save a complete analysis session (document + AI responses) to a new file transforms `chidi` from a simple reader into a genuine research and note-taking tool.
-* **Efficient AI Implementation:** The RAG strategy for the "Ask" feature is technically sophisticated and highly effective.
-* **Seamless Integration:** It feels like a natural and powerful extension of the core OS features.
+- **Creative Freedom:** Provides a unique and powerful creative outlet that perfectly matches the retro-futuristic aesthetic of OopisOS.
+
+- **Intuitive UI:** Despite its complexity, the toolbar and keyboard shortcuts make the application easy to learn and efficient to use.
+
+- **Robust Feature Set:** The inclusion of shape tools, custom colors, brush sizes, and undo/redo elevates it far beyond a simple pixel editor.
+
+- **Ecosystem Integration:** Its role as an asset creator for other applications, especially `adventure`, gives it a clear and compelling purpose within the OS.
+
 
 **Opportunities for Future Enhancement:**
 
-* **Expanded File Type Support:** While the renderer can display `.txt` files, the command's file discovery logic is currently limited to `.md`. Expanding this discovery to include `.txt` or even extracting comments from code files (`.js`, `.sh`) remains a clear opportunity for growth.
-* **Integration with `find`:** A future version could allow for more complex corpus creation, such as `find / -name "*-log.md" -mtime -7 | chidi`, piping a list of files directly into the application.
+- **Advanced Tools:** A "fill bucket" tool for coloring large areas, and a "select" tool for moving or copying sections of the canvas, are logical next steps.
 
-#### **6. Conclusion**
+- **Animation Support:** Evolving the `.oopic` format to support multiple frames could turn the application into a powerful tool for creating animated sprites and cutscenes.
 
-The `chidi` command and its associated application are an unqualified success. It is a robust, well-designed feature that adds immense value and a new dimension of utility to OopisOS. It elevates the platform from a simple shell simulation to a genuine productivity and learning environment. The implementation is sound, the user experience is polished, and its potential for future expansion is significant.
+- **Character Sets:** Allowing users to select from different character sets (e.g., box-drawing characters, block elements) could enable more sophisticated artwork.
+
+
+#### 6. Conclusion
+
+The `paint` application is a testament to the creative potential of OopisOS. It is a feature-rich, well-architected, and deeply enjoyable tool that provides a tangible benefit to users. By providing a canvas for artistic expression, `paint` solidifies the identity of OopisOS not just as a simulated operating system, but as a complete, self-contained sandbox for creation.
+    </textarea>
+<textarea id="md-editor" class="hidden">
+### OopisOS and Edit: The Context-Aware Creative Suite
+
+#### 1. Executive Summary
+
+The `edit` command is the cornerstone of content creation within OopisOS. It is not merely a text editor but a context-aware creative suite that intelligently adapts its interface and features to the type of file being manipulated. By providing a rich, full-screen modal application for text, Markdown, and HTML, `edit` bridges the gap between the raw power of the command line and the nuanced requirements of document authoring and script writing. It is the primary tool for generating the very content that gives the OopisOS ecosystem its depth and purpose.
+
+#### 2. Core Functionality & User Experience
+
+The `edit` command launches a sophisticated modal application designed for a seamless and productive workflow. Its intelligence lies in its ability to understand what it's editing.
+
+1. **Invocation:** A user starts the editor by typing `edit [filename]`. If the file exists, it is loaded; if not, a blank slate is presented, ready to be saved to that new file path.
+
+2. **Context-Aware Modes:** The editor inspects the file's extension and automatically configures itself:
+
+    - **`.txt`, `.sh`, `.js`, etc. (Text Mode):** Provides a clean, straightforward text editing experience focused on code and plain text.
+
+    - **`.md` (Markdown Mode):** Activates a powerful split-screen view with the raw text on one side and a live, rendered HTML preview on the other. A formatting toolbar appears, offering one-click access to common Markdown syntax like bold, italics, lists, and links.
+
+    - **`.html` (HTML Mode):** Also uses the split-screen view, rendering the user's HTML code in a sandboxed `<iframe>` for a live, safe preview.
+
+3. **Productivity-Focused UI:**
+
+    - **View Toggling (`Ctrl+P`):** Users can cycle between the split-screen view, an editor-only view for focused writing, and a preview-only view for clean reading.
+
+    - **Status Bar:** A persistent status bar provides crucial information at a glance, including the current filename, dirty status (unsaved changes), line/word/character counts, and the precise cursor position.
+
+    - **Keyboard-First Design:** The editor is built for efficiency, with essential keyboard shortcuts for saving (`Ctrl+S`), exiting (`Ctrl+O`), undo/redo (`Ctrl+Z`/`Ctrl+Y`), and text formatting.
+
+#### 3. Technical & Architectural Deep-Dive
+
+The `edit` command's implementation is a prime example of the OopisOS philosophy of enforced modularity. The application is cleanly separated into two main components: `EditorManager` and `EditorUI`.
+
+- **`EditorManager` (The Brain):** This module is the single source of truth for the editor's state. It knows nothing about the DOM. Its sole responsibilities are to track the `currentFilePath`, the `originalContent` (to determine if the file is `isDirty`), the `currentFileMode` (text, markdown, or html), and to manage the `undoStack` and `redoStack`. All core logic for text manipulation and state changes resides here.
+
+- **`EditorUI` (The Hands):** This module is responsible for all DOM manipulation. It builds the editor's layout, renders the text area and preview pane, updates the status bar, and listens for user input events. It takes its instructions from the `EditorManager` but has no knowledge of the underlying file system or state logic.
+
+- **Secure Rendering:** To prevent cross-site scripting (XSS) vulnerabilities, user-generated content is handled safely. Markdown is rendered using the `marked.js` library with its sanitization feature enabled. Untrusted HTML content is rendered inside a sandboxed `<iframe>`, which isolates it from the main application's DOM and scripts.
+
+
+This strict separation makes the editor robust, secure, and easy to maintain. A change to the UI in `EditorUI` cannot accidentally break the state logic in `EditorManager`.
+
+#### 4. Synergy with the OopisOS Ecosystem
+
+The `edit` command is the creative engine that fuels the rest of the OS. It is not an isolated tool but a central hub of activity.
+
+- **Scripting (`run`):** It is the primary tool for writing the `.sh` scripts that are executed by the `run` command, enabling users to automate tasks and create complex programs.
+
+- **AI Analysis (`chidi`, `gemini`):** It is used to author the `.md` documents that the `chidi` AI Librarian analyzes. It's also perfect for crafting complex, multi-line prompts to be saved in a file and then piped to the `gemini` command using `cat`.
+
+- **System Configuration:** As a text editor, it is the natural tool for modifying system configuration files, such as `/etc/oopis.conf` to change the terminal prompt or `/etc/sudoers` (via the safe `visudo` command) to manage permissions.
+
+- **Game Development (`adventure`):** Users can write the entire narrative, room descriptions, and item interactions for a custom text adventure in a `.json` file using `edit`, then immediately playtest it with the `adventure` command.
+
+#### 5. Strengths & Opportunities
+
+**Strengths:**
+
+- **Context-Awareness:** Automatically switching modes based on file extension is its most powerful and user-friendly feature.
+
+- **Live Preview:** The split-screen preview for Markdown and HTML is an essential feature for modern development and writing workflows.
+
+- **Robustness:** The separation of state (`EditorManager`) and UI (`EditorUI`) makes the application stable and less prone to bugs.
+
+- **Security:** The use of sanitization and sandboxed iframes for rendering user content demonstrates a commitment to security by design.
+
+**Opportunities for Future Enhancement:**
+
+- **Syntax Highlighting:** Implementing syntax highlighting for common file types (`.js`, `.css`, `.sh`) would significantly improve the code editing experience.
+
+- **Search and Replace:** A find/replace feature is a standard expectation for text editors and would be a valuable addition.
+
+- **Theming:** Allowing users to select different color schemes for the editor would enhance personalization.
+
+#### 6. Conclusion
+
+The `edit` command is the heart of productivity in OopisOS. It successfully elevates a simple command-line utility into a rich, graphical application without sacrificing the keyboard-driven efficiency that power users expect. By intelligently adapting to the user's needs and providing a secure, feature-rich environment for content creation, `edit` perfectly embodies the OopisOS philosophy of building powerful, self-reliant, and user-centric tools.
     </textarea>
 
 <script>
