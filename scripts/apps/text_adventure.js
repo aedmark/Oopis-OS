@@ -22,18 +22,21 @@ const TextAdventureModal = (() => {
   let elements = {};
 
   function _createLayout(adventureData) {
-    const title = Utils.createElement('span', { id: 'adventure-title', textContent: adventureData.title });
-    const closeBtn = Utils.createElement('button', { id: 'adventure-close-btn', className: 'btn btn--cancel', textContent: 'Exit', eventListeners: { click: hide } });
-    const header = Utils.createElement('header', { id: 'adventure-header' }, title, closeBtn);
+    const roomNameSpan = Utils.createElement('span', { id: 'adventure-room-name' });
+    const scoreSpan = Utils.createElement('span', { id: 'adventure-score' });
+    const headerLeft = Utils.createElement('div', {}, roomNameSpan);
+    const headerRight = Utils.createElement('div', {}, scoreSpan);
+    const header = Utils.createElement('header', { id: 'adventure-header' }, headerLeft, headerRight);
     const output = Utils.createElement('div', { id: 'adventure-output' });
     const inputPrompt = Utils.createElement('span', { id: 'adventure-prompt', textContent: '>' });
     const input = Utils.createElement('input', { id: 'adventure-input', type: 'text', spellcheck: 'false', autocapitalize: 'none' });
     const inputContainer = Utils.createElement('div', { id: 'adventure-input-container' }, inputPrompt, input);
     const container = Utils.createElement('div', { id: 'adventure-container' }, header, output, inputContainer);
 
-    elements = { container, header, output, input };
+    elements = { container, header, output, input, roomNameSpan, scoreSpan };
     return container;
   }
+
 
   function _handleInput(e) {
     if (e.key !== 'Enter' || !state.inputCallback) return;
@@ -124,11 +127,21 @@ const TextAdventureModal = (() => {
     });
   }
 
+  function updateStatusLine(roomName, score, moves) {
+    if (elements.roomNameSpan) {
+      elements.roomNameSpan.textContent = roomName;
+    }
+    if (elements.scoreSpan) {
+      elements.scoreSpan.textContent = `Score: ${score}  Moves: ${moves}`;
+    }
+  }
+
   return {
     show,
     hide,
     appendOutput,
     requestInput,
+    updateStatusLine,
     isActive: () => state.isActive
   };
 })();
@@ -144,6 +157,7 @@ const TextAdventureEngine = (() => {
   let scriptingContext = null;
   let disambiguationContext = null;
   let lastReferencedItemId = null;
+  let lastPlayerCommand = '';
 
   const defaultVerbs = {
     look: { action: 'look', aliases: ['l', 'examine', 'x', 'look at', 'look in', 'look inside'] },
@@ -160,6 +174,7 @@ const TextAdventureEngine = (() => {
     ask: { action: 'ask', aliases: [] },
     give: { action: 'give', aliases: [] },
     show: { action: 'show', aliases: ['show to'] },
+    score: { action: 'score', aliases: [] },
     read: { action: 'read', aliases: [] },
     eat: { action: 'eat', aliases: [] },
     drink: { action: 'drink', aliases: [] },
@@ -171,6 +186,8 @@ const TextAdventureEngine = (() => {
     listen: { action: 'listen', aliases: [] },
     smell: { action: 'smell', aliases: [] },
     touch: { action: 'touch', aliases: [] },
+    again: { action: 'again', aliases: ['g'] },
+    wait: { action: 'wait', aliases: ['z'] },
     dance: { action: 'dance', aliases: [] },
     sing: { action: 'sing', aliases: [] },
     jump: { action: 'jump', aliases: [] },
@@ -193,10 +210,17 @@ const TextAdventureEngine = (() => {
     scriptingContext = options.scriptingContext || null;
     disambiguationContext = null;
     lastReferencedItemId = null;
+    lastPlayerCommand = '';
     player = {
       currentLocation: adventure.startingRoomId,
       inventory: adventure.player?.inventory || [],
+      score: 0,
+      moves: 0,
     };
+
+    for (const roomId in adventure.rooms) {
+      adventure.rooms[roomId].visited = false;
+    }
 
     const gamePromise = TextAdventureModal.show(adventure, { processCommand }, scriptingContext);
     _displayCurrentRoom();
@@ -224,6 +248,13 @@ const TextAdventureEngine = (() => {
   }
 
 
+  function _getDynamicDescription(entity) {
+    if (entity.descriptions && entity.state && entity.descriptions[entity.state]) {
+      return entity.descriptions[entity.state];
+    }
+    return entity.description;
+  }
+
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
     if (!room) {
@@ -231,8 +262,15 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    TextAdventureModal.appendOutput(`\n--- ${room.name} ---`, 'room-name');
-    TextAdventureModal.appendOutput(room.description, 'room-desc');
+    if (!room.visited) {
+      room.visited = true;
+      const roomPoints = room.points || 5;
+      player.score += roomPoints;
+      TextAdventureModal.appendOutput(`[You have gained ${roomPoints} points for entering a new area]`, 'system');
+    }
+
+    TextAdventureModal.updateStatusLine(room.name, player.score, player.moves);
+    TextAdventureModal.appendOutput(_getDynamicDescription(room), 'room-desc');
 
     const roomNpcs = _getNpcsInLocation(player.currentLocation);
     if (roomNpcs.length > 0) {
@@ -358,7 +396,22 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    const parsedCommands = _parseMultiCommand(command);
+    let commandToProcess = command.toLowerCase().trim();
+
+    if (commandToProcess === 'again' || commandToProcess === 'g') {
+      if (!lastPlayerCommand) {
+        TextAdventureModal.appendOutput("You haven't entered a command to repeat yet.", 'error');
+        return;
+      }
+      TextAdventureModal.appendOutput(`(repeating: ${lastPlayerCommand})`, 'system');
+      commandToProcess = lastPlayerCommand;
+    } else {
+      lastPlayerCommand = commandToProcess;
+    }
+
+    player.moves++;
+
+    const parsedCommands = _parseMultiCommand(commandToProcess);
     let stopProcessing = false;
 
     for (const cmd of parsedCommands) {
@@ -390,6 +443,7 @@ const TextAdventureEngine = (() => {
         case 'ask': _handleAsk(directObject, indirectObject, onDisambiguation); break;
         case 'give': _handleGive(directObject, indirectObject, onDisambiguation); break;
         case 'show': _handleShow(directObject, indirectObject, onDisambiguation); break;
+        case 'score': _handleScore(); break;
         case 'read': _handleRead(directObject, onDisambiguation); break;
         case 'eat': _handleEatDrink('eat', directObject, onDisambiguation); break;
         case 'drink': _handleEatDrink('drink', directObject, onDisambiguation); break;
@@ -401,6 +455,7 @@ const TextAdventureEngine = (() => {
         case 'listen': _handleSensoryVerb('listen', directObject, onDisambiguation); break;
         case 'smell': _handleSensoryVerb('smell', directObject, onDisambiguation); break;
         case 'touch': _handleSensoryVerb('touch', directObject, onDisambiguation); break;
+        case 'wait': _handleWait(); break;
         case 'dance': TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
         case 'sing': TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
         case 'jump': TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
@@ -425,9 +480,10 @@ const TextAdventureEngine = (() => {
     }
 
     const saveState = {
-      saveVersion: "1.0",
+      saveVersion: "1.1",
       playerState: JSON.parse(JSON.stringify(player)),
-      itemsState: JSON.parse(JSON.stringify(adventure.items))
+      itemsState: JSON.parse(JSON.stringify(adventure.items)),
+      roomsState: JSON.parse(JSON.stringify(adventure.rooms))
     };
 
     const jsonContent = JSON.stringify(saveState, null, 2);
@@ -480,12 +536,13 @@ const TextAdventureEngine = (() => {
 
     try {
       const saveData = JSON.parse(pathInfo.node.content);
-      if (!saveData.playerState || !saveData.itemsState) {
-        throw new Error("Invalid save file format.");
+      if (!saveData.playerState || !saveData.itemsState || !saveData.roomsState) {
+        throw new Error("Invalid or outdated save file format.");
       }
 
       player = JSON.parse(JSON.stringify(saveData.playerState));
       adventure.items = JSON.parse(JSON.stringify(saveData.itemsState));
+      adventure.rooms = JSON.parse(JSON.stringify(saveData.roomsState));
 
       TextAdventureModal.appendOutput(`Game loaded successfully from '${filename}'.\n`, 'system');
       _displayCurrentRoom();
@@ -736,7 +793,7 @@ const TextAdventureEngine = (() => {
   }
 
   function _performLook(entity) {
-    TextAdventureModal.appendOutput(entity.description, 'info');
+    TextAdventureModal.appendOutput(_getDynamicDescription(entity), 'info');
     if ('canTake' in entity) { // It's an item
       lastReferencedItemId = entity.id;
       if (entity.isContainer && entity.isOpen) {
@@ -813,6 +870,12 @@ const TextAdventureEngine = (() => {
     adventure.items[item.id].location = 'player';
     TextAdventureModal.appendOutput(`You take the ${item.name}.`, 'info');
     lastReferencedItemId = item.id;
+    if (item.points && !item.hasBeenScored) {
+      player.score += item.points;
+      item.hasBeenScored = true;
+      TextAdventureModal.appendOutput(`[Your score has just gone up by ${item.points} points!]`, 'system');
+      TextAdventureModal.updateStatusLine(adventure.rooms[player.currentLocation].name, player.score, player.moves);
+    }
   }
 
   function _handleDrop(target, onDisambiguation) {
@@ -1083,9 +1146,18 @@ const TextAdventureEngine = (() => {
   }
 
   function _performPushPullTurn(verb, item) {
-    const effectProperty = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`; // e.g., onPull
+    const effectProperty = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`;
     if (item[effectProperty]) {
-      TextAdventureModal.appendOutput(item[effectProperty], 'info');
+      const effect = item[effectProperty];
+      if (typeof effect === 'object' && effect.newState) {
+        item.state = effect.newState;
+        TextAdventureModal.appendOutput(effect.message, 'info');
+        if (item.id === 'rug' && item.state === 'moved') {
+          adventure.rooms['living_room'].exits['down'] = 'cellar';
+        }
+      } else if (typeof effect === 'string') {
+        TextAdventureModal.appendOutput(effect, 'info');
+      }
       lastReferencedItemId = item.id;
     } else {
       TextAdventureModal.appendOutput(`Pushing, pulling, or turning the ${item.name} does nothing.`, 'info');
@@ -1182,6 +1254,14 @@ const TextAdventureEngine = (() => {
     const message = item[property] || defaultMessages[verb];
     TextAdventureModal.appendOutput(message, 'info');
     lastReferencedItemId = item.id;
+  }
+
+  function _handleScore() {
+    TextAdventureModal.appendOutput(`Your score is ${player.score} out of a possible ${adventure.maxScore || 100}, in ${player.moves} moves.`, 'system');
+  }
+
+  function _handleWait() {
+    TextAdventureModal.appendOutput("Time passes...", 'system');
   }
 
 

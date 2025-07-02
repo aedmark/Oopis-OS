@@ -6,10 +6,10 @@
 (() => {
     "use strict";
 
-    // The default, built-in adventure game data, now with more NPC interaction.
     const defaultAdventureData = {
         "title": "The Lost Key of Oopis",
         "startingRoomId": "west_of_house",
+        "maxScore": 100,
         "winCondition": {
             "type": "itemInRoom",
             "itemId": "key",
@@ -38,6 +38,21 @@
                 "description": "You are at the front door. It is boarded up but has a large, rusty lock.",
                 "onListen": "You hear the wind whistling through the cracks in the boards.",
                 "exits": { "west": "west_of_house" }
+            },
+            "kitchen": {
+                "name": "Kitchen",
+                "description": "You are in the kitchen of the white house. A passage leads to the west.",
+                "exits": { "west": "living_room" }
+            },
+            "living_room": {
+                "name": "Living Room",
+                "description": "You are in the living room. There is a doorway to the east leading back to the kitchen. A large, ornate rug covers most of the floor.",
+                "exits": { "east": "kitchen" }
+            },
+            "cellar": {
+                "name": "Cellar",
+                "description": "You are in a dark and damp cellar.",
+                "exits": { "up": "living_room" }
             }
         },
         "items": {
@@ -49,13 +64,15 @@
             "leaflet": {
                 "id": "leaflet", "name": "leaflet", "noun": "leaflet", "adjectives": ["small", "folded"],
                 "description": "A small, folded leaflet.", "location": "mailbox", "canTake": true,
-                "readDescription": "WELCOME TO ZORK!\n\nZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!"
+                "readDescription": "WELCOME TO ZORK!\n\nZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!",
+                "points": 5
             },
             "key": {
                 "id": "key", "name": "rusty key", "noun": "key", "adjectives": ["rusty", "old"],
                 "description": "It's an old, rusty key. It looks like it might fit the lock on the front door.", "location": "north_of_house", "canTake": true,
                 "unlocks": "door",
-                "onTouch": "The key feels cold and rough to the touch."
+                "onTouch": "The key feels cold and rough to the touch.",
+                "points": 10
             },
             "door": {
                 "id": "door", "name": "boarded front door", "noun": "door", "adjectives": ["boarded", "front", "white"],
@@ -66,7 +83,36 @@
                 "id": "lantern", "name": "brass lantern", "noun": "lantern", "adjectives": ["brass", "old"],
                 "description": "An old brass lantern. It's currently unlit.", "location": "north_of_house", "canTake": true,
                 "isLightSource": true, "isLit": false,
-                "onSmell": "It smells faintly of lamp oil."
+                "onSmell": "It smells faintly of lamp oil.",
+                "points": 10
+            },
+            "rug": {
+                "id": "rug",
+                "name": "large rug",
+                "noun": "rug",
+                "adjectives": ["large", "ornate"],
+                "location": "living_room",
+                "canTake": false,
+                "state": "default",
+                "descriptions": {
+                    "default": "A large, ornate rug covers the center of the floor. The pattern is intricate, depicting a mythical beast of some kind.",
+                    "moved": "The large rug is rolled to one side of the room, revealing a dark trap door set into the floorboards."
+                },
+                "onPull": {
+                    "newState": "moved",
+                    "message": "With a great effort, you pull the heavy rug aside. It reveals a dark, iron-ringed trap door in the floor underneath!"
+                }
+            },
+            "trap_door": {
+                "id": "trap_door",
+                "name": "trap door",
+                "noun": "door",
+                "adjectives": ["trap", "dark"],
+                "description": "It's a heavy-looking wooden trap door with a rusty iron ring for a handle.",
+                "location": "living_room",
+                "canTake": false,
+                "isOpenable": true,
+                "isOpen": false
             }
         },
         "npcs": {
@@ -190,6 +236,8 @@ GAMEPLAY COMMANDS
        smell              - Smell the scents in the room.
        touch [item]       - Touch an item.
        go [direction]     - Moves the player (e.g., go north).
+       again              - Repeats the last command you typed.
+       wait               - Pass some time.
        talk to [person]   - Start a conversation.
        ask [person] about [topic]
                           - Ask someone about a specific topic.
@@ -212,6 +260,7 @@ GAMEPLAY COMMANDS
                           - Wear or remove clothing/armor.
        use [item] on [target]
                           - Uses an inventory item on something in the room.
+       score              - Displays your current score and number of moves.
        inventory (or i)   - Shows what you are carrying.
        save / load        - Saves or loads game progress to a file in the VFS.
        help               - Shows this list of gameplay commands.
