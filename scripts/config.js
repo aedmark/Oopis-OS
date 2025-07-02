@@ -165,7 +165,7 @@ const Config = (() => {
         COMMANDS_MANIFEST: [
             "adventure", "alias", "awk", "backup", "cat", "cd", "check_fail",
             "chgrp", "chidi", "chmod", "chown", "clear", "clearfs", "cp",
-            "curl", "date", "delay", "diff", "echo", "edit", "explore",
+            "curl", "date", "delay", "df", "diff", "du", "echo", "edit", "explore",
             "export", "find", "gemini", "grep", "groupadd", "groupdel",
             "groups", "head", "help", "history", "kill", "listusers",
             "loadstate", "login", "logout", "ls", "man", "mkdir", "mv",
