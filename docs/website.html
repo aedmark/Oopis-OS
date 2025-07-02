@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OopisOS Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* General Prose Styling */
+        .prose {
+            line-height: 1.65;
+        }
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+            font-weight: 700;
+        }
+        .prose a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .prose a:hover {
+            text-decoration: underline;
+        }
+        .prose code {
+            background-color: #e5e7eb;
+            color: #111827;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+        }
+        .prose pre {
+            background-color: #1f2937;
+            color: #d1d5db;
+            padding: 1em;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .prose pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: inherit;
+        }
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .prose th, .prose td {
+            border: 1px solid #d1d5db;
+            padding: 0.5em 1em;
+        }
+        .prose th {
+            background-color: #f9fafb;
+        }
+        .prose blockquote {
+            border-left: 0.25em solid #d1d5db;
+            padding-left: 1em;
+            color: #4b5563;
+        }
+
+        /* Spacing between elements */
+        .prose > * + * {
+            margin-top: 1.25em;
+        }
+        .prose h2, .prose h3, .prose h4 {
+            margin-bottom: -0.5em; /* Pulls the following element closer */
+        }
+        .prose ul, .prose ol {
+            padding-left: 1.5em;
+        }
+        .prose li > p {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }
+        .prose li > ul, .prose li > ol {
+            margin-top: 0.75em;
+            margin-bottom: 0.75em;
+        }
+        .prose details > summary {
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .prose details > div {
+            margin-top: 1em;
+            padding-left: 1.5em;
+            border-left: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+<!-- Header -->
+<header class="bg-white shadow-md sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="text-2xl font-bold text-gray-900">
+            <a href="#" onclick="showSection('home')">OopisOS</a>
+        </div>
+        <div class="hidden md:flex items-center space-x-6">
+            <a href="#" onclick="showSection('guide')" class="text-gray-600 hover:text-gray-900">User Guide</a>
+            <a href="#" onclick="showSection('tutorials')" class="text-gray-600 hover:text-gray-900">Tutorials</a>
+            <a href="#" onclick="showSection('chidi')" class="text-gray-600 hover:text-gray-900">Chidi AI</a>
+            <a href="#" onclick="showSection('adventure')" class="text-gray-600 hover:text-gray-900">Adventure</a>
+            <a href="#" onclick="showSection('developer')" class="text-gray-600 hover:text-gray-900">Developer</a>
+            <a href="#" onclick="showSection('security')" class="text-gray-600 hover:text-gray-900">Security</a>
+            <a href="#" onclick="showSection('reference')" class="text-gray-600 hover:text-gray-900">Commands</a>
+            <a href="#" onclick="showSection('faq')" class="text-gray-600 hover:text-gray-900">FAQ</a>
+            <a href="#" onclick="showSection('about')" class="text-gray-600 hover:text-gray-900">About</a>
+        </div>
+        <div class="md:hidden">
+            <button id="mobile-menu-button" class="text-gray-600 hover:text-gray-900 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </div>
+    </nav>
+    <div id="mobile-menu" class="hidden md:hidden">
+        <a href="#" onclick="showSection('guide'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">User Guide</a>
+        <a href="#" onclick="showSection('tutorials'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Tutorials</a>
+        <a href="#" onclick="showSection('chidi'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Chidi AI</a>
+        <a href="#" onclick="showSection('adventure'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Adventure</a>
+        <a href="#" onclick="showSection('developer'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Developer</a>
+        <a href="#" onclick="showSection('security'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Security</a>
+        <a href="#" onclick="showSection('reference'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">Commands</a>
+        <a href="#" onclick="showSection('faq'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">FAQ</a>
+        <a href="#" onclick="showSection('about'); toggleMobileMenu();" class="block py-2 px-4 text-sm hover:bg-gray-200">About</a>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="container mx-auto px-6 py-8">
+    <div id="content-area" class="bg-white p-8 rounded-lg shadow-lg prose max-w-none">
+        <!-- Content will be loaded here -->
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-800 text-white mt-8">
+    <div class="container mx-auto px-6 py-4 text-center">
+        <p>&copy; 2025 Andrew Edmark. OopisOS is a collaborative project. All rights reserved.</p>
+        <p class="text-sm text-gray-400 mt-2">"El Código del Taco" - A new paradigm in software architecture.</p>
+    </div>
+</footer>
+
+<!-- Hidden textareas for Markdown content -->
+<textarea id="md-home" class="hidden">
+# Welcome to OopisOS v3.3: "Journeyman Edition"
+
+#### We're going on an ADVENTURE!
+
+```
+Guest@OopisOs:~$ echo "OopisOS is ready."
+OopisOS is ready.
+```
+
+## What is OopisOS?
+
+OopisOS is a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
+
+The "Journeyman Edition" introduces a powerful new dimension of creativity: a full-featured text adventure engine, allowing you to not only play but also build your own interactive worlds.
+
+## Key Features at a Glance
+
+- **A Rock-Solid File System:** A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, and `rm`.
+
+- **An Empowered Command-Line:** Full history, tab-completion, piping (`|`), redirection (`>`), backgrounding (`&`), sequencing (`;`), and environment variable support with a customizable prompt via `PS1`.
+
+- **A True Multi-User Security Model:** Create users (`useradd`) and groups (`groupadd`). Manage permissions with `chmod`, `chown`, and `chgrp`. Execute commands with elevated privileges using `sudo` and safely edit the rules with `visudo`.
+
+- **A Full Suite of Applications:**
+  - `edit`: A powerful text editor with live Markdown preview.
+  - `paint`: A character-based art studio for your inner artist.
+  - `chidi`: An AI-powered "Librarian" for deep document analysis and cross-file querying.
+  - `gemini`: A tool-using AI assistant for your terminal.
+  - `explore`: A graphical, two-pane file explorer.
+  - `adventure`: A powerful, data-driven text adventure engine to play and build interactive fiction.
+    </textarea>
+<textarea id="md-guide" class="hidden">
+# User Guide
+
+This guide covers the essential commands for navigating and interacting with the OopisOS environment. For a quick list of all commands, type `help`. For a detailed manual on a specific command, type `man [command_name]`.
+
+### Essential Commands
+
+|Command & Key Flags|What It Does|
+|---|---|
+|`help [cmd]`|Displays a list of commands or a command's basic syntax.|
+|`ls [-l -a -R -r -t -S -X -d]`|Lists directory contents. The cornerstone of observation.|
+|`tree [-L level] [-d]`|Like `ls`, but fancier. Displays files and directories in a tree.|
+|`cd [directory]`|Changes your current location in the file system.|
+|`pwd`|Prints the full path of your current working directory.|
+|`mkdir [-p] [dir_name]`|Creates a new, empty directory.|
+|`cat [-n] [file...]`|Displays the entire content of a file. Use `-n` for line numbers.|
+|`echo [text]`|Repeats text back to you. Primarily used for writing to files.|
+|`touch [-c -d 'date'] [file]`|Creates an empty file or updates its timestamp.|
+|`rm [-r -f -i] [item]`|Removes (deletes) a file or directory. This is permanent.|
+|`cp [-r -f -p -i] [src] [dest]`|Copies a file or directory.|
+|`mv [-f -i] [src] [dest]`|Moves or renames a file or directory.|
+|`grep [-i -v -n -c -R] [pat]`|Searches for a text pattern within files.|
+|`find [path] [expr]`|A powerful tool to find files based on various criteria.|
+
+### Data & System Utilities
+
+|Command & Key Flags|What It Does|
+|---|---|
+|`head [-n lines] [-c bytes]`|Outputs the first part of a file.|
+|`tail [-n lines] [-c bytes]`|Outputs the last part of a file.|
+|`diff [file1] [file2]`|Compares two files and shows the differences.|
+|`sort [-r -n -u] [file]`|Sorts lines of text alphabetically or numerically.|
+|`uniq [-c -d -u] [file]`|Filters or reports repeated adjacent lines.|
+|`wc [-l -w -c] [file]`|Counts the lines, words, and bytes in a file.|
+|`awk 'program' [file]`|A powerful tool for pattern-based text processing.|
+|`xargs [command]`|Builds and executes command lines from standard input.|
+|`df [-h]`|Reports the file system's overall disk space usage.|
+|`du [-h -s] [path]`|Estimates disk space used by a specific file/directory.|
+
+### Application Suite
+
+OopisOS comes with several built-in applications that run in a full-screen, modal interface, providing a richer experience than standard command-line tools.
+
+- **`explore [path]`** Opens a graphical, two-pane file explorer. The left pane shows an expandable directory tree, and the right pane shows the contents of the selected directory. It's a powerful and intuitive way to navigate your file system.
+- **`edit [file]`** Opens the OopisOS text editor. It's a surprisingly capable editor with features like live Markdown and HTML preview (`Ctrl+P`), a formatting toolbar, and keyboard shortcuts for saving (`Ctrl+S`) and exiting (`Ctrl+O`).
+- **`paint [file.oopic]`** Unleash your creativity with the character-based art editor. It features a full canvas, multiple tools (pencil, eraser, shapes), a color palette, and saves your work to the custom `.oopic` format.
+- **`chidi [path]`** The AI Librarian. Point `chidi` at a directory of Markdown files (`.md`) to open a dedicated reading interface. Here, you can ask the AI to summarize documents, generate study questions, or perform a query across all loaded documents to find specific information. See the full **[Chidi AI Guide](javascript:showSection('chidi'))** for more details.
+- **`adventure [file.json]`** Launches the powerful, data-driven text adventure engine. Play the built-in "Architect's Apprentice" tutorial to learn the ropes, or load your own custom adventures from a `.json` file to create and explore new worlds. For a full guide on creating your own adventures, see `/docs/adventure.md`.
+
+### Advanced Topics
+
+Ready to wield true power? This section covers the tools that separate the administrators from the users.
+
+#### Shell Customization: The `PS1` Variable
+
+You have full control over your command prompt's appearance via the `PS1` environment variable. Use `set` with a string containing special, backslash-escaped characters.
+
+|Sequence|Description|
+|---|---|
+|`\u`|The current username (e.g., `Guest`).|
+|`\h`|The hostname (e.g., `OopisOs`).|
+|`\w`|The full path of the current working directory.|
+|`\W`|The basename of the current working directory.|
+|`\$`|Displays a `#` if the user is `root`, otherwise a `$`.|
+|`\\`|A literal backslash character.|
+
+```
+Guest@OopisOs:/home/Guest$ set PS1="[\u@\h \W]\\$ "
+[Guest@OopisOs Guest]$
+```
+
+#### Privilege Escalation: `sudo` and `visudo`
+
+Some tasks require the power of the `root` user. `sudo` is your key to borrowing that power, safely and temporarily.
+
+- **`sudo [command]`** Executes a single command with `root` privileges. You will be prompted for _your own_ password to verify your identity.
+- **`visudo`** The only safe way to edit the `/etc/sudoers` file, which controls who can use `sudo`. It locks the file and performs a syntax check on save to prevent you from locking yourself out.
+
+#### File Archival: `zip` and `unzip`
+
+Manage collections of files by bundling them into a single archive.
+
+- **`zip [archive.zip] [path_to_zip]`** Creates a simulated `.zip` archive containing the file or directory.
+- **`unzip [archive.zip] [destination_path]`** Extracts the contents of a `.zip` archive into the specified destination.
+
+#### Advanced Command Chaining: `&&`, `||`, and Pipes
+
+The shell supports powerful logical operators for more intelligent command-line workflows.
+
+- **The AND Operator (`&&`)**: The command to the right runs **only** if the command to the left succeeds. `mkdir new_project && cd new_project`
+- **The OR Operator (`||`)**: The command to the right runs **only** if the command to its left _fails_. `grep "FATAL" system.log || echo "No fatal errors found."`
+    </textarea>
+<textarea id="md-developer" class="hidden">
+# OopisOS v3.3 Architectural Documentation
+
+## 1. Design Philosophy & Core Principles
+
+This document provides a comprehensive architectural overview of the OopisOS project. It is intended for developers who will build upon, extend, or maintain the system. To contribute effectively, it is essential to understand the philosophical underpinnings of the architecture.
+
+OopisOS is more than a simulated operating system; it is an exploration of a fully self-contained, secure, and persistent client-side application paradigm. Its design is governed by five foundational pillars. Every component and decision must be weighed against these principles:
+
+1.  **Radical Self-Reliance:** The system is 100% client-side. It has no dependency on a backend server for its core logic, state, or execution. All functionality—command execution, data storage, etc.—must be achievable within a modern web browser.
+2.  **Architected Persistence:** The system state is not ephemeral. The virtual file system, user credentials, session data, and command history are all persisted locally using the browser's storage APIs. The user is the sole custodian of their data.
+3.  **Enforced Modularity:** The system is composed of discrete, specialized components with clear responsibilities. Logic is never intermingled; it is orchestrated.
+4.  **Security by Design:** Security is foundational, not a feature. A strict permission model, sandboxed execution for untrusted content, input validation, and secure credential handling enforce the principle of least privilege at every layer.
+5.  **Contained & Orchestrated Execution:** All operations flow through controlled channels. The `CommandExecutor` handles processing, while the `OutputManager` controls display. This ensures predictability and prevents unintended side effects.
+
+-----
+
+## 2. System Architecture: A Layered Model
+
+The architecture is layered, ensuring a clear separation of concerns. Each layer communicates through well-defined APIs, creating a stable and predictable system.
+
+### Layer 1: The System Bootstrap & Core Plane
+
+- **`index.html`:** The vessel. Defines the minimal DOM structure and loads all JavaScript modules in the correct, deterministic order.
+- **`main.js`:** The ignition sequence. On `window.onload`, it initiates the boot process, caches essential DOM elements, initializes all manager modules, and connects the user to the terminal.
+- **`config.js`:** The system's constitution. A centralized source of constants—permission modes, UI strings, default paths, etc.
+- **`utils.js`:** A library of pure, stateless utility functions for common tasks like DOM creation, string manipulation, and data validation.
+
+### Layer 2: The Command Lifecycle & Execution Engine
+
+- **`lexpar.js`:** Contains the **Lexer** and **Parser**. This is the first stage of the command lifecycle, responsible for converting raw input strings into a structured, executable representation (an abstract syntax tree).
+- **`commexec.js`:** The **CommandExecutor** is the heart of the OS. It orchestrates the entire command lifecycle: it receives the parsed command, validates it against the "Command Contract," manages I/O redirection, handles background jobs, and isolates command logic.
+- **`scripts/commands/registry.js`:** The **CommandRegistry** is the central manifest where all command modules register their definitions, descriptions, and help texts.
+- **`scripts/commands/*.js`:** Each file in this directory represents a self-contained, modular command that adheres to the Command Contract.
+
+### Layer 3: The State & Persistence Core
+
+- **`storage.js`:** The `StorageManager` and `IndexedDBManager` provide a clean, abstracted API for all data persistence, separating the rest of the system from the implementation details of `localStorage` and `IndexedDB`.
+- **`fs_manager.js`:** The **FileSystemManager** is the sole authority for the virtual file system. It maintains the in-memory `fsData` object, enforces all permission checks via `hasPermission()`, and handles the serialization of the file system to IndexedDB.
+- **`user_manager.js` & `group_manager.js`:** These modules manage the system's social fabric. They handle authentication, user/group creation, and secure credential storage using the Web Crypto API.
+- **`session_manager.js`:** Tracks all ephemeral session state: the current user stack (`su`/`logout`), environment variables, and manual session snapshots (`savestate`/`loadstate`).
+
+### Layer 4: The Human-Interface Bridge
+
+- **`terminal_ui.js`:** Manages all direct interaction with the terminal interface, including prompt behavior, tab completion, history navigation, and modal dialogs.
+- **`output_manager.js`:** The sole, disciplined channel for all output to the terminal screen. It ensures consistent formatting and handles output suppression for background jobs or redirected streams.
+
+-----
+
+## 3. Core Component Deep Dive
+
+### The Command System: Secure by Process
+
+1.  **Input & Expansion**: User input is received. The `CommandExecutor` expands environment variables (`$VAR`) and aliases.
+2.  **Tokenization & Parsing**: The `Lexer` breaks the command string into tokens (words, operators), and the `Parser` assembles these into a structured command pipeline.
+3.  **Validation (The Command Contract)**: The `CommandExecutor` validates the parsed command against its registered definition, checking argument counts, path validity, and permissions **before** any logic is run.
+4.  **Execution**: The command's `coreLogic` is invoked with a secure, validated context object containing all necessary arguments, flags, and options.
+
+### The File System: A Bastion of State
+
+- **Structure & Persistence**: The file system exists as a single, large JavaScript object (`fsData`). This object is a direct, in-memory representation of the entire directory tree. Upon modification, the `FileSystemManager` serializes this object and persists it to IndexedDB.
+- **Security Gateway**: All file system operations, without exception, must pass through the `hasPermission()` gatekeeper within the `FileSystemManager`. This function is the final authority on access control.
+
+### User & Credential Management
+
+- **Secure by Default**: Passwords are never stored in plaintext. The `UserManager` uses the browser's native **Web Crypto API (SHA-256)** to securely hash passwords before they are persisted to `localStorage`.
+- **Centralized Authentication**: All login logic resides in the `UserManager`. Secure password input is handled by the `ModalInputManager` to prevent leakage into command history or the screen.
+
+### Full-Screen Applications: Contained Ecosystems
+
+- **`edit` (Editor)**: Demonstrates the separation of state and UI. The `EditorManager` tracks the file content and dirty state, while the `EditorUI` simply renders it. Untrusted user-generated content (e.g., HTML) is rendered in a sandboxed `<iframe>` to prevent XSS attacks.
+- **`paint` (Art Studio)**: The `PaintManager` maintains the canvas as an abstract data model, completely decoupled from the `PaintUI` that renders it. Artwork is serialized to a custom JSON format (`.oopic`).
+- **`chidi` (Analyzer)**: Implements a Retrieval-Augmented Generation (RAG) strategy. It performs a local keyword search on the document corpus to create a focused context before calling the external AI API, optimizing for relevance and efficiency.
+
+-----
+
+## 4. Extending the System: The Command Contract
+
+Adding a new command to OopisOS is a simple and secure process that follows a clear, declarative pattern. As of v3.3, you **do not** need to add a `<script>` tag to `index.html`. The `CommandExecutor` will dynamically load your command script on first use.
+
+### Step 1: Create the Command File
+
+Create a new file in `/scripts/commands/`. The filename must exactly match the command name you wish to use (e.g., `mycommand.js`).
+
+### Step 2: Define the Command Contract
+
+At the top of your file, create a `const` object for your command's definition. This object declares your command's requirements to the `CommandExecutor`.
+
+```javascript
+const myCommandDefinition = {
+  commandName: "mycommand",
+
+  // Define accepted flags
+  flagDefinitions: [
+    { name: "force", short: "-f", long: "--force" },
+    { name: "outputFile", short: "-o", takesValue: true }
+  ],
+
+  // Define argument count rules
+  argValidation: {
+    min: 1,
+    max: 2,
+    error: "Usage: mycommand [-f] [-o file] <source> [destination]"
+  },
+
+  // Define which arguments are paths and their validation rules
+  pathValidation: [
+    { argIndex: 0, options: { expectedType: 'file' } },
+    { argIndex: 1, options: { allowMissing: true } }
+  ],
+
+  // Define required permissions on those paths
+  permissionChecks: [
+    { pathArgIndex: 0, permissions: ["read"] },
+    { pathArgIndex: 1, permissions: ["write"] } // Example check
+  ],
+
+  // The core logic function comes next...
+  coreLogic: async (context) => { /* ... */ }
+};
+```
+
+### Step 3: Write the Core Logic
+
+The `coreLogic` function is an `async` function that receives a single `context` object. This object contains everything your command needs, already parsed and validated.
+
+```javascript
+coreLogic: async (context) => {
+  const { args, flags, currentUser, validatedPaths, options } = context;
+
+  // Your logic here. You can trust that:
+  // - `args` contains the correct number of non-flag arguments.
+  // - `flags.force` is a boolean, `flags.outputFile` is a string or null.
+  // - `validatedPaths[0].node` is a valid file node.
+  // - The user has 'read' permission on validatedPaths[0].
+
+  return { success: true, output: "Execution complete." };
+}
+```
+
+### Step 4: Register the Command
+
+Finally, register your command, its one-line description, and its detailed help text with the `CommandRegistry`.
+
+```javascript
+// At the end of your file
+const myCommandDescription = "A brief, one-line description of the command.";
+const myCommandHelpText = `Usage: mycommand [options]...
+
+The detailed help text for the 'man' command.`;
+
+CommandRegistry.register(
+        myCommandDefinition.commandName,
+        myCommandDefinition,
+        myCommandDescription,
+        myCommandHelpText
+);
+```
+    </textarea>
+<textarea id="md-security" class="hidden">
+# OopisOS Security Policy
+
+## I. Philosophy
+
+OopisOS treats security as a foundational principle, not an afterthought. Our model is built on three pillars: client-side sandboxing, explicit user permissions, and architected containment.
+
+Most importantly, we believe that **your data is none of our business.** OopisOS is designed to be a private, self-contained world that runs entirely in your browser. We have no servers, we collect no telemetry, and we have no access to your files or credentials.
+
+## II. Core Security Components
+
+### Authentication (`UserManager`)
+
+- **Secure Hashing:** Passwords are never stored in plaintext. They are securely hashed using the browser's native Web Crypto API with the SHA-256 algorithm before being stored locally.
+- **Audited Flows:** Login and user-switching (`su`) flows are handled through a single, audited authentication manager to prevent timing attacks, bypasses, or credential leakage.
+
+### Authorization (`FileSystemManager`)
+
+- **Centralized Gatekeeping:** All file system access is gated by the `FileSystemManager.hasPermission()` function. There are no back doors.
+- **Granular Permissions:** This function rigorously checks file ownership (`owner`, `group`) against the file's octal mode (`rwx`) and the current user's identity for every operation.
+- **Superuser Exception:** The `root` user is an explicit, carefully managed exception that bypasses standard permission checks, as is standard in Unix-like systems.
+
+### Privilege Escalation (`SudoManager`)
+
+- **Controlled Elevation:** The `sudo` command allows for temporary, controlled privilege escalation. Access is governed by the `/etc/sudoers` file, which is only editable by `root` via the `visudo` command.
+- **Scoped Privileges:** Escalated privileges are granted for only a single command and are immediately revoked within a `try...finally` block to ensure they do not persist longer than necessary.
+
+## III. Data Privacy & Persistence
+
+OopisOS is designed to be completely private.
+
+- **Local Storage:** All your data—the file system, user accounts, and session information—is stored exclusively in your browser's `localStorage` and `IndexedDB`. It never leaves your computer.
+- **User Control:** You have full control over your data. You can export it with the `backup` command or permanently erase it with the `reset` command.
+
+## IV. Best Practices for Users
+
+- **Guard the Root Password:** Do not share your `root` password. It provides unrestricted access to the entire virtual file system.
+- **Principle of Least Privilege:** Operate as a standard user (`Guest`) for daily tasks. Only use `su` or `sudo` when administrative privileges are required.
+- **Audit Permissions:** Regularly review file permissions using `ls -l` to ensure they are set as you expect.
+- **Be Wary of Unknown Scripts:** Be cautious when running scripts (`run` command) or viewing files from untrusted sources, just as you would on any other OS.
+
+## V. Reporting a Vulnerability
+
+The security of OopisOS is our top priority. If you believe you have found a security vulnerability, we encourage you to report it to us responsibly.
+
+Please email a detailed description of the issue to **oopismcgoopis@gmail.com**. We are committed to working with you to understand and resolve the issue promptly.
+    </textarea>
+<textarea id="md-tutorials" class="hidden">
+# OopisOS v3.3 Tutorials
+
+Welcome to the OopisOS tutorials. While the Command Reference explains what each command does, this guide will show you how to combine them to accomplish larger tasks. These walkthroughs are designed to teach you the core workflows of the operating system.
+
+### Your First Shell Script
+
+**Objective:** To create and run a simple, executable script that can accept arguments from the command line.
+
+This tutorial will teach you how to use the `edit` program, change file permissions with `chmod`, and execute your new script with `run`.
+
+**Step 1: Create the Script File**
+First, let's create a file for our script using the text editor.
+```bash
+edit welcome.sh
+```
+
+**Step 2: Write the Script's Logic**
+The `edit` application will open. Type the following line into the editor:
+
+```bash
+echo "Welcome to OopisOS, $1!"
+```
+
+The `$1` is a special variable that represents the *first argument* you pass to the script. After typing the line, save and exit the editor by pressing `Ctrl+S`.
+
+**Step 3: Make the Script Executable**
+By default, new files are not executable. Use `chmod` to add execute permissions. A mode of `700` is perfect for a personal script, as it gives you full control.
+
+```bash
+chmod 700 welcome.sh
+```
+
+Run `ls -l welcome.sh` to see the permissions change from `-rw-r--r--` to `-rwx------`.
+
+**Step 4: Run the Script**
+Finally, execute your script using the `run` command, and give it an argument to see the `$1` variable in action.
+
+```bash
+run ./welcome.sh "Developer"
+```
+
+The system will output: `Welcome to OopisOS, Developer!` You have successfully created and run your first shell script.
+
+-----
+
+### Setting Up a Shared Project
+
+**Objective:** To demonstrate the full security model by creating a new group, adding users to it, and creating a shared directory that only group members can access.
+
+**Step 1: Assume Administrative Role with `sudo`**
+To manage users and groups, you need administrative privileges. Use the `sudo` command to run these commands. You will be prompted for the `root` user's password (`mcgoopis`).
+
+```bash
+sudo useradd devone
+# (set password for devone)
+sudo useradd devtwo
+# (set password for devtwo)
+sudo groupadd project_phoenix
+```
+
+**Step 2: Add Users to the Group**
+Now, add both new users to the `project_phoenix` group.
+
+```bash
+sudo usermod -aG project_phoenix devone
+sudo usermod -aG project_phoenix devtwo
+```
+
+**Step 3: Create and Secure the Project Directory**
+Log in as one of the developers to create the shared directory.
+
+```bash
+login devone
+# (enter devone's password)
+mkdir /home/project_phoenix
+```
+
+By default, this directory is owned by `devone`. We need to change its group and permissions. Since `devone` owns the directory, they don't need `sudo` for these commands.
+
+```bash
+chgrp project_phoenix /home/project_phoenix
+chmod 770 /home/project_phoenix
+```
+
+The mode `770` (`rwxrwx---`) gives the owner (`devone`) and the group (`project_phoenix`) full access, while denying access to anyone else.
+
+**Step 4: Test the Permissions**
+As `devone`, you can create a file. Now, log out and log in as `devtwo`, who should also be able to create a file, proving the group permissions work.
+
+```bash
+touch /home/project_phoenix/devone_file.txt
+logout
+login devtwo
+# (enter devtwo's password)
+touch /home/project_phoenix/devtwo_file.txt
+```
+
+You have successfully created a secure, collaborative workspace.
+
+-----
+
+### Exploring Your System with AI
+
+**Objective:** To showcase how the integrated AI tools (`chidi` and `gemini`) can be used to analyze and interact with your file system.
+
+**Step 1: Populate Your Home Directory**
+First, ensure you are logged in as `Guest` and run the `inflate.sh` script to create a variety of example files.
+
+```bash
+run /extras/inflate.sh
+```
+
+**Step 2: Analyze Documents with `chidi`**
+Now that you have some Markdown files, use the AI Librarian to analyze them.
+
+```bash
+chidi /home/Guest/docs
+```
+
+This opens a new interface listing all `.md` files in that directory. You can click "Summarize" to get an AI-generated summary or "Ask" to query the entire set of documents.
+
+**Step 3: Use `gemini` for System Queries**
+The `gemini` command can use other OS tools to answer questions about the system.
+
+```bash
+gemini "list all the oopic files in the home directory"
+```
+
+The AI will understand the request, run `find /home -name "*.oopic"`, and present the results in a user-friendly format.
+    </textarea>
+<textarea id="md-reference" class="hidden">
+# OopisOS v3.3 Command Reference
+
+### A Note on the Structure of This Document
+
+The commands in this reference are presented in a deliberate order designed to build your understanding of the system from the ground up.
+
+1.  **Observation & Security:** The foundational tools for seeing the file system and understanding its rules (`ls`, `chmod`, `find`).
+2.  **User & Group Management:** The commands that manage the actors in our security model (`useradd`, `sudo`, `chown`).
+3.  **Fundamental File Operations:** The essential tools for daily work (`cat`, `mkdir`, `cp`, `rm`).
+4.  **Text Processing & Automation:** A powerful suite of utilities for manipulating data and automating tasks (`grep`, `sort`, `awk`, `run`).
+5.  **Networking & System Integrity:** Tools for connecting to the outside world and managing the system's state (`wget`, `backup`).
+6.  **High-Level Applications:** The suite of built-in, full-screen applications (`edit`, `paint`, `chidi`).
+7.  **Shell & Session Control:** Commands for customizing your environment and managing your session (`alias`, `set`, `history`, `logout`).
+
+-----
+
+## 1. Core Concepts: Observation & Security
+
+| Command | Description |
+| :--- | :--- |
+| `ls` | Lists directory contents. Use `-l` for details, `-a` for hidden files, `-R` for recursion. |
+| `tree` | Displays the contents of a directory in a visually structured, tree-like format. |
+| `pwd` | Prints the full, absolute path of your current working directory. |
+| `diff` | Compares two files line by line, showing additions, deletions, and common lines. |
+| `df` | Reports the virtual file system's overall disk space usage. Use `-h` for human-readable sizes. |
+| `du` | Estimates and displays the disk space used by a specific file or directory. |
+| `chmod`| Changes the permission mode of a file (e.g., `chmod 755 script.sh`). |
+| `find` | Searches for files based on criteria like name (`-name`), type (`-type`), or permissions (`-perm`). |
+
+-----
+
+## 2. The Social Fabric: User & Group Management
+
+| Command | Description |
+| :--- | :--- |
+| `useradd` | Creates a new user account and their home directory. |
+| `removeuser` | Permanently deletes a user account, with an option to remove their home directory. |
+| `groupadd` | Creates a new user group. |
+| `groupdel` | Deletes an existing user group. |
+| `usermod` | Modifies a user's group memberships (`-aG <group> <user>`). |
+| `passwd` | Changes a user's password interactively. |
+| `chown` | Changes the user ownership of a file or directory. |
+| `chgrp` | Changes the group ownership of a file or directory. |
+| `sudo` | Executes a single command with superuser (root) privileges. |
+| `visudo`| Safely edits the `/etc/sudoers` file to manage who can use `sudo`. |
+| `login` | Logs in as a different user, replacing the current session entirely. |
+| `logout`| Logs out of a stacked session created with `su`, returning to the previous user. |
+| `su` | Switches to another user, stacking the new session on top of the old one. |
+| `whoami`| Prints the username of the currently active user. |
+| `groups`| Displays the group memberships for a specified user. |
+| `listusers`| Lists all registered user accounts on the system. |
+
+-----
+
+## 3. The Workshop: Fundamental File Operations
+
+| Command | Description |
+| :--- | :--- |
+| `mkdir` | Creates a new directory. Use `-p` to create parent directories as needed. |
+| `touch` | Creates a new empty file or updates the timestamp of an existing one. |
+| `echo` | Writes arguments to the output. Used with `>` or `>>` to write to files. |
+| `cat` | Concatenates and displays the content of one or more files. |
+| `head` | Outputs the first part (default: 10 lines) of a file. |
+| `tail` | Outputs the last part (default: 10 lines) of a file. |
+| `cp` | Copies files or directories. Use `-r` for recursive, `-p` to preserve metadata. |
+| `mv` | Moves or renames files and directories. |
+| `rm` | Removes (deletes) files or directories. Use `-r` for recursive, `-f` to force. |
+| `zip` | Creates a simulated `.zip` archive containing a specified file or directory. |
+| `unzip` | Extracts files and directories from a simulated `.zip` archive. |
+| `upload`| Opens a dialog to upload files from your local machine into the OopisOS file system. |
+| `export`| Opens a dialog to download a file from the OopisOS file system to your local machine. |
+
+-----
+
+## 4. The Assembly Line: Text Processing & Automation
+
+| Command | Description |
+| :--- | :--- |
+| `grep` | Searches for a pattern within files or standard input (`-i` for case-insensitivity). |
+| `sort` | Sorts lines of text from a file or standard input (`-n` for numeric, `-r` for reverse). |
+| `uniq` | Reports or filters out adjacent repeated lines (`-c` to count, `-d` for duplicates). |
+| `wc` | Counts lines (`-l`), words (`-w`), and bytes (`-c`) in files or standard input. |
+| `awk` | A powerful pattern-scanning and text-processing language for complex data extraction. |
+| `shuf` | Generates a random permutation of its input lines. |
+| `xargs` | Builds and executes command lines from standard input, connecting commands. |
+| `run` | Executes a shell script (`.sh` file), with support for arguments (`$1`, `$@`). |
+| `delay` | Pauses execution for a specified number of milliseconds. Essential for scripts. |
+| `printscreen`| Captures all visible text in the terminal and saves it to a file. |
+
+-----
+
+## 5. The Bridge: Networking & System Integrity
+
+| Command | Description |
+| :--- | :--- |
+| `wget` | A non-interactive network downloader for fetching files from URLs. |
+| `curl` | A versatile tool for transferring data from or to a server, often used for API interaction. |
+| `ps` | Displays a list of currently running background processes started with `&`. |
+| `kill` | Terminates a background process by its Job ID (found via `ps`). |
+| `savestate`| Manually saves a complete snapshot of the current user's session and file system. |
+| `loadstate`| Restores the last manually saved state for the current user. |
+| `backup`| Creates a secure, downloadable backup file of the entire OS state with a checksum. |
+| `restore`| Restores the entire OS from a downloaded backup file, wiping the current state. |
+| `clearfs`| Permanently erases all contents within the current user's home directory. |
+| `reboot`| Reboots the OopisOS virtual machine by reloading the page, preserving all data. |
+| `reset` | Wipes ALL OopisOS data (users, files, settings) and performs a factory reset. |
+
+-----
+
+## 6. The Cockpit: High-Level Applications
+
+| Command | Description |
+| :--- | :--- |
+| `edit` | Opens a powerful, full-screen text editor with live Markdown/HTML preview. |
+| `paint` | Launches a graphical, character-based art studio for creating ASCII and ANSI art. |
+| `explore`| Opens a graphical, two-pane file explorer for intuitive navigation. |
+| `chidi` | The "AI Librarian." Launches a modal application to read and analyze Markdown files with AI. |
+| `gemini`| Interacts with a tool-using Gemini AI model that can execute commands to answer questions. |
+| `adventure`| Starts the interactive text adventure game engine. |
+
+-----
+
+## 7. The Environment: Shell & Session Control
+
+| Command | Description |
+| :--- | :--- |
+| `help` | Displays a list of all commands or a specific command's syntax. |
+| `man` | Formats and displays the detailed manual page for a given command. |
+| `history`| Displays or clears the command history for the current session (`-c` to clear). |
+| `clear` | Clears the terminal screen of all previous output. |
+| `alias` | Creates or displays command shortcuts (e.g., `alias ll='ls -l'`). |
+| `unalias`| Removes one or more defined aliases. |
+| `set` | Sets or displays session-specific environment variables (e.g., `set MY_VAR="hello"`). |
+| `unset` | Removes one or more environment variables. |
+| `date` | Displays the current system date and time. |
+| `check_fail`| A diagnostic tool to verify that a given command correctly produces an error. |
+    </textarea>
+<textarea id="md-about" class="hidden">
+# About OopisOS & The "El Código del Taco" Philosophy
+
+## The Creators
+
+OopisOS is the unlikely result of a caffeine-and-code-fueled fever dream, a collaboration between:
+
+- **Andrew Edmark** (The Human Element, Chief Architect)
+- **Gemini** (The AI Assistant, Humble Narrator, and Primary Cause of Bugs-Turned-Features)
+
+## The Social Contract (aka The Boring Legal Bit)
+
+This Software, OopisOS, represents a collaborative endeavor between human direction and artificial intelligence. **Copyright (c) 2025 Andrew Edmark (hereinafter referred to as the "Curator")**
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice, the Authorship and Contribution Acknowledgment, and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS (INCLUDING THE CURATOR) OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+### **El Código del Taco: A Layered Architectural Model**
+
+The "El Código del Taco" is a formal architectural model for developing complex, stateful, and secure client-side applications with a focus on radical self-reliance—the ability to operate entirely within the browser without server-side dependencies.
+
+The model posits that any robust application can be deconstructed into a series of well-defined, concentric layers, analogous to the ingredients of a taco. Each layer has a distinct purpose and responsibility, ensuring a clean separation of concerns.
+
+#### The Seven Layers
+
+1.  **The Protein (La Proteína) — The Core Business Logic Layer**: The soul of the application. For OopisOS, this is the `CommandExecutor` and the core state managers.
+2.  **The Lettuce & Cabbage (La Lechuga y el Repollo) — The Presentation Layer**: The UI/UX. In OopisOS, this is the `terminal_ui.js` and `output_manager.js`.
+3.  **The Cheese (El Queso) — The Feature & Enhancement Layer**: Value-add features that aren't core to the main function. Examples include the `gemini` and `chidi` AI tools.
+4.  **The Salsa & Crema (La Salsa y la Crema) — The API & Data Layer**: The unifying agent that ties everything together, like the `StorageManager`.
+5.  **The Onions & Cilantro (La Cebolla y el Cilantro) — The Utility & Environment Layer**: Small, potent, non-negotiable accents like `utils.js` and `config.js`.
+6.  **The Jalapeño (El Jalapeño) — The Security & Validation Layer**: Controlled heat. This represents security layers, validation logic, and error handling.
+7.  **The Fold (El Doblez) — The Build & Deployment Architecture**: Bringing all components together. In OopisOS, this is `index.html` and the script loading order.
+    </textarea>
+<textarea id="md-faq" class="hidden">
+# Frequently Asked Questions
+
+<details>
+  <summary>What is OopisOS?</summary>
+  <div>
+    <p>OopisOS is a sophisticated OS simulation that runs entirely in your web browser. It's a self-contained, persistent world with a command-line interface, a multi-user file system, and a suite of applications. It's designed to be a private, educational, and fun environment to explore command-line concepts without any installation.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Is my data safe? Where is it stored?</summary>
+  <div>
+    <p>Your data is completely private and is never sent to any server. The entire file system, user accounts, and session data are stored exclusively in your browser's <code>localStorage</code> and <code>IndexedDB</code>. The OopisOS developers have no access to it. Your world is your own.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Can I lose my data? How do I back it up?</summary>
+  <div>
+    <p>Yes. Because all data is stored in your browser, clearing your browser's site data for this page will permanently erase your OopisOS instance.</p>
+    <p><br />To prevent data loss, you can create a complete backup using the <code>backup</code> command. This will package your entire OS state into a single <code>.json</code> file and prompt you to download it to your actual computer. You can restore from this file at any time using the <code>restore</code> command.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Do I need to install anything?</summary>
+  <div>
+    <p>No. OopisOS is 100% client-side and "radically self-reliant." It runs entirely in your browser with no need for installations, plugins, or server-side dependencies.</p>
+  </div>
+</details>
+
+<details>
+  <summary>How do I get administrative (root) privileges?</summary>
+  <div>
+    <p>You can execute a single command with root privileges using <code>sudo [command]</code>. This will prompt you for your user's password. For a persistent root session, you can use <code>su root</code> and enter the root password. For daily tasks, it's recommended to operate as a standard user and only elevate your privileges when necessary, following the Principle of Least Privilege.</p>
+  </div>
+</details>
+
+<details>
+  <summary>How do I add new commands to the system?</summary>
+  <div>
+    <p>As a developer, you can extend the OS by adding new commands. This involves creating a new JavaScript file in the <code>/scripts/commands/</code> directory. Inside this file, you must define a "Command Contract" object that specifies the command's name, flags, arguments, and core logic. Finally, you register the command with the <code>CommandRegistry</code>. The system will then load your new command on-demand the first time it's called.</p>
+  </div>
+</details>
+
+<details>
+  <summary>What is "El Código del Taco"?</summary>
+  <div>
+    <p>"El Código del Taco" is a formal architectural model used to design OopisOS. While the name is a bit of fun, it represents a serious design philosophy. It structures the application into seven distinct, taco-themed layers—from core logic (<em>La Proteína</em>) to the build process (<em>El Doblez</em>). This ensures a high degree of modularity, security, and maintainability.</p>
+  </div>
+</details>
+
+<details>
+  <summary>What's the difference between the `chidi` and `gemini` commands?</summary>
+  <div>
+    <p>Both are AI-powered tools, but they have different purposes:</p><br />
+    <ul>
+      <li><code>gemini</code> is a general-purpose, conversational AI assistant. It can use other OopisOS commands as tools to answer questions about the system (e.g., "gemini list all text files in my home directory").</li>
+      <br /><li><code>chidi</code> is a specialized "AI Librarian" application. You point it at a directory of Markdown files, and it provides a dedicated interface for reading, summarizing, and asking questions across that specific set of documents. It's designed for deep work on a knowledge base.</li>
+    </ul>
+  </div>
+</details>
+    </textarea>
+<textarea id="md-adventure" class="hidden">
+# The OopisOS Text Adventure Engine
+
+Welcome, Architect. This document is your guide to the OopisOS Text Adventure Engine, a powerful tool for creating and playing interactive fiction directly within the operating system. Whether you want to play the built-in game or build your own world from scratch, this manual will show you how.
+
+### 1. How to Play
+
+Getting started is simple. Just type `adventure` into the terminal to launch the default story, "The Architect's Apprentice."
+
+```
+> adventure
+```
+
+This will open the game in a full-screen modal. To exit the game and return to the terminal at any time, type `quit`. For a full list of in-game commands, type `help`.
+
+You can also load custom adventures created by other users (or yourself!) by providing the path to a valid adventure file.
+
+```
+> adventure /path/to/my_game.json
+```
+
+### 2. The Anatomy of an Adventure
+
+Every adventure is a world defined by a single `.json` file. This file contains all the rooms, items, characters, and logic that make up the game. The engine is designed to be data-driven, meaning you don't need to write any code to create a complex adventure; you just need to describe your world in the JSON format.
+
+Let's break down the main components using examples from the default adventure.
+
+#### **Rooms**
+
+Rooms are the fundamental building blocks of your world. Each room is an object with a unique ID.
+
+```
+"test_chamber": {
+    "name": "Test Chamber",
+    "description": "You are in a room that feels... unfinished...",
+    "exits": { "north": "server_closet" },
+    "onListen": "You hear a low, persistent hum.",
+    "points": 5
+}
+```
+
+- `name`: The title of the room, displayed in the status bar.
+
+- `description`: The main text shown to the player when they enter or `look`.
+
+- `exits`: An object mapping directions (or custom exit names) to the ID of another room.
+
+- `isDark`: (boolean) If `true`, the room's description will be hidden unless the player has a lit `isLightSource` item.
+
+- `onListen` / `onSmell` / `onTouch`: Custom text that is displayed when the player uses a sensory verb (`listen`, `smell`, `touch`) in the room without a specific target.
+
+- `points`: The number of points awarded to the player for visiting the room for the first time.
+
+
+#### **Items**
+
+Items are the objects that populate your world. They can be taken, used, and interacted with in various ways.
+
+```
+"key": {
+    "id": "key",
+    "name": "brass key",
+    "noun": "key",
+    "adjectives": ["brass", "small"],
+    "description": "A small, plain brass key.",
+    "location": "test_chamber",
+    "canTake": true,
+    "unlocks": "chest",
+    "points": 10
+}
+```
+
+- `id`: A unique identifier for the item.
+
+- `name`: The full name of the item (e.g., "brass key").
+
+- `noun`: The primary noun for the parser (e.g., "key").
+
+- `adjectives`: An array of adjectives to help the parser disambiguate (e.g., `take brass key` vs. `take iron key`).
+
+- `description`: The text shown when the player `look`s at the item.
+
+- `location`: The ID of the room, NPC, or container item where the item starts. Can also be `"player"` for starting inventory.
+
+- `canTake`: (boolean) Determines if the player can pick up the item.
+
+- `unlocks`: The `id` of an item this item can unlock. Used with the `unlock [item] with [key]` command.
+
+- `points`: Score awarded for taking the item for the first time.
+
+
+#### **Stateful & Interactive Items**
+
+Items can be much more than static objects. They can have states, contain other items, and react to player actions.
+
+**Containers:** To make an item a container, add these properties:
+
+- `isContainer`: `true`
+
+- `isOpenable`: `true`
+
+- `isOpen`: `false` (initial state)
+
+- `isLocked`: `true` (optional)
+
+- `contains`: An array of item IDs that are inside.
+
+
+**State-Dependent Descriptions:** An item's description can change based on its `state` property. This is perfect for things that can be turned on or off.
+
+```
+"terminal": {
+    "id": "terminal",
+    "name": "computer terminal",
+    "location": "test_chamber",
+    "state": "off",
+    "descriptions": {
+        "off": "A computer terminal with a blank, dark screen.",
+        "on": "The terminal screen glows with a soft green light..."
+    }
+}
+```
+
+**Complex Interactions (`onPush`, `onUse`):** You can define what happens when a player `push`es, `pull`s, or `turn`s an item. This can change the item's own state and even affect other items in the world.
+
+```
+"power_box": {
+    "id": "power_box",
+    "state": "off",
+    "onPush": {
+        "newState": "on",
+        "message": "You push the heavy lever. It clunks into the 'ON' position.",
+        "effects": [
+            { "targetId": "terminal", "newState": "on" }
+        ]
+    }
+}
+```
+
+The `use [item] on [target]` command allows for even more specific puzzles.
+
+```
+"terminal": {
+    // ...
+    "onUse": {
+        "page": {
+            "conditions": [
+                { "itemId": "terminal", "requiredState": "on" }
+            ],
+            "failureMessage": "You touch the page to the dark screen, but nothing happens.",
+            "destroyItem": true
+        }
+    }
+}
+```
+
+- `onUse`: An object where keys are the `id` of the item being used.
+
+- `conditions`: An array of requirements that must be met for the action to succeed.
+
+- `failureMessage`: The message shown if conditions are not met.
+
+- `destroyItem`: If `true`, the item used (e.g., the page) is removed from the player's inventory.
+
+
+#### **NPCs (Non-Player Characters)**
+
+You can add characters to your world for the player to interact with.
+
+```
+"architect": {
+    "id": "architect",
+    "name": "The Architect",
+    "noun": "architect",
+    "location": "test_chamber",
+    "dialogue": {
+        "default": "'Welcome, apprentice,' the holographic figure says.",
+        "terminal": "'The terminal is the key to compiling the environment...'"
+    },
+    "onShow": {
+        "page": "The Architect's form stabilizes... 'Excellent! Now, use the page...'",
+        "default": "The Architect glances at the item but doesn't react."
+    }
+}
+```
+
+- `dialogue`: An object mapping keywords to responses. The player triggers these with `ask [npc] about [keyword]`. A `default` response is used for `talk to [npc]` or if no keyword matches.
+
+- `onShow`: Defines how an NPC reacts when the player uses `show [item] to [npc]`.
+
+
+#### **Daemons (Timed Events)**
+
+Daemons are background processes that can trigger events based on game turns. This is useful for providing hints or creating time-sensitive events.
+
+```
+"hint_daemon": {
+    "active": true,
+    "repeatable": true,
+    "trigger": {
+        "type": "every_x_turns",
+        "value": 10
+    },
+    "action": {
+        "type": "message",
+        "text": "The Architect looks at you thoughtfully..."
+    }
+}
+```
+
+- `trigger.type`: Can be `every_x_turns` or `on_turn` (for a specific move number).
+
+- `action.type`: Currently supports `message`, which displays text to the player.
+
+
+#### **Win Conditions**
+
+You define how the game is won in the root of the JSON file.
+
+```
+"winCondition": {
+    "type": "itemUsedOn",
+    "itemId": "page",
+    "targetId": "terminal"
+},
+"winMessage": "You have won!"
+```
+
+- `type`: Can be `itemInRoom` (player must drop a specific item in a specific room), `playerHasItem` (player must simply acquire an item), or `itemUsedOn` (player must use one item on another).
+
+
+### 3. Creating Your First Adventure
+
+1. **Create a JSON File:** Create a new file named `my_adventure.json` using `touch` or `edit`.
+
+2. **Define the World:** Start with the basic structure: a title, starting room, and a win condition.
+
+3. **Build the Rooms:** Create at least two room objects inside the `rooms` section. Give them names, descriptions, and link them with `exits`.
+
+4. **Add Items:** Populate your rooms with items. Create a key and a locked object, or a simple item the player needs to find.
+
+5. **Upload the File:** Use the `upload` command to add your `.json` file to the virtual file system.
+
+6. **Play!** Launch your adventure with `adventure my_adventure.json`.
+
+
+The OopisOS Text Adventure Engine provides a flexible and powerful framework for interactive storytelling. Now go, and build something extraordinary.
+# Architect's Apprentice - Beta Test Walkthrough
+
+**Objective:** This document provides a step-by-step guide to completing the default text adventure, "The Architect's Apprentice." Its purpose is to allow beta testers to verify the game's core logic, puzzle progression, and feature implementation.
+
+### Step 1: Getting Started
+
+You begin in the `Test Chamber`. The first thing you should do is get your bearings and understand your objective.
+
+1. **Talk to the Architect** to learn about your primary goal.
+
+    ```
+    > talk to architect
+    ```
+
+2. **Examine the room** to identify key objects.
+
+    ```
+    > look
+    ```
+
+    You will see a desk, a chest, a terminal, and the Architect.
+
+
+### Step 2: Finding the Key
+
+The chest is locked, so you'll need to find a key.
+
+1. **Look at the desk** more closely.
+
+    ```
+    > look at desk
+    ```
+
+2. You'll see a key on the desk. **Take it**.
+
+    ```
+    > take key
+    ```
+
+    _Pronoun Test:_ The Architect may prompt you to "take it." You can test the pronoun resolution by typing: `> take it`
+
+
+### Step 3: Unlocking the Chest & Finding the Page
+
+Now you can open the chest to find the main quest item.
+
+1. **Unlock the chest** using the key you just found.
+
+    ```
+    > unlock chest with key
+    ```
+
+2. **Open the chest**.
+
+    ```
+    > open chest
+    ```
+
+3. **Take the manual page** from inside the chest.
+
+    ```
+    > take page
+    ```
+
+4. **Read the page** to understand its purpose. It mentions needing to power up the terminal.
+
+    ```
+    > read page
+    ```
+
+
+### Step 4: Powering the Terminal
+
+The terminal is off. You need to find the power source.
+
+1. **Ask the Architect about the terminal** for a hint.
+
+    ```
+    > ask architect about terminal
+    ```
+
+2. He'll mention it's without power. The only other exit is north. **Go north** into the server closet.
+
+    ```
+    > go north
+    ```
+
+3. The closet is dark. You'll need a light source. **Take the lantern**.
+
+    ```
+    > take lantern
+    ```
+
+4. **Light the lantern**.
+
+    ```
+    > light lantern
+    ```
+
+5. With the room now lit, **look around** to find the power box.
+
+    ```
+    > look
+    ```
+
+6. **Push the lever** on the power box to turn it on.
+
+    ```
+    > push lever
+    ```
+
+    You will receive a message that the terminal in the other room is now powered on.
+
+
+### Step 5: Compiling the Room (Winning the Game)
+
+You have the manual page and the terminal is powered on. It's time to finish the test.
+
+1. **Go south** to return to the main chamber.
+
+    ```
+    > go south
+    ```
+
+2. **Look at the terminal** to confirm it is now on.
+
+    ```
+    > look at terminal
+    ```
+
+3. **Use the manual page on the terminal** to complete the objective and win the game.
+
+    ```
+    > use page on terminal
+    ```
+
+
+If you've followed these steps, the game should conclude with the win message. Please report any deviations, errors, or unexpected behavior. Thank you for your help in testing!
+    </textarea>
+<textarea id="md-chidi" class="hidden">
+# OopisOS and Chidi: A Sandbox, Tool-Using AI Agent With Memory
+
+#### 1\. Executive Summary
+
+The `chidi` command launches the Chidi.md application, a cornerstone of the OopisOS ecosystem that transforms the system from a mere collection of files into a cohesive, analyzable knowledge base. It is a purpose-built platform for deep work on a specific corpus of documents, integrating a clean reading environment with a powerful, multi-faceted AI toolkit.
+
+Unlike the generalist `gemini` command, `chidi` provides a focused, application-level experience. Its ability to recursively gather documents, present them in a dedicated modal interface, and run targeted AI analysis elevates it beyond a simple command into a flagship application for the entire OS.
+
+#### **2. Core Functionality & User Experience**
+
+The user's journey with `chidi` is designed for focus and power:
+
+1.  **Invocation:** The user invokes `chidi` with a path to a single `.md` file or, more powerfully, to a directory (e.g., `chidi /docs/api`).
+2.  **Recursive File Discovery:** The command's logic recursively traverses the specified path, gathering all `.md` files while respecting the current user's read and execute permissions. This builds the "corpus" for the application session.
+3.  **Modal Application Launch:** The `ChidiApp` launches in a full-screen modal view, deliberately removing the user from the terminal to allow for focused reading and analysis.
+4.  **The Chidi.md Interface:**
+    * **Navigation:** Users can navigate between multiple files using `PREV`/`NEXT` buttons or a dropdown file selector.
+    * **Clean Reading:** The main pane presents a beautifully rendered HTML view of the selected Markdown file via `marked.js`.
+    * **AI Toolkit:** A dedicated control panel offers primary AI-driven actions:
+        * **Summarize:** Generates a concise summary of the currently viewed document.
+        * **Study:** Generates a list of potential study questions or key topics.
+        * **Ask:** The most powerful feature. It allows the user to ask a natural language question across the *entire corpus* of loaded documents.
+    * **Session & Log Management:**
+        * **Save Session:** Users can save the entire state of their analysis—the original document plus all generated AI responses—to a new, self-contained HTML file in the virtual file system.
+        * **Verbose Log:** A toggle allows power users to view the AI's step-by-step reasoning, including which files it selected for context.
+5.  **Exit:** A clear "Exit" button or the `Esc` key closes the application, returning the user to their fully preserved terminal session.
+
+#### **3. Technical & Architectural Deep-Dive**
+
+The implementation of `chidi` adheres to our established modular design principles.
+
+* **Separation of Concerns:** A clear distinction exists between the command (`chidi.js`) and the application (`chidi_app.js`), which handles all UI, state, and API interaction.
+* **API Key Management:** The application correctly identifies its dependency on the Gemini API key and gracefully prompts the user for it if not found, ensuring a smooth onboarding experience.
+* **Intelligent Contextual Scoping (RAG):** The "Ask" feature employs a sophisticated Retrieval-Augmented Generation (RAG) strategy. Instead of naively sending all content to the API, it first performs a local keyword search to identify the most relevant documents. It then constructs a highly-focused prompt containing only the content of these top-scoring files. This approach optimizes for relevance, reduces API costs, and dramatically improves the quality and accuracy of the generated answer.
+
+#### **4. Synergy with the OopisOS Ecosystem**
+
+The `chidi` command is deeply integrated with the OopisOS toolchain.
+
+* **Content Creation:** It is the perfect companion to the `edit` command. Users can create and organize documentation, then immediately use `chidi` to analyze that work.
+* **File Management:** It works in concert with `find`, `mkdir`, and `cp`, which are essential tools for organizing the document collections that `chidi` will consume.
+* **Demonstration & Onboarding:** The `inflate.sh` script creates a perfect, ready-made environment for users to immediately test the full power of `chidi` on the sample `/docs` directory.
+* **Complement to `gemini`:** It provides a clear functional distinction: `gemini` is a generalist conversational partner that plans and executes shell commands to answer questions, while `chidi` is a specialist application for deep, context-aware analysis of a pre-defined set of documents.
+
+#### **5. Strengths & Opportunities**
+
+**Strengths:**
+
+* **Purpose-Built UI:** The modal interface provides a focused "application" experience.
+* **Multi-File Corpus:** The ability to analyze an entire directory of documents at once is its killer feature.
+* **Session Persistence:** The ability to save a complete analysis session (document + AI responses) to a new file transforms `chidi` from a simple reader into a genuine research and note-taking tool.
+* **Efficient AI Implementation:** The RAG strategy for the "Ask" feature is technically sophisticated and highly effective.
+* **Seamless Integration:** It feels like a natural and powerful extension of the core OS features.
+
+**Opportunities for Future Enhancement:**
+
+* **Expanded File Type Support:** While the renderer can display `.txt` files, the command's file discovery logic is currently limited to `.md`. Expanding this discovery to include `.txt` or even extracting comments from code files (`.js`, `.sh`) remains a clear opportunity for growth.
+* **Integration with `find`:** A future version could allow for more complex corpus creation, such as `find / -name "*-log.md" -mtime -7 | chidi`, piping a list of files directly into the application.
+
+#### **6. Conclusion**
+
+The `chidi` command and its associated application are an unqualified success. It is a robust, well-designed feature that adds immense value and a new dimension of utility to OopisOS. It elevates the platform from a simple shell simulation to a genuine productivity and learning environment. The implementation is sound, the user experience is polished, and its potential for future expansion is significant.
+    </textarea>
+
+<script>
+    // --- SCRIPT FOR FUNCTIONALITY ---
+
+    // Function to display a section
+    function showSection(sectionId) {
+        const contentArea = document.getElementById('content-area');
+        const markdownElement = document.getElementById(`md-${sectionId}`);
+
+        // Check if the element exists before trying to access its value
+        if (markdownElement) {
+            contentArea.innerHTML = marked.parse(markdownElement.value);
+        } else {
+            contentArea.innerHTML = `<p class="text-red-500">Error: Content for section "${sectionId}" not found.</p>`;
+            console.error(`Element with ID 'md-${sectionId}' not found.`);
+        }
+        window.scrollTo(0, 0); // Scroll to top on new section
+    }
+
+    // Function to toggle mobile menu
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobile-menu');
+        menu.classList.toggle('hidden');
+    }
+
+    // --- EVENT LISTENERS ---
+
+    // Initial content load
+    document.addEventListener('DOMContentLoaded', () => {
+        showSection('home');
+    });
+
+    // Mobile menu button
+    document.getElementById('mobile-menu-button').addEventListener('click', toggleMobileMenu);
+
+</script>
+
+</body>
+</html>
