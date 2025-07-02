@@ -1,5 +1,5 @@
 A COMPUTERWORLD SPECIAL INVESTIGATION
-# The OopisOS v3.2 Compendium
+# The OopisOS v3.3 Compendium
 
 _An Exhaustive Deep-Dive by Chip Sterling, Senior Editor_
 
@@ -25,7 +25,7 @@ _An Exhaustive Deep-Dive by Chip Sterling, Senior Editor_
   - [Explore Your New World](#getting-started-your-first-steps-explore-your-new-world)
 - [Epilogue: The Soul of the New Machine](#epilogue-the-soul-of-the-new-machine)
 
-**Editor's Note:** When we first encountered OopisOS, we called it a "remarkable anomaly." With the release of version 3.2, the human-AI duo of Andrew Edmark and Gemini have moved beyond anomaly and into artistry. They haven't just added features; they've polished a gem into a crown jewel, creating a simulated OS that feels more robust, more intuitive, and more alive than ever. This isn't just an update; it's a statement about what a dedicated, focused development cycle can produce. Once again, we were granted unparalleled access. This is your guide to the new state of the art.
+**Editor's Note:** When we first encountered OopisOS, we called it a "remarkable anomaly." With the release of version 3.3, the human-AI duo of Andrew Edmark and Gemini have moved beyond anomaly and into artistry. They haven't just added features; they've polished a gem into a crown jewel, creating a simulated OS that feels more robust, more intuitive, and more alive than ever. This isn't just an update; it's a statement about what a dedicated, focused development cycle can produce. Once again, we were granted unparalleled access. This is your guide to the new state of the art.
 
 ## Chapter 1: The Lay of the Land
 
@@ -76,7 +76,7 @@ If `pwd` tells you where you are, **`cd [directory]`** (Change Directory) is how
 
 ### `ls` — Your Eyes on the World
 
-The **`ls`** (List) command has been truly supercharged in v3.2, evolving into a powerful diagnostic tool. It allows you to inspect the contents of directories with remarkable precision and control.
+The **`ls`** (List) command has been truly supercharged in v3.3, evolving into a powerful diagnostic tool. It allows you to inspect the contents of directories with remarkable precision and control.
 
 Basic filtering is handled by flags like `-a` to show all files (including "hidden" files that begin with a `.` ) and `-R` to recursively list the contents of all subdirectories. Where `ls` truly shines, however, is in its advanced sorting and formatting capabilities:
 
@@ -163,7 +163,7 @@ For quick reference, here are the core commands related to creation and analysis
 | `edit [filename]`      | Opens the powerful built-in text editor, the system's crown jewel.                        |
 ## Chapter 5: The System and the Self
 
-OopisOS v3.2 marks a significant evolution in the relationship between the operating system and its user. This chapter explores the core features that manage your digital identity, augment your intellect with AI, connect your virtual space to the outside world, and provide outlets for pure creativity. It is here that "The System" and "The Self" truly become one.
+OopisOS v3.3 marks a significant evolution in the relationship between the operating system and its user. This chapter explores the core features that manage your digital identity, augment your intellect with AI, connect your virtual space to the outside world, and provide outlets for pure creativity. It is here that "The System" and "The Self" truly become one.
 
 ### The Social Fabric: User and Permission Management
 
@@ -181,7 +181,7 @@ This system, combined with powerful administrative tools like `find` for locatin
 
 ### An AI-Augmented Self: `gemini` and `chidi`
 
-Version 3.2 integrates artificial intelligence not as a gimmick, but as a core utility. It offers two distinct AI agents, each designed for a specific purpose.
+Version 3.3 integrates artificial intelligence not as a gimmick, but as a core utility. It offers two distinct AI agents, each designed for a specific purpose.
 
 - **An AI in the Shell: `gemini`** The `gemini` command provides a conversational AI that lives directly in your terminal. Its true power lies in its ability to use other OopisOS commands as tools. When you ask it a question like `gemini "list the scripts in my home directory and tell me what they do"`, it can intelligently run `ls -l /home/guest` and `cat [script-name]` to gather information before formulating a comprehensive, context-aware answer. It is a true digital assistant, capable of reasoning about and interacting with its own environment.
 
@@ -199,7 +199,7 @@ OopisOS can now reach beyond its digital borders. The inclusion of `wget` and `c
 
 ### The Creative Self: Digital Diversions
 
-An OS should also be a place for play and creativity. Version 3.2 introduces two applications dedicated to just that.
+An OS should also be a place for play and creativity. Version 3.3 introduces two applications dedicated to just that.
 
 - **`adventure`:** This command launches a full-featured, interactive text adventure game, offering a classic digital diversion and a test of your problem-solving skills.
 - **`paint`:** For the more visually inclined, the `paint` command opens a surprisingly robust character-based art studio. It features a full-color palette, multiple drawing tools, and undo/redo functionality, all driven by a keyboard-centric workflow. Your masterpieces are saved in the custom, text-based `.oopic` format, a testament to the system's versatility and charm.
@@ -238,7 +238,7 @@ This populated environment provides a safe and interesting sandbox to practice a
 
 ## Epilogue: The Soul of the New Machine
 
-After weeks of intensive use and deep architectural analysis, we can confidently say that OopisOS v3.2 is a triumph. It is a powerful, educational, and deeply engaging piece of software that captures the spirit of classic computing while pushing the boundaries of what is possible within a web browser. The system is a testament to what a focused, collaborative partnership between human ingenuity and artificial intelligence can produce.
+After weeks of intensive use and deep architectural analysis, we can confidently say that OopisOS v3.3 is a triumph. It is a powerful, educational, and deeply engaging piece of software that captures the spirit of classic computing while pushing the boundaries of what is possible within a web browser. The system is a testament to what a focused, collaborative partnership between human ingenuity and artificial intelligence can produce.
 
 It succeeds in its foundational promise: to provide a complete, persistent, and perfectly isolated sandbox where curiosity can run wild without consequence. Every design choice, from the robust permission model to the context-aware editor and the tool-using AI, serves the dual purpose of empowering the user and encouraging exploration.
 

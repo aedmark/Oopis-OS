@@ -1,4 +1,4 @@
-# OopisOS v3.2 Tutorials
+# OopisOS v3.3 Tutorials
 
 Welcome to the OopisOS tutorials. While the Command Reference explains what each command does, this guide will show you how to combine them to accomplish larger tasks. These walkthroughs are designed to teach you the core workflows of the operating system.
 

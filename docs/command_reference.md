@@ -1,6 +1,6 @@
-# OopisOS v3.2 Command Reference
+# OopisOS v3.3 Command Reference
 
-- [OopisOS v3.2 Command Reference](#oopisos-v32-command-reference)
+- [OopisOS v3.3 Command Reference](#oopisos-v32-command-reference)
   + [A Note on the Structure of This Document](#a-note-on-the-structure-of-this-document)
   * [1\. Core Concepts: Observation & Security](#1-core-concepts-observation--security)
   * [2\. The Social Fabric: User & Group Management](#2-the-social-fabric-user--group-management)

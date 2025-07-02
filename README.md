@@ -13,7 +13,7 @@
 ```
 ![screenshot](https://img.itch.zone/aW1hZ2UvMzY0MjMwOS8yMTc5MjgxNi5wbmc=/original/xXB3J6.png)
 
-# OopisOS v3.2: Brass Monkey Edition
+# OopisOS v3.3: Brass Monkey Edition
 
 Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
 
@@ -44,7 +44,7 @@ Intrigued? Read on to discover the depth of what you can do in your new OS.
 
 ## Key Features Overview
 
-OopisOS v3.0 ("Keystone") is a major release focused on security, stability, and developer experience.
+OopisOS v3.3 is a major release focused on security, stability, and developer experience.
 
 #### Core Shell Experience
 
@@ -111,7 +111,7 @@ The entire state of OopisOS is stored locally and persistently within your brows
 
 #### The Command Contract: Secure by Design
 
-The v3.0 "Keystone" release introduces a new, highly modular command architecture. Adding a new command is a declarative process where you _declare_ your command's requirements to the `CommandExecutor`, which enforces these rules _before_ your command's core logic is ever run. This is a critical security and stability feature. The contract includes:
+The v3.0 "Keystone" release introduced a new, highly modular command architecture. Adding a new command is a declarative process where you _declare_ your command's requirements to the `CommandExecutor`, which enforces these rules _before_ your command's core logic is ever run. This is a critical security and stability feature. The contract includes:
 
 - `flagDefinitions`: All flags the command accepts.
 

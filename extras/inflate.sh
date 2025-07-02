@@ -1,9 +1,9 @@
 #!/bin/oopis_shell
 
-# inflate.sh - The OopisOS Instant Universe Generator (v3.2)
+# inflate.sh - The OopisOS Instant Universe Generator (v3.3)
 # Run this and watch a sterile, empty void blossom into a bustling digital ecosystem.
 
-echo "Initiating World-Build Protocol v3.2..."
+echo "Initiating World-Build Protocol v3.3..."
 delay 500
 echo "Warning: Spontaneous generation of files and directories is imminent."
 delay 500
@@ -217,7 +217,7 @@ mkdir /shared_for_guest
 chown Guest /shared_for_guest
 chmod 777 /shared_for_guest
 echo "This is a shared space. Please clean up your files. Or don't. I'm a sign, not a cop." > /shared_for_guest/readme.txt
-echo "Welcome to OopisOS v3.2! Today's forecast: 100% chance of awesome." > /etc/motd
+echo "Welcome to OopisOS v3.3! Today's forecast: 100% chance of awesome." > /etc/motd
 echo "127.0.0.1 localhost oopis.local" > /etc/hosts
 chmod 644 /etc/motd
 chmod 644 /etc/hosts

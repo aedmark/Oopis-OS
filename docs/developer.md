@@ -1,6 +1,6 @@
-# OopisOS v3.2 Architectural Documentation
+# OopisOS v3.3 Architectural Documentation
 
-- [OopisOS v3.2 Architectural Documentation](#oopisos-v32-architectural-documentation)
+- [OopisOS v3.3 Architectural Documentation](#oopisos-v32-architectural-documentation)
   * [1\. Design Philosophy & Core Principles](#1-design-philosophy--core-principles)
   * [2\. System Architecture: A Layered Model](#2-system-architecture-a-layered-model)
     + [Layer 1: The System Bootstrap & Core Plane](#layer-1-the-system-bootstrap--core-plane)
@@ -93,7 +93,7 @@ The architecture is layered, ensuring a clear separation of concerns. Each layer
 
 ## 4\. Extending the System: The Command Contract
 
-Adding a new command to OopisOS is a simple and secure process that follows a clear, declarative pattern. As of v3.2, you **do not** need to add a `<script>` tag to `index.html`. The `CommandExecutor` will dynamically load your command script on first use.
+Adding a new command to OopisOS is a simple and secure process that follows a clear, declarative pattern. As of v3.3, you **do not** need to add a `<script>` tag to `index.html`. The `CommandExecutor` will dynamically load your command script on first use.
 
 ### Step 1: Create the Command File
 

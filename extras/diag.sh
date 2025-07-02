@@ -1,4 +1,4 @@
-echo "===== OopisOS Core Test Suite v3.2 Initializing ====="
+echo "===== OopisOS Core Test Suite v3.3 Initializing ====="
 echo "This script tests non-interactive core functionality, including"
 echo "scripted interactive prompts and the adventure game engine."
 echo "---------------------------------------------------------------------"
@@ -460,7 +460,7 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.2 Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.3 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"

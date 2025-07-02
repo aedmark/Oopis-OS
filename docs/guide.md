@@ -1,4 +1,4 @@
-# Welcome to OopisOS v3.2: "Brass Monkey"
+# Welcome to OopisOS v3.3: "Brass Monkey"
 
 #### *"That Funky Monkey"*
 
@@ -9,7 +9,7 @@ OopisOS is ready.
 
 ## Table of Contents
 
-- [Welcome to OopisOS v3.2: "Brass Monkey"](#welcome-to-oopisos-v32-brass-monkey)
+- [Welcome to OopisOS v3.3: "Brass Monkey"](#welcome-to-oopisos-v32-brass-monkey)
   - [*"That Funky Monkey"*](#that-funky-monkey)
   * [Table of Contents](#table-of-contents)
   * [What is OopisOS?](#what-is-oopisos)
@@ -41,8 +41,8 @@ The "Brass Monkey" release is a complete systemic enhancement. We've made the sy
 
 ## Key Features at a Glance
 
-- **A Rock-Solid File System:** A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, and `rm`. New in v3.2: Secure backup/restore with checksum verification.
-- **An Empowered Command-Line:** Full history, tab-completion, piping (`|`), redirection (`>`), backgrounding (`&`), sequencing (`;`), and environment variable support. New in v3.2: a fully customizable prompt via the `PS1` variable.
+- **A Rock-Solid File System:** A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, and `rm`. New in v3.3: Secure backup/restore with checksum verification.
+- **An Empowered Command-Line:** Full history, tab-completion, piping (`|`), redirection (`>`), backgrounding (`&`), sequencing (`;`), and environment variable support. New in v3.3: a fully customizable prompt via the `PS1` variable.
 - **A True Multi-User Security Model:** Create users (`useradd`) and groups (`groupadd`). Manage permissions with `chmod`, `chown`, and `chgrp`. Execute commands with elevated privileges using `sudo` and safely edit the rules with `visudo`.
 - **A Full Suite of Applications:**
   - `edit`: A powerful text editor with live Markdown preview.
@@ -191,7 +191,7 @@ Guest@OopisOs:~$ find /home/Guest -name "*.md" | chidi
 
 ## Developer Documentation
 
-The OopisOS v3.2 "Brass Monkey" release refines our modular command architecture. This design is a core component of the system's stability and makes adding new commands a secure and straightforward process. This is a brief overview; for the full architectural document, please see `/docs/developer.md`.
+The OopisOS v3.3 "Brass Monkey" release refines our modular command architecture. This design is a core component of the system's stability and makes adding new commands a secure and straightforward process. This is a brief overview; for the full architectural document, please see `/docs/developer.md`.
 
 ### The Command Contract
 
@@ -206,7 +206,7 @@ The contract is defined in a single object and includes:
 
 ### On-Demand Command Loading
 
-As of v3.2, you no longer need to add a `<script>` tag to `index.html` when creating a new command. The `CommandExecutor` now dynamically loads command scripts from the `/scripts/commands/` directory the first time they are called in a session, improving initial boot speed.
+As of v3.3, you no longer need to add a `<script>` tag to `index.html` when creating a new command. The `CommandExecutor` now dynamically loads command scripts from the `/scripts/commands/` directory the first time they are called in a session, improving initial boot speed.
 
 ## Testing & Showcase Environment
 

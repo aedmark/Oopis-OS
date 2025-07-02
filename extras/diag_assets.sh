@@ -1,4 +1,4 @@
-# diag_assets.sh - v3.2 - Creates files needed for the enhanced diagnostic suite.
+# diag_assets.sh - v3.3 - Creates files needed for the enhanced diagnostic suite.
 
 echo "--- Creating assets for interactive prompt tests ---"
 # For rm -i, cp -i, mv -i
