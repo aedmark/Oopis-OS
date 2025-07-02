@@ -162,7 +162,7 @@
                     // Process the command.
                     const result = await CommandExecutor.processSingleCommand(
                         cmdStr,
-                        false // Non-interactive execution for -exec.
+                        { isInteractive: false }
                     );
                     if (!result.success) {
                         // Report failure of the executed command.

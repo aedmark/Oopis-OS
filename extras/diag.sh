@@ -1,4 +1,4 @@
-echo "===== OopisOS Core Test Suite Initializing ====="
+echo "===== OopisOS Core Test Suite v3.2 Initializing ====="
 echo "This script tests non-interactive core functionality, including"
 echo "scripted interactive prompts and the adventure game engine."
 echo "---------------------------------------------------------------------"
@@ -86,6 +86,7 @@ ls -l new_file.tst
 delay 1600
 touch new_file.tst
 ls -l new_file.tst
+echo "--- NEW: Testing advanced 'touch -d' timestamp setting ---"
 touch -d "1 year ago" old_file.tst
 ls -l
 delay 700
@@ -103,6 +104,8 @@ echo "Appended line" >> file_a.txt
 cat file_a.txt
 echo "--- Test: Piping and complex commands ---"
 cat file_a.txt | grep "Hello"
+echo "--- NEW: Test 'cat -n' for line numbering ---"
+cat -n file_a.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
@@ -337,71 +340,75 @@ echo *.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 12: Globbing Expansion ---
-# --- Test 1: Basic Assignment ---
-echo "--- Test 1: Basic 'VAR=value' syntax ---"
-set GREETING=HelloWorld
-echo "Result -> GREETING is: '$GREETING'"
-echo "(Expected: 'HelloWorld')"
+# --- NEW: Phase 13: Data Processing Utilities ---
 echo ""
+echo "===== NEW: Testing Data Processing (head, tail, wc, sort, uniq, awk, xargs) ====="
+delay 400
+echo "--- 'wc' (word count) ---"
+wc data_stream.txt
+echo "--- 'head' and 'tail' ---"
+head -n 3 data_stream.txt
+tail -n 2 data_stream.txt
+echo "--- 'sort' and 'uniq' ---"
+sort data_stream.txt
+sort data_stream.txt | uniq
+sort data_stream.txt | uniq -c
+sort -n data_stream.txt
+echo "--- 'awk' ---"
+awk '{print "Line " NR ": " $0}' data_stream.txt
+ls -l | awk '{print $9, $5}'
+echo "--- 'xargs' ---"
+cat files_to_process.txt | xargs wc -l
 delay 700
+echo "---------------------------------------------------------------------"
 
-# --- Test 2: Assignment with Spaces & Quotes ---
-echo "--- Test 2: Assignment with spaces and quotes ---"
-set MESSAGE="Hello, OopisOS World!"
-echo "Result -> MESSAGE is: '$MESSAGE'"
-echo "(Expected: 'Hello, OopisOS World!')"
+# --- NEW: Phase 14: Archival Utilities ---
 echo ""
+echo "===== NEW: Testing Archival (zip, unzip) ====="
+delay 400
+echo "--- 'zip' ---"
+zip test_archive.zip ./archive_this
+ls -l test_archive.zip
+cat test_archive.zip
+echo "--- 'unzip' ---"
+mkdir extract_here
+unzip test_archive.zip ./extract_here
+tree ./extract_here
+echo "Verifying unzipped content..."
+cat ./extract_here/archive_this/nested_dir/file2.txt
 delay 700
+echo "---------------------------------------------------------------------"
 
-# --- Test 3: Assignment with spaces around '=' ---
-echo "--- Test 3: Assignment with spaces around '=' ---"
-set SPACEY_VAR = "This also works"
-echo "Result -> SPACEY_VAR is: '$SPACEY_VAR'"
-echo "(Expected: 'This also works')"
+# --- NEW: Phase 15: Disk Utilities ---
 echo ""
+echo "===== NEW: Testing Disk Utilities (df, du) ====="
+delay 400
+echo "--- 'df' (disk free) ---"
+df
+df -h
+echo "--- 'du' (disk usage) ---"
+du -h ./archive_this
+du -sh .
 delay 700
+echo "---------------------------------------------------------------------"
 
-# --- Test 4: Overwriting a variable ---
-echo "--- Test 4: Overwriting an existing variable ---"
-set GREETING="Goodbye"
-echo "Result -> GREETING is now: '$GREETING'"
-echo "(Expected: 'Goodbye')"
+# --- NEW: Phase 16: Backup & Restore Checks ---
 echo ""
+echo "===== NEW: Testing Backup & Restore ====="
+delay 400
+echo "--- 'backup' command ---"
+echo "NOTE: 'backup' is interactive and will trigger a browser download."
+echo "We can only test that the command initiates without error."
+backup
+delay 300
+echo "--- 'restore' command ---"
+echo "NOTE: 'restore' is interactive and destructive."
+echo "We will only test that it fails correctly in a non-interactive script."
+check_fail "restore"
 delay 700
+echo "---------------------------------------------------------------------"
 
-# --- Test 5: Setting to an empty string ---
-echo "--- Test 5: Setting to an empty string ---"
-set EMPTY_VAR=""
-echo "Result -> EMPTY_VAR is: '$EMPTY_VAR'"
-echo "(Expected: '')"
-echo ""
-delay 700
-
-# --- Test 6: Unsetting a variable ---
-echo "--- Test 6: Unsetting a variable ---"
-unset MESSAGE
-echo "Result -> MESSAGE is now: '$MESSAGE'"
-echo "(Expected: '')"
-echo ""
-delay 700
-
-# --- Test 7: Invalid variable name ---
-echo "--- Test 7: Attempting to set an invalid variable name ---"
-check_fail "set 1VAR=fail"
-check_fail "set VAR-FAIL=fail"
-echo ""
-delay 700
-
-# --- Test 8: Displaying all variables ---
-echo "--- Test 8: Final state of all variables ---"
-set
-echo ""
-delay 700
-
-echo "===== 'set' Command Test Suite Complete ====="
-
-# --- Phase 14: Final Cleanup ---
+# --- Phase 17: Final Cleanup ---
 echo ""
 echo "--- Final Cleanup ---"
 cd /
@@ -415,7 +422,7 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.2 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"

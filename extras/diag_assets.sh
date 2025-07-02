@@ -1,4 +1,4 @@
-# diag_assets.sh - Creates files needed for the diagnostic suite.
+# diag_assets.sh - v3.2 - Creates files needed for the enhanced diagnostic suite.
 
 echo "--- Creating assets for interactive prompt tests ---"
 # For rm -i, cp -i, mv -i
@@ -46,3 +46,25 @@ echo '    [{"char":"O","fg":"text-sky-400","bg":"bg-transparent"},{"char":"_","f
 echo '    [{"char":" ","fg":"text-green-500","bg":"bg-neutral-950"},{"char":"U","fg":"text-amber-400","bg":"bg-transparent"},{"char":" ","fg":"text-green-500","bg":"bg-neutral-950"}]' >> sample.oopic
 echo '  ]' >> sample.oopic
 echo '}' >> sample.oopic
+
+echo ""
+echo "--- NEW: Creating assets for archival, data processing, and disk usage tests ---"
+# For zip/unzip tests
+mkdir -p archive_this/nested_dir
+echo "file one" > archive_this/file1.txt
+echo "file two" > archive_this/nested_dir/file2.txt
+chmod 600 archive_this/nested_dir/file2.txt
+
+# For head, tail, sort, uniq, wc, awk, and xargs tests
+echo "alpha" > data_stream.txt
+echo "gamma" >> data_stream.txt
+echo "beta" >> data_stream.txt
+echo "delta" >> data_stream.txt
+echo "gamma" >> data_stream.txt
+echo "100" >> data_stream.txt
+echo "50" >> data_stream.txt
+echo "200" >> data_stream.txt
+
+# For xargs test
+echo "data_stream.txt" > files_to_process.txt
+echo "archive_this/file1.txt" >> files_to_process.txt
