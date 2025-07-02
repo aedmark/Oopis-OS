@@ -1,0 +1,235 @@
+{
+  "title": "ZORK I: The Great Underground Empire",
+  "startingRoomId": "west_of_house",
+  "winCondition": {
+    "type": "playerHasItem",
+    "itemId": "quest_completed_plaque"
+  },
+  "winMessage": "\n\n*** CONGRATULATIONS! ***\nYou have recovered all the treasures and successfully completed the quest. You are a master adventurer!",
+  "rooms": {
+    "west_of_house": {
+      "name": "West of House",
+      "description": "You are standing in an open field west of a white house, with a boarded front door.\nThere is a small mailbox here.",
+      "exits": {
+        "north": "north_of_house",
+        "south": "south_of_house",
+        "east": "boarded_door",
+        "west": "forest_1"
+      }
+    },
+    "north_of_house": {
+      "name": "North of House",
+      "description": "You are facing the north side of a white house. There is no door here, and all the windows are boarded up. To the north a narrow path winds through the trees.",
+      "exits": {
+        "north": "path",
+        "west": "west_of_house",
+        "east": "east_of_house"
+      }
+    },
+    "south_of_house": {
+        "name": "South of House",
+        "description": "You are facing the south side of a white house. There is no door here, and all the windows are boarded.",
+        "exits": {
+            "west": "west_of_house",
+            "east": "east_of_house"
+        }
+    },
+    "east_of_house": {
+        "name": "Behind House",
+        "description": "You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is slightly ajar.",
+        "exits": {
+            "north": "north_of_house",
+            "south": "south_of_house",
+            "east": "forest_2",
+            "west": "west_of_house",
+            "in": "kitchen_window",
+            "window": "kitchen_window"
+        }
+    },
+    "kitchen": {
+        "name": "Kitchen",
+        "description": "You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window which is open.",
+        "exits": {
+            "west": "living_room",
+            "up": "attic",
+            "out": "east_of_house",
+            "window": "east_of_house",
+            "east": "east_of_house"
+        }
+    },
+    "attic": {
+        "name": "Attic",
+        "description": "This is the attic. It is a dark and dusty place.",
+        "exits": {
+            "down": "kitchen"
+        }
+    },
+    "living_room": {
+        "name": "Living Room",
+        "description": "You are in the living room. There is a doorway to the east, a wooden door with strange gothic lettering to the west, which appears to be nailed shut, and a trophy case to the north.",
+        "exits": {
+            "east": "kitchen",
+            "west": "nailed_door"
+        }
+    },
+    "cellar": {
+        "name": "Cellar",
+        "description": "You are in a dark and damp cellar with a narrow passage leading north. To the west, a narrow twisting passageway vanishes into the gloom.",
+        "exits": {
+            "up": "living_room",
+            "north": "troll_room"
+        }
+    },
+    "troll_room": {
+        "name": "The Troll Room",
+        "description": "This is a small room with passages to the east and west, and a circular stairway leading up. A nasty-looking troll, brandishing a bloody axe, blocks all passages out of the room.",
+        "exits": {
+            "east": "east_west_passage",
+            "west": "cellar",
+            "up": "cellar"
+        }
+    },
+    "east_west_passage": {
+        "name": "East-West Passage",
+        "description": "This is a narrow east-west passage. There is a narrow stairway leading down.",
+        "exits": {
+            "east": "round_room",
+            "west": "troll_room",
+            "down": "chasm"
+        }
+    },
+    "round_room": {
+        "name": "Round Room",
+        "description": "This is a round room, with circular walls. There are passages in all directions.",
+        "exits": {
+            "north": "loud_room",
+            "east": "east_west_passage",
+            "south": "engravings_cave",
+            "west": "narrow_passage"
+        }
+    },
+     "loud_room": {
+      "name": "Loud Room",
+      "description": "This is a large room with a ceiling which cannot be detected from the ground. There is a path heading to the north, and a passage to the south. The sound of running water is loud here.",
+      "exits": {
+        "north": "dam",
+        "south": "round_room"
+      }
+    },
+    "dam": {
+      "name": "Dam",
+      "description": "You are standing on the top of the FCD#3 Dam, which was constructed in 959 GUE. The top of the dam is paved with smooth stone. There is a control panel here, which is protected from the weather by a metal covering.",
+      "exits": {
+        "south": "loud_room"
+      }
+    }
+  },
+  "items": {
+    "mailbox": {
+      "id": "mailbox",
+      "name": "small mailbox",
+      "description": "It's a small, standard-issue mailbox. It looks like it could be opened.",
+      "location": "west_of_house",
+      "canTake": false,
+      "isContainer": true,
+      "isOpenable": true,
+      "state": "closed"
+    },
+    "leaflet": {
+      "id": "leaflet",
+      "name": "leaflet",
+      "description": "WELCOME TO ZORK!\n\nZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!",
+      "location": "mailbox"
+    },
+    "boarded_door": {
+        "id": "boarded_door",
+        "name": "boarded front door",
+        "description": "The door is boarded and you can't open it.",
+        "location": "west_of_house",
+        "canTake": false,
+        "isOpenable": true,
+        "state": "locked"
+    },
+    "kitchen_window": {
+        "id": "kitchen_window",
+        "name": "small window",
+        "description": "The window is slightly ajar. You could probably climb through it.",
+        "location": "east_of_house",
+        "canTake": false,
+        "isOpenable": true,
+        "state": "open",
+        "leadsTo": "kitchen"
+    },
+    "sack": {
+        "id": "sack",
+        "name": "lunch sack",
+        "description": "It's a brown paper sack, smelling of hot peppers.",
+        "location": "kitchen",
+        "isContainer": true,
+        "isOpenable": true,
+        "state": "closed"
+    },
+    "water": {
+        "id": "water",
+        "name": "bottle of water",
+        "description": "A bottle of clear, refreshing water.",
+        "location": "sack"
+    },
+    "lantern": {
+        "id": "lantern",
+        "name": "brass lantern",
+        "description": "A beautiful brass lantern.",
+        "location": "living_room"
+    },
+    "sword": {
+        "id": "sword",
+        "name": "elvish sword",
+        "description": "A sword of ancient and beautiful workmanship.",
+        "location": "living_room"
+    },
+    "trophy_case": {
+        "id": "trophy_case",
+        "name": "trophy case",
+        "description": "The trophy case is empty.",
+        "location": "living_room",
+        "canTake": false
+    },
+    "rug": {
+        "id": "rug",
+        "name": "large rug",
+        "description": "It's a large, ornate rug. Moving it reveals a trap door.",
+        "location": "living_room",
+        "canTake": false
+    },
+    "trap_door": {
+        "id": "trap_door",
+        "name": "trap door",
+        "description": "A trap door is here. It is closed.",
+        "location": "living_room",
+        "canTake": false,
+        "isOpenable": true,
+        "state": "closed",
+        "leadsTo": "cellar"
+    },
+    "nailed_door": {
+        "id": "nailed_door",
+        "name": "nailed door",
+        "description": "The door has been nailed shut.",
+        "location": "living_room",
+        "canTake": false
+    },
+    "troll": {
+        "id": "troll",
+        "name": "nasty troll",
+        "description": "The troll is a fearsome creature. It is clutching a bloody axe.",
+        "location": "troll_room",
+        "canTake": false
+    },
+    "quest_completed_plaque": {
+      "id": "quest_completed_plaque",
+      "name": "Quest Completed Plaque",
+      "description": "A plaque signifying the completion of your quest. You are a master adventurer!",
+      "location": null
+    }
+  }
+}
