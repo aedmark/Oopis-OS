@@ -1,7 +1,7 @@
 /**
  * @file Defines the 'wc' (word count) command for OopisOS.
  * It counts lines, words, and bytes for files or standard input.
- * @author Andrew Edmark
+ * @author Your Name
  * @author Gemini
  */
 
@@ -10,7 +10,7 @@
 
     /**
      * @const {object} wcCommandDefinition
-     * @description The command definition for the 'wc' command.
+     * @description The command definition for the 'wc' command, following the Command Contract.
      */
     const wcCommandDefinition = {
         commandName: "wc",
@@ -28,31 +28,35 @@
         coreLogic: async (context) => {
             const { args, flags, options, currentUser } = context;
 
-            // If no flags are specified, default to showing all three counts.
-            const showLines = !flags.lines && !flags.words && !flags.bytes || flags.lines;
-            const showWords = !flags.lines && !flags.words && !flags.bytes || flags.words;
-            const showBytes = !flags.lines && !flags.words && !flags.bytes || flags.bytes;
+            // Determine which counts to display. If no flags, show all.
+            const showAll = !flags.lines && !flags.words && !flags.bytes;
+            const showLines = showAll || flags.lines;
+            const showWords = showAll || flags.words;
+            const showBytes = showAll || flags.bytes;
 
             const totals = { lines: 0, words: 0, bytes: 0 };
             const outputLines = [];
             let hadError = false;
 
             /**
-             * Processes content and returns counts.
+             * Processes content and returns line, word, and byte counts.
              * @param {string} content The content to process.
              * @returns {{lines: number, words: number, bytes: number}}
              */
             const getCounts = (content) => {
                 const bytes = content.length;
-                const lines = content.split('\n').length - 1;
-                const words = content.trim().split(/\s+/).filter(Boolean).length;
+                // A file with no lines has 0 lines, but split produces an array of length 1.
+                // A file with one line has 0 newlines. So, the number of lines is the number of newlines.
+                const lines = (content.match(/\n/g) || []).length;
+                // A more robust way to count words, handling various whitespace.
+                const words = content.trim() === '' ? 0 : content.trim().split(/\s+/).length;
                 return { lines, words, bytes };
             };
 
             /**
              * Formats a line of output with aligned columns.
              * @param {object} counts The counts object.
-             * @param {string} name The name of the file or an empty string.
+             * @param {string} name The name of the file or an empty string for totals/stdin.
              * @returns {string} The formatted output line.
              */
             const formatOutput = (counts, name) => {
@@ -64,8 +68,16 @@
                 return line;
             };
 
-            // Process file arguments
-            if (args.length > 0) {
+            // Process from standard input (e.g., from a pipe)
+            if (args.length === 0) {
+                if (options.stdinContent !== null) {
+                    const counts = getCounts(options.stdinContent);
+                    outputLines.push(formatOutput(counts, ""));
+                }
+                // If no files and no stdin, do nothing.
+            }
+            // Process from file arguments
+            else {
                 for (const pathArg of args) {
                     const pathValidation = FileSystemManager.validatePath("wc", pathArg, { expectedType: 'file' });
                     if (pathValidation.error) {
@@ -92,15 +104,11 @@
                     outputLines.push(formatOutput(totals, "total"));
                 }
             }
-            // Process standard input
-            else if (options.stdinContent !== null) {
-                const counts = getCounts(options.stdinContent);
-                outputLines.push(formatOutput(counts, ""));
-            }
 
             return {
                 success: !hadError,
-                output: outputLines.join('\n')
+                output: outputLines.join('\n'),
+                error: hadError ? outputLines.join('\n') : null
             };
         }
     };
