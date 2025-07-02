@@ -156,6 +156,17 @@ const TextAdventureEngine = (() => {
     quit: { action: 'quit', aliases: [] },
     save: { action: 'save', aliases: [] },
     load: { action: 'load', aliases: [] },
+    talk: { action: 'talk', aliases: ['talk to', 'speak to', 'speak with'] },
+    ask: { action: 'ask', aliases: [] },
+    give: { action: 'give', aliases: [] },
+    read: { action: 'read', aliases: [] },
+    eat: { action: 'eat', aliases: [] },
+    drink: { action: 'drink', aliases: [] },
+    push: { action: 'push', aliases: [] },
+    pull: { action: 'pull', aliases: [] },
+    turn: { action: 'turn', aliases: [] },
+    wear: { action: 'wear', aliases: [] },
+    remove: { action: 'remove', aliases: ['take off'] },
     dance: { action: 'dance', aliases: [] },
     sing: { action: 'sing', aliases: [] },
     jump: { action: 'jump', aliases: [] },
@@ -163,8 +174,6 @@ const TextAdventureEngine = (() => {
     close: { action: 'close', aliases: [] },
     unlock: { action: 'unlock', aliases: [] },
     lock: { action: 'lock', aliases: [] },
-    eat: { action: 'eat', aliases: [] },
-    wear: { action: 'wear', aliases: [] },
     light: { action: 'light', aliases: [] },
     put: { action: 'put', aliases: [] }
   };
@@ -176,6 +185,7 @@ const TextAdventureEngine = (() => {
   function startAdventure(adventureData, options = {}) {
     adventure = JSON.parse(JSON.stringify(adventureData));
     adventure.verbs = { ...defaultVerbs, ...adventure.verbs };
+    adventure.npcs = adventure.npcs || {};
     scriptingContext = options.scriptingContext || null;
     disambiguationContext = null;
     lastReferencedItemId = null;
@@ -199,6 +209,17 @@ const TextAdventureEngine = (() => {
     return items;
   }
 
+  function _getNpcsInLocation(locationId) {
+    const npcs = [];
+    for (const id in adventure.npcs) {
+      if (adventure.npcs[id].location === locationId) {
+        npcs.push(adventure.npcs[id]);
+      }
+    }
+    return npcs;
+  }
+
+
   function _displayCurrentRoom() {
     const room = adventure.rooms[player.currentLocation];
     if (!room) {
@@ -208,6 +229,13 @@ const TextAdventureEngine = (() => {
 
     TextAdventureModal.appendOutput(`\n--- ${room.name} ---`, 'room-name');
     TextAdventureModal.appendOutput(room.description, 'room-desc');
+
+    const roomNpcs = _getNpcsInLocation(player.currentLocation);
+    if (roomNpcs.length > 0) {
+      roomNpcs.forEach(npc => {
+        TextAdventureModal.appendOutput(`You see ${npc.name} here.`, 'items');
+      });
+    }
 
     const roomItems = _getItemsInLocation(player.currentLocation);
     if (roomItems.length > 0) {
@@ -267,20 +295,19 @@ const TextAdventureEngine = (() => {
     }
 
     const remainingWords = resolvedWords.slice(verbWordCount);
-    const prepositions = ['on', 'in', 'at', 'with', 'using', 'to', 'under'];
+    const prepositions = ['on', 'in', 'at', 'with', 'using', 'to', 'under', 'about'];
     let directObject = '';
     let indirectObject = null;
     let prepositionIndex = -1;
 
-    if (verb.action !== 'look') {
-      for (const prep of prepositions) {
-        const index = remainingWords.indexOf(prep);
-        if (index !== -1) {
-          prepositionIndex = index;
-          break;
-        }
+    for (const prep of prepositions) {
+      const index = remainingWords.indexOf(prep);
+      if (index !== -1) {
+        prepositionIndex = index;
+        break;
       }
     }
+
 
     const articles = new Set(['a', 'an', 'the']);
     if (prepositionIndex !== -1) {
@@ -342,7 +369,7 @@ const TextAdventureEngine = (() => {
       const onDisambiguation = () => { stopProcessing = true; };
 
       switch (verb.action) {
-        case 'look': _handleLook(directObject); break;
+        case 'look': _handleLook(directObject, onDisambiguation); break;
         case 'go': _handleGo(directObject); break;
         case 'take': _handleTake(directObject, onDisambiguation); break;
         case 'drop': _handleDrop(directObject, onDisambiguation); break;
@@ -355,6 +382,17 @@ const TextAdventureEngine = (() => {
         case 'quit': TextAdventureModal.hide(); stopProcessing = true; break;
         case 'save': await _handleSave(directObject); break;
         case 'load': await _handleLoad(directObject); break;
+        case 'talk': _handleTalk(directObject, onDisambiguation); break;
+        case 'ask': _handleAsk(directObject, indirectObject, onDisambiguation); break;
+        case 'give': _handleGive(directObject, indirectObject, onDisambiguation); break;
+        case 'read': _handleRead(directObject, onDisambiguation); break;
+        case 'eat': _handleEatDrink('eat', directObject, onDisambiguation); break;
+        case 'drink': _handleEatDrink('drink', directObject, onDisambiguation); break;
+        case 'push': _handlePushPullTurn('push', directObject, onDisambiguation); break;
+        case 'pull': _handlePushPullTurn('pull', directObject, onDisambiguation); break;
+        case 'turn': _handlePushPullTurn('turn', directObject, onDisambiguation); break;
+        case 'wear': _handleWearRemove('wear', directObject, onDisambiguation); break;
+        case 'remove': _handleWearRemove('remove', directObject, onDisambiguation); break;
         case 'dance': TextAdventureModal.appendOutput("You do a little jig. You feel refreshed.", 'system'); break;
         case 'sing': TextAdventureModal.appendOutput("You belt out a sea shanty. A nearby bird looks annoyed.", 'system'); break;
         case 'jump': TextAdventureModal.appendOutput("You jump on the spot. Whee!", 'system'); break;
@@ -601,7 +639,11 @@ const TextAdventureEngine = (() => {
 
     potentialItems.sort((a, b) => b.score - a.score);
     const topScore = potentialItems[0].score;
-    return { found: potentialItems.filter(p => p.score === topScore).map(p => p.item) };
+    const foundItems = potentialItems.filter(p => p.score === topScore).map(p => p.item);
+    const exactMatch = foundItems.length === 1 && targetString === foundItems[0].noun;
+
+
+    return { found: foundItems, exactMatch };
   }
 
   function _handleDisambiguation(response) {
@@ -658,32 +700,43 @@ const TextAdventureEngine = (() => {
   }
 
 
-  function _handleLook(target) {
+  function _handleLook(target, onDisambiguation) {
     if (!target) {
       _displayCurrentRoom();
       return;
     }
-    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
-    const result = _findItem(target, scope);
 
-    if (result.found.length === 1) {
-      const item = result.found[0];
-      TextAdventureModal.appendOutput(item.description, 'info');
-      lastReferencedItemId = item.id;
-      if (item.isContainer && item.isOpen) {
-        if (item.contains && item.contains.length > 0) {
-          const contents = item.contains.map(id => adventure.items[id].name).join(', ');
-          TextAdventureModal.appendOutput(`Inside the ${item.name}, you see: ${contents}.`, 'items');
-        } else {
-          TextAdventureModal.appendOutput(`The ${item.name} is empty.`, 'info');
-        }
-      } else if (item.isContainer && !item.isOpen) {
-        TextAdventureModal.appendOutput(`The ${item.name} is closed.`, 'info');
-      }
-    } else if (result.found.length > 1) {
-      TextAdventureModal.appendOutput("You see several of those. Which one do you mean?", 'info');
-    } else {
+    const itemScope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const itemResult = _findItem(target, itemScope);
+
+    const npcScope = _getNpcsInLocation(player.currentLocation);
+    const npcResult = _findItem(target, npcScope);
+
+    const combined = [...itemResult.found, ...npcResult.found];
+    const uniqueCombined = [...new Map(combined.map(item => [item['id'], item])).values()];
+
+    if (uniqueCombined.length === 0) {
       TextAdventureModal.appendOutput(`You don't see any "${target}" here.`, 'error');
+    } else if (uniqueCombined.length === 1) {
+      _performLook(uniqueCombined[0]);
+    } else {
+      disambiguationContext = { found: uniqueCombined, context: { callback: _performLook } };
+      const names = uniqueCombined.map(e => e.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you mean, the ${names}?`, 'info');
+      onDisambiguation();
+    }
+  }
+
+  function _performLook(entity) {
+    TextAdventureModal.appendOutput(entity.description, 'info');
+    if ('canTake' in entity) { // It's an item
+      lastReferencedItemId = entity.id;
+      if (entity.isContainer && entity.isOpen) {
+        const contents = entity.contains?.map(id => adventure.items[id].name).join(', ');
+        TextAdventureModal.appendOutput(contents ? `Inside, you see: ${contents}.` : `The ${entity.name} is empty.`, 'items');
+      } else if (entity.isContainer && !entity.isOpen) {
+        TextAdventureModal.appendOutput(`The ${entity.name} is closed.`, 'info');
+      }
     }
   }
 
@@ -775,12 +828,257 @@ const TextAdventureEngine = (() => {
     _performDrop(result.found[0]);
   }
 
+  function _handleTalk(target, onDisambiguation) {
+    const scope = _getNpcsInLocation(player.currentLocation);
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`There is no one here by the name of "${target}".`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: _performTalk } };
+      const npcNames = result.found.map(npc => npc.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Who do you mean, the ${npcNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+
+    _performTalk(result.found[0]);
+  }
+
+  function _performTalk(npc) {
+    const response = npc.dialogue?.default || `The ${npc.name} doesn't seem to have much to say.`;
+    TextAdventureModal.appendOutput(response, 'info');
+  }
+
+  function _handleAsk(npcTarget, topic, onDisambiguation) {
+    if (!npcTarget || !topic) {
+      TextAdventureModal.appendOutput("Who do you want to ask, and what about?", 'error');
+      return;
+    }
+
+    const scope = _getNpcsInLocation(player.currentLocation);
+    const result = _findItem(npcTarget, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`There is no one here by the name of "${npcTarget}".`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: (npc) => _performAsk(npc, topic) } };
+      const npcNames = result.found.map(npc => npc.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${npcTarget} do you want to ask, the ${npcNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+
+    _performAsk(result.found[0], topic);
+  }
+
+  function _performAsk(npc, topic) {
+    const dialogue = npc.dialogue;
+    let response = dialogue?.default || `The ${npc.name} doesn't seem to have much to say.`;
+
+    if (dialogue) {
+      const topicLower = topic.toLowerCase();
+      for (const keyword in dialogue) {
+        if (topicLower.includes(keyword)) {
+          response = dialogue[keyword];
+          break;
+        }
+      }
+    }
+    TextAdventureModal.appendOutput(response, 'info');
+  }
+
+  function _handleGive(itemTarget, npcTarget, onDisambiguation) {
+    if (!itemTarget || !npcTarget) {
+      TextAdventureModal.appendOutput("What do you want to give, and to whom?", 'error');
+      return;
+    }
+
+    const itemResult = _findItem(itemTarget, player.inventory.map(id => adventure.items[id]));
+    if (itemResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't have a "${itemTarget}".`, 'error');
+      return;
+    }
+
+    if (itemResult.found.length > 1) {
+      disambiguationContext = { found: itemResult.found, context: { callback: (item) => _handleGive(item.name, npcTarget, onDisambiguation) } };
+      const itemNames = itemResult.found.map(i => i.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${itemTarget} do you want to give, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    const itemToGive = itemResult.found[0];
+
+
+    const npcResult = _findItem(npcTarget, _getNpcsInLocation(player.currentLocation));
+    if (npcResult.found.length === 0) {
+      TextAdventureModal.appendOutput(`There is no one here by the name of "${npcTarget}".`, 'error');
+      return;
+    }
+
+    if (npcResult.found.length > 1) {
+      disambiguationContext = { found: npcResult.found, context: { callback: (npc) => _performGive(itemToGive, npc) } };
+      const npcNames = npcResult.found.map(n => n.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${npcTarget} do you want to give it to, the ${npcNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    const targetNpc = npcResult.found[0];
+
+    _performGive(itemToGive, targetNpc);
+  }
+
+  function _performGive(item, npc) {
+    player.inventory = player.inventory.filter(id => id !== item.id);
+    npc.inventory.push(item.id);
+    item.location = npc.id;
+    TextAdventureModal.appendOutput(`You give the ${item.name} to the ${npc.name}.`, 'info');
+    TextAdventureModal.appendOutput(`The ${npc.name} takes it graciously. "Thank you," he says.`, 'info');
+  }
+
   function _performDrop(item) {
     adventure.items[item.id].location = player.currentLocation;
     player.inventory = player.inventory.filter(id => id !== item.id);
     TextAdventureModal.appendOutput(`You drop the ${item.name}.`, 'info');
     lastReferencedItemId = item.id;
   }
+
+  function _handleRead(target, onDisambiguation) {
+    const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see any "${target}" to read here.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: _performRead } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you want to read, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performRead(result.found[0]);
+  }
+
+  function _performRead(item) {
+    if (item.readDescription) {
+      TextAdventureModal.appendOutput(`It reads:\n\n${item.readDescription}`, 'info');
+      lastReferencedItemId = item.id;
+    } else {
+      TextAdventureModal.appendOutput(`There is nothing to read on the ${item.name}.`, 'error');
+    }
+  }
+
+  function _handleEatDrink(verb, target, onDisambiguation) {
+    const scope = player.inventory.map(id => adventure.items[id]);
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't have a "${target}" to ${verb}.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: (item) => _performEatDrink(verb, item) } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you want to ${verb}, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performEatDrink(verb, result.found[0]);
+  }
+
+  function _performEatDrink(verb, item) {
+    const itemProperty = (verb === 'eat') ? 'isEdible' : 'isDrinkable';
+    if (item[itemProperty]) {
+      TextAdventureModal.appendOutput(`You ${verb} the ${item.name}.`, 'info');
+      // Remove item from inventory
+      player.inventory = player.inventory.filter(id => id !== item.id);
+    } else {
+      TextAdventureModal.appendOutput(`You can't ${verb} that!`, 'error');
+    }
+  }
+
+  function _handlePushPullTurn(verb, target, onDisambiguation) {
+    const scope = _getItemsInLocation(player.currentLocation);
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(`You don't see a "${target}" to ${verb} here.`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: (item) => _performPushPullTurn(verb, item) } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which do you want to ${verb}, the ${itemNames}?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performPushPullTurn(verb, result.found[0]);
+  }
+
+  function _performPushPullTurn(verb, item) {
+    const effectProperty = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`; // e.g., onPull
+    if (item[effectProperty]) {
+      TextAdventureModal.appendOutput(item[effectProperty], 'info');
+      lastReferencedItemId = item.id;
+    } else {
+      TextAdventureModal.appendOutput(`Pushing, pulling, or turning the ${item.name} does nothing.`, 'info');
+    }
+  }
+
+  function _handleWearRemove(verb, target, onDisambiguation) {
+    const isWearing = (verb === 'wear');
+    const scope = isWearing ? player.inventory.map(id => adventure.items[id]) : player.inventory.map(id => adventure.items[id]).filter(item => item.isWorn);
+    const result = _findItem(target, scope);
+
+    if (result.found.length === 0) {
+      TextAdventureModal.appendOutput(isWearing ? `You don't have a "${target}".` : `You are not wearing a "${target}".`, 'error');
+      return;
+    }
+
+    if (result.found.length > 1) {
+      disambiguationContext = { found: result.found, context: { callback: (item) => _performWearRemove(verb, item) } };
+      const itemNames = result.found.map(item => item.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${target} do you mean?`, 'info');
+      onDisambiguation();
+      return;
+    }
+    _performWearRemove(verb, result.found[0]);
+  }
+
+  function _performWearRemove(verb, item) {
+    if (!item.isWearable) {
+      TextAdventureModal.appendOutput(`You can't wear the ${item.name}.`, 'error');
+      return;
+    }
+
+    if (verb === 'wear') {
+      if (item.isWorn) {
+        TextAdventureModal.appendOutput(`You are already wearing the ${item.name}.`, 'info');
+      } else {
+        item.isWorn = true;
+        TextAdventureModal.appendOutput(`You put on the ${item.name}.`, 'info');
+      }
+    } else { // verb is 'remove'
+      if (!item.isWorn) {
+        TextAdventureModal.appendOutput(`You are not wearing the ${item.name}.`, 'info');
+      } else {
+        item.isWorn = false;
+        TextAdventureModal.appendOutput(`You take off the ${item.name}.`, 'info');
+      }
+    }
+  }
+
 
   function _checkWinConditions() {
     const wc = adventure.winCondition;

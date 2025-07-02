@@ -6,7 +6,7 @@
 (() => {
     "use strict";
 
-    // The default, built-in adventure game data, now with more properties.
+    // The default, built-in adventure game data, now with an NPC.
     const defaultAdventureData = {
         "title": "The Lost Key of Oopis",
         "startingRoomId": "west_of_house",
@@ -62,6 +62,25 @@
                 "id": "lantern", "name": "brass lantern", "noun": "lantern", "adjectives": ["brass", "old"],
                 "description": "An old brass lantern. It's currently unlit.", "location": "north_of_house", "canTake": true,
                 "isLightSource": true, "isLit": false
+            }
+        },
+        "npcs": {
+            "wizard": {
+                "id": "wizard",
+                "name": "old wizard",
+                "noun": "wizard",
+                "adjectives": ["old", "wise"],
+                "description": "The wizard looks ancient, with a kind face and twinkling eyes. He seems to be waiting for someone to talk to.",
+                "location": "north_of_house",
+                "inventory": [],
+                "dialogue": {
+                    "default": "The wizard smiles. 'A lovely day for an adventure, isn't it?'",
+                    "hello": "The wizard nods. 'Greetings, traveler. What brings you to this part of the woods?'",
+                    "key": "The wizard's eyes twinkle. 'Ah, the key! A very important item indeed. It unlocks things, you see. Doors, primarily.'",
+                    "house": "'The house has been abandoned for years,' the wizard says sadly. 'A great treasure was lost within its walls.'",
+                    "treasure": "'The treasure of Zork! A fool's errand for most, but perhaps not for you. You'll need more than a key to find it, however. You'll need courage... and a light.'",
+                    "lantern": "He looks at the lantern. 'A source of light is crucial in the dark places of the world. Keep it safe.'"
+                }
             }
         }
     };
@@ -156,8 +175,13 @@ If no path to a custom game file is provided, the default built-in adventure, "T
 GAMEPLAY COMMANDS
        The following commands are available while inside the adventure:
        
-       look [target]      - Describes the room or a specific item.
+       look [target]      - Describes the room or a specific item/person.
        go [direction]     - Moves the player (e.g., go north).
+       talk to [person]   - Start a conversation.
+       ask [person] about [topic]
+                          - Ask someone about a specific topic.
+       give [item] to [person]
+                          - Give an item from your inventory to someone.
        take [item]        - Picks up an item from the room.
        drop [item]        - Drops an item from inventory.
        use [item] on [target]
