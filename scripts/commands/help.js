@@ -11,45 +11,43 @@
     /**
      * @const {object} helpCommandDefinition
      * @description The command definition for the 'help' command.
-     * This object specifies the command's name, argument validation (optional command name),
-     * and the core logic for providing command assistance.
      */
     const helpCommandDefinition = {
         commandName: "help",
+        completionType: "commands", // Add completion type for arguments
         argValidation: {
             max: 1, // Accepts zero or one argument (a command name).
         },
         /**
          * The core logic for the 'help' command.
-         * If no arguments are provided, it lists all available commands with their descriptions.
-         * If a command name is provided, it attempts to find that command and display its
-         * usage synopsis (extracted from its help text). It also directs the user to 'man'
-         * for more detailed information.
+         * If no arguments are provided, it lists all available commands from the manifest.
+         * If a command name is provided, it dynamically loads that command to show its help text.
          * @async
          * @param {object} context - The context object provided by the command executor.
-         * @param {string[]} context.args - The arguments provided to the command, optionally containing a command name.
-         * @returns {Promise<object>} A promise that resolves to a command result object
-         * with the help output or an error if the command is not found.
+         * @returns {Promise<object>} A promise that resolves to a command result object.
          */
         coreLogic: async (context) => {
             const { args } = context;
 
             if (args.length === 0) {
-                // List only currently loaded/registered commands and explain the behavior.
-                const commands = CommandRegistry.getDefinitions();
-                let output = "OopisOS Help (showing currently loaded commands):\n\nAvailable commands:\n";
-                Object.keys(commands)
-                    .sort()
-                    .forEach((cmd) => {
-                        output += `  ${cmd.padEnd(15)} ${commands[cmd].description || ""}\n`;
-                    });
-                output += "\nType 'help [command]' to see syntax for a specific command (this will load it if not already loaded).";
-                output += "\nType 'man [command]' for the full manual.";
+                // Get the static manifest of all possible commands.
+                const allCommandNames = Config.COMMANDS_MANIFEST.sort();
+                // Get the currently loaded commands to fetch their descriptions.
+                const loadedCommands = CommandRegistry.getDefinitions();
+
+                let output = "OopisOS Help\n\nAvailable commands:\n";
+                allCommandNames.forEach((cmdName) => {
+                    const loadedCmd = loadedCommands[cmdName];
+                    // Provide the description only if the command has been loaded, otherwise it's unknown.
+                    const description = loadedCmd ? loadedCmd.description : "";
+                    output += `  ${cmdName.padEnd(15)} ${description}\n`;
+                });
+                output += "\nType 'help [command]' or 'man [command]' for more details.";
                 return { success: true, output };
 
             } else {
                 const cmdName = args[0].toLowerCase();
-                // NEW: Dynamically load the command before trying to get its details.
+                // Dynamically load the command before trying to get its details.
                 const isLoaded = await CommandExecutor._ensureCommandLoaded(cmdName);
 
                 if (!isLoaded) {
@@ -72,7 +70,6 @@
                     }
                     output += `\n\nFor more details, run 'man ${cmdName}'`;
                 } else {
-                    // This case is now a fallback, as !isLoaded should catch it first.
                     return {
                         success: false,
                         error: `help: command not found: ${args[0]}`,
