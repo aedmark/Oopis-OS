@@ -399,7 +399,7 @@ body {
   align-items: center;
   border-bottom: var(--border-width) solid var(--color-border-secondary);
   margin-bottom: var(--spacing-sm);
-  flex-shrink: 0;
+  flex-shrink: 1;
   /* Add these two lines */
   flex-wrap: nowrap;
   overflow: hidden;
@@ -438,6 +438,7 @@ body {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
+  white-space: pre;
 }
 
 .editor__gutter--hidden-by-wrap {

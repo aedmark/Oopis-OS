@@ -432,9 +432,9 @@ const EditorUI = (() => {
     elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
 
     const viewConfigs = {
-      [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit Only", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
-      [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: { text: "Preview Only", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" },
-      [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: { text: "Split View", gutter: false, editor: false, editorFlex: "0", preview: true, previewFlex: "1" },
+      [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
+      [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: { text: "Preview", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" },
+      [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: { text: "Split", gutter: false, editor: false, editorFlex: "0", preview: true, previewFlex: "1" },
       noPreview: { text: "Split View", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" }
     };
 

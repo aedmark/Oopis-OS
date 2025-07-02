@@ -22,6 +22,7 @@ OopisOS is ready.
     + [Shell Customization: The `PS1` Variable](#shell-customization-the-ps1-variable)
     + [Privilege Escalation: `sudo` and `visudo`](#privilege-escalation-sudo-and-visudo)
     + [File Archival: `zip` and `unzip`](#file-archival-zip-and-unzip)
+    + [Advanced Command Chaining: `&&`, `||`, and Pipes](#advanced-command-chaining---and-pipes)
   * [Developer Documentation](#developer-documentation)
     + [The Command Contract](#the-command-contract)
     + [On-Demand Command Loading](#on-demand-command-loading)
@@ -151,6 +152,42 @@ Manage collections of files by bundling them into a single archive.
 
 - **`unzip [archive.zip] [destination_path]`**
   Extracts the contents of a `.zip` archive into the specified destination directory. If no destination is provided, it extracts to the current directory.
+
+### Advanced Command Chaining: `&&`, `||`, and Pipes
+
+Beyond simple command sequencing with `;`, the OopisOS shell now supports powerful logical operators and enhanced piping, allowing for more intelligent and efficient command-line workflows.
+
+**Conditional Execution: The `&&` and `||` Operators**
+
+You can now make the execution of one command dependent on the success or failure of another.
+
+* **The AND Operator (`&&`)**
+  The command to the right of `&&` will **only** run if the command to its left succeeds. This is perfect for creating safe sequences of operations.
+
+  *Example:* Create a directory and then immediately change into it, but only if the creation was successful.
+
+  ```bash
+  Guest@OopisOs:~$ mkdir new_project && cd new_project
+  ```
+
+* **The OR Operator (`||`)**
+  The command to the right of `||` will **only** run if the command to its left *fails*. This is excellent for handling errors or running fallback commands.
+
+  *Example:* Search for an error in a log file, and print a confirmation message only if `grep` fails to find any errors.
+
+  ```bash
+  Guest@OopisOs:~$ grep "FATAL" /data/logs/system.log || echo "No fatal errors found."
+  ```
+
+**Piping to Applications: `find | chidi`**
+
+Piping is no longer just for simple data streams. You can now pipe the output of commands like `find` directly into applications. The `chidi` AI Librarian has been enhanced to accept a list of file paths from a pipe, creating a dynamic corpus for analysis on the fly.
+
+*Example:* Find all Markdown files anywhere in your home directory and have `chidi` analyze them, without first needing to know all the filenames.
+
+```bash
+Guest@OopisOs:~$ find /home/Guest -name "*.md" | chidi
+```
 
 ## Developer Documentation
 
