@@ -207,6 +207,7 @@ const TextAdventureEngine = (() => {
     adventure = JSON.parse(JSON.stringify(adventureData));
     adventure.verbs = { ...defaultVerbs, ...adventure.verbs };
     adventure.npcs = adventure.npcs || {};
+    adventure.daemons = adventure.daemons || {};
     scriptingContext = options.scriptingContext || null;
     disambiguationContext = null;
     lastReferencedItemId = null;
@@ -400,6 +401,37 @@ const TextAdventureEngine = (() => {
     return commands;
   }
 
+  function _executeDaemonAction(action) {
+    switch (action.type) {
+      case 'message':
+        TextAdventureModal.appendOutput(`\n[${action.text}]`, 'system');
+        break;
+    }
+  }
+
+  function _processDaemons() {
+    for (const daemonId in adventure.daemons) {
+      const daemon = adventure.daemons[daemonId];
+      if (!daemon.active) continue;
+
+      let triggered = false;
+      const trigger = daemon.trigger;
+
+      if (trigger.type === 'on_turn' && player.moves === trigger.value) {
+        triggered = true;
+      } else if (trigger.type === 'every_x_turns' && player.moves > 0 && player.moves % trigger.value === 0) {
+        triggered = true;
+      }
+
+      if (triggered) {
+        _executeDaemonAction(daemon.action);
+        if (!daemon.repeatable) {
+          daemon.active = false;
+        }
+      }
+    }
+  }
+
 
   async function processCommand(command) {
     if (!command) return;
@@ -477,6 +509,8 @@ const TextAdventureEngine = (() => {
           TextAdventureModal.appendOutput(`I don't know how to "${verb.action}".`, 'error');
           stopProcessing = true;
       }
+
+      _processDaemons();
 
       if (!stopProcessing) {
         _checkWinConditions();
