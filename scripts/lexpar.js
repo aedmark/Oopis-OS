@@ -354,7 +354,8 @@ class Parser {
 
       commandSequence.push({ pipeline, operator });
 
-      if (this._currentToken().type === TokenType.EOF && (operator === '&&' || operator === '||' || operator === '&')) {
+      // A command is required after '&&' or '||', but not after '&' or ';'.
+      if (this._currentToken().type === TokenType.EOF && (operator === '&&' || operator === '||')) {
         throw new Error(`Parser Error: Command expected after '${operator}' operator.`);
       }
     }
