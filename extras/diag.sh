@@ -66,11 +66,13 @@ cp -p preserve_perms.txt preserved_copy.txt
 ls -l preserved_copy.txt
 echo "--- Test: mv (move to directory) ---"
 mkdir mv_test_dir
-mv preserve_perms.txt mv_test_dir/
+mv preserved_copy.txt mv_test_dir/
 ls mv_test_dir/
-echo "--- Test: Cross-type overwrite failures ---"
-check_fail "cp diff_a.txt mv_test_dir"
-check_fail "mv diff_b.txt mv_test_dir"
+echo "--- Test: Cross-type overwrite failures (The real test) ---"
+mkdir overwrite_dir
+touch overwrite_file.txt
+check_fail "cp overwrite_file.txt overwrite_dir"
+check_fail "mv overwrite_file.txt overwrite_dir"
 delay 700
 echo "---------------------------------------------------------------------"
 

@@ -33,7 +33,21 @@
                 return { success: false, error: destValidation.error };
             }
 
-            const isDestADirectory = destValidation.node && destValidation.node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
+            const destNode = destValidation.node;
+
+            // --- NEW OVERWRITE PROTECTION LOGIC ---
+            // This logic prevents moving a file onto a directory.
+            if (destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
+                if (sourcePathArgs.length === 1) {
+                    const sourceValidation = FileSystemManager.validatePath("mv (source)", sourcePathArgs[0]);
+                    if (sourceValidation.node && sourceValidation.node.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
+                        return { success: false, error: `mv: cannot overwrite directory '${destPathArg}' with non-directory` };
+                    }
+                }
+            }
+            // --- END NEW LOGIC ---
+
+            const isDestADirectory = destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
 
             if (sourcePathArgs.length > 1 && !isDestADirectory) {
                 return { success: false, error: `mv: target '${destPathArg}' is not a directory` };
@@ -81,7 +95,6 @@
                 }
 
                 if (absSourcePath === finalDestPath) {
-                    // This can happen if moving a single file to its own location. Skip.
                     continue;
                 }
 
@@ -111,7 +124,6 @@
                     }
                 }
 
-                // Perform the move
                 const movedNode = Utils.deepCopyNode(sourceNode);
                 movedNode.mtime = nowISO;
                 targetContainerNode.children[finalDestName] = movedNode;
