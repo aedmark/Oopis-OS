@@ -1,4 +1,5 @@
-# diag_assets.sh - v3.3 - Creates files needed for the enhanced diagnostic suite.
+#!/bin/oopis_shell
+# diag_assets.sh - v3.4 - Now with more things to break.
 
 echo "--- Creating assets for interactive prompt tests ---"
 # For rm -i, cp -i, mv -i
@@ -17,13 +18,28 @@ echo 'mv -i mv_source_2.txt mv_target_2.txt' > test_mv_no.sh; echo 'n' >> test_m
 echo 'mv -i mv_source_2.txt mv_target_2.txt' > test_mv_yes.sh; echo 'YES' >> test_mv_yes.sh; chmod 700 test_mv_yes.sh
 
 echo ""
-echo "--- Creating assets for advanced 'find' and 'run' tests ---"
+echo "--- Creating assets for advanced find, diff, and cp tests ---"
 # For find -delete
 touch deleteme.tmp
 # For find -exec
 echo "I should not be executable" > exec_test.sh; chmod 600 exec_test.sh
+# For cp -p (preserve) test
+touch preserve_perms.txt; chmod 700 preserve_perms.txt
+# For diff test
+echo -e "line one\nline two\nline three" > diff_a.txt
+echo -e "line one\nline 2\nline three" > diff_b.txt
+
+
+echo ""
+echo "--- Creating assets for run, awk, and xargs tests ---"
 # For run argument test
 echo 'echo "Arg 1: $1, Arg 2: $2, Arg Count: $#, All Args: $@"' > arg_test.sh; chmod 700 arg_test.sh
+# For governor test
+echo '#!/bin/oopis_shell' > infinite_loop.sh
+echo 'run ./infinite_loop.sh' >> infinite_loop.sh
+chmod 700 infinite_loop.sh
+# For xargs deletion test
+touch file1.tmp file2.tmp file3.tmp
 
 echo ""
 echo "--- Creating assets for application tests (chidi, paint) ---"
@@ -48,7 +64,7 @@ echo '  ]' >> sample.oopic
 echo '}' >> sample.oopic
 
 echo ""
-echo "--- NEW: Creating assets for archival, data processing, and disk usage tests ---"
+echo "--- Creating assets for archival, data processing, and disk usage tests ---"
 # For zip/unzip tests
 mkdir -p archive_this/nested_dir
 echo "file one" > archive_this/file1.txt

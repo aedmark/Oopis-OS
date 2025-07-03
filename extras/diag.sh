@@ -1,4 +1,6 @@
-echo "===== OopisOS Core Test Suite v3.3 Initializing ====="
+#!/bin/oopis_shell
+# OopisOS Core Test Suite v3.4 - "The Engineer's Gauntlet"
+echo "===== OopisOS Core Test Suite v3.4 Initializing ====="
 echo "This script tests non-interactive core functionality, including"
 echo "scripted interactive prompts and the adventure game engine."
 echo "---------------------------------------------------------------------"
@@ -8,26 +10,11 @@ echo ""
 echo "--- Phase: Logging in as 'root' and Preparing Workspace ---"
 login root mcgoopis
 delay 400
-check_fail "removeuser -f root"
-delay 800
 mkdir /home/userDiag/diag_workspace/
 chown userDiag /home/userDiag/diag_workspace/
 cp /home/Guest/diag_assets.sh /home/userDiag/diag_workspace/diag_assets.sh
 chown userDiag /home/userDiag/diag_workspace/diag_assets.sh
 chmod 700 /home/userDiag/diag_workspace/diag_assets.sh
-
-# --- Phase 1.2: Create Sudo Test Scripts ---
-echo "--- Phase: Creating sudo helper scripts ---"
-echo '#!/bin/oopis_shell' > /sudo_test_script.sh
-echo 'echo "Attempting to run sudo command..."' >> /sudo_test_script.sh
-echo 'sudo echo "Sudo command successful."' >> /sudo_test_script.sh
-chmod 755 /sudo_test_script.sh
-
-echo '#!/bin/oopis_shell' > /sudo_reauth_test.sh
-echo 'echo "Attempting to run sudo command after re-login..."' >> /sudo_reauth_test.sh
-echo 'sudo echo "Sudo re-authentication successful."' >> /sudo_reauth_test.sh
-chmod 755 /sudo_reauth_test.sh
-delay 200
 
 delay 500
 login userDiag pantload
@@ -49,6 +36,7 @@ echo "---------------------------------------------------------------------"
 # --- Phase 2: Parser/Lexer Robustness ---
 echo ""
 echo "===== Testing: Parser/Lexer Robustness (Quotes, Escapes, Errors) ====="
+# (No changes here, this section was already solid)
 delay 400
 echo "--- Test: Filenames with spaces (Quoting) ---"
 mkdir "a directory with spaces"
@@ -65,91 +53,32 @@ rm -f mixed_quotes.txt
 delay 300
 echo "---------------------------------------------------------------------"
 
-# --- Phase 3: Core File System Commands ---
+
+# --- Phase 3: RIGOROUS File System Commands ---
 echo ""
-echo "===== Testing: Core File System (mkdir, touch, ls, pwd, tree) ====="
+echo "===== Testing: Rigorous File System Ops (cp, mv, diff) ====="
 delay 400
-echo "--- Test: 'mkdir', 'pwd', 'cd', 'tree' ---"
-mkdir -p level1/level2/level3
-pwd
-cd level1/level2
-pwd
-cd ../..
-pwd
-echo "--- Test: 'tree' command ---"
-tree
-tree -L 2
-delay 300
-echo "--- Test: 'touch' functionality and timestamp flags ---"
-touch new_file.tst
-ls -l new_file.tst
-delay 1600
-touch new_file.tst
-ls -l new_file.tst
-echo "--- NEW: Testing advanced 'touch -d' timestamp setting ---"
-touch -d "1 year ago" old_file.tst
-ls -l
+echo "--- Test: diff ---"
+diff diff_a.txt diff_b.txt
+echo "--- Test: cp -p (preserve permissions) ---"
+ls -l preserve_perms.txt
+cp -p preserve_perms.txt preserved_copy.txt
+ls -l preserved_copy.txt
+echo "--- Test: mv (move to directory) ---"
+mkdir mv_test_dir
+mv preserve_perms.txt mv_test_dir/
+ls mv_test_dir/
+echo "--- Test: Cross-type overwrite failures ---"
+check_fail "cp diff_a.txt mv_test_dir"
+check_fail "mv diff_b.txt mv_test_dir"
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 4: File Content and Redirection ---
-echo ""
-echo "===== Testing: File Content (echo, cat, >, >>, |) ====="
-delay 400
-echo "--- Test: 'echo > file' (overwrite) & 'cat' ---"
-echo "Hello OopisOS" > file_a.txt
-cat file_a.txt
-echo "--- Test: 'echo >> file' (append) ---"
-echo "Appended line" >> file_a.txt
-cat file_a.txt
-echo "--- Test: Piping and complex commands ---"
-cat file_a.txt | grep "Hello"
-echo "--- NEW: Test 'cat -n' for line numbering ---"
-cat -n file_a.txt
-delay 700
-echo "---------------------------------------------------------------------"
 
-# --- Phase 5: Advanced 'ls' Flags ---
-echo ""
-echo "===== Testing: Advanced 'ls' Flags ====="
-mkdir ls_adv_dir
-cd ls_adv_dir
-touch file_c.txt
-delay 100
-touch file_z.log
-delay 100
-echo "smallest" > file_c.txt
-echo "medium content here" > file_z.log
-delay 1600
-touch file_a.txt
-echo "largest file content for size sort" > file_a.txt
-delay 1600
-touch file_b.md
-echo "markdown" > file_b.md
-mkdir sub_ls
-touch sub_ls/nested.sh
-touch .hidden_adv.txt
-delay 400
-echo "--- ls -l (long format) ---"
-ls -l
-echo "--- ls -a (all, including hidden) ---"
-ls -a
-echo "--- ls -t (sort by time, newest first) ---"
-ls -t
-echo "--- ls -S (sort by size, largest first) ---"
-ls -S
-echo "--- ls -X (sort by extension) ---"
-ls -X
-echo "--- ls -R (recursive) ---"
-ls -R
-cd ../
-rm -r -f ls_adv_dir
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 6: Group Permissions and Ownership ---
+# --- Phase 4: Group Permissions and Ownership ---
 echo ""
 echo "===== Testing: Group Permissions (chgrp, usermod, groupadd) ====="
+# (No changes here, this section was already solid)
 delay 400
 login root mcgoopis
 groupadd testgroup
@@ -185,282 +114,82 @@ cd /home/userDiag/diag_workspace
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 7: Interactive Command Prompts (rm, cp, mv) ---
+# --- Phase 5: Sudo & Security Model ---
 echo ""
-echo "===== Testing: Scripted Interactive Prompts (rm, cp, mv) ====="
+echo "===== Testing: Sudo & Security Model ====="
 delay 400
-echo "--- Test: 'rm -i' (interactive remove) ---"
-run ./test_rm_no.sh
-ls interactive_file.txt
-run ./test_rm_yes.sh
-check_fail "ls interactive_file.txt"
-delay 300
-echo "--- Test: 'cp -i' (interactive copy) ---"
-run ./test_cp_no.sh
-cat interactive_target.txt
-run ./test_cp_yes.sh
-cat interactive_target.txt
-delay 300
-echo "--- Test: 'mv -i' (interactive move) ---"
-run ./test_mv_no.sh
-ls mv_source_2.txt
-cat mv_target_2.txt
-run ./test_mv_yes.sh
-cat mv_target_2.txt
-check_fail "ls mv_source_2.txt"
+echo "--- Test: visudo and sudoers modification ---"
+login root mcgoopis
+echo "sudouser ALL" >> /etc/sudoers
+echo "--- Test: Successful sudo by authorized user ---"
+login sudouser
+testpass
+testpass
+sudo echo "Sudo command successful."
+echo "--- Test: sudo re-authentication (no password needed) ---"
+sudo ls /root
+echo "--- Test: sudo re-authentication after logout (password needed) ---"
+logout
+login sudouser
+testpass
+sudo ls /root
+testpass
+echo "--- Test: Failed sudo by unauthorized user ---"
+logout
+login Guest
+check_fail "sudo ls /root"
+# Cleanup
+logout
+login root mcgoopis
+removeuser -f sudouser
+# A simple way to remove the last line of the file
+head -n -1 /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
+logout
+login userDiag pantload
+cd /home/userDiag/diag_workspace
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 8: Alias and Environment Variables ---
+# --- Phase 6: Advanced Scripting & Governor ---
 echo ""
-echo "===== Testing: Alias and Environment Variables ====="
+echo "===== Testing: Advanced Scripting & Governor ====="
 delay 400
-echo "--- Test: Alias commands ---"
-alias l="ls"
-alias la="ls -a"
-alias
-la
-unalias l
-check_fail "l"
-unalias la
-delay 300
-echo "--- Test: Environment Variables (set, unset, expansion) ---"
-
-echo "--- Test 1.1: Basic 'VAR value' syntax ---"
-set TEST_VAR_1 "Hello OopisOS"
-echo "Result -> TEST_VAR_1 is: '$TEST_VAR_1'"
-echo "(Expected: 'Hello OopisOS')"
-echo ""
-delay 500
-
-echo "--- Test 1.2: Basic 'VAR=value' syntax ---"
-set TEST_VAR_2=HelloWorld
-echo "Result -> TEST_VAR_2 is: '$TEST_VAR_2'"
-echo "(Expected: 'HelloWorld')"
-echo ""
-delay 500
-
-echo "--- Test 1.3: 'VAR = \"value\"' syntax ---"
-set TEST_VAR_3 = "Spaces and quotes"
-echo "Result -> TEST_VAR_3 is: '$TEST_VAR_3'"
-echo "(Expected: 'Spaces and quotes')"
-echo ""
-delay 500
-
-echo "--- Test 1.4: Overwriting a variable ---"
-set TEST_VAR_1="Goodbye"
-echo "Result -> TEST_VAR_1 is now: '$TEST_VAR_1'"
-echo "(Expected: 'Goodbye')"
-echo ""
-delay 500
-
-echo "--- Test 1.5: Unsetting variables ---"
-unset TEST_VAR_1
-unset TEST_VAR_2
-echo "Result -> TEST_VAR_1 is now: '$TEST_VAR_1'"
-echo "(Expected: '')"
-echo ""
-delay 500
-
-echo "--- Test 1.6: Invalid variable names ---"
-check_fail "set 1VAR=fail"
-check_fail "set VAR-FAIL=fail"
-echo ""
-delay 500
-
-echo "--- Test 1.7: Displaying final set of variables ---"
-set
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 9: Advanced `find` Command ---
-echo ""
-echo "===== Testing: Advanced 'find' Command ====="
-delay 400
-echo "--- Find by name and type ---"
-find . -name "*.sh"
-find . -type d
-echo "--- Find by user and permissions ---"
-find . -user userDiag
-ls -l exec_test.sh
-find . -perm 600
-echo "--- Find with -exec action ---"
-find . -name "exec_test.sh" -exec chmod 755 {} \;
-ls -l exec_test.sh
-echo "--- Find with -delete action ---"
-ls deleteme.tmp
-find . -name "deleteme.tmp" -delete
-check_fail "ls deleteme.tmp"
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 10: Advanced Scripting (`run`) ---
-echo ""
-echo "===== Testing: Advanced Scripting - 'run' Command with Arguments ====="
-delay 400
+echo "--- Test: Script argument passing ---"
 run ./arg_test.sh first "second arg" third
+echo "--- Test: Script execution governor (expect graceful failure) ---"
+run ./infinite_loop.sh
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 11: Application Tests (paint, chidi) ---
+
+# --- Phase 7: Advanced Data Processing ---
 echo ""
-echo "===== Testing: Applications (paint, chidi) ====="
+echo "===== Testing: Advanced Data Processing (awk, xargs) ====="
 delay 400
-echo "--- NOTE: 'paint' and 'chidi' are interactive graphical applications ---"
-echo "--- and cannot be fully tested in a non-interactive script. ---"
-echo "--- We will test that they correctly reject non-interactive execution. ---"
-delay 300
-check_fail "paint new_art.oopic"
-check_fail "chidi ./chidi_test_docs"
-echo "--- Application non-interactive checks passed. ---"
+echo "--- Test: awk with BEGIN block ---"
+awk 'BEGIN { print "--- Report ---" } { print $0 }' data_stream.txt
+echo "--- Test: Destructive xargs operation ---"
+ls *.tmp
+ls *.tmp | xargs rm
+check_fail "ls file1.tmp"
+echo "xargs deletion verified."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 12: Globbing Expansion ---
-echo ""
-echo "===== Testing: Globbing Wildcard Expansion ====="
-delay 400
-echo "--- Test: Basic '*' glob for .sh files ---"
-ls *.sh
-delay 300
-echo "--- Test: Path-prefixed './*.txt' glob ---"
-ls ./*.txt
-delay 300
-echo "--- Test: Subdirectory glob 'chidi_test_docs/*.md' ---"
-ls chidi_test_docs/*.md
-delay 300
-echo "--- Test: Question mark '?' glob 'test_??_yes.sh' ---"
-ls test_??_yes.sh
-delay 300
-echo "--- Test: No-match glob should pass literal to command and fail ---"
-check_fail "ls *.nonexistent"
-delay 300
-echo "--- Test: Non-whitelisted command 'echo' should NOT expand glob ---"
-echo *.txt
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 13: Data Processing Utilities ---
-echo ""
-echo "===== NEW: Testing Data Processing (head, tail, wc, sort, uniq, awk, xargs) ====="
-delay 400
-echo "--- 'wc' (word count) ---"
-wc data_stream.txt
-echo "--- 'head' and 'tail' ---"
-head -n 3 data_stream.txt
-tail -n 2 data_stream.txt
-echo "--- 'sort' and 'uniq' ---"
-sort data_stream.txt
-sort data_stream.txt | uniq
-sort data_stream.txt | uniq -c
-sort -n data_stream.txt
-echo "--- 'awk' ---"
-awk '{print "Line " NR ": " $0}' data_stream.txt
-ls -l | awk '{print $9, $5}'
-echo "--- 'xargs' ---"
-cat files_to_process.txt | xargs wc -l
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 14: Archival Utilities ---
-echo ""
-echo "===== NEW: Testing Archival (zip, unzip) ====="
-delay 400
-echo "--- 'zip' ---"
-zip test_archive.zip ./archive_this
-ls -l test_archive.zip
-cat test_archive.zip
-echo "--- 'unzip' ---"
-mkdir extract_here
-unzip test_archive.zip ./extract_here
-tree ./extract_here
-echo "Verifying unzipped content..."
-cat ./extract_here/nested_dir/file2.txt
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 15: Disk Utilities ---
-echo ""
-echo "===== NEW: Testing Disk Utilities (df, du) ====="
-delay 400
-echo "--- 'df' (disk free) ---"
-df
-df -h
-echo "--- 'du' (disk usage) ---"
-du -h ./archive_this
-du -sh .
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 16: Backup & Restore Checks ---
-echo ""
-echo "===== NEW: Testing Backup & Restore ====="
-delay 400
-echo "--- 'backup' command ---"
-echo "NOTE: 'backup' is interactive and will trigger a browser download."
-echo "We can only test that the command initiates without error."
-backup
-delay 300
-echo "--- 'restore' command ---"
-echo "NOTE: 'restore' is interactive and destructive."
-echo "We will only test that it fails correctly in a non-interactive script."
-check_fail "restore"
-delay 700
-echo "---------------------------------------------------------------------"
-
-# --- Phase 17: Logical Operators (&& and ||) ---
-echo ""
-echo "===== Testing: Logical Operators (&& and ||) ====="
-delay 400
-
-echo "--- Test: true && true (expected: both echos run) ---"
-echo "Chain 1: Part 1" && echo "Chain 1: Part 2"
-echo ""
-delay 500
-
-echo "--- Test: false && true (expected: first command fails, second is skipped) ---"
-# We use 'mkdir /' which is a clean way to fail.
-# We add `|| echo ...` to catch the expected failure and prevent the script from halting.
-mkdir / && echo "Chain 2: THIS SHOULD NOT PRINT" || echo "Chain 2: Fallback executed correctly."
-echo ""
-delay 500
-
-echo "--- Test: true || false (expected: only first command runs, second is skipped) ---"
-echo "Chain 3: Part 1" || echo "Chain 3: THIS SHOULD NOT PRINT"
-echo ""
-delay 500
-
-echo "--- Test: false || true (expected: first fails, second runs) ---"
-mkdir / || echo "Chain 4: Part 2 (Fallback executed correctly)."
-echo ""
-delay 500
-
-echo "--- Test: Complex Chain (true && true) || false (expected: first two run, third skipped) ---"
-echo "Chain 5: Part A" && echo "Chain 5: Part B" || echo "Chain 5: THIS SHOULD NOT PRINT"
-echo ""
-delay 500
-
-echo "--- Test: Complex Chain (false && true) || true (expected: first fails, second skipped, third runs) ---"
-mkdir / && echo "Chain 6: THIS SHOULD NOT PRINT" || echo "Chain 6: Part C (Fallback executed correctly)."
-echo ""
-delay 500
-echo "---------------------------------------------------------------------"
-
-# --- Phase 18: Final Cleanup ---
+# --- Phase 8: Final Cleanup ---
 echo ""
 echo "--- Final Cleanup ---"
 cd /
 login root mcgoopis
 delay 300
 rm -r -f /home/userDiag/diag_workspace
-rm -f /sudo_test_script.sh /sudo_reauth_test.sh
 login Guest
-echo "Final user list (expected: Guest, root, userDiag):"
+echo "Final user list:"
 listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.3 Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.4 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"

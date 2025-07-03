@@ -122,7 +122,8 @@ function initializeTerminalEventListeners() {
         } else {
           cursorPos = currentInput.length;
         }
-        const result = void TabCompletionManager.handleTab(currentInput, cursorPos);
+        // FIX: Removed 'void' and added 'await' to correctly handle the async tab completion
+        const result = await TabCompletionManager.handleTab(currentInput, cursorPos);
         if (
             result?.textToInsert !== null &&
             result.textToInsert !== undefined

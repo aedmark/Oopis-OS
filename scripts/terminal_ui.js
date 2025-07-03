@@ -638,66 +638,74 @@ const TabCompletionManager = (() => {
     }
 
     /**
-     * Applies a completion suggestion to the input field.
-     * @private
-     * @param {string} fullInput - The entire current input string.
-     * @param {number} startOfWordIndex - The index where the word being completed begins.
-     * @param {number} currentWordPrefixLength - The length of the partial word being completed.
-     * @param {string} completion - The suggestion to insert.
-     * @returns {{textToInsert: string, newCursorPos: number}} The new input text and cursor position.
-     */
-    function _applyCompletion(fullInput, startOfWordIndex, currentWordPrefixLength, completion) {
-        const textBeforeWord = fullInput.substring(0, startOfWordIndex);
-        const textAfterWord = fullInput.substring(startOfWordIndex + currentWordPrefixLength);
-        const newText = textBeforeWord + completion + textAfterWord;
-        const newCursorPos = textBeforeWord.length + completion.length;
-        return { textToInsert: newText, newCursorPos };
-    }
-
-    /**
      * Analyzes the input string to determine the context for completion.
+     * This version correctly handles single and double quoted arguments.
      * @private
      * @param {string} fullInput - The entire current input string.
      * @param {number} cursorPos - The current cursor position.
-     * @returns {{currentWordPrefix: string, startOfWordIndex: number, isCompletingCommand: boolean, commandName: string}}
+     * @returns {{commandName: string, isCompletingCommand: boolean, currentWordPrefix: string, startOfWordIndex: number, currentWordLength: number, isQuoted: boolean, quoteChar: string|null}}
      */
     function _getCompletionContext(fullInput, cursorPos) {
+        // Tokenize the input string, respecting quotes.
+        const tokens = (fullInput.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []);
+        const commandName = tokens.length > 0 ? tokens[0].replace(/["']/g, '') : "";
+
         const textBeforeCursor = fullInput.substring(0, cursorPos);
-        const lastSpaceIndex = textBeforeCursor.lastIndexOf(" ");
-        let startOfWordIndex = lastSpaceIndex === -1 ? 0 : lastSpaceIndex + 1;
-        if (/\s$/.test(textBeforeCursor)) {
-            startOfWordIndex = cursorPos;
+
+        let startOfWordIndex = 0;
+        let inQuote = null;
+        for (let i = 0; i < textBeforeCursor.length; i++) {
+            const char = textBeforeCursor[i];
+            if (inQuote && char === inQuote && textBeforeCursor[i-1] !== '\\') {
+                inQuote = null;
+            } else if (!inQuote && (char === '"' || char === "'") && (i === 0 || textBeforeCursor[i-1] === ' ' || textBeforeCursor[i-1] === undefined)) {
+                inQuote = char;
+            }
+
+            if (char === ' ' && !inQuote) {
+                startOfWordIndex = i + 1;
+            }
         }
-        const currentWordPrefix = textBeforeCursor.substring(startOfWordIndex);
-        const tokens = fullInput.trimStart().split(/\s+/).filter(Boolean);
-        const isCompletingCommand = tokens.length === 0 || (tokens.length === 1 && !/\s$/.test(fullInput));
-        const commandName = isCompletingCommand ? "" : tokens[0].toLowerCase();
-        return { currentWordPrefix, startOfWordIndex, isCompletingCommand, commandName };
+
+        const currentWordWithQuotes = fullInput.substring(startOfWordIndex, cursorPos);
+        const quoteChar = currentWordWithQuotes.startsWith("'") ? "'" : currentWordWithQuotes.startsWith('"') ? '"' : null;
+        const currentWordPrefix = quoteChar ? currentWordWithQuotes.substring(1) : currentWordWithQuotes;
+        const isQuoted = !!quoteChar;
+
+        const isCompletingCommand = tokens.length === 0 || (tokens.length === 1 && !fullInput.substring(0, tokens[0].length).includes(' '));
+
+        return {
+            commandName,
+            isCompletingCommand,
+            currentWordPrefix,
+            startOfWordIndex,
+            currentWordLength: currentWordWithQuotes.length,
+            isQuoted,
+            quoteChar
+        };
     }
 
     /**
      * Gets a list of potential suggestions based on the completion context.
      * @private
      * @param {object} context - The completion context from `_getCompletionContext`.
-     * @returns {string[]} An array of sorted suggestion strings.
+     * @returns {Promise<string[]>} An array of sorted suggestion strings.
      */
     async function _getSuggestionsFromProvider(context) {
         const { currentWordPrefix, isCompletingCommand, commandName } = context;
         let suggestions = [];
 
         if (isCompletingCommand) {
-            // CORRECTED: Use the static command manifest for suggestions.
             suggestions = Config.COMMANDS_MANIFEST
                 .filter((cmd) => cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                 .sort();
         } else {
-            // This part remains the same, as it correctly handles path/user completion
-            // after a command has already been typed.
             const commandLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
             if (!commandLoaded) return [];
 
             const commandDefinition = CommandExecutor.getCommands()[commandName]?.handler.definition;
             if (!commandDefinition) return [];
+
             if (commandDefinition.completionType === "commands") {
                 suggestions = Config.COMMANDS_MANIFEST
                     .filter((cmd) => cmd.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
@@ -709,17 +717,11 @@ const TabCompletionManager = (() => {
                 suggestions = userNames
                     .filter((name) => name.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                     .sort();
-            } else if (commandDefinition.pathValidation) {
-                let pathPrefixForFS = "";
-                let segmentToMatchForFS = "";
+            }
+            else if (commandDefinition.pathValidation) {
                 const lastSlashIndex = currentWordPrefix.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR);
-
-                if (lastSlashIndex !== -1) {
-                    pathPrefixForFS = currentWordPrefix.substring(0, lastSlashIndex + 1);
-                    segmentToMatchForFS = currentWordPrefix.substring(lastSlashIndex + 1);
-                } else {
-                    segmentToMatchForFS = currentWordPrefix;
-                }
+                const pathPrefixForFS = lastSlashIndex !== -1 ? currentWordPrefix.substring(0, lastSlashIndex + 1) : "";
+                const segmentToMatchForFS = lastSlashIndex !== -1 ? currentWordPrefix.substring(lastSlashIndex + 1) : currentWordPrefix;
 
                 const effectiveBasePathForFS = FileSystemManager.getAbsolutePath(pathPrefixForFS, FileSystemManager.getCurrentPath());
                 const baseNode = FileSystemManager.getNodeByPath(effectiveBasePathForFS);
@@ -728,11 +730,7 @@ const TabCompletionManager = (() => {
                 if (baseNode && baseNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE && FileSystemManager.hasPermission(baseNode, currentUser, "read")) {
                     suggestions = Object.keys(baseNode.children)
                         .filter((name) => name.toLowerCase().startsWith(segmentToMatchForFS.toLowerCase()))
-                        .map((name) => {
-                            const childNode = baseNode.children[name];
-                            const completion = pathPrefixForFS + name;
-                            return childNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? completion + Config.FILESYSTEM.PATH_SEPARATOR : completion;
-                        })
+                        .map((name) => pathPrefixForFS + name)
                         .sort();
                 }
             }
@@ -740,35 +738,49 @@ const TabCompletionManager = (() => {
         return suggestions;
     }
 
+
     /**
      * Main handler for the Tab key press. Orchestrates the entire completion logic.
      * @param {string} fullInput - The current input string.
      * @param {number} cursorPos - The current cursor position.
-     * @returns {{textToInsert: string|null, newCursorPos?: number}} An object with the text to insert, or null if no action is taken.
+     * @returns {Promise<{textToInsert: string|null, newCursorPos?: number}>} An object with the text to insert, or null if no action is taken.
      */
     async function handleTab(fullInput, cursorPos) {
         if (fullInput !== lastCompletionInput) {
             resetCycle();
         }
+
         const context = _getCompletionContext(fullInput, cursorPos);
+
         if (suggestionsCache.length === 0) {
-            const suggestions = void _getSuggestionsFromProvider(context);
-            if (suggestions.length === 0) {
+            const suggestions = await _getSuggestionsFromProvider(context);
+            if (!suggestions || suggestions.length === 0) {
                 resetCycle();
                 return { textToInsert: null };
             }
             if (suggestions.length === 1) {
-                const isDir = suggestions[0].endsWith(Config.FILESYSTEM.PATH_SEPARATOR);
-                const completion = suggestions[0] + (isDir ? "" : " ");
-                const result = _applyCompletion(fullInput, context.startOfWordIndex, context.currentWordPrefix.length, completion);
+                const completion = suggestions[0];
+                const completedNode = FileSystemManager.getNodeByPath(FileSystemManager.getAbsolutePath(completion));
+                const isDirectory = completedNode && completedNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
+
+                const finalCompletion = completion + (isDirectory ? '/' : ' ');
+                const textBefore = fullInput.substring(0, context.startOfWordIndex);
+                const textAfter = fullInput.substring(cursorPos);
+
+                let newText = textBefore + finalCompletion + textAfter;
+
                 resetCycle();
-                return result;
+                return { textToInsert: newText, newCursorPos: (textBefore + finalCompletion).length };
             }
+
             const lcp = findLongestCommonPrefix(suggestions);
             if (lcp && lcp.length > context.currentWordPrefix.length) {
-                const result = _applyCompletion(fullInput, context.startOfWordIndex, context.currentWordPrefix.length, lcp);
-                lastCompletionInput = result.textToInsert;
-                return result;
+                const textBefore = fullInput.substring(0, context.startOfWordIndex);
+                const textAfter = fullInput.substring(cursorPos);
+                let newText = textBefore + lcp + textAfter;
+
+                lastCompletionInput = newText;
+                return { textToInsert: newText, newCursorPos: (textBefore + lcp).length };
             } else {
                 suggestionsCache = suggestions;
                 cycleIndex = -1;
@@ -783,9 +795,16 @@ const TabCompletionManager = (() => {
         } else {
             cycleIndex = (cycleIndex + 1) % suggestionsCache.length;
             const nextSuggestion = suggestionsCache[cycleIndex];
-            const result = _applyCompletion(fullInput, context.startOfWordIndex, context.currentWordPrefix.length, nextSuggestion);
-            lastCompletionInput = result.textToInsert;
-            return result;
+            const completedNode = FileSystemManager.getNodeByPath(FileSystemManager.getAbsolutePath(nextSuggestion));
+            const isDirectory = completedNode && completedNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
+
+            const textBefore = fullInput.substring(0, context.startOfWordIndex);
+            const textAfter = fullInput.substring(cursorPos);
+            const completionText = nextSuggestion + (isDirectory ? '/' : ' ');
+            let newText = textBefore + completionText + textAfter;
+
+            lastCompletionInput = newText;
+            return { textToInsert: newText, newCursorPos: (textBefore + completionText).length };
         }
     }
     return {
