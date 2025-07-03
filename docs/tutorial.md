@@ -1,6 +1,8 @@
-# OopisOS v3.3 Tutorials
+# OopisOS v3.5 Tutorials
 
-Welcome to the OopisOS tutorials. While the Command Reference explains what each command does, this guide will show you how to combine them to accomplish larger tasks. These walkthroughs are designed to teach you the core workflows of the operating system.
+Welcome, Architect. This guide is your first step into the larger world of OopisOS. While the Command Reference is your dictionary, these tutorials are your Rosetta Stone, teaching you not just what commands do, but how to combine them into powerful, meaningful workflows.
+
+Our goal is to transition control of the system to you, providing the tools and knowledge needed to explore with confidence and security. Let's begin.
 
 ### Your First Shell Script
 
@@ -8,49 +10,65 @@ Welcome to the OopisOS tutorials. While the Command Reference explains what each
 
 This tutorial will teach you how to use the `edit` program, change file permissions with `chmod`, and execute your new script with `run`.
 
-**Step 1: Create the Script File**
+Step 1: Create the Script File
+
 First, let's create a file for our script using the text editor.
-```bash
+
+Bash
+
+```
 edit welcome.sh
-````
+```
 
-**Step 2: Write the Script's Logic**
-The `edit` application will open. Type the following line into the editor:
+Step 2: Write the Script's Logic
 
-```bash
+The edit application will open. Type the following line into the editor:
+
+Bash
+
+```
 echo "Welcome to OopisOS, $1!"
 ```
 
-The `$1` is a special variable that represents the *first argument* you pass to the script. After typing the line, save and exit the editor by pressing `Ctrl+S`.
+The `$1` is a special variable that represents the _first argument_ you pass to the script. After typing the line, save and exit the editor by pressing `Ctrl+S`.
 
-**Step 3: Make the Script Executable**
-By default, new files are not executable. Use `chmod` to add execute permissions. A mode of `700` is perfect for a personal script, as it gives you full control.
+Step 3: Make the Script Executable
 
-```bash
+By default, new files are not executable. Use chmod to add execute permissions. A mode of 700 is perfect for a personal script, as it gives you full control.
+
+Bash
+
+```
 chmod 700 welcome.sh
 ```
 
 Run `ls -l welcome.sh` to see the permissions change from `-rw-r--r--` to `-rwx------`.
 
-**Step 4: Run the Script**
-Finally, execute your script using the `run` command, and give it an argument to see the `$1` variable in action.
+Step 4: Run the Script
 
-```bash
+Finally, execute your script using the run command, and give it an argument to see the $1 variable in action.
+
+Bash
+
+```
 run ./welcome.sh "Developer"
 ```
 
 The system will output: `Welcome to OopisOS, Developer!` You have successfully created and run your first shell script.
 
------
+---
 
 ### Setting Up a Shared Project
 
 **Objective:** To demonstrate the full security model by creating a new group, adding users to it, and creating a shared directory that only group members can access.
 
-**Step 1: Assume Administrative Role with `sudo`**
-To manage users and groups, you need administrative privileges. Use the `sudo` command to run these commands. You will be prompted for the `root` user's password (`mcgoopis`).
+Step 1: Assume Administrative Role with sudo
 
-```bash
+To manage users and groups, you need administrative privileges. Use the sudo command to run these commands. You will be prompted for the root user's password (mcgoopis).
+
+Bash
+
+```
 sudo useradd devone
 # (set password for devone)
 sudo useradd devtwo
@@ -58,36 +76,45 @@ sudo useradd devtwo
 sudo groupadd project_phoenix
 ```
 
-**Step 2: Add Users to the Group**
-Now, add both new users to the `project_phoenix` group.
+Step 2: Add Users to the Group
 
-```bash
+Now, add both new users to the project_phoenix group.
+
+Bash
+
+```
 sudo usermod -aG project_phoenix devone
 sudo usermod -aG project_phoenix devtwo
 ```
 
-**Step 3: Create and Secure the Project Directory**
+Step 3: Create and Secure the Project Directory
+
 Log in as one of the developers to create the shared directory.
 
-```bash
+Bash
+
+```
 login devone
 # (enter devone's password)
 mkdir /home/project_phoenix
 ```
 
-By default, this directory is owned by `devone`. We need to change its group and permissions. Since `devone` owns the directory, they don't need `sudo` for these commands.
+By default, this directory is owned by `devone`. We need to change its group and permissions. Since `devone` owns the directory, they don't need `sudo` for these commands. The mode `770` (`rwxrwx---`) gives the owner (`devone`) and the group (`project_phoenix`) full access, while denying access to anyone else.
 
-```bash
+Bash
+
+```
 chgrp project_phoenix /home/project_phoenix
 chmod 770 /home/project_phoenix
 ```
 
-The mode `770` (`rwxrwx---`) gives the owner (`devone`) and the group (`project_phoenix`) full access, while denying access to anyone else.
+Step 4: Test the Permissions
 
-**Step 4: Test the Permissions**
-As `devone`, you can create a file. Now, log out and log in as `devtwo`, who should also be able to create a file, proving the group permissions work.
+As devone, you can create a file. Now, log out and log in as devtwo, who should also be able to create a file, proving the group permissions work.
 
-```bash
+Bash
+
+```
 touch /home/project_phoenix/devone_file.txt
 logout
 login devtwo
@@ -97,103 +124,136 @@ touch /home/project_phoenix/devtwo_file.txt
 
 You have successfully created a secure, collaborative workspace.
 
------
+---
 
-### Exploring Your System with AI
+### Ensuring Data Integrity: The Security Chain
 
-**Objective:** To showcase how the integrated AI tools (`chidi` and `gemini`) can be used to analyze and interact with your file system.
+**Objective:** To learn how to verify, transform, and protect your data using OopisOS's data integrity tools.
 
-**Step 1: Populate Your Home Directory**
-First, ensure you are logged in as `Guest` and run the `inflate.sh` script to create a variety of example files.
+This tutorial demonstrates a workflow using `cksum`, `ocrypt`, and `base64` to create a verifiable "chain of custody" for your information.
 
-```bash
-run /extras/inflate.sh
+Step 1: Create a Secret Message
+
+First, create a file containing a secret message.
+
+Bash
+
+```
+echo "The obstacle is the way." > my_secret.txt
 ```
 
-**Step 2: Analyze Documents with `chidi`**
-Now that you have some Markdown files, use the AI Librarian to analyze them.
+Step 2: Get the Original Fingerprint
 
-```bash
-chidi /home/Guest/docs
+Use the cksum command to generate a checksum. This is the unique "fingerprint" of your original, unaltered file. Note this number down.
+
+Bash
+
+```
+cksum my_secret.txt
 ```
 
-This opens a new interface listing all `.md` files in that directory. You can click "Summarize" to get an AI-generated summary or "Ask" to query the entire set of documents.
+Step 3: Obscure and Encode the Data
 
-**Step 3: Use `gemini` for System Queries**
-The `gemini` command can use other OS tools to answer questions about the system.
+Now, let's obscure the file's content using ocrypt and encode it for safe transport using base64. This is done in a single, powerful pipeline.
 
-```bash
-gemini "list all the oopic files in the home directory"
+Bash
+
+```
+cat my_secret.txt | ocrypt "taco-tuesday" | base64 > safe_to_send.txt
 ```
 
-The AI will understand the request, run `find /home -name "*.oopic"`, and present the results in a user-friendly format.
+Your original file is untouched, but `safe_to_send.txt` now contains a seemingly random string of characters, safe to send over any text-based medium.
 
------
+Step 4: Decode and Restore the Data
+
+To get the original message back, you simply reverse the process.
+
+Bash
+
+```
+cat safe_to_send.txt | base64 -d | ocrypt "taco-tuesday" > restored_secret.txt
+```
+
+Step 5: Verify the Integrity
+
+The final, crucial step. Run cksum on the restored file.
+
+Bash
+
+```
+cksum restored_secret.txt
+```
+
+The checksum number should be **identical** to the one you noted in Step 2. This proves, with mathematical certainty, that your data has survived the transformation process perfectly intact. You have mastered the chain of data integrity.
+
+---
 
 ### Visualizing Your World: The File Explorer
 
 **Objective:** To learn how to navigate the file system using the graphical file explorer.
 
-**Step 1: Launch the Explorer**
-The `explore` command opens the graphical user interface. You can launch it without arguments to start in your current directory, or give it a path.
+Step 1: Launch the Explorer
 
-```bash
+The explore command opens the graphical user interface. You can launch it without arguments to start in your current directory, or give it a path.
+
+Bash
+
+```
 explore /
 ```
 
-**Step 2: Navigate the Tree**
-The left pane shows an expandable directory tree. Click on the folder icons or summaries to expand or collapse directories. The highlighted directory is the one currently being viewed in the right pane.
+Step 2: Navigate and View
 
-**Step 3: View Contents**
-The right pane shows the contents of the selected directory, including file/folder icons, permissions, and sizes. You can double-click on a directory in this pane to navigate into it.
+The left pane shows an expandable directory tree. The right pane shows the contents of the selected directory. Double-click a folder in the right pane to navigate into it.
 
-**Step 4: Exit**
-Press the `Esc` key or click the '×' button in the top-right corner to close the explorer and return to the terminal.
+Step 3: Exit
 
------
+Press the Esc key or click the '×' button in the top-right corner to close the explorer.
+
+---
 
 ### Cloning Your Universe: Backup and Restore
 
 **Objective:** To create a complete, verifiable backup of your OS, simulate a disaster, and restore your system from the backup file.
 
-**Step 1: Make a Change**
-First, create a new file so we have a clear marker to verify the restore was successful.
+Step 1: Make a Change & Create Backup
 
-```bash
-echo "This is a test of the backup system." > /home/Guest/marker.txt
+First, create a marker file. Then, run the backup command. Your browser will prompt you to download a .json file containing your entire OS state.
+
+Bash
+
 ```
-
-**Step 2: Create a Secure Backup**
-Run the `backup` command. This will package your entire OopisOS state—all users, files, and settings—into a single `.json` file that includes a security checksum. Your browser will prompt you to download and save this file to your actual computer.
-
-```bash
+echo "This is a test of the backup system." > /home/Guest/marker.txt
 backup
 ```
 
-**Step 3: Simulate a System Reset**
-Now for the scary part. The `reset` command will completely wipe OopisOS.
+Step 2: Simulate a System Reset
 
-```bash
+The reset command will completely wipe OopisOS. This is the ultimate test.
+
+Bash
+
+```
 reset
 # Type 'YES' and press Enter to confirm.
 ```
 
-After the reset, the system will be blank, as if it were your first time visiting. The `marker.txt` file will be gone.
+Step 3: Restore Your Universe
 
-**Step 4: Restore Your Universe**
-Run the `restore` command. Your browser will open a file dialog. Select the `.json` backup file you downloaded in Step 2.
+Run the restore command. Your browser will open a file dialog. Select the .json backup file you just downloaded. The system will verify the checksum, restore all your data, and then automatically reboot.
 
-```bash
+Bash
+
+```
 restore
 ```
 
-The system will verify the checksum, restore all your data, and then automatically reboot.
+Step 4: Verify the Restoration
 
-**Step 5: Verify the Restoration**
-Once OopisOS reloads, check for your marker file.
+Once OopisOS reloads, your marker.txt file will be back. You have successfully cloned and restored your digital universe.
 
-```bash
+Bash
+
+```
 ls /home/Guest/marker.txt
 ```
-
-The file is back. You have successfully cloned and restored your digital universe.
