@@ -36,6 +36,7 @@ const urlsToCache = [
     './scripts/commands/clear.js',
     './scripts/commands/clearfs.js',
     './scripts/commands/cp.js',
+    './scripts/commands/csplit.js',
     './scripts/commands/curl.js',
     './scripts/commands/date.js',
     './scripts/commands/delay.js',
