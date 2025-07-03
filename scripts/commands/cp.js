@@ -41,20 +41,6 @@
             const destNode = destValidation.node;
             let isDestADirectory = destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
 
-            // --- NEW, MORE ROBUST OVERWRITE CHECK ---
-            // This is the core of the fix. It handles the ambiguous `cp file dir` case.
-            if (sourcePathArgs.length === 1 && isDestADirectory) {
-                const sourceValidation = FileSystemManager.validatePath("cp (source)", sourcePathArgs[0]);
-                if (sourceValidation.node && sourceValidation.node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
-                    // This is the `cp file dir` scenario. We have designed OopisOS to treat this
-                    // as an error to prevent accidental overwrites. The user must be explicit,
-                    // e.g., `cp file dir/file`.
-                    return { success: false, error: `cp: cannot overwrite directory '${destPathArg}' with non-directory` };
-                }
-            }
-            // --- END NEW LOGIC ---
-
-            // If there are multiple sources, the destination MUST be a directory.
             if (sourcePathArgs.length > 1 && !isDestADirectory) {
                 return { success: false, error: `cp: target '${destPathArg}' is not a directory` };
             }
@@ -73,8 +59,6 @@
                 const existingNodeAtDest = targetContainerNode.children[targetEntryName];
 
                 if (existingNodeAtDest) {
-                    // This block is now for standard overwrites (file-file, dir-dir)
-                    // The dangerous file-dir case is caught above.
                     const isPromptRequired = flags.interactive || (options.isInteractive && !flags.force);
                     let confirmed = !isPromptRequired;
 
@@ -149,7 +133,6 @@
 
                 let targetContainerAbsPath, targetEntryName;
 
-                // With the new check above, this logic is now safer.
                 if (isDestADirectory) {
                     targetContainerAbsPath = destValidation.resolvedPath;
                     targetEntryName = sourceValidation.resolvedPath.substring(sourceValidation.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
