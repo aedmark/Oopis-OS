@@ -12,9 +12,6 @@
     /**
      * @const {object} runCommandDefinition
      * @description The command definition for the 'run' command.
-     * This object specifies the command's name, argument validation (at least one script path),
-     * path validation (ensuring it's a file), required read and execute permissions,
-     * and the core logic for script interpretation and execution.
      */
     const runCommandDefinition = {
         commandName: "run",
@@ -35,33 +32,13 @@
                 permissions: ["read", "execute"], // Script must be readable and executable.
             },
         ],
-        /**
-         * The core logic for the 'run' command.
-         * It validates the script file type (.sh) and content.
-         * It prevents nested script execution in interactive mode.
-         * It sets up a `scriptingContext` to manage script state,
-         * including lines, current line index, and callbacks for interactive inputs.
-         * It then processes each line of the script, handling comments, argument expansion,
-         * and executing commands. It pauses for interactive prompts if necessary
-         * and stops execution on any command failure.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @param {string[]} context.args - The arguments provided to the command,
-         * where `args[0]` is the script path and subsequent args are script arguments.
-         * @param {object} context.options - Execution options, including `isInteractive`.
-         * @param {AbortSignal} context.signal - An AbortSignal for script cancellation (e.g., from `kill` command).
-         * @returns {Promise<object>} A promise that resolves to a command result object
-         * indicating the overall success or failure of the script execution.
-         */
         coreLogic: async (context) => {
             const { args, options, signal } = context;
             const scriptPathArg = args[0];
             const scriptArgs = args.slice(1);
             const scriptNode = context.validatedPaths[0].node;
             const fileExtension = Utils.getFileExtension(scriptPathArg);
-
-            // --- New Governor Configuration ---
-            const MAX_SCRIPT_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS; // Max number of commands to execute
+            const MAX_SCRIPT_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS;
             let steps = 0;
 
             if (fileExtension !== "sh") {
@@ -91,9 +68,7 @@
 
             let overallScriptSuccess = true;
 
-            // Main script execution loop
             while (scriptingContext.currentLineIndex < scriptingContext.lines.length) {
-                // --- Governor Check: Step Limit ---
                 if (steps++ > MAX_SCRIPT_STEPS) {
                     overallScriptSuccess = false;
                     await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
@@ -186,9 +161,10 @@
                     break;
                 }
 
+                // ** THE FIX IS HERE **
+                // Only advance the line index if the executed command didn't already advance it
+                // (e.g., by consuming subsequent lines for input like `useradd` or `sudo`).
                 if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
-                    scriptingContext.currentLineIndex++;
-                } else {
                     scriptingContext.currentLineIndex++;
                 }
             }
@@ -206,7 +182,6 @@
     };
 
     const runDescription = "Executes a shell script.";
-
     const runHelpText = `Usage: run <script_path> [arguments...]
 
 Execute a shell script.
@@ -259,7 +234,5 @@ EXAMPLES
        This will output:
        Welcome to OopisOS, Brave User! You provided 1 argument(s).`;
 
-    // The 'run' command must be dynamically loaded like any other.
     CommandRegistry.register(runCommandDefinition.commandName, runCommandDefinition, runDescription, runHelpText);
-
 })();
