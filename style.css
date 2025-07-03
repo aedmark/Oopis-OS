@@ -400,7 +400,7 @@ body {
   align-items: center;
   border-bottom: var(--border-width) solid var(--color-border-secondary);
   margin-bottom: var(--spacing-sm);
-  flex-shrink: 1;
+  flex-shrink: 0;
   /* Add these two lines */
   flex-wrap: nowrap;
   overflow: hidden;

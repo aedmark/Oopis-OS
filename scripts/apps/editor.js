@@ -283,7 +283,7 @@ const EditorUI = (() => {
 
   function setGutterVisibility(visible) {
     if (elements.lineGutter) {
-      elements.lineGutter.classList.toggle("editor__gutter--hidden-by-wrap", !visible);
+      elements.lineGutter.classList.toggle("hidden", !visible);
     }
   }
 
