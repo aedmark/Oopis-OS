@@ -12,142 +12,79 @@
                     |__/  A Browser-Based OS Simulation
 ```
 
-# OopisOS v3.4: Journeyman Edition
+# OopisOS v3.4: A Self-Reliant OS for a New Paradigm
 
-Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
+Welcome to OopisOS, a simulated operating system that is more than a project—it's an exploration. It is a complete, persistent, and secure Unix-like environment that is **radically self-reliant**, running entirely within your web browser with zero server-side dependencies. This is a sandbox for learning, a studio for creation, and a laboratory for interacting with AI, all built on a foundation of privacy and control.
 
-## Getting Started: The 60-Second Experience
+This project is a testament to what a focused, collaborative partnership between human architecture and AI-driven development can produce. We have built the engine, stocked the toolbox, and opened the gates. Now, it is your turn to build the world.
 
-[Live Demo](https://aedmark.github.io/Oopis-OS/ "null")
+**[Explore the Live Demo on itch.io](https://aedmark.itch.io/oopisos)** | **[View the Source on GitHub](https://github.com/aedmark/oopis-os)**
 
-1. **Open:** Simply open `index.html` in any modern web browser.
-    
-2. **Inflate:** You are logged in as "Guest". To see the system's potential, populate your home directory with a full suite of example files by running this command:
-    
-    ```
+-----
+
+### For the CLI & Retro Computing Fans: A Return to the Command Line
+
+If you believe the most powerful user interface is a blinking cursor, OopisOS was built for you. It embodies the core philosophy of the classic Unix shell: power, efficiency, and control.
+
+* **An Uncompromising Command Set**: This is a true shell environment with piping (`|`), I/O redirection (`>` and `>>`), background jobs (`&`), and command sequencing (`;`). It features a powerful suite of Unix-like commands, including `find`, `grep`, `ls`, `diff`, `awk`, and the new `zip` and `unzip` for file archival.
+* **The Joy of a Text-Based World**: The `paint` command launches a full-screen character-based art studio, while the `adventure` command starts a classic text-based game engine. Use `edit` and `paint` to create and run your own interactive fiction.
+* **Total Control and Customization**: Define your workflow with persistent command shortcuts using `alias` and `unalias`, manage environment variables with `set` and `unset`, and exert granular control over the security model with `chmod`, `chown`, and `chgrp`.
+
+-----
+
+### For the AI & Machine Learning Community: An OS as an Agentic Sandbox
+
+OopisOS v3.3 fully embraces the modern AI landscape by integrating a large language model not as a gimmick, but as a core system component.
+
+* **The `gemini` Command**: A practical implementation of a "tool-using" AI agent. It can use OopisOS commands like `ls`, `cat`, and `find` to explore the file system and gather information before answering your questions, all while inheriting the permissions of the current user.
+* **The `chidi` Application**: Our flagship "AI Librarian" for deep analysis of your documents. `chidi` implements a Retrieval-Augmented Generation (RAG) strategy; when you ask a question, it first performs a local keyword analysis to find the most relevant files, then constructs a highly focused prompt for the AI, resulting in faster, more accurate answers.
+
+-----
+
+### For Educators, Students & Hobbyists: The Ultimate Sandbox
+
+OopisOS was architected to be a safe, engaging, and powerful environment for exploration and creation.
+
+* **Learn Without Fear**: The entire system is sandboxed. You can experiment with a multi-user environment, master file permissions with `chmod`, learn administrative tasks with `sudo`, and even simulate `rm -rf /` without any risk to your actual computer. The `reset` command is your safety net.
+* **A Tangible Scripting Engine**: The `run` command transforms the OS into a simple but effective game engine. Write shell scripts to learn automation, or use `echo`, `mkdir`, and argument-passing (`$1`, `$@`) to create simple narrative games and puzzles.
+* **Instant Onboarding with the World-Builder**: We believe in learning by doing. Just type `run /extras/inflate.sh`, and the system will terraform your empty home directory into a bustling showcase environment, giving you a rich world to explore from your very first session.
+
+-----
+
+### For JavaScript & Web Developers: An Architectural Deep Dive
+
+OopisOS is a case study in the power of the modern web platform, built with a deliberate decision to forgo frameworks in a commitment to **Radical Self-Reliance**.
+
+* **The Command Contract**: Instead of writing boilerplate validation, developers *declare* a command's requirements (arguments, flags, path validation, permissions) to the `CommandExecutor`. The executor enforces these rules *before* the command's core logic is ever run, ensuring security and stability.
+* **Architected Persistence**: The system’s state is managed by a dual-pronged strategy. The entire Virtual File System resides in **IndexedDB** for its transactional, asynchronous power, while session-critical data like credentials and aliases leverage the rapid, synchronous access of **LocalStorage**.
+* **Security by Design**: Security is foundational. The `UserManager` uses the browser’s native **Web Crypto API (SHA-256)** to securely hash passwords. All file access is gated through the `FileSystemManager.hasPermission()` function. `sudo` and `visudo` provide a controlled workflow for privilege escalation.
+
+-----
+
+## Your Turn at the Console
+
+### Getting Started
+
+1.  **Open:** Launch `index.html` in any modern web browser.
+2.  **Inflate Your World:** You start as the `Guest` user. To populate your file system with a rich set of example files, directories, and scripts, run the `inflate.sh` world-builder script.
+    ```bash
     run /extras/inflate.sh
     ```
-    
-3. **Explore:** Now, explore the new files and directories that have been created:
-    
-    ```
-    tree /home/Guest/docs
-    ```
-    
+3.  **Explore:** See your new world with `tree` and `ls -R`, read the `README.md` file with `cat`, and begin your journey.
 
-Intrigued? Read on to discover the depth of what you can do in your new OS.
+### The Challenge
 
-## Key Features Overview
+* **For the Tinkerers:** We challenge you to create. Build a text adventure with the `adventure` engine, design a title screen with the `paint` studio, and write a script with `run` to tie it all together.
+* **For the Developers:** We challenge you to extend. The modular command architecture was designed for you. Add a new command, integrate an external API, or use the codebase as a case study for building complex, framework-free web applications. The schematics are in `/docs/developer.md`.
+* **For the AI Enthusiasts:** We challenge you to explore. Push the limits of the `gemini` agent. Teach the `chidi` librarian about a new subject by feeding it your own documents.
 
-OopisOS v3.4 is a major release focused on creativity, interactivity, and developer experience.
+### Further Documentation
 
-#### Core Shell Experience
+To keep this document focused, more detailed information has been moved to separate files within the `/docs` directory:
 
-- **Advanced Terminal:** An interactive command-line with history, tab completion, and background processes (`&`).
-    
-- **Piping & Redirection:** Chain commands together with the pipe (`|`) or redirect output to files with `>` and `>>`.
-    
-- **Sequencing & Aliasing:** Execute multiple commands with `;` and create shortcuts for longer commands with `alias`.
-    
-- **Environment Variables:** Manage session-specific variables with `set`, `unset`, and `$VAR` expansion.
-    
-
-#### Multi-User Security Model
-
-- **True Multi-User Environment:** Create users (`useradd`), groups (`groupadd`), and manage group memberships (`usermod -aG`).
-    
-- **Privilege Escalation:** Execute commands as the superuser with `sudo` and safely manage permissions with `visudo`.
-    
-- **Unix-like Permissions:** Use `chmod` with 3-digit octal modes (e.g., `755`) to control read, write, and execute permissions.
-    
-- **Ownership Control:** Change file ownership with `chown` and group ownership with `chgrp`.
-    
-
-#### Persistent File System & Applications
-
-- **Hierarchical VFS:** A robust virtual file system powered by IndexedDB that persists between sessions.
-    
-- **File Management:** A comprehensive suite of commands including `ls`, `find`, `tree`, `diff`, `mkdir`, `cp`, `mv`, `rm`, `zip`, and `unzip`.
-    
-- **Application Suite:**
-    
-    - `edit`: A powerful text editor with live Markdown preview.
-        
-    - `paint`: A character-based art studio for your inner artist.
-        
-    - `adventure`: A powerful, data-driven text adventure engine. Play the built-in "Architect's Apprentice" or create and load your own worlds.
-        
-    - `chidi`: An AI-powered document analysis tool.
-        
-    - `gemini`: A tool-using AI assistant for your terminal.
-        
-
-## Core Architectural Concepts
-
-OopisOS is built on several foundational principles that ensure it is secure, modular, and persistent.
-
-#### The Persistence Layer: A Self-Contained World
-
-The entire state of OopisOS is stored locally and persistently within your browser, requiring no server interaction.
-
-- **IndexedDB:** Provides the robust, transactional database needed to manage the entire hierarchical file system.
-    
-- **LocalStorage:** Acts as a faster key-value store for session-critical data like user credentials, command history, and aliases.
-    
-
-#### The Security Model: Control and Privacy
-
-- **User Roles:** The system includes a "superuser" (`root`) with full privileges, alongside standard users who are subject to permission checks. The default `root` password is `mcgoopis`.
-    
-- **Password Hashing:** User passwords are not stored in plain text. They are securely hashed using the browser's Web Crypto API.
-    
-- **Permission System:** The `chmod` command implements the standard Unix-like octal permission model.
-    
-
-#### The Command Contract: Secure by Design
-
-The v3.0 "Keystone" release introduced a new, highly modular command architecture. Adding a new command is a declarative process where you _declare_ your command's requirements to the `CommandExecutor`, which enforces these rules _before_ your command's core logic is ever run. This is a critical security and stability feature. The contract includes:
-
-- `flagDefinitions`: All flags the command accepts.
-    
-- `argValidation`: The number of arguments your command expects.
-    
-- `pathValidation`: Which arguments are file paths and what type they should be.
-    
-- `permissionChecks`: Which permissions (`read`, `write`, `execute`) the user must have on those paths.
-    
-
-## For Developers: Contributing to OopisOS
-
-The codebase is organized into modular files with clear responsibilities.
-
-- `main.js`: Main entry point and bootloader.
-    
-- `commexec.js`: The Command Executor, which orchestrates the command lifecycle.
-    
-- `scripts/commands/registry.js`: The registry where all command modules register themselves.
-    
-- `scripts/commands/*.js`: Self-contained modules for each individual command.
-    
-- `fs_manager.js`: The gatekeeper for all Virtual File System operations and permission checks.
-    
-- `user_manager.js`: Handles all logic for users, groups, and authentication.
-    
-
-To add a new command, simply create a new file in `/scripts/commands/`, define the command's contract and logic using the standard pattern, and add a `<script>` tag for it in `index.html`.
-
-## Further Documentation
-
-To keep this document focused, more detailed information has been moved to separate files.
-
-- **`/docs/guide.html`:** The full, styled User Guide.
-    
-- **`/docs/command_reference.md`:** An exhaustive reference for every command.
-    
-- **`/docs/developer.md`:** In-depth architectural documentation for contributors.
-    
-- **`/docs/security.md`:** A detailed overview of the OopisOS security model.
-    
-- **`/docs/tutorial.md`:** Guided tutorials for more complex tasks.
-    
-- **`/docs/adventure.md`:** A comprehensive guide to creating custom adventures with the text adventure engine.
+* **`guide.html`:** The full, styled User Guide.
+* **`command_reference.md`:** An exhaustive reference for every command.
+* **`developer.md`:** In-depth architectural documentation for contributors.
+* **`security.md`:** A detailed overview of the OopisOS security model.
+* **`tutorial.md`:** Guided tutorials for more complex tasks.
+* **`adventure.md`:** A comprehensive guide to creating custom adventures with the text adventure engine.
