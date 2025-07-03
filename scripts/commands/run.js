@@ -49,6 +49,7 @@
 
             const rawScriptLines = scriptNode.content.split('\n');
 
+            // This context is passed down, but the run command's loop will manage its own program counter.
             const scriptingContext = {
                 isScripting: true,
                 waitingForInput: false,
@@ -63,8 +64,12 @@
             if (options.isInteractive) TerminalUI.setInputState(false);
 
             let overallScriptSuccess = true;
+            let programCounter = 0; // Use a dedicated program counter for the loop.
 
-            while (scriptingContext.currentLineIndex < scriptingContext.lines.length) {
+            while (programCounter < scriptingContext.lines.length) {
+                // Set the shared context's index to our master program counter
+                scriptingContext.currentLineIndex = programCounter;
+
                 if (steps++ > MAX_SCRIPT_STEPS) {
                     overallScriptSuccess = false;
                     await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
@@ -78,9 +83,10 @@
                     break;
                 }
 
-                let line = scriptingContext.lines[scriptingContext.currentLineIndex];
+                const lineToExecuteIndex = programCounter;
+                let line = scriptingContext.lines[lineToExecuteIndex];
 
-                // --- Comment and empty line handling (no changes here) ---
+                // --- Comment and empty line handling ---
                 let inDoubleQuote = false;
                 let inSingleQuote = false;
                 let commentIndex = -1;
@@ -102,37 +108,30 @@
                 const trimmedLine = line.trim();
 
                 if (trimmedLine === '') {
-                    scriptingContext.currentLineIndex++;
+                    programCounter++;
                     continue;
                 }
 
-                // --- CORRECTED Variable expansion ---
+                // --- Variable expansion ---
                 let processedLine = line;
                 for (let i = 0; i < scriptArgs.length; i++) {
-                    // Replace $1, $2 etc.
                     processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
                 }
-                // Replace $@ with a simple space-separated join. The downstream `echo` will handle it.
                 processedLine = processedLine.replace(/\$@/g, scriptArgs.join(" "));
-                // Replace $# with the argument count.
                 processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
 
-
-                // --- ROBUST LOOP LOGIC ---
-                const preCommandIndex = scriptingContext.currentLineIndex;
+                // --- Execute Command ---
                 const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
 
+                // After execution, the correct next line is the one *after* where the
+                // sub-process (like ModalInputManager) left off.
+                programCounter = scriptingContext.currentLineIndex + 1;
+
                 if (!result || !result.success) {
-                    const errorMsg = `Script '${scriptPathArg}' error on line: ${scriptingContext.lines[scriptingContext.currentLineIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
+                    const errorMsg = `Script '${scriptPathArg}' error on line ${lineToExecuteIndex + 1}: ${scriptingContext.lines[lineToExecuteIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
                     await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                     overallScriptSuccess = false;
                     break;
-                }
-
-                // If the command that just ran didn't advance the script line itself
-                // (e.g., by consuming password lines), we advance it here. This prevents infinite loops.
-                if (scriptingContext.currentLineIndex === preCommandIndex) {
-                    scriptingContext.currentLineIndex++;
                 }
             }
 
