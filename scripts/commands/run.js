@@ -35,7 +35,6 @@
             const scriptNode = context.validatedPaths[0].node;
             const fileExtension = Utils.getFileExtension(scriptPathArg);
             const MAX_SCRIPT_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS;
-            let steps = 0;
 
             if (fileExtension !== "sh") {
                 return { success: false, error: `run: '${scriptPathArg}' is not a shell script (.sh) file.` };
@@ -49,7 +48,10 @@
 
             const rawScriptLines = scriptNode.content.split('\n');
 
-            // This context is passed down, but the run command's loop will manage its own program counter.
+            // *** FIX: Use the parent's scripting context and step counter if it exists; otherwise, create a new one.
+            const stepCounter = options.scriptingContext?.steps || { count: 0 };
+
+            // This context is passed down to handle interactive prompts from commands like 'useradd'.
             const scriptingContext = {
                 isScripting: true,
                 waitingForInput: false,
@@ -57,6 +59,7 @@
                 cancelCallback: null,
                 lines: rawScriptLines,
                 currentLineIndex: 0,
+                steps: stepCounter, // Attach the shared step counter object.
             };
 
             const previousScriptExecutionState = CommandExecutor.isScriptRunning();
@@ -64,13 +67,13 @@
             if (options.isInteractive) TerminalUI.setInputState(false);
 
             let overallScriptSuccess = true;
-            let programCounter = 0; // Use a dedicated program counter for the loop.
+            let programCounter = 0;
 
             while (programCounter < scriptingContext.lines.length) {
-                // Set the shared context's index to our master program counter
                 scriptingContext.currentLineIndex = programCounter;
 
-                if (steps++ > MAX_SCRIPT_STEPS) {
+                // *** FIX: Increment and check the shared counter from the context. ***
+                if (scriptingContext.steps.count++ > MAX_SCRIPT_STEPS) {
                     overallScriptSuccess = false;
                     await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                     break;
