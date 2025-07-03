@@ -356,6 +356,16 @@ const CommandExecutor = (() => {
       success: true,
       output: "",
     };
+    if (pipeline.inputRedirectFile) {
+      const pathValidation = FileSystemManager.validatePath("input redirection", pipeline.inputRedirectFile, { expectedType: 'file' });
+      if (pathValidation.error) {
+        return { success: false, error: pathValidation.error };
+      }
+      if (!FileSystemManager.hasPermission(pathValidation.node, UserManager.getCurrentUser().name, "read")) {
+        return { success: false, error: `cannot open '${pipeline.inputRedirectFile}' for reading: Permission denied` };
+      }
+      currentStdin = pathValidation.node.content || "";
+    }
     if (
         typeof UserManager === "undefined" ||
         typeof UserManager.getCurrentUser !== "function"

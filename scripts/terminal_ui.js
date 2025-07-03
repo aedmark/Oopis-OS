@@ -180,6 +180,22 @@ const ModalManager = (() => {
      * @param {'graphical'|'graphical-input'|'terminal'} options.context - The type of modal to display.
      */
     function request(options) {
+        if (options.options?.stdinContent) {
+            const inputLine = options.options.stdinContent.trim().split('\n')[0];
+            const promptEcho = `${document.getElementById('prompt-container').textContent} `;
+
+            // Echo prompt and response to terminal for clarity
+            options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
+            void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
+            void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
+
+            if (inputLine.toUpperCase() === 'YES') {
+                if (options.onConfirm) options.onConfirm(options.data);
+            } else {
+                if (options.onCancel) options.onCancel(options.data);
+            }
+            return; // Important: Exit after handling stdin
+        }
         if (options.options?.scriptingContext?.isScripting) {
             const scriptContext = options.options.scriptingContext;
             let inputLine = null;
@@ -489,6 +505,15 @@ const ModalInputManager = (() => {
      * @param {object} [options={}] - Options from the command context, potentially containing a `scriptingContext`.
      */
     function requestInput(promptMessage, onInputReceivedCallback, onCancelledCallback, isObscured = false, options = {}) {
+        if (options.stdinContent) {
+            const inputLine = options.stdinContent.trim().split('\n')[0];
+            void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+            const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
+            const promptEcho = `${document.getElementById('prompt-container').textContent} `;
+            void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
+            onInputReceivedCallback(inputLine);
+            return;
+        }
         if (options.scriptingContext && options.scriptingContext.isScripting) {
             const scriptContext = options.scriptingContext;
             let inputLine = null;

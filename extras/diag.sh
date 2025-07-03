@@ -295,7 +295,7 @@ delay 400
 
 echo "--- Test: Logical OR (||) and interactive flags ---"
 check_fail "cat nonexistent_file.txt" || echo "Logical OR successful: cat failed as expected."
-echo "y" > yes.txt
+echo "YES" > yes.txt # CHANGED from "y" to "YES"
 echo "n" > no.txt
 touch interactive_test.txt
 # The script runner will auto-reply 'YES' to prompts

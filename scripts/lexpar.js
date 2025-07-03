@@ -15,13 +15,14 @@ const TokenType = {
   WORD: "WORD",
   STRING_DQ: "STRING_DQ",
   STRING_SQ: "STRING_SQ",
-  OPERATOR_GT: "OPERATOR_GT",
-  OPERATOR_GTGT: "OPERATOR_GTGT",
+  OPERATOR_GT: "OPERATOR_GT", // >
+  OPERATOR_GTGT: "OPERATOR_GTGT", // >>
+  OPERATOR_LT: "OPERATOR_LT", // < (NEW)
   OPERATOR_PIPE: "OPERATOR_PIPE",
   OPERATOR_SEMICOLON: "OPERATOR_SEMICOLON",
   OPERATOR_BG: "OPERATOR_BG",
-  OPERATOR_AND: "OPERATOR_AND", // New
-  OPERATOR_OR: "OPERATOR_OR",   // New
+  OPERATOR_AND: "OPERATOR_AND",
+  OPERATOR_OR: "OPERATOR_OR",
   EOF: "EOF",
 };
 
@@ -61,7 +62,7 @@ class Lexer {
    * @returns {Token[]} An array of Token objects representing the input string.
    */
   tokenize() {
-    const specialChars = ['"', "'", ">", "|", "&", ";"];
+    const specialChars = ['"', "'", ">", "<", "|", "&", ";"]; // ADDED '<'
     while (this.position < this.input.length) {
       let char = this.input[this.position];
       if (/\s/.test(char)) {
@@ -84,6 +85,12 @@ class Lexer {
           this.tokens.push(new Token(TokenType.OPERATOR_GT, ">", this.position));
           this.position++;
         }
+        continue;
+      }
+      // NEW BLOCK for '<'
+      if (char === "<") {
+        this.tokens.push(new Token(TokenType.OPERATOR_LT, "<", this.position));
+        this.position++;
         continue;
       }
       if (char === "|") {
@@ -140,13 +147,6 @@ class Lexer {
     return this.tokens;
   }
 
-  /**
-   * Handles the tokenization of a string literal enclosed in quotes.
-   * @private
-   * @param {string} quoteChar - The type of quote to look for ('"' or "'").
-   * @returns {Token} The resulting string token.
-   * @throws {Error} If the string is not properly closed.
-   */
   _tokenizeString(quoteChar) {
     const startPos = this.position;
     let value = "";
@@ -178,66 +178,33 @@ class Lexer {
   }
 }
 
-/**
- * A data structure representing a single command and its arguments.
- */
 class ParsedCommandSegment {
-  /**
-   * Creates an instance of a ParsedCommandSegment.
-   * @param {string} command - The name of the command.
-   * @param {string[]} args - An array of arguments for the command.
-   */
   constructor(command, args) {
     this.command = command;
     this.args = args;
   }
 }
 
-/**
- * A data structure representing a full command pipeline, which may include
- * multiple command segments, I/O redirection, and a background flag.
- */
 class ParsedPipeline {
   constructor() {
-    /** @type {ParsedCommandSegment[]} */
     this.segments = [];
-    /** @type {{type: 'overwrite'|'append', file: string}|null} */
-    this.redirection = null;
-    /** @type {boolean} */
+    this.redirection = null; // Output redirection (>, >>)
+    this.inputRedirectFile = null; // NEW: Input redirection (<)
     this.isBackground = false;
-    /** @type {number|null} */
     this.jobId = null;
   }
 }
 
-/**
- * The Parser takes a stream of tokens from the Lexer and constructs
- * a structured, hierarchical representation (an array of logical command groups).
- */
 class Parser {
-  /**
-   * Creates an instance of the Parser.
-   * @param {Token[]} tokens - An array of tokens from the Lexer.
-   */
   constructor(tokens) {
     this.tokens = tokens;
     this.position = 0;
   }
 
-  /**
-   * Returns the token at the current parsing position.
-   * @private
-   * @returns {Token}
-   */
   _currentToken() {
     return this.tokens[this.position];
   }
 
-  /**
-   * Advances the parser to the next token.
-   * @private
-   * @returns {Token} The new current token.
-   */
   _nextToken() {
     if (this.position < this.tokens.length - 1) {
       this.position++;
@@ -245,14 +212,6 @@ class Parser {
     return this._currentToken();
   }
 
-  /**
-   * Consumes the current token if it matches the expected type.
-   * @private
-   * @param {TokenType} tokenType - The expected type of the current token.
-   * @param {boolean} [optional=false] - If true, does not throw an error if the token doesn't match.
-   * @returns {Token|null} The consumed token, or null if optional and not found.
-   * @throws {Error} If the token is not of the expected type and not optional.
-   */
   _expectAndConsume(tokenType, optional = false) {
     const current = this._currentToken();
     if (current.type === tokenType) {
@@ -265,13 +224,12 @@ class Parser {
     throw new Error(`Parser Error: Expected token ${tokenType} but got ${current.type} ('${current.value}') at input position ${current.position}.`);
   }
 
-  /**
-   * Parses a single command segment (e.g., "ls -la").
-   * @private
-   * @returns {ParsedCommandSegment|null} The parsed command segment, or null if no command is found.
-   */
   _parseSingleCommandSegment() {
-    const terminators = [TokenType.EOF, TokenType.OPERATOR_PIPE, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR, TokenType.OPERATOR_GT, TokenType.OPERATOR_GTGT];
+    const terminators = [
+      TokenType.EOF, TokenType.OPERATOR_PIPE, TokenType.OPERATOR_SEMICOLON,
+      TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR,
+      TokenType.OPERATOR_GT, TokenType.OPERATOR_GTGT, TokenType.OPERATOR_LT // ADDED LT
+    ];
     if (terminators.includes(this._currentToken().type)) {
       return null;
     }
@@ -290,18 +248,30 @@ class Parser {
     return new ParsedCommandSegment(command, args);
   }
 
-  /**
-   * Parses a complete command pipeline, including pipes and redirection.
-   * @private
-   * @returns {ParsedPipeline|null} The parsed pipeline, or null if the pipeline is empty.
-   */
+  // --- REFACTORED/NEW PARSER LOGIC ---
   _parseSinglePipeline() {
     const pipeline = new ParsedPipeline();
+
+    // A pipeline can start with an optional input redirection
+    if (this._currentToken().type === TokenType.OPERATOR_LT) {
+      this._nextToken(); // consume '<'
+      const fileToken = this._expectAndConsume(TokenType.WORD, true)
+          || this._expectAndConsume(TokenType.STRING_DQ, true)
+          || this._expectAndConsume(TokenType.STRING_SQ, true);
+      if (!fileToken) {
+        throw new Error("Parser Error: Expected filename after input redirection operator '<'.");
+      }
+      pipeline.inputRedirectFile = fileToken.value;
+    }
+
     let currentSegment = this._parseSingleCommandSegment();
     if (currentSegment) {
       pipeline.segments.push(currentSegment);
-    } else if (![TokenType.EOF, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR].includes(this._currentToken().type)) {
-      throw new Error(`Parser Error: Expected command at start of pipeline, but found ${this._currentToken().type}.`);
+    } else if (!pipeline.inputRedirectFile) {
+      // If we don't have a command AND we don't have an input redirect, it might be an error or just empty.
+      if (![TokenType.EOF, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR].includes(this._currentToken().type)) {
+        throw new Error(`Parser Error: Expected command at start of pipeline, but found ${this._currentToken().type}.`);
+      }
     }
 
     while (this._currentToken().type === TokenType.OPERATOR_PIPE) {
@@ -318,7 +288,7 @@ class Parser {
       this._nextToken();
       const fileToken = this._expectAndConsume(TokenType.WORD, true) || this._expectAndConsume(TokenType.STRING_DQ, true) || this._expectAndConsume(TokenType.STRING_SQ, true);
       if (!fileToken) {
-        throw new Error(`Parser Error: Expected filename (WORD or STRING) after redirection operator '${opToken.value}'. Got ${this._currentToken().type}.`);
+        throw new Error(`Parser Error: Expected filename after redirection operator '${opToken.value}'.`);
       }
       pipeline.redirection = {
         type: opToken.type === TokenType.OPERATOR_GTGT ? "append" : "overwrite",
@@ -326,14 +296,10 @@ class Parser {
       };
     }
 
-    return pipeline.segments.length > 0 || pipeline.redirection ? pipeline : null;
+    return pipeline.segments.length > 0 || pipeline.redirection || pipeline.inputRedirectFile ? pipeline : null;
   }
+  // --- END REFACTORED/NEW LOGIC ---
 
-  /**
-   * The main parsing method. It processes the entire token stream and creates a
-   * sequence of pipelines and their connecting operators.
-   * @returns {Array<{pipeline: ParsedPipeline, operator: string|null}>} An array of pipeline-operator groups.
-   */
   parse() {
     const commandSequence = [];
     while (this._currentToken().type !== TokenType.EOF) {
@@ -354,7 +320,6 @@ class Parser {
 
       commandSequence.push({ pipeline, operator });
 
-      // A command is required after '&&' or '||', but not after '&' or ';'.
       if (this._currentToken().type === TokenType.EOF && (operator === '&&' || operator === '||')) {
         throw new Error(`Parser Error: Command expected after '${operator}' operator.`);
       }
