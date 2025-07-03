@@ -850,7 +850,7 @@ const TextAdventureEngine = (() => {
     } else {
       TextAdventureModal.appendOutput(`The ${keyItem.name} doesn't seem to fit the lock.`, 'error');
     }
-  }
+
 
   function _resolveVerb(verbWord) {
     if (!verbWord) return null;
