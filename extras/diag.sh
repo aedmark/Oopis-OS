@@ -217,6 +217,23 @@ ls -R zip_test
 delay 700
 echo "---------------------------------------------------------------------"
 
+# --- Phase 7.5: Pager and Calculator Tests ---
+echo ""
+echo "===== Phase 7.5: Testing Pager (more/less) and Calculator (bc) ====="
+delay 400
+echo "--- Test: bc command (pipe and argument) ---"
+echo "5 * (10 - 2) / 4" | bc
+bc "100 + 1"
+check_fail "bc '5 / 0'"
+echo "--- Test: Pager integration (non-interactive) ---"
+echo "This test verifies 'more' and 'less' pass data through in scripts."
+echo -e "Line 1\nLine 2\nLine 3" > pager_test.txt
+cat pager_test.txt | more | wc -l
+cat pager_test.txt | less | wc -l
+echo "Pager pass-through test complete."
+rm pager_test.txt
+delay 700
+echo "---------------------------------------------------------------------"
 
 # --- Phase 8: Shell & Session Commands ---
 echo ""

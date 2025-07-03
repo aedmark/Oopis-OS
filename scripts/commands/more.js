@@ -8,14 +8,21 @@
         coreLogic: async (context) => {
             const { args, options, validatedPaths } = context;
             const content = args.length > 0
-                ? validatedPaths[0].node.content
+                ? (validatedPaths[0] && validatedPaths[0].node ? validatedPaths[0].node.content : null)
                 : options.stdinContent;
 
             if (content === null || content === undefined) {
                 return { success: true, output: "" };
             }
 
-            await PagerManager.enter(content, { mode: 'more' });
+            // If the command is NOT run interactively (e.g., in a script),
+            // simply pass the content through like 'cat'.
+            if (!options.isInteractive) {
+                return { success: true, output: content };
+            }
+
+            // Otherwise, launch the interactive pager.
+            PagerManager.enter(content, { mode: 'more' });
 
             return { success: true, output: "" };
         },
@@ -28,7 +35,9 @@ Displays file content or standard input one screen at a time.
 
 DESCRIPTION
         more is a filter for paging through text one screenful at a time.
-        Press SPACE to view the next page, and 'q' to quit.
+        When used in a non-interactive script, it prints the entire input
+        without pausing. In an interactive session, press SPACE to view
+        the next page, and 'q' to quit.
 
 EXAMPLES
         more long_document.txt
