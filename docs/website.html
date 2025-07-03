@@ -364,10 +364,26 @@ restore backup.json
 ```
 The OS will reboot and restore itself to the exact state contained in the backup file. This is the ultimate "undo" button.
 
-### `clearfs` and `reset`
+### The Ultimate Reset Button: `reset`
 
-- **`clearfs`**: A destructive command that completely wipes the virtual filesystem and all user data, resetting the OS to its initial factory state. Use with caution!
-- **`reboot`**: A softer reset that reloads the OS, clearing transient state but preserving the filesystem from `savestate`.
+The `reset` command is the most powerful and destructive tool in the OS, designed to return the entire environment to its absolute factory state. This is the ideal command for developers during diagnostic testing who need a guaranteed clean slate.
+
+When executed, `reset` does the following:
+-   Permanently deletes all user accounts, groups, and passwords.
+-   Completely erases the entire virtual filesystem.
+-   Clears all saved states, aliases, and configurations.
+-   **Crucially, it also clears all browser cache storage for OopisOS.** This forces the service worker (`sw.js`) to fetch fresh copies of all application files on the next load.
+
+```bash
+# This command requires interactive confirmation.
+reset
+```
+> **Warning:** This action is irreversible. Use this command with extreme caution.
+
+### Other Forms of Reset
+
+- **`reboot`**: A soft reset that reloads the OS, clearing transient state but preserving the filesystem from `savestate`.
+- **`clearfs`**: Wipes the current user's filesystem, but leaves user accounts and other system-level configurations intact.
     </textarea>
 <textarea id="md-security" class="hidden">
 # Users & Security
@@ -697,7 +713,7 @@ This is a comprehensive list of available commands in OopisOS. For detailed usag
 | `chmod` | Changes the permissions of a file. |
 | `chown` | Changes the owner of a file. |
 | `clear` | Clears the terminal screen. |
-| `clearfs` | Wipes the filesystem and resets the OS. |
+| `clearfs` | Wipes the filesystem, resetting it to a clean state. |
 | `cp` | Copies files or directories. |
 | `curl` | Transfers data from or to a server. |
 | `date` | Prints the current date and time. |
@@ -737,7 +753,7 @@ This is a comprehensive list of available commands in OopisOS. For detailed usag
 | `reboot` | Reboots the operating system. |
 | `registry` | Manages system configuration settings. |
 | `removeuser`| Removes a user from the system. |
-| `reset` | Resets the terminal. |
+| `reset` | Wipes the entire OS (files, users, cache) to factory defaults. |
 | `restore` | Restores the OS state from a backup file. |
 | `rm` | Removes files or directories. |
 | `run` | Executes a script file. |
