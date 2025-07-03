@@ -185,12 +185,12 @@ const CommandExecutor = (() => {
     });
 
     loadingPromises[commandName] = promise;
-    return await promise;
+    return await loadingPromises[commandName];
   }
 
 
   /**
-   * REFINED: Expands wildcard glob patterns (*, ?) in command arguments before parsing.
+   * REFACTORED: Expands wildcard glob patterns (*, ?) in command arguments before parsing.
    * This is a pre-processing step to handle file path expansion with more robust path handling.
    * @private
    * @param {string} commandString The raw command string after alias/variable expansion.
@@ -605,7 +605,39 @@ const CommandExecutor = (() => {
   }
 
   /**
-   * Finalizes the terminal UI state after a command has been executed in interactive mode.
+   * NEW: A helper function to handle the pre-processing of a command string before parsing.
+   * This includes variable expansion, alias resolution, and glob expansion.
+   * @private
+   * @param {string} rawCommandText - The raw string entered by the user.
+   * @returns {Promise<string>} The fully processed command string ready for the parser.
+   * @throws {Error} if alias resolution fails.
+   */
+  async function _preprocessCommandString(rawCommandText) {
+    let expandedCommand = rawCommandText.trim();
+    if (!expandedCommand) {
+      return "";
+    }
+
+    // 1. Expand Environment Variables
+    expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
+      const varName = var1 || var2;
+      return EnvironmentManager.get(varName);
+    });
+
+    // 2. Resolve Aliases
+    const aliasResult = AliasManager.resolveAlias(expandedCommand);
+    if (aliasResult.error) {
+      throw new Error(aliasResult.error);
+    }
+    const commandAfterAliases = aliasResult.newCommand;
+
+    // 3. Expand Glob Patterns
+    const commandToParse = await _expandGlobPatterns(commandAfterAliases);
+    return commandToParse;
+  }
+
+  /**
+   * REFACTORED: Finalizes the terminal UI state after a command has been executed in interactive mode.
    * This includes clearing the input, updating the prompt, and managing focus.
    * @private
    * @param {string} originalCommandText - The command text that was just executed.
@@ -630,8 +662,8 @@ const CommandExecutor = (() => {
   }
 
   /**
-   * Processes a complete command-line string. This is the main entry point for command execution.
-   * It handles alias expansion, environment variable expansion, parsing, and execution of all pipelines.
+   * REFACTORED: Processes a complete command-line string. This is the main entry point for command execution.
+   * It now uses helper functions for pre-processing and post-processing, making the main flow cleaner.
    * @param {string} rawCommandText - The raw string entered by the user.
    * @param {object} [options={}] - An object containing execution options.
    * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the entire command line.
@@ -639,52 +671,44 @@ const CommandExecutor = (() => {
   async function processSingleCommand(rawCommandText, options = {}) {
     const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
 
+    // --- 1. Initial State Checks ---
     if (scriptExecutionInProgress && isInteractive && !ModalManager.isAwaiting()) {
       await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
       return { success: false, error: "Script execution in progress." };
     }
-
     if (ModalManager.isAwaiting()) {
       await ModalManager.handleTerminalInput(rawCommandText);
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: true, output: "" };
     }
-
     if (EditorManager.isActive()) return { success: true, output: "" };
 
-    let expandedCommand = rawCommandText.trim();
-    if (expandedCommand) {
-      expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)}/g, (match, var1, var2) => {
-        const varName = var1 || var2;
-        return EnvironmentManager.get(varName);
-      });
-    }
-
-    const aliasResult = AliasManager.resolveAlias(expandedCommand);
-    if (aliasResult.error) {
-      await OutputManager.appendToOutput(aliasResult.error, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+    // --- 2. Pre-process the Command String ---
+    let commandToParse;
+    try {
+      commandToParse = await _preprocessCommandString(rawCommandText);
+    } catch (e) {
+      await OutputManager.appendToOutput(e.message, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return { success: false, error: aliasResult.error };
+      return { success: false, error: e.message };
     }
 
-    const commandAfterAliases = aliasResult.newCommand;
-    const commandToParse = await _expandGlobPatterns(commandAfterAliases);
+    // --- 3. UI Updates & History ---
     const cmdToEcho = rawCommandText.trim();
-
     if (isInteractive) {
       DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
       const prompt = DOM.promptContainer.textContent;
       await OutputManager.appendToOutput(`${prompt}${cmdToEcho}`);
     }
-
     if (cmdToEcho === "") {
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: true, output: "" };
     }
-
     if (isInteractive) HistoryManager.add(cmdToEcho);
     if (isInteractive && !TerminalUI.getIsNavigatingHistory()) HistoryManager.resetIndex();
 
+
+    // --- 4. Parse the Command ---
     let commandSequence;
     try {
       commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
@@ -694,6 +718,7 @@ const CommandExecutor = (() => {
       return { success: false, error: e.message || "Command parse error." };
     }
 
+    // --- 5. Orchestration Loop ---
     let lastPipelineSuccess = true;
     let overallResult = { success: true, output: "" };
 
@@ -702,12 +727,8 @@ const CommandExecutor = (() => {
 
       if (i > 0) {
         const prevOperator = commandSequence[i-1].operator;
-        if (prevOperator === '&&' && !lastPipelineSuccess) {
-          continue;
-        }
-        if (prevOperator === '||' && lastPipelineSuccess) {
-          continue;
-        }
+        if (prevOperator === '&&' && !lastPipelineSuccess) continue;
+        if (prevOperator === '||' && lastPipelineSuccess) continue;
       }
 
       let result;
@@ -728,7 +749,6 @@ const CommandExecutor = (() => {
             delete activeJobs[jobId];
           }
         }, 0);
-
         result = { success: true };
       } else {
         result = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
@@ -739,11 +759,11 @@ const CommandExecutor = (() => {
         console.error(err, "Pipeline:", pipeline);
         result = { success: false, error: err };
       }
-
       lastPipelineSuccess = result.success;
       overallResult = result;
     }
 
+    // --- 6. Finalize the UI ---
     if (isInteractive && !scriptExecutionInProgress) {
       await _finalizeInteractiveModeUI(rawCommandText);
     }
