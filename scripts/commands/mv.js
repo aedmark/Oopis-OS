@@ -35,17 +35,21 @@
 
             const destNode = destValidation.node;
 
-            // --- NEW OVERWRITE PROTECTION LOGIC ---
-            // This logic prevents moving a file onto a directory.
+            // --- REFINED OVERWRITE PROTECTION LOGIC v2 ---
+            // This logic correctly distinguishes between `mv file dir` and `mv file dir/`
             if (destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
                 if (sourcePathArgs.length === 1) {
                     const sourceValidation = FileSystemManager.validatePath("mv (source)", sourcePathArgs[0]);
-                    if (sourceValidation.node && sourceValidation.node.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
-                        return { success: false, error: `mv: cannot overwrite directory '${destPathArg}' with non-directory` };
+                    if (sourceValidation.node && sourceValidation.node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE && !destPathArg.endsWith(Config.FILESYSTEM.PATH_SEPARATOR)) {
+                        // This case is now specifically for `mv file dir` (no trailing slash), which we disallow.
+                        return {
+                            success: false,
+                            error: `mv: cannot overwrite directory '${destPathArg}' with non-directory; to move into directory, use '${destPathArg}/'`
+                        };
                     }
                 }
             }
-            // --- END NEW LOGIC ---
+            // --- END REFINED LOGIC ---
 
             const isDestADirectory = destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
 

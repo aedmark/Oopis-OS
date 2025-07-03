@@ -36,7 +36,6 @@ echo "---------------------------------------------------------------------"
 # --- Phase 2: Parser/Lexer Robustness ---
 echo ""
 echo "===== Testing: Parser/Lexer Robustness (Quotes, Escapes, Errors) ====="
-# (No changes here, this section was already solid)
 delay 400
 echo "--- Test: Filenames with spaces (Quoting) ---"
 mkdir "a directory with spaces"
@@ -80,7 +79,6 @@ echo "---------------------------------------------------------------------"
 # --- Phase 4: Group Permissions and Ownership ---
 echo ""
 echo "===== Testing: Group Permissions (chgrp, usermod, groupadd) ====="
-# (No changes here, this section was already solid)
 delay 400
 login root mcgoopis
 groupadd testgroup
@@ -122,12 +120,15 @@ echo "===== Testing: Sudo & Security Model ====="
 delay 400
 echo "--- Test: visudo and sudoers modification ---"
 login root mcgoopis
+useradd sudouser
+testpass
+testpass
 echo "sudouser ALL" >> /etc/sudoers
 echo "--- Test: Successful sudo by authorized user ---"
 login sudouser
 testpass
-testpass
 sudo echo "Sudo command successful."
+testpass
 echo "--- Test: sudo re-authentication (no password needed) ---"
 sudo ls /root
 echo "--- Test: sudo re-authentication after logout (password needed) ---"
@@ -166,7 +167,7 @@ echo "---------------------------------------------------------------------"
 
 # --- Phase 7: Advanced Data Processing ---
 echo ""
-echo "===== Testing: Advanced Data Processing (awk, xargs) ====="
+echo "===== Testing: Advanced Data Processing (awk, xargs) ======="
 delay 400
 echo "--- Test: awk with BEGIN block ---"
 awk 'BEGIN { print "--- Report ---" } { print $0 }' data_stream.txt
