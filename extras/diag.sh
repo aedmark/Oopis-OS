@@ -48,10 +48,12 @@ echo 'echo -e "line one\\nline two\\nline three" > diff_a.txt' >> ./diag_assets.
 echo 'echo -e "line one\\nline 2\\nline three" > diff_b.txt' >> ./diag_assets.sh
 echo '' >> ./diag_assets.sh
 echo 'echo "--- Creating assets for run, awk, and xargs tests ---"' >> ./diag_assets.sh
+#...
 echo '# For run argument test' >> ./diag_assets.sh
-# Escape special characters to prevent expansion by the parent shell
-echo 'echo "Arg 1: \$1, Arg 2: \$2, Arg Count: \$\#, All Args: \$@"' > arg_test.sh
-echo 'chmod 700 arg_test.sh' >> arg_test.sh
+# Create the arg_test.sh script using two simple echos to avoid complex quoting.
+echo "echo 'echo \"Arg 1: \$1, Arg 2: \$2, ' > ./arg_test.sh" >> ./diag_assets.sh
+echo "echo 'Arg Count: \$\#, All Args: \$@\' >> ./arg_test.sh" >> ./diag_assets.sh
+echo 'chmod 700 ./arg_test.sh' >> ./diag_assets.sh
 echo '# For governor test' >> ./diag_assets.sh
 echo 'echo '\''#!/bin/oopis_shell'\'' > infinite_loop.sh' >> ./diag_assets.sh
 echo 'echo '\''run ./infinite_loop.sh'\'' >> infinite_loop.sh' >> ./diag_assets.sh
