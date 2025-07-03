@@ -190,8 +190,9 @@ const UserManager = (() => {
         try {
             // Escalate privileges to root
             currentUser = { name: 'root' };
-            // Execute the command non-interactively, as if root typed it.
-            return await CommandExecutor.processSingleCommand(commandStr, false, options.scriptingContext);
+            // Execute the command with the provided options, which correctly specify
+            // that this is a non-interactive, scripted execution.
+            return await CommandExecutor.processSingleCommand(commandStr, options);
         } catch (e) {
             return { success: false, error: `sudo: an unexpected error occurred during execution: ${e.message}` };
         } finally {

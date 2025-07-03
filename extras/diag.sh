@@ -135,24 +135,22 @@ echo "Initial content" > group_test_file.txt
 chown userDiag group_test_file.txt
 chgrp testgroup group_test_file.txt
 chmod 664 group_test_file.txt
-logout
 login testuser
 testpass
 cd /home/userDiag/diag_workspace
 echo "Append by group member" >> group_test_file.txt
 cat group_test_file.txt
-logout
 login Guest
 cd /home/userDiag/diag_workspace
 check_fail "echo 'Append by other user' >> group_test_file.txt"
-logout
-login root mcgoopis
+login root
+mcgoopis
 removeuser -f testuser
 groupdel testgroup
 rm -f /home/userDiag/diag_workspace/group_test_file.txt
 chmod 700 /home/userDiag
-logout
-login userDiag pantload
+login userDiag
+pantload
 cd /home/userDiag/diag_workspace
 delay 700
 echo "---------------------------------------------------------------------"
@@ -162,7 +160,8 @@ echo ""
 echo "===== Testing: Sudo & Security Model ====="
 delay 400
 echo "--- Test: visudo and sudoers modification ---"
-login root mcgoopis
+login root
+mcgoopis
 useradd sudouser
 testpass
 testpass
@@ -175,25 +174,24 @@ sudo echo "Sudo command successful."
 testpass
 echo "Attempting second sudo command (should not require password)..."
 sudo ls /root
+testpass
 echo "--- Test: sudo re-authentication after logout (password required) ---"
-logout
 login sudouser
 testpass
 echo "Attempting sudo after re-login (password required again)..."
 sudo ls /root
 testpass
 echo "--- Test: Failed sudo by unauthorized user ---"
-logout
 login Guest
 check_fail "sudo ls /root"
 # Cleanup
-logout
-login root mcgoopis
+login root
+mcgoopis
 removeuser -f sudouser
 # A simple way to remove the last line of the file
 head -n -1 /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
-logout
-login userDiag pantload
+login userDiag
+pantload
 cd /home/userDiag/diag_workspace
 delay 700
 echo "---------------------------------------------------------------------"
@@ -228,7 +226,8 @@ echo "---------------------------------------------------------------------"
 echo ""
 echo "--- Final Cleanup ---"
 cd /
-login root mcgoopis
+login root
+mcgoopis
 delay 300
 rm -r -f /home/userDiag/diag_workspace
 login Guest
