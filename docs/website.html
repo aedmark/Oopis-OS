@@ -7,60 +7,57 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Lato:wght@400;700&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
-            color: #e2e8f0;
+            font-family: 'Lato', sans-serif;
+            background-color: #f5f5f5; /* A very light, warm off-white */
+            color: #1f1e1e; /* Dark gray for text, better for reading on light bg */
+        }
+        h1, h2, h3, h4, h5, h6, .font-lora {
+            font-family: 'Lora', serif;
         }
         .font-fira {
             font-family: 'Fira Code', monospace;
         }
-        .glass-nav {
-            background-color: rgba(10, 10, 10, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        .solid-nav {
+            background-color: #f9c2ff;
+            border-bottom: 1px solid #e5e5e5;
         }
-        .hero-gradient-text {
-            background: linear-gradient(to right, #a78bfa, #f472b6, #fb923c);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .hero-solid-text {
+            color: #00357b; /* A deep, trustworthy blue */
         }
         .section-title {
-            font-weight: 800;
+            font-weight: 700;
             font-size: 2.25rem; /* 36px */
             line-height: 2.5rem; /* 40px */
             letter-spacing: -0.025em;
+            color: #2d3748; /* A darker gray for headings */
         }
         .card {
-            background-color: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: #f8e4e4;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
             transition: all 0.3s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
         .card:hover {
-            border-color: #a78bfa;
+            border-color: #4a90e2;
             transform: translateY(-4px);
-        }
-        .command-table th, .command-table td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .command-table th {
-            background-color: rgba(51, 65, 85, 0.7);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         code {
             font-family: 'Fira Code', monospace;
-            background-color: #1e293b;
-            color: #f8fafc;
+            background-color: rgb(255, 142, 255);
+            color: #443f3f;
             padding: 0.125rem 0.375rem;
             border-radius: 0.25rem;
             font-size: 0.9em;
         }
         pre {
-            background-color: #0f172a;
-            border: 1px solid #334155;
+            background-color: #1a202c; /* Keep code blocks dark for contrast */
+            color: #e2e8f0;
+            border: 1px solid #4a5568;
             padding: 1rem;
             border-radius: 0.5rem;
             overflow-x: auto;
@@ -68,42 +65,48 @@
         .cta-button {
             display: inline-block;
             padding: 0.75rem 1.5rem;
-            background: linear-gradient(to right, #8b5cf6, #d946ef);
+            background-color: #2c5282; /* Solid blue */
             color: white;
             font-weight: 600;
             border-radius: 0.5rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         .cta-button:hover {
+            background-color: #2a4365; /* Darker blue on hover */
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .cta-button-secondary {
             background: transparent;
-            border: 2px solid #a78bfa;
-            color: #a78bfa;
+            border: 2px solid #2c5282;
+            color: #2c5282;
         }
         .cta-button-secondary:hover {
-            background: #a78bfa;
+            background: #2c5282;
             color: white;
+        }
+        .content-wrapper {
+            max-width: 64rem; /* 1024px */
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
 <body class="antialiased">
 
 <!-- Header & Navigation -->
-<header id="header" class="glass-nav sticky top-0 z-50">
-    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <a href="#hero" class="text-2xl font-bold hero-gradient-text">OopisOS</a>
-        <div class="hidden md:flex space-x-6 items-center">
-            <a href="#about" class="hover:text-violet-400 transition-colors">About</a>
-            <a href="#philosophy" class="hover:text-violet-400 transition-colors">Philosophy</a>
-            <a href="#shell" class="hover:text-violet-400 transition-colors">The Shell</a>
-            <a href="#apps" class="hover:text-violet-400 transition-colors">Apps</a>
-            <a href="#security" class="hover:text-violet-400 transition-colors">Security</a>
-            <a href="#devs" class="hover:text-violet-400 transition-colors">Developers</a>
-            <a href="#explore" class="hover:text-violet-400 transition-colors">Explore</a>
+<header id="header" class="solid-nav sticky top-0 z-50">
+    <nav class="content-wrapper px-6 py-4 flex justify-between items-center">
+        <a href="#hero" class="text-2xl font-bold hero-solid-text font-lora">OopisOS</a>
+        <div class="hidden md:flex space-x-8 items-center">
+            <a href="#about" class="hover:text-blue-800 transition-colors">About</a>
+            <a href="#philosophy" class="hover:text-blue-800 transition-colors">Philosophy</a>
+            <a href="#shell" class="hover:text-blue-800 transition-colors">The Shell</a>
+            <a href="#apps" class="hover:text-blue-800 transition-colors">Apps</a>
+            <a href="#security" class="hover:text-blue-800 transition-colors">Security</a>
+            <a href="#devs" class="hover:text-blue-800 transition-colors">Developers</a>
+            <a href="#explore" class="hover:text-blue-800 transition-colors">Explore</a>
         </div>
         <button id="mobile-menu-button" class="md:hidden focus:outline-none">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
@@ -111,26 +114,26 @@
     </nav>
     <!-- Mobile Menu -->
     <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
-        <a href="#about" class="block py-2 hover:text-violet-400">About</a>
-        <a href="#philosophy" class="block py-2 hover:text-violet-400">Philosophy</a>
-        <a href="#shell" class="block py-2 hover:text-violet-400">The Shell</a>
-        <a href="#apps" class="block py-2 hover:text-violet-400">Apps</a>
-        <a href="#security" class="block py-2 hover:text-violet-400">Security</a>
-        <a href="#devs" class="block py-2 hover:text-violet-400">Developers</a>
-        <a href="#explore" class="block py-2 hover:text-violet-400">Explore</a>
+        <a href="#about" class="block py-2 hover:text-blue-800">About</a>
+        <a href="#philosophy" class="block py-2 hover:text-blue-800">Philosophy</a>
+        <a href="#shell" class="block py-2 hover:text-blue-800">The Shell</a>
+        <a href="#apps" class="block py-2 hover:text-blue-800">Apps</a>
+        <a href="#security" class="block py-2 hover:text-blue-800">Security</a>
+        <a href="#devs" class="block py-2 hover:text-blue-800">Developers</a>
+        <a href="#explore" class="block py-2 hover:text-blue-800">Explore</a>
     </div>
 </header>
 
-<main class="container mx-auto px-6 py-12 md:py-20">
+<main class="content-wrapper px-6 py-12 md:py-20">
 
     <!-- Hero Section -->
     <section id="hero" class="text-center min-h-[60vh] flex flex-col justify-center items-center">
-        <h1 class="text-5xl md:text-7xl font-black hero-gradient-text leading-tight">OopisOS v3.5</h1>
-        <p class="mt-4 text-xl md:text-2xl text-slate-300">The Architect's Edition</p>
-        <p class="mt-8 max-w-3xl text-lg text-slate-400">
+        <h1 class="text-5xl md:text-7xl font-bold hero-solid-text leading-tight">OopisOS v3.5</h1>
+        <p class="mt-4 text-xl md:text-2xl text-gray-700 font-lora">The Architect's Edition</p>
+        <p class="mt-8 max-w-3xl text-lg text-gray-600">
             An entire, self-reliant digital universe that lives in your browser. OopisOS is a testament to disciplined architecture and a bold experiment in human-AI collaboration. It's a persistent, private, and powerful sandbox for creation and exploration.
         </p>
-        <p class="mt-6 font-fira text-slate-500 italic">"The Tao is embodied in all software -- regardless of how insignificant."</p>
+        <p class="mt-6 font-fira text-gray-500 italic">"The Tao is embodied in all software -- regardless of how insignificant."</p>
     </section>
 
     <!-- About Section -->
@@ -138,32 +141,32 @@
         <h2 class="section-title text-center mb-12">A Universe in Your Browser</h2>
         <div class="grid md:grid-cols-2 gap-12 items-center">
             <div>
-                <h3 class="text-3xl font-bold text-violet-400 mb-4">Radical Self-Reliance</h3>
-                <p class="text-slate-300 leading-relaxed mb-4">
+                <h3 class="text-3xl font-bold text-blue-800 mb-4 font-lora">Radical Self-Reliance</h3>
+                <p class="text-gray-700 leading-relaxed mb-4">
                     OopisOS is not a website; it's a complete operating system simulation that runs entirely on your machine. There is no backend server. Every file you create, every user you add, every command you run is processed and stored locally in your browser's IndexedDB. Your world is yours alone, governed by a robust security model that you control.
                 </p>
-                <p class="text-slate-300 leading-relaxed">
+                <p class="text-gray-700 leading-relaxed">
                     This project began as a question: Can a complex, stateful, multi-user system be built with nothing but the native tools of the web? The answer is a resounding yes. OopisOS is a living demonstration of what's possible when modern browser capabilities are wielded with disciplined, framework-free architecture.
                 </p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h4 class="text-xl font-bold mb-4">The Foundational Pillars</h4>
+            <div class="card p-6">
+                <h4 class="text-xl font-bold mb-4 font-lora">The Foundational Pillars</h4>
                 <ul class="space-y-3">
                     <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-3 mt-1 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span><strong class="text-slate-100">Architected Persistence:</strong> Your entire OS state, from the root directory to the last line of your command history, is saved locally. Your world persists.</span>
+                        <svg class="w-5 h-5 mr-3 mt-1 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span><strong class="text-gray-800">Architected Persistence:</strong> Your entire OS state, from the root directory to the last line of your command history, is saved locally. Your world persists.</span>
                     </li>
                     <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-3 mt-1 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span><strong class="text-slate-100">Enforced Modularity:</strong> Components are orchestrated, never entangled. The `CommandExecutor` is the central nervous system, ensuring every command adheres to a strict contract before execution.</span>
+                        <svg class="w-5 h-5 mr-3 mt-1 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span><strong class="text-gray-800">Enforced Modularity:</strong> Components are orchestrated, never entangled. The `CommandExecutor` is the central nervous system, ensuring every command adheres to a strict contract before execution.</span>
                     </li>
                     <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-3 mt-1 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span><strong class="text-slate-100">Security by Design:</strong> From the `FileSystemManager`'s permission gatekeeping to the `SudoManager`'s controlled privilege escalation, security is a foundational layer, not a feature.</span>
+                        <svg class="w-5 h-5 mr-3 mt-1 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span><strong class="text-gray-800">Security by Design:</strong> From the `FileSystemManager`'s permission gatekeeping to the `SudoManager`'s controlled privilege escalation, security is a foundational layer, not a feature.</span>
                     </li>
                     <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-3 mt-1 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span><strong class="text-slate-100">Human-AI Collaboration:</strong> OopisOS is the product of a unique dialogue between a human architect and an AI assistant, a transparent partnership in creation acknowledged in its very license.</span>
+                        <svg class="w-5 h-5 mr-3 mt-1 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span><strong class="text-gray-800">Human-AI Collaboration:</strong> OopisOS is the product of a unique dialogue between a human architect and an AI assistant, a transparent partnership in creation acknowledged in its very license.</span>
                     </li>
                 </ul>
             </div>
@@ -171,41 +174,41 @@
     </section>
 
     <!-- Philosophy Section -->
-    <section id="philosophy" class="py-20 bg-slate-900/40">
-        <div class="max-w-5xl mx-auto">
+    <section id="philosophy" class="py-20 bg-gray-50">
+        <div class="content-wrapper px-6">
             <h2 class="section-title text-center mb-4">Our Philosophy</h2>
-            <h3 class="text-4xl font-bold text-center hero-gradient-text mb-10">El Código del Taco</h3>
-            <p class="text-center text-lg text-slate-400 mb-12 max-w-3xl mx-auto">
+            <h3 class="text-4xl font-bold text-center text-blue-800 mb-10 font-lora">El Código del Taco</h3>
+            <p class="text-center text-lg text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
                 A robust application is like a well-made taco. Every layer has a purpose, and their separation is key to a coherent, delightful experience. This model is the blueprint for OopisOS, ensuring that complexity is managed, not chaotic.
             </p>
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="card p-5 rounded-lg">
-                    <h4 class="text-lg font-bold mb-2 text-amber-300">Layer 1: The Protein</h4>
-                    <p class="text-sm text-slate-300">The Core Logic. The `CommandExecutor` and `Lexer/Parser` are the heart, processing user intent into executable actions. This is the system's "why".</p>
+                <div class="card p-5">
+                    <h4 class="text-lg font-bold mb-2 text-yellow-700 font-lora">Layer 1: The Protein</h4>
+                    <p class="text-sm text-gray-600">The Core Logic. The `CommandExecutor` and `Lexer/Parser` are the heart, processing user intent into executable actions. This is the system's "why".</p>
                 </div>
-                <div class="card p-5 rounded-lg">
-                    <h4 class="text-lg font-bold mb-2 text-green-300">Layer 2: The Lettuce</h4>
-                    <p class="text-sm text-slate-300">The Presentation Layer. `terminal_ui.js` and `output_manager.js` create the entire user experience, rendering state without managing it.</p>
+                <div class="card p-5">
+                    <h4 class="text-lg font-bold mb-2 text-green-700 font-lora">Layer 2: The Lettuce</h4>
+                    <p class="text-sm text-gray-600">The Presentation Layer. `terminal_ui.js` and `output_manager.js` create the entire user experience, rendering state without managing it.</p>
                 </div>
-                <div class="card p-5 rounded-lg">
-                    <h4 class="text-lg font-bold mb-2 text-yellow-300">Layer 3: The Cheese</h4>
-                    <p class="text-sm text-slate-300">The Enhancement Layer. Valuable but non-essential features like the `chidi` AI librarian and `paint` application, adding flavor and utility.</p>
+                <div class="card p-5">
+                    <h4 class="text-lg font-bold mb-2 text-yellow-500 font-lora">Layer 3: The Cheese</h4>
+                    <p class="text-sm text-gray-600">The Enhancement Layer. Valuable but non-essential features like the `chidi` AI librarian and `paint` application, adding flavor and utility.</p>
                 </div>
-                <div class="card p-5 rounded-lg">
-                    <h4 class="text-lg font-bold mb-2 text-red-400">Layer 4: The Salsa</h4>
-                    <p class="text-sm text-slate-300">The API & Data Layer. `storage.js` is the unifying agent, providing a clean API to `localStorage` and `IndexedDB` for all other components.</p>
+                <div class="card p-5">
+                    <h4 class="text-lg font-bold mb-2 text-red-600 font-lora">Layer 4: The Salsa</h4>
+                    <p class="text-sm text-gray-600">The API & Data Layer. `storage.js` is the unifying agent, providing a clean API to `localStorage` and `IndexedDB` for all other components.</p>
                 </div>
-                <div class="card p-5 rounded-lg">
-                    <h4 class="text-lg font-bold mb-2 text-slate-200">Layer 5: The Onions</h4>
-                    <p class="text-sm text-slate-300">The Utility Layer. Potent, non-negotiable helpers. `utils.js` and `config.js` provide pure functions and system-wide constants.</p>
+                <div class="card p-5">
+                    <h4 class="text-lg font-bold mb-2 text-gray-700 font-lora">Layer 5: The Onions</h4>
+                    <p class="text-sm text-gray-600">The Utility Layer. Potent, non-negotiable helpers. `utils.js` and `config.js` provide pure functions and system-wide constants.</p>
                 </div>
-                <div class="card p-5 rounded-lg">
-                    <h4 class="text-lg font-bold mb-2 text-orange-400">Layer 6: The Jalapeño</h4>
-                    <p class="text-sm text-slate-300">The Security Layer. Controlled heat. The `SudoManager` and `FileSystemManager.hasPermission()` are the gatekeepers of power and access.</p>
+                <div class="card p-5">
+                    <h4 class="text-lg font-bold mb-2 text-orange-600 font-lora">Layer 6: The Jalapeño</h4>
+                    <p class="text-sm text-gray-600">The Security Layer. Controlled heat. The `SudoManager` and `FileSystemManager.hasPermission()` are the gatekeepers of power and access.</p>
                 </div>
-                <div class="card p-5 rounded-lg lg:col-span-3">
-                    <h4 class="text-lg font-bold mb-2 text-violet-300">Layer 7: The Fold</h4>
-                    <p class="text-sm text-slate-300">The Build & Deployment. Bringing it all together. `index.html` is the manifest, loading every script in a deterministic order to prevent "Taco Spill" and ensure a stable boot.</p>
+                <div class="card p-5 lg:col-span-3">
+                    <h4 class="text-lg font-bold mb-2 text-indigo-700 font-lora">Layer 7: The Fold</h4>
+                    <p class="text-sm text-gray-600">The Build & Deployment. Bringing it all together. `index.html` is the manifest, loading every script in a deterministic order to prevent "Taco Spill" and ensure a stable boot.</p>
                 </div>
             </div>
         </div>
@@ -215,17 +218,17 @@
     <section id="shell" class="py-20">
         <h2 class="section-title text-center mb-12">An Empowered Shell</h2>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-xl font-bold mb-3">Command Lifecycle</h3>
-                <p class="text-slate-400">Every command undergoes a rigorous, multi-stage process: expansion of variables and aliases, tokenization by the Lexer, structuring by the Parser, and finally, validation against a strict "Command Contract" before a single line of logic is run.</p>
+            <div class="card p-6">
+                <h3 class="text-xl font-bold mb-3 font-lora">Command Lifecycle</h3>
+                <p class="text-gray-600">Every command undergoes a rigorous, multi-stage process: expansion of variables and aliases, tokenization by the Lexer, structuring by the Parser, and finally, validation against a strict "Command Contract" before a single line of logic is run.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-xl font-bold mb-3">Advanced I/O</h3>
-                <p class="text-slate-400">Full support for piping (<code>|</code>), I/O redirection (<code>></code>, <code>>></code>, <code><</code>), command sequencing (<code>;</code>), and logical operators (<code>&&</code>, <code>||</code>) allows for complex, one-line workflows.</p>
+            <div class="card p-6">
+                <h3 class="text-xl font-bold mb-3 font-lora">Advanced I/O</h3>
+                <p class="text-gray-600">Full support for piping (<code>|</code>), I/O redirection (<code>></code>, <code>>></code>, <code><</code>), command sequencing (<code>;</code>), and logical operators (<code>&&</code>, <code>||</code>) allows for complex, one-line workflows.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-xl font-bold mb-3">Job Control</h3>
-                <p class="text-slate-400">Run long-running tasks in the background with <code>&</code>. Use <code>ps</code> to view active jobs and <code>kill</code> to terminate them, giving you full control over your session's processes.</p>
+            <div class="card p-6">
+                <h3 class="text-xl font-bold mb-3 font-lora">Job Control</h3>
+                <p class="text-gray-600">Run long-running tasks in the background with <code>&</code>. Use <code>ps</code> to view active jobs and <code>kill</code> to terminate them, giving you full control over your session's processes.</p>
             </div>
         </div>
     </section>
@@ -234,29 +237,29 @@
     <section id="apps" class="py-20">
         <h2 class="section-title text-center mb-12">The Integrated Application Suite</h2>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-3">edit</h3>
-                <p class="text-slate-400 mb-4">A context-aware creative suite that adapts its interface for plain text, Markdown, or HTML, offering a live split-screen preview and formatting toolbars.</p>
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-3 font-lora">edit</h3>
+                <p class="text-gray-600 mb-4">A context-aware creative suite that adapts its interface for plain text, Markdown, or HTML, offering a live split-screen preview and formatting toolbars.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-3">paint</h3>
-                <p class="text-slate-400 mb-4">A surprisingly robust character-based art studio with a full canvas, layers, shape tools, and a custom `.oopic` format for creating assets for your scripts and games.</p>
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-3 font-lora">paint</h3>
+                <p class="text-gray-600 mb-4">A surprisingly robust character-based art studio with a full canvas, layers, shape tools, and a custom `.oopic` format for creating assets for your scripts and games.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-3">chidi</h3>
-                <p class="text-slate-400 mb-4">The AI Librarian. Point it at a directory of Markdown files to open a dedicated reading interface. Ask the AI to summarize, generate study questions, or query across all loaded documents.</p>
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-3 font-lora">chidi</h3>
+                <p class="text-gray-600 mb-4">The AI Librarian. Point it at a directory of Markdown files to open a dedicated reading interface. Ask the AI to summarize, generate study questions, or query across all loaded documents.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-3">gemini</h3>
-                <p class="text-slate-400 mb-4">A tool-using AI assistant that can execute shell commands to answer questions about your file system, perform tasks, or provide general knowledge, all from the command line.</p>
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-3 font-lora">gemini</h3>
+                <p class="text-gray-600 mb-4">A tool-using AI assistant that can execute shell commands to answer questions about your file system, perform tasks, or provide general knowledge, all from the command line.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-3">adventure</h3>
-                <p class="text-slate-400 mb-4">A powerful, data-driven text adventure engine. Play the built-in "Architect's Apprentice" tutorial or create and explore your own worlds from a simple JSON file.</p>
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-3 font-lora">adventure</h3>
+                <p class="text-gray-600 mb-4">A powerful, data-driven text adventure engine. Play the built-in "Architect's Apprentice" tutorial or create and explore your own worlds from a simple JSON file.</p>
             </div>
-            <div class="card p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-3">explore</h3>
-                <p class="text-slate-400 mb-4">A graphical, two-pane file explorer for intuitive navigation. Browse the directory tree on the left and view folder contents on the right, all with respect for file permissions.</p>
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-3 font-lora">explore</h3>
+                <p class="text-gray-600 mb-4">A graphical, two-pane file explorer for intuitive navigation. Browse the directory tree on the left and view folder contents on the right, all with respect for file permissions.</p>
             </div>
         </div>
     </section>
@@ -265,28 +268,29 @@
     <section id="security" class="py-20">
         <h2 class="section-title text-center mb-12">Security Deep Dive</h2>
         <div class="max-w-4xl mx-auto">
-            <p class="text-center text-lg text-slate-400 mb-10">Security is not a feature; it's the foundation. The OopisOS model is built on explicit user permissions, architected containment, and a profound respect for your data privacy.</p>
+            <p class="text-center text-lg text-gray-600 mb-10 leading-relaxed">Security is not a feature; it's the foundation. The OopisOS model is built on explicit user permissions, architected containment, and a profound respect for your data privacy.</p>
             <div class="grid md:grid-cols-2 gap-8">
-                <div class="card p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-3">The Permission Model</h3>
-                    <p class="text-slate-400">Every single file system operation is gated by `FileSystemManager.hasPermission()`. This function rigorously checks file ownership (user/group) against the file's octal mode (read, write, execute) and the current user's identity. There are no back doors.</p>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-3 font-lora">The Permission Model</h3>
+                    <p class="text-gray-600">Every single file system operation is gated by `FileSystemManager.hasPermission()`. This function rigorously checks file ownership (user/group) against the file's octal mode (read, write, execute) and the current user's identity. There are no back doors.</p>
                 </div>
-                <div class="card p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-3">The Chain of Custody</h3>
-                    <p class="text-slate-400">OopisOS provides the tools to verify, secure, and transport your data with confidence. Use <code>cksum</code> to verify integrity, <code>base64</code> to safely encode for transport, and <code>ocrypt</code> for simple data obscurity, creating a verifiable workflow for your information.</p>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-3 font-lora">The Chain of Custody</h3>
+                    <p class="text-gray-600">OopisOS provides the tools to verify, secure, and transport your data with confidence. Use <code>cksum</code> to verify integrity, <code>base64</code> to safely encode for transport, and <code>ocrypt</code> for simple data obscurity, creating a verifiable workflow for your information.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- For Developers Section -->
-    <section id="devs" class="py-20 bg-slate-900/40">
-        <h2 class="section-title text-center mb-12">For Architects & Developers</h2>
-        <div class="max-w-4xl mx-auto">
-            <h3 class="text-3xl font-bold text-center text-violet-400 mb-4">The Command Contract</h3>
-            <p class="text-center text-lg text-slate-400 mb-10">Adding a new command to OopisOS is a declarative and secure process. You don't just write code; you declare a contract with the system. The `CommandExecutor` validates arguments, paths, and permissions against your contract *before* your logic ever runs, ensuring stability and preventing a vast class of errors.</p>
-            <div class="card rounded-lg p-6">
-                    <pre><code class="language-js">// A new command follows a clear, secure contract.
+    <section id="devs" class="py-20 bg-gray-50">
+        <div class="content-wrapper px-6">
+            <h2 class="section-title text-center mb-12">For Architects & Developers</h2>
+            <div class="max-w-4xl mx-auto">
+                <h3 class="text-3xl font-bold text-center text-blue-800 mb-4 font-lora">The Command Contract</h3>
+                <p class="text-center text-lg text-gray-600 mb-10 leading-relaxed">Adding a new command to OopisOS is a declarative and secure process. You don't just write code; you declare a contract with the system. The `CommandExecutor` validates arguments, paths, and permissions against your contract *before* your logic ever runs, ensuring stability and preventing a vast class of errors.</p>
+                <div class="card rounded-lg p-6">
+                        <pre><code class="language-js">// A new command follows a clear, secure contract.
 const myCommandDefinition = {
   commandName: "mycommand",
   flagDefinitions: [ /* ...flags */ ],
@@ -309,6 +313,7 @@ CommandRegistry.register(
     "Detailed help text for the 'man' command."
 );
 </code></pre>
+                </div>
             </div>
         </div>
     </section>
@@ -316,9 +321,9 @@ CommandRegistry.register(
     <!-- Explore More Section -->
     <section id="explore" class="py-20">
         <h2 class="section-title text-center mb-12">Explore OopisOS</h2>
-        <p class="text-center text-lg text-slate-400 mb-10 max-w-3xl mx-auto">Ready to dive in? Launch the live demo to experience OopisOS directly in your browser. To understand how it all works, or to contribute, head over to the GitHub repository. For a quick start, run <code>run /extras/inflate.sh</code> in the demo to populate your world, then run <code>run /extras/diag.sh</code> to see the system test itself.</p>
+        <p class="text-center text-lg text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">Ready to dive in? Launch the live demo to experience OopisOS directly in your browser. To understand how it all works, or to contribute, head over to the GitHub repository. For a quick start, run <code>run /extras/inflate.sh</code> in the demo to populate your world, then run <code>run /extras/diag.sh</code> to see the system test itself.</p>
         <div class="flex flex-wrap justify-center items-center gap-6">
-            <a href="https://oopisos.com" target="_blank" rel="noopener noreferrer" class="cta-button">
+            <a href="https://aedmark.github.io/Oopis-OS" target="_blank" rel="noopener noreferrer" class="cta-button">
                 Launch Live Demo
             </a>
             <a href="https://github.com/aedmark/oopis-os" target="_blank" rel="noopener noreferrer" class="cta-button cta-button-secondary">
@@ -330,8 +335,8 @@ CommandRegistry.register(
 </main>
 
 <!-- Footer -->
-<footer class="border-t border-slate-800">
-    <div class="container mx-auto px-6 py-8 text-center text-slate-500">
+<footer class="border-t border-gray-200">
+    <div class="content-wrapper px-6 py-8 text-center text-gray-500">
         <p>OopisOS is a collaborative endeavor between human direction (Andrew Edmark) and artificial intelligence (Gemini).</p>
         <p class="mt-2 text-sm">Released under the MIT License. Copyright (c) 2025 Andrew Edmark.</p>
     </div>
