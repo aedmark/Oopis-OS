@@ -798,34 +798,33 @@ const TextAdventureEngine = (() => {
     }
     const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
     const targetResult = _findItem(target, scope);
-
     if (targetResult.found.length === 0) {
       TextAdventureModal.appendOutput(`You don't see any "${target}" here.`, 'error');
       return;
     }
     if (targetResult.found.length > 1) {
-      disambiguationContext = { found: targetResult.found, context: { callback: (item) => _handleUnlock(item.noun, key, onDisambiguation) } };
+      disambiguationContext = {
+        found: targetResult.found,
+        context: {
+          callback: (item) => _handleUnlock(item.noun, key, onDisambiguation)
+        }
+      };
       const itemNames = targetResult.found.map(i => i.name).join(' or the ');
       TextAdventureModal.appendOutput(`Which ${target} do you want to unlock, the ${itemNames}?`, 'info');
-      onDisambiguation(); // Use the callback here
+      onDisambiguation();
       return;
     }
-
     const keyResult = _findItem(key, player.inventory.map(id => adventure.items[id]));
     if (keyResult.found.length === 0) {
       TextAdventureModal.appendOutput(`You don't have a "${key}".`, 'error');
       return;
     }
-    // (Could add similar disambiguation logic for the key here)
-
     const targetItem = targetResult.found[0];
     const keyItem = keyResult.found[0];
-
     if (!targetItem.isLocked) {
       TextAdventureModal.appendOutput(`The ${targetItem.name} is not locked.`, 'info');
       return;
     }
-
     if (keyItem.unlocks === targetItem.id) {
       targetItem.isLocked = false;
       TextAdventureModal.appendOutput(`You unlock the ${targetItem.name} with the ${keyItem.name}.`, 'info');
@@ -834,22 +833,6 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput(`The ${keyItem.name} doesn't seem to fit the lock.`, 'error');
     }
   }
-
-    const targetItem = targetResult.found[0];
-    const keyItem = keyResult.found[0];
-
-    if (!targetItem.isLocked) {
-      TextAdventureModal.appendOutput(`The ${targetItem.name} is not locked.`, 'info');
-      return;
-    }
-
-    if (keyItem.unlocks === targetItem.id) {
-      targetItem.isLocked = false;
-      TextAdventureModal.appendOutput(`You unlock the ${targetItem.name} with the ${keyItem.name}.`, 'info');
-      lastReferencedItemId = targetItem.id;
-    } else {
-      TextAdventureModal.appendOutput(`The ${keyItem.name} doesn't seem to fit the lock.`, 'error');
-    }
 
 
   function _resolveVerb(verbWord) {
