@@ -16,27 +16,6 @@
 
 Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
 
-## Getting Started: The 60-Second Experience
-
-[Live Demo](https://aedmark.github.io/Oopis-OS/ "null")
-
-1. **Open:** Simply open `index.html` in any modern web browser.
-    
-2. **Inflate:** You are logged in as "Guest". To see the system's potential, populate your home directory with a full suite of example files by running this command:
-    
-    ```
-    run /extras/inflate.sh
-    ```
-    
-3. **Explore:** Now, explore the new files and directories that have been created:
-    
-    ```
-    tree /home/Guest/docs
-    ```
-    
-
-Intrigued? Read on to discover the depth of what you can do in your new OS.
-
 ## Key Features Overview
 
 OopisOS v3.4 is a major release focused on creativity, interactivity, and developer experience.
