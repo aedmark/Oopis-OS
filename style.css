@@ -430,7 +430,7 @@ body {
 .editor__gutter {
   flex-shrink: 0;
   width: 40px;
-  padding: 0 var(--spacing-sm) var(--spacing-xs) 0; /* Changed from var(--spacing-xs) on top */
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
   text-align: right;
   color: var(--color-text-subtle);
   background-color: #171717;
