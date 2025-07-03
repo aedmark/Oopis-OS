@@ -1,46 +1,21 @@
-# Welcome to OopisOS v3.3: "Journeyman Edition"
+# Welcome to OopisOS v3.5: "The Architect's Edition"
 
-#### We're going on an ADVENTURE!
+#### "The Tao is embodied in all software -- regardless of how insignificant."
 
 ```
 Guest@OopisOs:~$ echo "OopisOS is ready."  
 OopisOS is ready.
 ```
-## Table of Contents
-
-- [Welcome to OopisOS v3.3: "Journeyman Edition"](#welcome-to-oopisos-v33-journeyman-edition)
-  - [We're going on an ADVENTURE!](#were-going-on-an-adventure)
-  * [Table of Contents](#table-of-contents)
-  * [What is OopisOS?](#what-is-oopisos)
-  * [Key Features at a Glance](#key-features-at-a-glance)
-  * [User Guide](#user-guide)
-    + [Essential Commands](#essential-commands)
-    + [Data & System Utilities](#data--system-utilities)
-    + [Application Suite](#application-suite)
-  * [Advanced Topics](#advanced-topics)
-    + [Shell Customization: The `PS1` Variable](#shell-customization-the-ps1-variable)
-    + [Privilege Escalation: `sudo` and `visudo`](#privilege-escalation-sudo-and-visudo)
-    + [File Archival: `zip` and `unzip`](#file-archival-zip-and-unzip)
-    + [Advanced Command Chaining: `&&`, `||`, and Pipes](#advanced-command-chaining---and-pipes)
-  * [Developer Documentation](#developer-documentation)
-    + [The Command Contract](#the-command-contract)
-    + [On-Demand Command Loading](#on-demand-command-loading)
-  * [Testing & Showcase Environment](#testing--showcase-environment)
-    + [The World-Builder: `inflate.sh`](#the-world-builder-inflatesh)
-    + [The Gauntlet: `diag.sh`](#the-gauntlet-diagsh)
-  * [About & Credits](#about--credits)
-    + [The Creators](#the-creators)
-    + [The Social Contract (aka The Boring Legal Bit)](#the-social-contract-aka-the-boring-legal-bit)
 
 ## What is OopisOS?
 
 OopisOS is a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
 
-The "Journeyman Edition" introduces a powerful new dimension of creativity: a full-featured text adventure engine, allowing you to not only play but also build your own interactive worlds.
+The "Architect's Edition" refines the core experience, focusing on robust security, a richer toolset for data manipulation, and deeper integration of AI-driven features.
 
 ## Key Features at a Glance
 
-- **A Rock-Solid File System:** A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, and `rm`.
+- **A Rock-Solid File System:** A persistent VFS powered by IndexedDB with a full suite of management tools: `ls`, `find`, `tree`, `diff`, `cp`, `mv`, `rm`, `zip`, and `unzip`.
 
 - **An Empowered Command-Line:** Full history, tab-completion, piping (`|`), redirection (`>`), backgrounding (`&`), sequencing (`;`), and environment variable support with a customizable prompt via `PS1`.
 
@@ -52,11 +27,11 @@ The "Journeyman Edition" introduces a powerful new dimension of creativity: a fu
 
   - `paint`: A character-based art studio for your inner artist.
 
+  - `explore`: A graphical, two-pane file explorer.
+
   - `chidi`: An AI-powered document analysis tool.
 
   - `gemini`: A tool-using AI assistant for your terminal.
-
-  - `explore`: A graphical, two-pane file explorer.
 
   - `adventure`: A powerful, data-driven text adventure engine to play and build interactive fiction.
 
@@ -98,6 +73,8 @@ This guide covers the essential commands for navigating and interacting with the
 |`xargs [command]`|Builds and executes command lines from standard input.|
 |`df [-h]`|Reports the file system's overall disk space usage.|
 |`du [-h -s] [path]`|Estimates disk space used by a specific file/directory.|
+|`base64 [-d]`|Encodes or decodes data to standard output.|
+|`cksum [file]`|Calculates a checksum and byte count for a file.|
 
 ### Application Suite
 
@@ -112,6 +89,8 @@ OopisOS comes with several built-in applications that run in a full-screen, moda
 - **`chidi [path]`** The AI Librarian. Point `chidi` at a directory of Markdown files (`.md`) to open a dedicated reading interface. Here, you can ask the AI to summarize documents, generate study questions, or perform a query across all loaded documents to find specific information.
 
 - **`adventure [file.json]`** Launches the powerful, data-driven text adventure engine. Play the built-in "Architect's Apprentice" tutorial to learn the ropes, or load your own custom adventures from a `.json` file to create and explore new worlds. For a full guide on creating your own adventures, see `/docs/adventure.md`.
+
+- **`gemini "<prompt>"`** A tool-using AI assistant that can execute shell commands to answer questions about your file system or provide general knowledge.
 
 
 ## Advanced Topics
@@ -165,15 +144,11 @@ The shell supports powerful logical operators for more intelligent command-line 
 
 ## Developer Documentation
 
-The OopisOS v3.4 "Journeyman Edition" continues to build on our modular command architecture. For the full architectural document, please see `/docs/developer.md`.
+The OopisOS v3.5 "Architect's Edition" continues to build on our modular command architecture. For the full architectural document, please see `/docs/developer.md`.
 
 ### The Command Contract
 
 Adding a new command is a declarative process. You _declare_ your command's requirements (flags, arguments, path validation, permissions) to the `CommandExecutor`, which enforces these rules _before_ your command's core logic is ever run, ensuring stability and security.
-
-### On-Demand Command Loading
-
-You no longer need to add a `<script>` tag to `index.html` when creating a new command. The `CommandExecutor` now dynamically loads command scripts from the `/scripts/commands/` directory the first time they are called in a session, improving initial boot speed.
 
 ## Testing & Showcase Environment
 
