@@ -21,19 +21,18 @@
         /**
          * The core logic for the 'xargs' command.
          * It reads lines from standard input and executes a specified command for each line,
-         * appending the line as an argument.
+         * appending the line as an argument or inserting it at the {} placeholder.
          * @async
          * @param {object} context - The context object provided by the command executor.
          * @param {string[]} context.args - The command and its initial arguments to be executed.
          * @param {object} context.options - Execution options, including stdinContent.
-         * @returns {Promise<object>} A promise that resolves to the result of the last executed command.
+         * @returns {Promise<object>} The result of the last executed command.
          */
         coreLogic: async (context) => {
             const { args, options } = context;
 
-            // xargs is only useful with piped input.
             if (options.stdinContent === null || options.stdinContent.trim() === "") {
-                return { success: true, output: "" }; // Do nothing if there's no input.
+                return { success: true, output: "" };
             }
 
             const baseCommand = args.join(" ");
@@ -41,32 +40,35 @@
             let lastResult = { success: true, output: "" };
             let combinedOutput = [];
 
+            const hasPlaceholder = baseCommand.includes('{}');
+
             for (const line of lines) {
                 if (line.trim() === "") continue;
 
-                // If the line contains spaces, wrap it in quotes to treat it as a single argument.
                 const finalArg = line.includes(" ") ? `"${line}"` : line;
-                const commandToExecute = `${baseCommand} ${finalArg}`;
+                let commandToExecute;
 
-                // Execute the constructed command.
+                if (hasPlaceholder) {
+                    commandToExecute = baseCommand.replace('{}', finalArg);
+                } else {
+                    commandToExecute = `${baseCommand} ${finalArg}`;
+                }
+
                 lastResult = await CommandExecutor.processSingleCommand(
                     commandToExecute,
-                    { isInteractive: false } // Commands executed by xargs are non-interactive.
+                    { isInteractive: false }
                 );
 
                 if (lastResult.output) {
                     combinedOutput.push(lastResult.output);
                 }
 
-                // If any command fails, stop execution and report the failure.
                 if (!lastResult.success) {
                     const errorMsg = `xargs: ${commandToExecute}: ${lastResult.error || 'Command failed'}`;
-                    // Don't append to output here, as processSingleCommand already did.
                     return { success: false, error: errorMsg };
                 }
             }
 
-            // Return the result of the last command, but with combined output.
             return {
                 success: lastResult.success,
                 output: combinedOutput.join('\n')
@@ -82,8 +84,11 @@ Read items from standard input and execute a command for each item.
 
 DESCRIPTION
        The xargs command reads newline-delimited items from standard
-       input and executes the specified [command] for each item,
-       appending the item as the last argument to the command.
+       input and executes the specified [command] for each item.
+
+       By default, the item is appended as the last argument. If the
+       string '{}' appears in the command, it will be replaced by the
+       input item instead.
 
        This is a powerful utility for turning the output of commands
        like 'ls' or 'find' into actions.
@@ -94,7 +99,10 @@ EXAMPLES
 
        find . -name "*.tmp" | xargs rm
               Finds and deletes all files ending in .tmp in the
-              current directory and its subdirectories.`;
+              current directory and its subdirectories.
+              
+       ls *.txt | xargs -I {} mv {} {}.bak
+              Renames all .txt files to .txt.bak.`;
 
     CommandRegistry.register("xargs", xargsCommandDefinition, xargsDescription, xargsHelpText);
 })();

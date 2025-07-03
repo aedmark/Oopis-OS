@@ -72,7 +72,6 @@ const urlsToCache = [
     './scripts/commands/restore.js',
     './scripts/commands/rm.js',
     './scripts/commands/run.js',
-    './scripts/commands/savefs.js',
     './scripts/commands/savestate.js',
     './scripts/commands/set.js',
     './scripts/commands/shuf.js',
