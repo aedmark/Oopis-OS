@@ -173,23 +173,22 @@ echo "Attempting first sudo command (password required)..."
 sudo echo "Sudo command successful."
 testpass
 echo "Attempting second sudo command (should not require password)..."
-sudo ls /root
-testpass
+sudo ls /home/root
 echo "--- Test: sudo re-authentication after logout (password required) ---"
 login sudouser
 testpass
 echo "Attempting sudo after re-login (password required again)..."
-sudo ls /root
+sudo ls /home/root
 testpass
 echo "--- Test: Failed sudo by unauthorized user ---"
 login Guest
-check_fail "sudo ls /root"
+check_fail "sudo ls /home/root"
 # Cleanup
 login root
 mcgoopis
 removeuser -f sudouser
 # A simple way to remove the last line of the file
-head -n -1 /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
+grep -v "sudouser" /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
 login userDiag
 pantload
 cd /home/userDiag/diag_workspace
