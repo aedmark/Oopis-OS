@@ -591,7 +591,7 @@ const EditorManager = (() => {
     if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
     if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
   }
-  function _applyTextManipulation(type) {
+  async function _applyTextManipulation(type) {
     if (!isActiveState || !EditorUI.elements.textarea) return;
 
     const textarea = EditorUI.elements.textarea;
@@ -719,7 +719,7 @@ const EditorManager = (() => {
       }
     };
 
-    manipulate();
+    await manipulate();
   }
   function _toggleViewModeHandler() {
     if (!isActiveState) return;

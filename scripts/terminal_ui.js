@@ -752,7 +752,7 @@ const TabCompletionManager = (() => {
         }
         const context = _getCompletionContext(fullInput, cursorPos);
         if (suggestionsCache.length === 0) {
-            const suggestions = await _getSuggestionsFromProvider(context);
+            const suggestions = void _getSuggestionsFromProvider(context);
             if (suggestions.length === 0) {
                 resetCycle();
                 return { textToInsert: null };

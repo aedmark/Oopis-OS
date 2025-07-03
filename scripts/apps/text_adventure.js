@@ -784,6 +784,13 @@ const TextAdventureEngine = (() => {
     lastReferencedItemId = item.id;
   }
 
+  /**
+   * Handles the 'unlock' command logic.
+   * @private
+   * @param {string} target - The noun phrase for the item to unlock.
+   * @param {string} key - The noun phrase for the key to use.
+   * @param {Function} onDisambiguation - Callback to halt processing for ambiguous commands.
+   */
   function _handleUnlock(target, key, onDisambiguation) {
     if (!key) {
       TextAdventureModal.appendOutput("What do you want to unlock that with?", 'error');
@@ -796,12 +803,37 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput(`You don't see any "${target}" here.`, 'error');
       return;
     }
+    if (targetResult.found.length > 1) {
+      disambiguationContext = { found: targetResult.found, context: { callback: (item) => _handleUnlock(item.noun, key, onDisambiguation) } };
+      const itemNames = targetResult.found.map(i => i.name).join(' or the ');
+      TextAdventureModal.appendOutput(`Which ${target} do you want to unlock, the ${itemNames}?`, 'info');
+      onDisambiguation(); // Use the callback here
+      return;
+    }
 
     const keyResult = _findItem(key, player.inventory.map(id => adventure.items[id]));
     if (keyResult.found.length === 0) {
       TextAdventureModal.appendOutput(`You don't have a "${key}".`, 'error');
       return;
     }
+    // (Could add similar disambiguation logic for the key here)
+
+    const targetItem = targetResult.found[0];
+    const keyItem = keyResult.found[0];
+
+    if (!targetItem.isLocked) {
+      TextAdventureModal.appendOutput(`The ${targetItem.name} is not locked.`, 'info');
+      return;
+    }
+
+    if (keyItem.unlocks === targetItem.id) {
+      targetItem.isLocked = false;
+      TextAdventureModal.appendOutput(`You unlock the ${targetItem.name} with the ${keyItem.name}.`, 'info');
+      lastReferencedItemId = targetItem.id;
+    } else {
+      TextAdventureModal.appendOutput(`The ${keyItem.name} doesn't seem to fit the lock.`, 'error');
+    }
+  }
 
     const targetItem = targetResult.found[0];
     const keyItem = keyResult.found[0];
@@ -1340,7 +1372,7 @@ const TextAdventureEngine = (() => {
     if (result.found.length > 1) {
       disambiguationContext = { found: result.found, context: { callback: (item) => _performWearRemove(verb, item) } };
       const itemNames = result.found.map(item => item.name).join(' or the ');
-      TextAdventureModal.appendOutput(`Which ${target} do you mean?`, 'info');
+      TextAdventureModal.appendOutput(`Which ${target} do you mean, the ${itemNames}?`, 'info');
       onDisambiguation();
       return;
     }

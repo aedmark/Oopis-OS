@@ -122,7 +122,7 @@ function initializeTerminalEventListeners() {
         } else {
           cursorPos = currentInput.length;
         }
-        const result = await TabCompletionManager.handleTab(currentInput, cursorPos);
+        const result = void TabCompletionManager.handleTab(currentInput, cursorPos);
         if (
             result?.textToInsert !== null &&
             result.textToInsert !== undefined
@@ -233,7 +233,7 @@ window.onload = async () => {
         `${Config.OS.NAME} v.${Config.OS.VERSION} loaded successfully!`
     );
 
-    const resizeObserver = new ResizeObserver(entries => {
+    const resizeObserver = new ResizeObserver(_entries => {
       // Re-enabled: The dynamic, aspect-ratio-locked canvas requires this.
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
         if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {

@@ -199,7 +199,7 @@ const ExplorerManager = (() => {
      * Launches the file explorer application.
      * @param {string|null} startPath - The optional path to start the explorer in.
      */
-    function enter(startPath = null) {
+    async function enter(startPath = null) {
         if (isActive) return;
 
         let initialPath = startPath || FileSystemManager.getCurrentPath();
