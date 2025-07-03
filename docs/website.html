@@ -524,7 +524,20 @@ run ./welcome.sh "Developer"
 
 The system will output: `Welcome to OopisOS, Developer!` You have successfully created and run your first shell script.
 
------
+### The Gauntlet: `diag.sh`
+
+Our quality assurance department in a script. It's a relentless stress test that runs a barrage of commands to ensure all systems are operational. To run it, you must first upload it to your home directory.
+
+1.  **Upload the Script:** Use the `upload` command. When the file dialog opens, select the `diag.sh` file located in the `/extras/` directory of the OopisOS source code. This will upload it to your current directory (`/home/Guest`).
+    ```
+    Guest@OopisOs:/home/Guest> upload
+    ```
+    <br />
+2.  **Run the Gauntlet:** Once uploaded, make the script executable and run it.
+    ```
+    Guest@OopisOs:/home/Guest> chmod 755 diag.sh
+    Guest@OopisOs:/home/Guest> run ./diag.sh
+    ```
 
 ### Setting Up a Shared Project
 
