@@ -57,7 +57,7 @@ echo 'chmod 700 ./arg_test.sh' >> ./diag_assets.sh
 echo '# For governor test' >> ./diag_assets.sh
 echo 'echo '\''#!/bin/oopis_shell'\'' > infinite_loop.sh' >> ./diag_assets.sh
 echo 'echo '\''run ./infinite_loop.sh'\'' >> infinite_loop.sh' >> ./diag_assets.sh
-echo 'chmod 700 infinite_loop.sh' >> ./diag_assets.sh
+echo 'chmod 700 ./infinite_loop.sh' >> ./diag_assets.sh
 echo '# For xargs deletion test' >> ./diag_assets.sh
 echo 'touch file1.tmp file2.tmp file3.tmp' >> ./diag_assets.sh
 echo '' >> ./diag_assets.sh

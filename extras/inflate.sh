@@ -155,53 +155,53 @@ echo "This is a secret file." > archive_this/.secret_in_archive.txt
 
 # --- Adventure Game Showcase ---
 echo "Installing custom adventure game 'Quest for the Lost Semicolon'..."
-echo '{
-    "title": "Quest for the Lost Semicolon",
-    "startingRoomId": "dev_desk",
-    "winCondition": { "type": "playerHasItem", "itemId": "semicolon" },
-    "winMessage": "\n*** You found the Lost Semicolon! The main_script.js can now be compiled! YOU ARE A HERO! ***",
-    "rooms": {
-        "dev_desk": {
-            "name": "A Developer Desk",
-            "description": "You are at a cluttered developer desk, littered with the corpses of cold coffee mugs. A glowing monitor shows a syntax error. A path leads north to the kitchen.",
-            "exits": { "north": "kitchen" }
-        },
-        "kitchen": {
-            "name": "The Office Kitchen",
-            "description": "The coffee machine is empty. A suspicious-looking rubber duck sits on the counter, judging your code. You can go south back to the desk.",
-            "exits": { "south": "dev_desk" }
-        }
-    },
-    "items": {
-        "coffee_mug": {
-            "id": "coffee_mug",
-            "name": "Cold Coffee Mug",
-            "noun": "mug",
-            "adjectives": ["cold", "coffee"],
-            "description": "It is cold, dark, and bitter. Like a Monday morning.",
-            "location": "dev_desk",
-            "canTake": true
-        },
-        "rubber_duck": {
-            "id": "rubber_duck",
-            "name": "Suspicious Rubber Duck",
-            "noun": "duck",
-            "adjectives": ["suspicious", "rubber", "yellow"],
-            "description": "It seems to be watching you. It squeaks ominously. You notice a tiny, shiny object wedged under it.",
-            "location": "kitchen",
-            "canTake": false
-        },
-        "semicolon": {
-            "id": "semicolon",
-            "name": "The Lost Semicolon",
-            "noun": "semicolon",
-            "adjectives": ["lost", "shiny", "gleaming"],
-            "description": "A perfect, gleaming semicolon. A beacon of hope for broken code.",
-            "location": "kitchen",
-            "canTake": true
-        }
-    }
-}' > ./games/quest.json
+echo "{" > ./games/quest.json
+echo "    \"title\": \"Quest for the Lost Semicolon\"," >> ./games/quest.json
+echo "    \"startingRoomId\": \"dev_desk\"," >> ./games/quest.json
+echo "    \"winCondition\": { \"type\": \"playerHasItem\", \"itemId\": \"semicolon\" }," >> ./games/quest.json
+echo "    \"winMessage\": \"\n*** You found the Lost Semicolon! The main_script.js can now be compiled! YOU ARE A HERO! ***\"," >> ./games/quest.json
+echo "    \"rooms\": {" >> ./games/quest.json
+echo "        \"dev_desk\": {" >> ./games/quest.json
+echo "            \"name\": \"A Developer Desk\"," >> ./games/quest.json
+echo "            \"description\": \"You are at a cluttered developer desk, littered with the corpses of cold coffee mugs. A glowing monitor shows a syntax error. A path leads north to the kitchen.\"," >> ./games/quest.json
+echo "            \"exits\": { \"north\": \"kitchen\" }" >> ./games/quest.json
+echo "        }," >> ./games/quest.json
+echo "        \"kitchen\": {" >> ./games/quest.json
+echo "            \"name\": \"The Office Kitchen\"," >> ./games/quest.json
+echo "            \"description\": \"The coffee machine is empty. A suspicious-looking rubber duck sits on the counter, judging your code. You can go south back to the desk.\"," >> ./games/quest.json
+echo "            \"exits\": { \"south\": \"dev_desk\" }" >> ./games/quest.json
+echo "        }" >> ./games/quest.json
+echo "    }," >> ./games/quest.json
+echo "    \"items\": {" >> ./games/quest.json
+echo "        \"coffee_mug\": {" >> ./games/quest.json
+echo "            \"id\": \"coffee_mug\"," >> ./games/quest.json
+echo "            \"name\": \"Cold Coffee Mug\"," >> ./games/quest.json
+echo "            \"noun\": \"mug\"," >> ./games/quest.json
+echo "            \"adjectives\": [\"cold\", \"coffee\"]," >> ./games/quest.json
+echo "            \"description\": \"It is cold, dark, and bitter. Like a Monday morning.\"," >> ./games/quest.json
+echo "            \"location\": \"dev_desk\"," >> ./games/quest.json
+echo "            \"canTake\": true" >> ./games/quest.json
+echo "        }," >> ./games/quest.json
+echo "        \"rubber_duck\": {" >> ./games/quest.json
+echo "            \"id\": \"rubber_duck\"," >> ./games/quest.json
+echo "            \"name\": \"Suspicious Rubber Duck\"," >> ./games/quest.json
+echo "            \"noun\": \"duck\"," >> ./games/quest.json
+echo "            \"adjectives\": [\"suspicious\", \"rubber\", \"yellow\"]," >> ./games/quest.json
+echo "            \"description\": \"It seems to be watching you. It squeaks ominously. You notice a tiny, shiny object wedged under it.\"," >> ./games/quest.json
+echo "            \"location\": \"kitchen\"," >> ./games/quest.json
+echo "            \"canTake\": false" >> ./games/quest.json
+echo "        }," >> ./games/quest.json
+echo "        \"semicolon\": {" >> ./games/quest.json
+echo "            \"id\": \"semicolon\"," >> ./games/quest.json
+echo "            \"name\": \"The Lost Semicolon\"," >> ./games/quest.json
+echo "            \"noun\": \"semicolon\"," >> ./games/quest.json
+echo "            \"adjectives\": [\"lost\", \"shiny\", \"gleaming\"]," >> ./games/quest.json
+echo "            \"description\": \"A perfect, gleaming semicolon. A beacon of hope for broken code.\"," >> ./games/quest.json
+echo "            \"location\": \"kitchen\"," >> ./games/quest.json
+echo "            \"canTake\": true" >> ./games/quest.json
+echo "        }" >> ./games/quest.json
+echo "    }" >> ./games/quest.json
+echo "}" >> ./games/quest.json
 
 delay 300
 
