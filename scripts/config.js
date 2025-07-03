@@ -163,12 +163,12 @@ const Config = (() => {
             GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
         },
         COMMANDS_MANIFEST: [
-            "adventure", "alias", "awk", "backup", "cat", "cd", "check_fail",
+            "adventure", "alias", "awk", "backup", "bc", "cat", "cd", "check_fail",
             "chgrp", "chidi", "chmod", "chown", "clear", "clearfs", "cp",
             "curl", "date", "delay", "df", "diff", "du", "echo", "edit", "explore",
             "export", "find", "gemini", "grep", "groupadd", "groupdel",
-            "groups", "head", "help", "history", "kill", "listusers",
-            "loadstate", "login", "logout", "ls", "man", "mkdir", "mv",
+            "groups", "head", "help", "history", "kill", "less", "listusers",
+            "loadstate", "login", "logout", "ls", "man", "more", "mkdir", "mv",
             "paint", "passwd", "printscreen", "ps", "pwd", "reboot",
             "removeuser", "reset", "restore", "rm", "run", "savefs",
             "savestate", "set", "shuf", "sort", "su", "sudo", "tail", "touch", "tree",
