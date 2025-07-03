@@ -32,7 +32,6 @@
                     continue;
                 }
                 const startNode = pathValidation.node;
-                const startPath = pathValidation.resolvedPath;
 
                 if (!FileSystemManager.hasPermission(startNode, currentUser, "read")) {
                     outputLines.push(`du: cannot read directory '${pathArg}': Permission denied`);

@@ -134,7 +134,7 @@
                         error: `chidi: ${keyResult.error}`
                     };
                 }
-                apiKey = keyResult.key;
+                // No need to re-assign to local apiKey variable as it's not used further in this scope.
             }
 
             let files = [];
@@ -183,10 +183,8 @@
             } else { // --- Existing logic for argument-based input ---
                 let startPath;
                 let startNode;
-                let pathForMsgs;
 
                 if (args.length === 0) {
-                    pathForMsgs = "the current directory";
                     startPath = FileSystemManager.getCurrentPath();
                     startNode = FileSystemManager.getNodeByPath(startPath);
                     if (!startNode) {
@@ -196,7 +194,6 @@
                         };
                     }
                 } else {
-                    pathForMsgs = `'${args[0]}'`;
                     const pathInfo = validatedPaths[0];
                     startNode = pathInfo.node;
                     startPath = pathInfo.resolvedPath;

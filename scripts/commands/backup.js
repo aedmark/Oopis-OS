@@ -24,10 +24,9 @@
      * localStorage and IndexedDB, calculates a SHA-256 checksum of this data,
      * bundles it all into a single JSON object, and initiates a browser download for the user.
      * @async
-     * @param {object} context - The context object provided by the command executor.
      * @returns {Promise<object>} A promise that resolves to a command result object.
      */
-    coreLogic: async (context) => {
+    coreLogic: async () => {
       const currentUser = UserManager.getCurrentUser();
       const allKeys = StorageManager.getAllLocalStorageKeys();
       const automaticSessionStates = {};

@@ -387,7 +387,7 @@ const EditorUI = (() => {
     return "";
   }
 
-  function renderPreview(content, currentFileMode, isWordWrapActive) {
+  function renderPreview(content, currentFileMode) {
     if (!elements.previewPane) return;
     const isHtmlMode = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
     const isMarkdownMode = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
@@ -481,6 +481,7 @@ const EditorManager = (() => {
     isWordWrapActive = !isWordWrapActive;
     _saveWordWrapSetting();
     EditorUI.applyTextareaWordWrap(isWordWrapActive);
+    EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
     if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
     }
@@ -884,10 +885,6 @@ const EditorManager = (() => {
       }
     }
     setTimeout(_handleEditorSelectionChange, 0);
-  }
-  function _updateFormattingToolbarVisibility() {
-    if (!isActiveState || !EditorUI.elements.formattingToolbar) return;
-    EditorUI._updateFormattingToolbarVisibility(currentFileMode);
   }
 
   return { isActive: () => isActiveState, enter, exit };

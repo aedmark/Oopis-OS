@@ -21,7 +21,7 @@ const TextAdventureModal = (() => {
 
   let elements = {};
 
-  function _createLayout(adventureData) {
+  function _createLayout() {
     const roomNameSpan = Utils.createElement('span', { id: 'adventure-room-name' });
     const scoreSpan = Utils.createElement('span', { id: 'adventure-score' });
     const headerLeft = Utils.createElement('div', {}, roomNameSpan);
@@ -67,7 +67,7 @@ const TextAdventureModal = (() => {
   function show(adventureData, callbacks, scriptingContext) {
     if (state.isModalOpen) return Promise.resolve();
 
-    const layout = _createLayout(adventureData);
+    const layout = _createLayout();
     AppLayerManager.show(layout);
 
     state.isModalOpen = true;
@@ -109,7 +109,7 @@ const TextAdventureModal = (() => {
     elements.output.scrollTop = elements.output.scrollHeight;
   }
 
-  function requestInput(promptMessage) {
+  function requestInput() {
     return new Promise(resolve => {
       const scriptContext = TextAdventureEngine.getScriptingContext();
       if (scriptContext && scriptContext.isScripting) {
@@ -356,7 +356,7 @@ const TextAdventureEngine = (() => {
 
     const remainingWords = resolvedWords.slice(verbWordCount);
     const prepositions = ['on', 'in', 'at', 'with', 'using', 'to', 'under', 'about'];
-    let directObject = '';
+    let directObject;
     let indirectObject = null;
     let prepositionIndex = -1;
 
@@ -585,22 +585,25 @@ const TextAdventureEngine = (() => {
       return;
     }
 
+    let saveData;
     try {
-      const saveData = JSON.parse(pathInfo.node.content);
-      if (!saveData.playerState || !saveData.itemsState || !saveData.roomsState) {
-        throw new Error("Invalid or outdated save file format.");
-      }
-
-      player = JSON.parse(JSON.stringify(saveData.playerState));
-      adventure.items = JSON.parse(JSON.stringify(saveData.itemsState));
-      adventure.rooms = JSON.parse(JSON.stringify(saveData.roomsState));
-
-      TextAdventureModal.appendOutput(`Game loaded successfully from '${filename}'.\n`, 'system');
-      _displayCurrentRoom();
-
+      saveData = JSON.parse(pathInfo.node.content);
     } catch (e) {
-      TextAdventureModal.appendOutput(`Error loading game: ${e.message}`, 'error');
+      TextAdventureModal.appendOutput(`Error loading game: The save file is corrupted or not valid JSON.`, 'error');
+      return;
     }
+
+    if (!saveData || !saveData.playerState || !saveData.itemsState || !saveData.roomsState) {
+      TextAdventureModal.appendOutput("Error loading game: Invalid or outdated save file format.", 'error');
+      return;
+    }
+
+    player = JSON.parse(JSON.stringify(saveData.playerState));
+    adventure.items = JSON.parse(JSON.stringify(saveData.itemsState));
+    adventure.rooms = JSON.parse(JSON.stringify(saveData.roomsState));
+
+    TextAdventureModal.appendOutput(`Game loaded successfully from '${filename}'.\n`, 'system');
+    _displayCurrentRoom();
   }
 
   function _handleLight(target, onDisambiguation) {
@@ -640,6 +643,11 @@ const TextAdventureEngine = (() => {
     }
   }
 
+  /**
+   * @param {*} directObjectStr
+   * @param {*} indirectObjectStr
+   * @param {onDisambiguation} onDisambiguation
+   */
   function _handleUse(directObjectStr, indirectObjectStr, onDisambiguation) {
     if (!directObjectStr || !indirectObjectStr) {
       TextAdventureModal.appendOutput("What do you want to use, and what do you want to use it on?", 'error');

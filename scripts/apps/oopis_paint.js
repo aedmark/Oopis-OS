@@ -553,10 +553,7 @@ const PaintManager = (() => {
     }
 
     function _handleResize() {
-        // This function must no longer recalculate grid dimensions.
-        // CSS (`overflow: auto` on the wrapper) now handles scrolling.
         // The function is left as a placeholder for the event listener but does nothing.
-        return;
     }
 
 
@@ -787,7 +784,7 @@ const PaintManager = (() => {
         fgColor = PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
         currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
         zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
-        undoStack = []; redoStack = [], isGridVisible = false;
+        undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         customColorValue = null;
         currentCanvasWidth = 0;
@@ -894,25 +891,25 @@ const PaintManager = (() => {
 
         setTimeout(() => {
             if (fileContent) {
-                // CASE 1: LOADING AN EXISTING FILE
+                // ----------- REFACTORED BLOCK START -----------
                 try {
                     const parsedData = JSON.parse(fileContent);
                     if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
                         canvasData = parsedData.cells;
-                        // LOCK canvas dimensions from file metadata
                         currentCanvasWidth = parsedData.width;
                         currentCanvasHeight = parsedData.height;
                     } else {
-                        throw new Error("Invalid .oopic file format.");
+                        // Handle invalid format directly instead of throwing.
+                        void OutputManager.appendToOutput("Error loading paint file: Invalid .oopic file format.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                        _initializeNewCanvasDimensions();
                     }
                 } catch (e) {
+                    // This catch block now only handles JSON parsing errors.
                     void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                    // Fallback to creating a new canvas if the file is corrupt
-                    _initializeNewCanvasDimensions();
+                    _initializeNewCanvasDimensions(); // Fallback for corrupt files.
                 }
+                // ----------- REFACTORED BLOCK END -----------
             } else {
-                // CASE 2: CREATING A NEW FILE
-                // The logic from the old _handleResize function is now called ONCE.
                 _initializeNewCanvasDimensions();
             }
 
