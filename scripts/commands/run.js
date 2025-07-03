@@ -9,10 +9,6 @@
 (() => {
     "use strict";
 
-    /**
-     * @const {object} runCommandDefinition
-     * @description The command definition for the 'run' command.
-     */
     const runCommandDefinition = {
         commandName: "run",
         argValidation: {
@@ -75,8 +71,6 @@
                     break;
                 }
 
-                const lineIndexBeforeCommand = scriptingContext.currentLineIndex;
-
                 if (signal?.aborted) {
                     overallScriptSuccess = false;
                     await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
@@ -86,6 +80,7 @@
 
                 let line = scriptingContext.lines[scriptingContext.currentLineIndex];
 
+                // --- Comment and empty line handling (no changes here) ---
                 let inDoubleQuote = false;
                 let inSingleQuote = false;
                 let commentIndex = -1;
@@ -106,26 +101,12 @@
                 }
                 const trimmedLine = line.trim();
 
-                if (scriptingContext.waitingForInput) {
-                    const cb = scriptingContext.inputCallback;
-                    scriptingContext.inputCallback = null;
-                    scriptingContext.waitingForInput = false;
-                    if (cb) {
-                        await cb(trimmedLine);
-                    }
-                    if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
-                        scriptingContext.currentLineIndex++;
-                    }
-                    continue;
-                }
-
                 if (trimmedLine === '') {
-                    if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
-                        scriptingContext.currentLineIndex++;
-                    }
+                    scriptingContext.currentLineIndex++;
                     continue;
                 }
 
+                // --- Variable expansion (no changes here) ---
                 let processedLine = line;
                 for (let i = 0; i < scriptArgs.length; i++) {
                     processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
@@ -135,25 +116,6 @@
 
                 const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
 
-                if (scriptingContext.waitingForInput) {
-                    let lineForInput = line;
-                    const commentIndex = lineForInput.indexOf('#');
-                    if (commentIndex !== -1) {
-                        lineForInput = lineForInput.substring(0, commentIndex);
-                    }
-                    lineForInput = lineForInput.trim();
-                    const cb = scriptingContext.inputCallback;
-                    scriptingContext.inputCallback = null;
-                    scriptingContext.waitingForInput = false;
-                    if (cb) {
-                        await cb(lineForInput);
-                    }
-                    if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
-                        scriptingContext.currentLineIndex++;
-                    }
-                    continue;
-                }
-
                 if (!result || !result.success) {
                     const errorMsg = `Script '${scriptPathArg}' error on line: ${scriptingContext.lines[scriptingContext.currentLineIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
                     await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
@@ -161,12 +123,13 @@
                     break;
                 }
 
-                // ** THE FIX IS HERE **
-                // Only advance the line index if the executed command didn't already advance it
-                // (e.g., by consuming subsequent lines for input like `useradd` or `sudo`).
-                if (scriptingContext.currentLineIndex === lineIndexBeforeCommand) {
-                    scriptingContext.currentLineIndex++;
-                }
+                // --- THIS IS THE FIX ---
+                // The previous logic incorrectly checked if the index had changed.
+                // The correct logic is to always advance the line counter after a command
+                // successfully completes. Commands that consume input lines (like useradd/sudo)
+                // will have already advanced the index past those lines, so incrementing
+                // here correctly moves to the *next* command in the script.
+                scriptingContext.currentLineIndex++;
             }
 
             CommandExecutor.setScriptExecutionInProgress(previousScriptExecutionState);
