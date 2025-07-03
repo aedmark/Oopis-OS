@@ -1,6 +1,6 @@
-# OopisOS Core Test Suite v3.6 - "The Ultimate Gauntlet" (Self-Contained)
-echo "===== OopisOS Core Test Suite v3.6 Initializing ====="
-echo "This script tests all non-interactive core functionality."
+# OopisOS Core Test Suite v3.4 - "The Gauntlet, Reforged and Patched"
+echo "===== OopisOS Core Test Suite v3.4 Initializing ====="
+echo "This script tests all non-interactive core functionality, now with more paranoia."
 echo "---------------------------------------------------------------------"
 echo ""
 
@@ -27,7 +27,7 @@ echo "---------------------------------------------------------------------"
 echo ""
 echo "--- Phase 1.5: Creating diagnostic assets ---"
 # Basic FS assets
-mkdir -p src mv_test_dir overwrite_dir find_test/subdir zip_test/nested_dir
+mkdir -p src mv_test_dir overwrite_dir find_test/subdir zip_test/nested_dir "a dir with spaces"
 # Text/diff assets
 echo -e "line one\nline two\nline three" > diff_a.txt
 echo -e "line one\nline 2\nline three" > diff_b.txt
@@ -52,13 +52,18 @@ chmod 700 arg_test.sh
 echo '#!/bin/oopis_shell' > infinite_loop.sh
 echo 'run ./infinite_loop.sh' >> infinite_loop.sh
 chmod 700 infinite_loop.sh
+# ls sorting assets
+touch -d "2 days ago" old.ext
+touch -d "1 day ago" new.txt
+echo "short" > small.log
+echo "this is a very long line" > large.log
 echo "Asset creation complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 2: Core FS Commands & Flags ---
+# --- Phase 2: Core FS Commands & Flags (Expanded) ---
 echo ""
-echo "===== Phase 2: Testing Core FS Commands ====="
+echo "===== Phase 2: Testing Core FS Commands (Expanded) ====="
 delay 400
 echo "--- Test: diff, cp -p, mv ---"
 diff diff_a.txt diff_b.txt
@@ -66,17 +71,28 @@ cp -p exec_test.sh exec_test_copy.sh
 ls -l exec_test.sh exec_test_copy.sh
 mv exec_test_copy.sh mv_test_dir/
 ls mv_test_dir/
-echo "--- Test: touch -d ---"
+echo "--- Test: touch -d and -t ---"
 touch -d "1 day ago" old_file.txt
-ls -l old_file.txt
+touch -t 202305201200.30 specific_time.txt
+ls -l old_file.txt specific_time.txt
+echo "--- Test: ls sorting flags (-t, -S, -X, -r) ---"
+echo "Sorting by modification time (newest first):"
+ls -lt
+echo "Sorting by size (largest first):"
+ls -lS
+echo "Sorting by extension:"
+ls -lX
+echo "Sorting by name in reverse order:"
+ls -lr
 echo "--- Test: cat -n ---"
 cat -n diff_a.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 3: Group Permissions and Ownership ---
+
+# --- Phase 3: Group Permissions and Ownership (Expanded) ---
 echo ""
-echo "===== Phase 3: Testing Group Permissions & Ownership ====="
+echo "===== Phase 3: Testing Group Permissions & Ownership (Expanded) ====="
 delay 400
 login root mcgoopis
 groupadd testgroup
@@ -85,20 +101,31 @@ testpass
 testpass
 usermod -aG testgroup testuser
 groups testuser
-chmod 755 /home/diagUser
+# Create the directory for the cd permission test as root
+mkdir -p /tmp/no_exec_dir
+chmod 644 /tmp/no_exec_dir
+# Set up the group test file as root
+chmod 755 /home/diagUser # Allow testuser to cd into diagUser home
 cd /home/diagUser/diag_workspace
 echo "Initial content" > group_test_file.txt
 chown diagUser group_test_file.txt
 chgrp testgroup group_test_file.txt
 chmod 664 group_test_file.txt
+echo "--- Test: Group write permission ---"
 login testuser testpass
 cd /home/diagUser/diag_workspace
 echo "Append by group member" >> group_test_file.txt
 cat group_test_file.txt
+echo "--- Test: 'Other' permissions (should fail) ---"
 login Guest
 cd /home/diagUser/diag_workspace
 check_fail "echo 'Append by other user' >> group_test_file.txt"
+echo "--- Test: Permission Edge Cases ---"
+login testuser testpass
+check_fail "chmod 777 /home/diagUser/diag_workspace/group_test_file.txt" # testuser is not owner
+check_fail "cd /tmp/no_exec_dir" # testuser cannot execute
 login root mcgoopis
+rm -r -f /tmp
 removeuser -f testuser
 groupdel testgroup
 rm -f /home/diagUser/diag_workspace/group_test_file.txt
@@ -221,9 +248,9 @@ cat screen.log
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 9: Edge Case Gauntlet ---
+# --- Phase 9: Edge Case Gauntlet (Expanded) ---
 echo ""
-echo "===== Phase 9: Testing Edge Cases & Complex Scenarios ====="
+echo "===== Phase 9: Testing Edge Cases & Complex Scenarios (Expanded) ====="
 delay 400
 
 echo "--- Test: Filenames with spaces ---"
@@ -266,11 +293,30 @@ rm fruit.txt fruit_report.txt
 echo "Piping and redirection tests complete."
 delay 400
 
+echo "--- Test: Logical OR (||) and interactive flags ---"
+check_fail "cat nonexistent_file.txt" || echo "Logical OR successful: cat failed as expected."
+echo "y" > yes.txt
+echo "n" > no.txt
+touch interactive_test.txt
+# The script runner will auto-reply 'YES' to prompts
+# This tests the `rm -i` prompt flow.
+rm -i interactive_test.txt < yes.txt
+check_fail "ls interactive_test.txt"
+# This tests the `cp -i` prompt flow.
+touch another_file.txt
+cp -i another_file.txt overwrite_dir < yes.txt
+ls overwrite_dir
+# This tests forced overwrite with `cp -f`
+cp -f another_file.txt overwrite_dir
+rm no.txt yes.txt another_file.txt
+echo "Interactive flag and logical OR tests complete."
+delay 700
+
 echo "---------------------------------------------------------------------"
 
 # --- Phase 10: Final Cleanup ---
 echo ""
-echo "--- Phase 9: Final Cleanup ---"
+echo "--- Phase 10: Final Cleanup ---"
 cd /
 login root mcgoopis
 delay 300
@@ -283,7 +329,7 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.6 Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.4 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"
