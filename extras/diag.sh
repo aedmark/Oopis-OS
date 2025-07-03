@@ -185,7 +185,7 @@ delay 400
 echo "--- Test: Script argument passing ---"
 run ./arg_test.sh first "second arg" third
 echo "--- Test: Script execution governor (expect graceful failure) ---"
-run ./infinite_loop.sh
+check_fail "run ./infinite_loop.sh"
 delay 700
 echo "---------------------------------------------------------------------"
 
@@ -198,7 +198,7 @@ echo "--- Test: awk with BEGIN block ---"
 awk 'BEGIN { print "--- Report ---" } { print $0 }' data_stream.txt
 echo "--- Test: Destructive xargs operation ---"
 ls *.tmp
-ls *.tmp | xargs rm
+ls -1 *.tmp | xargs rm
 check_fail "ls file1.tmp"
 echo "xargs deletion verified."
 delay 700
@@ -224,14 +224,4 @@ echo "  ======================================================"
 delay 150
 echo "  ==                                                  =="
 delay 150
-echo "  ==           OopisOS Core Diagnostics               =="
-delay 150
-echo "  ==            ALL SYSTEMS OPERATIONAL               =="
-delay 200
-echo "  ==                                                  =="
-delay 150
-echo "  ======================================================"
-echo " "
-delay 500
-echo "(As usual, you've been a real pantload!)"
-delay 200
+echo "  ==           OopisOS Core

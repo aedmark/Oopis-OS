@@ -35,6 +35,7 @@
             const scriptNode = context.validatedPaths[0].node;
             const fileExtension = Utils.getFileExtension(scriptPathArg);
             const MAX_SCRIPT_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS;
+            const MAX_RECURSION_DEPTH = 100;
 
             if (fileExtension !== "sh") {
                 return { success: false, error: `run: '${scriptPathArg}' is not a shell script (.sh) file.` };
@@ -48,105 +49,100 @@
 
             const rawScriptLines = scriptNode.content.split('\n');
 
-            // *** FIX: Use the parent's scripting context and step counter if it exists; otherwise, create a new one.
-            const stepCounter = options.scriptingContext?.steps || { count: 0 };
+            const isTopLevelCall = !options.scriptingContext;
+            const scriptingContext = isTopLevelCall ? {
+                isScripting: true, waitingForInput: false, inputCallback: null,
+                cancelCallback: null, steps: { count: 0 }, recursionDepth: 0
+            } : options.scriptingContext;
 
-            // This context is passed down to handle interactive prompts from commands like 'useradd'.
-            const scriptingContext = {
-                isScripting: true,
-                waitingForInput: false,
-                inputCallback: null,
-                cancelCallback: null,
-                lines: rawScriptLines,
-                currentLineIndex: 0,
-                steps: stepCounter, // Attach the shared step counter object.
+            const parentScriptState = isTopLevelCall ? null : {
+                lines: scriptingContext.lines,
+                currentLineIndex: scriptingContext.currentLineIndex
             };
 
-            const previousScriptExecutionState = CommandExecutor.isScriptRunning();
-            CommandExecutor.setScriptExecutionInProgress(true);
-            if (options.isInteractive) TerminalUI.setInputState(false);
+            scriptingContext.recursionDepth++;
+
+            if (isTopLevelCall) {
+                CommandExecutor.setScriptExecutionInProgress(true);
+                if (options.isInteractive) TerminalUI.setInputState(false);
+            }
 
             let overallScriptSuccess = true;
-            let programCounter = 0;
+            let finalResult = {};
 
-            while (programCounter < scriptingContext.lines.length) {
-                scriptingContext.currentLineIndex = programCounter;
-
-                // *** FIX: Increment and check the shared counter from the context. ***
-                if (scriptingContext.steps.count++ > MAX_SCRIPT_STEPS) {
+            try {
+                if (scriptingContext.recursionDepth > MAX_RECURSION_DEPTH) {
+                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum recursion depth (${MAX_RECURSION_DEPTH}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                     overallScriptSuccess = false;
-                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                    break;
-                }
+                } else {
+                    let programCounter = 0;
+                    while (programCounter < rawScriptLines.length) {
+                        scriptingContext.currentLineIndex = programCounter;
+                        scriptingContext.lines = rawScriptLines;
 
-                if (signal?.aborted) {
-                    overallScriptSuccess = false;
-                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
-                    if (scriptingContext.cancelCallback) scriptingContext.cancelCallback();
-                    break;
-                }
+                        if (scriptingContext.steps.count++ > MAX_SCRIPT_STEPS) {
+                            overallScriptSuccess = false;
+                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                            break;
+                        }
 
-                const lineToExecuteIndex = programCounter;
-                let line = scriptingContext.lines[lineToExecuteIndex];
+                        if (signal?.aborted) {
+                            overallScriptSuccess = false;
+                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                            if (scriptingContext.cancelCallback) scriptingContext.cancelCallback();
+                            break;
+                        }
 
-                // --- Comment and empty line handling ---
-                let inDoubleQuote = false;
-                let inSingleQuote = false;
-                let commentIndex = -1;
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    const prevChar = i > 0 ? line[i - 1] : null;
-                    if (char === '"' && prevChar !== '\\' && !inSingleQuote) {
-                        inDoubleQuote = !inDoubleQuote;
-                    } else if (char === '\'' && prevChar !== '\\' && !inDoubleQuote) {
-                        inSingleQuote = !inSingleQuote;
-                    } else if (char === '#' && !inDoubleQuote && !inSingleQuote) {
-                        commentIndex = i;
-                        break;
+                        const lineToExecuteIndex = programCounter;
+                        let line = rawScriptLines[lineToExecuteIndex];
+
+                        let inDoubleQuote = false, inSingleQuote = false, commentIndex = -1;
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i], prevChar = i > 0 ? line[i - 1] : null;
+                            if (char === '"' && prevChar !== '\\' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+                            else if (char === '\'' && prevChar !== '\\' && !inDoubleQuote) inSingleQuote = !inSingleQuote;
+                            else if (char === '#' && !inDoubleQuote && !inSingleQuote) { commentIndex = i; break; }
+                        }
+                        if (commentIndex !== -1) line = line.substring(0, commentIndex);
+                        if (line.trim() === '') { programCounter++; continue; }
+
+                        let processedLine = line.replace(/\$@/g, scriptArgs.join(" ")).replace(/\$#/g, scriptArgs.length.toString());
+                        for (let i = 0; i < scriptArgs.length; i++) {
+                            processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
+                        }
+
+                        const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
+                        programCounter = scriptingContext.currentLineIndex + 1;
+
+                        if (!result || !result.success) {
+                            const errorMsg = `Script '${scriptPathArg}' error on line ${lineToExecuteIndex + 1}: ${rawScriptLines[lineToExecuteIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
+                            await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                            overallScriptSuccess = false;
+                            break;
+                        }
                     }
                 }
-                if (commentIndex !== -1) {
-                    line = line.substring(0, commentIndex);
-                }
-                const trimmedLine = line.trim();
+            } finally {
+                scriptingContext.recursionDepth--;
 
-                if (trimmedLine === '') {
-                    programCounter++;
-                    continue;
+                if (parentScriptState) {
+                    scriptingContext.lines = parentScriptState.lines;
+                    scriptingContext.currentLineIndex = parentScriptState.currentLineIndex;
                 }
 
-                // --- Variable expansion ---
-                let processedLine = line;
-                for (let i = 0; i < scriptArgs.length; i++) {
-                    processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
-                }
-                processedLine = processedLine.replace(/\$@/g, scriptArgs.join(" "));
-                processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
-
-                // --- Execute Command ---
-                const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
-
-                // After execution, the correct next line is the one *after* where the
-                // sub-process (like ModalInputManager) left off.
-                programCounter = scriptingContext.currentLineIndex + 1;
-
-                if (!result || !result.success) {
-                    const errorMsg = `Script '${scriptPathArg}' error on line ${lineToExecuteIndex + 1}: ${scriptingContext.lines[lineToExecuteIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
-                    await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                    overallScriptSuccess = false;
-                    break;
+                if (isTopLevelCall) {
+                    CommandExecutor.setScriptExecutionInProgress(false);
+                    if (options.isInteractive) {
+                        TerminalUI.setInputState(true);
+                    }
                 }
             }
 
-            CommandExecutor.setScriptExecutionInProgress(previousScriptExecutionState);
-            if (options.isInteractive && !CommandExecutor.isScriptRunning()) {
-                TerminalUI.setInputState(true);
-            }
-
-            return {
+            finalResult = {
                 success: overallScriptSuccess,
                 error: overallScriptSuccess ? null : `Script '${scriptPathArg}' failed.`
             };
+            return finalResult;
         }
     };
 
@@ -185,8 +181,9 @@ SCRIPTING
 
 WARNING
        The scripting engine includes a governor to prevent infinite loops.
-       A script that executes more than ${Config.FILESYSTEM.MAX_SCRIPT_STEPS} commands
-       will be terminated to prevent the OS from becoming unresponsive.
+       A script that executes more than ${Config.FILESYSTEM.MAX_SCRIPT_STEPS} commands, or which
+       calls other scripts too deeply, will be terminated to prevent the
+       OS from becoming unresponsive.
 
 EXAMPLES
        Suppose you have a file named 'greet.sh' with the following content:
