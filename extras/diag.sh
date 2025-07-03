@@ -221,7 +221,54 @@ cat screen.log
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 9: Final Cleanup ---
+# --- Phase 9: Edge Case Gauntlet ---
+echo ""
+echo "===== Phase 9: Testing Edge Cases & Complex Scenarios ====="
+delay 400
+
+echo "--- Test: Filenames with spaces ---"
+mkdir "my test dir"
+echo "hello space" > "my test dir/file with spaces.txt"
+ls "my test dir"
+cat "my test dir/file with spaces.txt"
+mv "my test dir" "your test dir"
+ls "your test dir"
+rm -r "your test dir"
+check_fail "ls 'my test dir'"
+echo "Space filename tests complete."
+delay 400
+
+echo "--- Test: Advanced find commands (-exec, -delete, operators) ---"
+mkdir -p find_exec_test/subdir
+touch find_exec_test/file.exec
+touch find_exec_test/subdir/another.exec
+touch find_exec_test/file.noexec
+# Test -exec to change permissions
+find ./find_exec_test -name "*.exec" -exec chmod 777 {} \;
+ls -l find_exec_test/
+ls -l find_exec_test/subdir/
+# Test -delete and -o (OR)
+find ./find_exec_test -name "*.noexec" -o -name "another.exec" -delete
+ls -R find_exec_test
+rm -r find_exec_test
+echo "Advanced find tests complete."
+delay 400
+
+echo "--- Test: Complex pipes and append redirection (>>) ---"
+echo -e "apple\nbanana\norange\napple" > fruit.txt
+cat fruit.txt | grep "a" | sort | uniq -c > fruit_report.txt
+echo "--- Initial Report ---"
+cat fruit_report.txt
+echo "One more apple" >> fruit_report.txt
+echo "--- Appended Report ---"
+cat fruit_report.txt
+rm fruit.txt fruit_report.txt
+echo "Piping and redirection tests complete."
+delay 400
+
+echo "---------------------------------------------------------------------"
+
+# --- Phase 10: Final Cleanup ---
 echo ""
 echo "--- Phase 9: Final Cleanup ---"
 cd /
