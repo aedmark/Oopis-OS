@@ -224,4 +224,14 @@ echo "  ======================================================"
 delay 150
 echo "  ==                                                  =="
 delay 150
-echo "  ==           OopisOS Core
+echo "  ==           OopisOS Core Diagnostics               =="
+delay 150
+echo "  ==            ALL SYSTEMS OPERATIONAL               =="
+delay 200
+echo "  ==                                                  =="
+delay 150
+echo "  ======================================================"
+echo " "
+delay 500
+echo "(As usual, you've been a real pantload!)"
+delay 200
