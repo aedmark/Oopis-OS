@@ -164,15 +164,15 @@ const Config = (() => {
         },
         COMMANDS_MANIFEST: [
             "adventure", "alias", "awk", "backup", "bc", "cat", "cd", "check_fail",
-            "chgrp", "chidi", "chmod", "chown", "clear", "clearfs", "cp", "csplit",
+            "chgrp", "chidi", "chmod", "chown","cksum", "clear", "clearfs", "cp", "csplit",
             "curl", "date", "delay", "df", "diff", "du", "echo", "edit", "explore",
             "export", "find", "gemini", "grep", "groupadd", "groupdel",
             "groups", "head", "help", "history", "kill", "less", "listusers",
             "loadstate", "login", "logout", "ls", "man", "more", "mkdir", "mv",
-            "paint", "passwd", "printscreen", "ps", "pwd", "reboot",
+            "ocrypt","paint", "passwd", "printscreen", "ps", "pwd", "reboot",
             "removeuser", "reset", "restore", "rm", "rmdir", "run", "savefs",
-            "savestate", "set", "shuf", "sort", "su", "sudo", "sync", "tail", "touch", "tree",
-            "unalias", "uniq", "unset", "unzip", "upload", "useradd", "usermod",
+            "savestate", "set", "shuf", "sort", "su", "sudo", "sync", "tail", "touch",
+            "tree", "unalias", "uniq", "unset", "unzip", "upload", "useradd", "usermod",
             "visudo", "wc", "wget", "whoami", "zip", "xargs"
         ],
     };
