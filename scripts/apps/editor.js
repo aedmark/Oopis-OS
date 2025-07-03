@@ -416,7 +416,7 @@ const EditorUI = (() => {
           elements.previewPane.innerHTML = "";
           elements.previewPane.appendChild(iframe);
         }
-        iframe.srcdoc = `<!DOCTYPE html><html><head>${iframeStyles}</head><body>${content}</body></html>`;
+        iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head>${iframeStyles}</head><body>${content}</body></html>`;
       }
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
   }

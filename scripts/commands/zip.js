@@ -5,13 +5,6 @@
 (() => {
     "use strict";
 
-    /**
-     * Recursively builds a serializable object from a file system node.
-     * @private
-     * @param {object} node - The file system node to archive.
-     * @param {string} path - The absolute path of the node.
-     * @returns {Promise<object|null>} A promise that resolves to the archive object.
-     */
     async function _archiveNode(node) {
         if (node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
             return {

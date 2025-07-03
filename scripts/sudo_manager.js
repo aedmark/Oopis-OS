@@ -66,9 +66,10 @@ const SudoManager = (() => {
 
     /**
      * Retrieves the current sudo configuration, parsing it from the file if necessary.
+     * @private
      * @returns {object} The parsed sudoers configuration object.
      */
-    function getSudoersConfig() {
+    function _getSudoersConfig() {
         if (!sudoersConfig) {
             _parseSudoers();
         }
@@ -91,7 +92,7 @@ const SudoManager = (() => {
         const timestamp = userSudoTimestamps[username];
         if (!timestamp) return false;
 
-        const config = getSudoersConfig();
+        const config = _getSudoersConfig();
         const timeoutMinutes = config.timeout || 0;
         if (timeoutMinutes <= 0) return false;
 
@@ -128,7 +129,7 @@ const SudoManager = (() => {
     function canUserRunCommand(username, commandToRun) {
         if (username === 'root') return true;
 
-        const config = getSudoersConfig();
+        const config = _getSudoersConfig();
         let userPermissions = config.users[username];
 
         if (!userPermissions) {
@@ -149,7 +150,6 @@ const SudoManager = (() => {
     }
 
     return {
-        getSudoersConfig,
         invalidateSudoersCache,
         isUserTimestampValid,
         updateUserTimestamp,

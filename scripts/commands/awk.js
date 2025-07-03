@@ -22,7 +22,7 @@
 
         // Simplified parser for 'pattern { action }' structures.
         // This regex is complex but safer than eval. It captures different parts of an awk script.
-        const ruleRegex = /(BEGIN)\s*\{([^}]*)\}|(END)\s*\{([^}]*)\}|(\/[^/]*\/)\s*\{([^}]*)\}/g;
+        const ruleRegex = /(BEGIN)\s*{([^}]*)}|(END)\s*{([^}]*)}|(\/[^/]*\/)\s*{([^}]*)}/g;
         let match;
         let lastIndex = 0;
 
@@ -49,7 +49,7 @@
         // Handle default action (print all lines) if no rules are found
         if (programString.trim() && !program.begin && !program.end && program.rules.length === 0) {
             // Check if it's a simple action block without a pattern
-            const simpleActionMatch = programString.trim().match(/^\{([^}]*)\}$/);
+            const simpleActionMatch = programString.trim().match(/^{([^}]*)}$/);
             if (simpleActionMatch) {
                 program.rules.push({ pattern: /.*/, action: simpleActionMatch[1].trim() });
             } else {
