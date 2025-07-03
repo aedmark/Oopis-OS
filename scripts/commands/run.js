@@ -106,14 +106,20 @@
                     continue;
                 }
 
-                // --- Variable expansion (no changes here) ---
+                // --- CORRECTED Variable expansion ---
                 let processedLine = line;
                 for (let i = 0; i < scriptArgs.length; i++) {
+                    // Replace $1, $2 etc.
                     processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
                 }
-                processedLine = processedLine.replace(/\$@/g, scriptArgs.map(arg => arg.includes(" ") ? `"${arg}"` : arg).join(" "));
+                // Replace $@ with a simple space-separated join. The downstream `echo` will handle it.
+                processedLine = processedLine.replace(/\$@/g, scriptArgs.join(" "));
+                // Replace $# with the argument count.
                 processedLine = processedLine.replace(/\$#/g, scriptArgs.length.toString());
 
+
+                // --- ROBUST LOOP LOGIC ---
+                const preCommandIndex = scriptingContext.currentLineIndex;
                 const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
 
                 if (!result || !result.success) {
@@ -123,13 +129,11 @@
                     break;
                 }
 
-                // --- THIS IS THE FIX ---
-                // The previous logic incorrectly checked if the index had changed.
-                // The correct logic is to always advance the line counter after a command
-                // successfully completes. Commands that consume input lines (like useradd/sudo)
-                // will have already advanced the index past those lines, so incrementing
-                // here correctly moves to the *next* command in the script.
-                scriptingContext.currentLineIndex++;
+                // If the command that just ran didn't advance the script line itself
+                // (e.g., by consuming password lines), we advance it here. This prevents infinite loops.
+                if (scriptingContext.currentLineIndex === preCommandIndex) {
+                    scriptingContext.currentLineIndex++;
+                }
             }
 
             CommandExecutor.setScriptExecutionInProgress(previousScriptExecutionState);
