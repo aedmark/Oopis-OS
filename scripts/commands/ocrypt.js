@@ -31,9 +31,7 @@
         flagDefinitions: [
             { name: "decode", short: "-d", long: "--decode" }
         ],
-        // Usage: ocrypt [password] [file]
-        // We will handle argument logic internally due to the optional nature
-        // of the file and the required (but prompted) nature of the password.
+        // No argValidation, as logic is complex (password/file are optional/positional)
         coreLogic: async (context) => {
             const { args, flags, options, currentUser } = context;
 
@@ -41,11 +39,13 @@
             let password = null;
             let filePath = null;
 
-            // Determine input source and password from arguments
+            // NEW: Argument parsing logic for non-interactive use
             if (args.length === 2) {
                 password = args[0];
                 filePath = args[1];
             } else if (args.length === 1) {
+                // If there's stdin, the single arg is the password.
+                // Otherwise, it's the file path and we need to prompt for the password.
                 if (options.stdinContent !== null) {
                     password = args[0];
                 } else {
@@ -53,7 +53,7 @@
                 }
             }
 
-            // Handle file input
+            // Handle file input if a path was determined
             if (filePath) {
                 const pathValidation = FileSystemManager.validatePath("ocrypt", filePath, { expectedType: 'file' });
                 if (pathValidation.error) {
@@ -69,8 +69,12 @@
                 return { success: false, error: "ocrypt: requires data from a file or standard input" };
             }
 
-            // Prompt for password if not provided
+            // Prompt for password if it wasn't provided as an argument
             if (password === null) {
+                // This part remains for interactive use
+                if (!options.isInteractive) {
+                    return { success: false, error: "ocrypt: password must be provided as an argument in non-interactive mode." };
+                }
                 password = await new Promise(resolve => {
                     ModalInputManager.requestInput(
                         "Enter password for ocrypt:",
@@ -106,8 +110,8 @@ DESCRIPTION
        symmetric XOR cipher with the provided password as the key. The same
        command and password are used for both encryption and decryption.
 
-       If a password is not provided as an argument, you will be prompted
-       to enter one interactively.
+       If a password is not provided as an argument in a script, the command
+       will fail. In an interactive session, you will be prompted to enter one.
 
        WARNING: This utility is for educational purposes and basic data
        obscurity. It is NOT a cryptographically secure encryption method

@@ -1,5 +1,5 @@
-# OopisOS Core Test Suite v3.4 - "The Gauntlet, Reforged and Patched"
-echo "===== OopisOS Core Test Suite v3.4 Initializing ====="
+# OopisOS Core Test Suite v3.5 - "The Gauntlet, Reforged and Patched"
+echo "===== OopisOS Core Test Suite v3.5 Initializing ====="
 echo "This script tests all non-interactive core functionality, now with more paranoia."
 echo "---------------------------------------------------------------------"
 echo ""
@@ -235,6 +235,52 @@ rm pager_test.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
+# --- NEW TEST PHASE ---
+echo ""
+echo "===== Phase 7.6: Testing Data Transformation & Integrity Commands ====="
+delay 400
+echo "--- Test: rmdir ---"
+mkdir empty_dir
+rmdir empty_dir
+check_fail "ls empty_dir"
+mkdir non_empty_dir; touch non_empty_dir/file.txt
+check_fail "rmdir non_empty_dir"
+rm -r non_empty_dir
+echo "rmdir tests complete."
+delay 400
+echo "--- Test: base64 (encode/decode) ---"
+echo "The Tao is eternal." > b64_test.txt
+base64 b64_test.txt > b64_encoded.txt
+base64 -d b64_encoded.txt
+rm b64_test.txt b64_encoded.txt
+echo "base64 tests complete."
+delay 400
+echo "--- Test: ocrypt (encrypt/decrypt) ---"
+echo "Harmony and order." > ocrypt_test.txt
+ocrypt diag_pass ocrypt_test.txt > ocrypt_encrypted.txt
+ocrypt diag_pass ocrypt_encrypted.txt
+rm ocrypt_test.txt ocrypt_encrypted.txt
+echo "ocrypt tests complete."
+delay 400
+echo "--- Test: cksum and sync ---"
+echo "A well-written program is its own Heaven." > cksum_test.txt
+cksum cksum_test.txt
+sync
+echo "A poorly-written program is its own Hell." >> cksum_test.txt
+cksum cksum_test.txt
+rm cksum_test.txt
+echo "cksum and sync tests complete."
+delay 400
+echo "--- Test: csplit ---"
+echo -e "alpha\nbravo\ncharlie\ndelta\necho" > csplit_test.txt
+csplit csplit_test.txt 3
+ls xx*
+rm -f xx00 xx01 csplit_test.txt
+echo "csplit test complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+
 # --- Phase 8: Shell & Session Commands ---
 echo ""
 echo "===== Phase 8: Testing Shell & Session Commands ====="
@@ -346,7 +392,7 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.4 Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.5 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"

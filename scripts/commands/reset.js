@@ -7,81 +7,80 @@
      * @author Gemini
      */
 
-        // The command definition for the 'reset' command.
     const resetCommandDefinition = {
-            commandName: "reset",
-            argValidation: {
-                exact: 0, // This command takes no arguments.
-            },
-            /**
-             * The core logic for the 'reset' command.
-             * It confirms the user's intent in an interactive session, then proceeds to
-             * clear cache storage and perform a full session reset.
-             * @async
-             * @param {object} context - The context object from the command executor.
-             * @param {object} context.options - Execution options.
-             * @param {object} context.term - The terminal instance.
-             * @returns {Promise<object>} A command result object.
-             */
-            coreLogic: async (context) => {
-                const { options, term } = context;
-                // This command is too destructive for non-interactive scripts.
-                if (!options.isInteractive) {
-                    return {
-                        success: false,
-                        error: "reset: Can only be run in interactive mode.",
-                    };
-                }
+        commandName: "reset",
+        argValidation: {
+            exact: 0, // This command takes no arguments.
+        },
+        /**
+         * The core logic for the 'reset' command.
+         * It confirms the user's intent in an interactive session, then proceeds to
+         * clear cache storage and perform a full session reset.
+         * @async
+         * @param {object} context - The context object from the command executor.
+         * @returns {Promise<object>} A command result object.
+         */
+        coreLogic: async (context) => {
+            const { options } = context;
+            // This command is too destructive for non-interactive scripts.
+            if (!options.isInteractive) {
+                return {
+                    success: false,
+                    error: "reset: Can only be run in interactive mode.",
+                };
+            }
 
-                // Request confirmation from the user due to the destructive nature of the command.
-                const confirmed = await new Promise((resolve) =>
-                    ModalManager.request({
-                        context: "terminal",
-                        messageLines: [
-                            "WARNING: This will erase ALL OopisOS data, including users, files, saved states, and cached application data. This action cannot be undone. Are you sure?",
-                        ],
-                        onConfirm: () => resolve(true),
-                        onCancel: () => resolve(false),
-                        options,
-                    })
-                );
+            // Request confirmation from the user due to the destructive nature of the command.
+            const confirmed = await new Promise((resolve) =>
+                ModalManager.request({
+                    context: "terminal",
+                    messageLines: [
+                        "WARNING: This will erase ALL OopisOS data, including users, files, saved states, and cached application data. This action cannot be undone. Are you sure?",
+                    ],
+                    onConfirm: () => resolve(true),
+                    onCancel: () => resolve(false),
+                    options,
+                })
+            );
 
-                if (confirmed) {
-                    let cacheCleared = false;
-                    // Attempt to clear the browser's cache storage for the site.
-                    if ('caches' in window) {
-                        try {
-                            const keys = await caches.keys();
-                            await Promise.all(keys.map(key => caches.delete(key)));
-                            term.writeln("Cache storage cleared successfully.");
-                            cacheCleared = true;
-                        } catch (error) {
-                            term.writeln(`Warning: Could not clear cache storage: ${error.message}`, { color: 'yellow' });
-                        }
+            if (confirmed) {
+                let cacheCleared = false;
+                // Attempt to clear the browser's cache storage for the site.
+                if ('caches' in window) {
+                    try {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map(key => caches.delete(key)));
+                        // Use OutputManager instead of term.writeln
+                        await OutputManager.appendToOutput("Cache storage cleared successfully.");
+                        cacheCleared = true;
+                    } catch (error) {
+                        // Use OutputManager instead of term.writeln
+                        await OutputManager.appendToOutput(`Warning: Could not clear cache storage: ${error.message}`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                     }
-
-                    // Perform the main OS reset (clearing IndexedDB, etc.).
-                    await SessionManager.performFullReset();
-
-                    const outputMessage = cacheCleared
-                        ? "OopisOS reset to initial state. Cache storage cleared. Please refresh the page."
-                        : "OopisOS reset to initial state. Please refresh the page if UI issues persist.";
-
-                    return {
-                        success: true,
-                        output: outputMessage,
-                        typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-                    };
-                } else {
-                    // User cancelled the operation.
-                    return {
-                        success: true,
-                        output: `Reset cancelled. ${Config.MESSAGES.NO_ACTION_TAKEN}`,
-                        typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-                    };
                 }
-            },
-        };
+
+                // Perform the main OS reset (clearing IndexedDB, etc.).
+                await SessionManager.performFullReset();
+
+                const outputMessage = cacheCleared
+                    ? "OopisOS reset to initial state. Cache storage cleared. Please refresh the page."
+                    : "OopisOS reset to initial state. Please refresh the page if UI issues persist.";
+
+                return {
+                    success: true,
+                    output: outputMessage,
+                    messageType: Config.CSS_CLASSES.SUCCESS_MSG,
+                };
+            } else {
+                // User cancelled the operation.
+                return {
+                    success: true,
+                    output: `Reset cancelled. ${Config.MESSAGES.NO_ACTION_TAKEN}`,
+                    messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+                };
+            }
+        },
+    };
 
     const resetDescription = "Resets the entire OopisOS system to factory defaults and clears caches.";
 
