@@ -68,7 +68,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
         await createUserHomeDirectory("root");
         await createUserHomeDirectory(guestUsername);
-        await createUserHomeDirectory("userDiag");
         const rootNode = fsData[Config.FILESYSTEM.ROOT_PATH];
         if (rootNode) {
             if (rootNode) {

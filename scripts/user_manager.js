@@ -405,14 +405,6 @@ const UserManager = (() => {
             changesMade = true;
         }
 
-        if (!users["userDiag"]) {
-            users["userDiag"] = {
-                passwordHash: await _secureHashPassword("pantload"),
-                primaryGroup: "userDiag",
-            };
-            changesMade = true;
-        }
-
         if (changesMade) {
             StorageManager.saveItem(
                 Config.STORAGE_KEYS.USER_CREDENTIALS,

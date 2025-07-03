@@ -15,12 +15,10 @@
 
         if (node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
             const children = {};
-            // Use a sorted list of children for deterministic output
             const childNames = Object.keys(node.children).sort();
             for (const childName of childNames) {
                 const childNode = node.children[childName];
-                // No need to construct full path, as we are just passing the node down
-                children[childName] = await _archiveNode(childNode, null);
+                children[childName] = await _archiveNode(childNode);
             }
             return {
                 type: 'directory',
@@ -41,18 +39,15 @@
             let archivePath = args[0];
             const sourcePath = args[1];
 
-            // Ensure the archive has a .zip extension
             if (!archivePath.endsWith('.zip')) {
                 archivePath += '.zip';
             }
 
-            // Validate that the source path exists
             const sourceValidation = FileSystemManager.validatePath("zip", sourcePath);
             if (sourceValidation.error) {
                 return { success: false, error: sourceValidation.error };
             }
 
-            // Validate the destination path for the archive
             const archiveValidation = FileSystemManager.validatePath("zip", archivePath, { allowMissing: true });
             if (archiveValidation.error && !archiveValidation.optionsUsed.allowMissing) {
                 return { success: false, error: archiveValidation.error };
@@ -63,11 +58,13 @@
 
             await OutputManager.appendToOutput(`Zipping '${sourcePath}'...`);
 
-            // Create the archive object and serialize it to JSON
-            const archiveObject = await _archiveNode(sourceValidation.node, sourceValidation.resolvedPath);
+            // *** FIX: Wrap the archive in an object with the source's name as the key ***
+            const sourceName = sourceValidation.resolvedPath.split('/').pop() || sourceValidation.resolvedPath;
+            const archiveObject = {
+                [sourceName]: await _archiveNode(sourceValidation.node)
+            };
             const archiveContent = JSON.stringify(archiveObject, null, 2);
 
-            // Save the new archive file
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
             const saveResult = await FileSystemManager.createOrUpdateFile(
                 archiveValidation.resolvedPath,
@@ -79,9 +76,8 @@
                 return { success: false, error: `zip: ${saveResult.error}` };
             }
 
-            // Persist the entire file system state
             if (!(await FileSystemManager.save())) {
-                 return { success: false, error: "zip: Failed to save file system changes." };
+                return { success: false, error: "zip: Failed to save file system changes." };
             }
 
             return { success: true, output: `Successfully zipped '${sourcePath}' to '${archivePath}'.` };
