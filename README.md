@@ -119,7 +119,9 @@ To add a new command, simply create a new file in `/scripts/commands/`, define t
 
 To keep this document focused, more detailed information has been moved to separate files.
 
-- **`/docs/guide.html`:** The full, styled User Guide.
+- **`/docs/website.html`:** A hub of all the most pertinent information.
+
+- **`/docs/guide.md`:** The full, styled User Guide.
     
 - **`/docs/command_reference.md`:** An exhaustive reference for every command.
     
