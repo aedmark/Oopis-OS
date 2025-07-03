@@ -1,8 +1,8 @@
 #!/bin/oopis_shell
-# OopisOS Core Test Suite v3.4 - "The Engineer's Gauntlet"
+# OopisOS Core Test Suite v3.4 - "The Engineer's Gauntlet" (Refined)
 echo "===== OopisOS Core Test Suite v3.4 Initializing ====="
 echo "This script tests non-interactive core functionality, including"
-echo "scripted interactive prompts and the adventure game engine."
+echo "scripted interactive prompts and the sudo authentication lifecycle."
 echo "---------------------------------------------------------------------"
 echo ""
 
@@ -10,12 +10,11 @@ echo ""
 echo "--- Phase: Logging in as 'root' and Preparing Workspace ---"
 login root mcgoopis
 delay 400
-mkdir /home/userDiag/diag_workspace/
+mkdir -p /home/userDiag/diag_workspace/
 chown userDiag /home/userDiag/diag_workspace/
-cp /home/Guest/diag_assets.sh /home/userDiag/diag_workspace/diag_assets.sh
+cp /extras/diag_assets.sh /home/userDiag/diag_workspace/diag_assets.sh
 chown userDiag /home/userDiag/diag_workspace/diag_assets.sh
 chmod 700 /home/userDiag/diag_workspace/diag_assets.sh
-
 delay 500
 login userDiag pantload
 echo "Current User (expected: userDiag):"
@@ -124,17 +123,19 @@ useradd sudouser
 testpass
 testpass
 echo "sudouser ALL" >> /etc/sudoers
-echo "--- Test: Successful sudo by authorized user ---"
+echo "--- Test: Sudo lifecycle for authorized user ---"
 login sudouser
 testpass
+echo "Attempting first sudo command (password required)..."
 sudo echo "Sudo command successful."
 testpass
-echo "--- Test: sudo re-authentication (no password needed) ---"
+echo "Attempting second sudo command (should not require password)..."
 sudo ls /root
-echo "--- Test: sudo re-authentication after logout (password needed) ---"
+echo "--- Test: sudo re-authentication after logout (password required) ---"
 logout
 login sudouser
 testpass
+echo "Attempting sudo after re-login (password required again)..."
 sudo ls /root
 testpass
 echo "--- Test: Failed sudo by unauthorized user ---"
