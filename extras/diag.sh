@@ -1,6 +1,6 @@
-# OopisOS Core Test Suite v3.5 - "The Gauntlet, Reforged and Patched"
-echo "===== OopisOS Core Test Suite v3.5 Initializing ====="
-echo "This script tests all non-interactive core functionality, now with more paranoia."
+# OopisOS Core Test Suite v3.6 - "The Gauntlet, Now With More Gauntlet"
+echo "===== OopisOS Core Test Suite v3.6 Initializing ====="
+echo "This script tests all non-interactive core functionality, now with maximum paranoia."
 echo "---------------------------------------------------------------------"
 echo ""
 
@@ -28,6 +28,7 @@ echo ""
 echo "--- Phase 1.5: Creating diagnostic assets ---"
 # Basic FS assets
 mkdir -p src mv_test_dir overwrite_dir find_test/subdir zip_test/nested_dir "a dir with spaces"
+mkdir -p recursive_test/level2/level3
 # Text/diff assets
 echo -e "line one\nline two\nline three" > diff_a.txt
 echo -e "line one\nline 2\nline three" > diff_b.txt
@@ -37,6 +38,8 @@ touch preserve_perms.txt; chmod 700 preserve_perms.txt
 # Data processing assets
 echo -e "zeta\nalpha\nbeta\nalpha\n10\n2" > sort_test.txt
 echo "The quick brown fox." > text_file.txt
+echo -e "apple\nbanana\napple\napple\norange\nbanana" > uniq_test.txt
+echo -e "id,value,status\n1,150,active\n2,80,inactive\n3,200,active" > awk_test.csv
 # xargs assets
 touch file1.tmp file2.tmp file3.tmp
 # find assets
@@ -57,6 +60,11 @@ touch -d "2 days ago" old.ext
 touch -d "1 day ago" new.txt
 echo "short" > small.log
 echo "this is a very long line" > large.log
+# Recursive test assets
+echo "I am a secret" > recursive_test/secret.txt
+echo "I am a deeper secret" > recursive_test/level2/level3/deep_secret.txt
+# State management test asset
+echo "Original State" > state_test.txt
 echo "Asset creation complete."
 delay 700
 echo "---------------------------------------------------------------------"
@@ -235,7 +243,7 @@ rm pager_test.txt
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW TEST PHASE ---
+# --- Phase 7.6: Data Transformation & Integrity Commands ---
 echo ""
 echo "===== Phase 7.6: Testing Data Transformation & Integrity Commands ====="
 delay 400
@@ -284,6 +292,29 @@ echo "csplit test complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
+# --- NEW TEST PHASE ---
+echo ""
+echo "===== Phase 7.7: Testing Underrepresented Commands (Data/System) ====="
+delay 400
+echo "--- Test: uniq (-d, -u) ---"
+sort uniq_test.txt | uniq -d
+sort uniq_test.txt | uniq -u
+echo "--- Test: awk scripting ---"
+echo "Printing active users with values over 100 from csv"
+awk -F, '$3 == "active" && $2 > 100 { print "Alert: "$1" has value "$2 }' awk_test.csv
+echo "--- Test: shuf (-i, -e) ---"
+shuf -i 1-5 -n 3
+shuf -e one two three four five
+echo "--- Test: tree (-L, -d) ---"
+tree -L 2 ./recursive_test
+tree -d ./recursive_test
+echo "--- Test: du (recursive) and grep (-R) ---"
+du recursive_test/
+grep -R "secret" recursive_test/
+echo "Underrepresented data command tests complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
 
 # --- Phase 8: Shell & Session Commands ---
 echo ""
@@ -314,6 +345,71 @@ printscreen screen.log
 cat screen.log
 delay 700
 echo "---------------------------------------------------------------------"
+
+# --- NEW TEST PHASE ---
+echo ""
+echo "===== Phase 8.5: Testing User & State Management ====="
+delay 400
+echo "--- Test: su and logout ---"
+login root mcgoopis
+useradd testuser2
+newpass
+newpass
+su testuser2 newpass
+whoami
+logout
+whoami
+echo "--- Test: passwd ---"
+passwd testuser2
+newpass
+newerpass
+echo "--- Test: savestate and loadstate ---"
+login diagUser testpass
+cd /home/diagUser/diag_workspace
+savestate
+echo "Modified State" > state_test.txt
+loadstate
+YES
+cat state_test.txt
+echo "--- Test: clearfs ---"
+login root mcgoopis
+useradd clearfs_tester
+testpass
+testpass
+login clearfs_tester testpass
+echo "file" > file.txt
+mkdir dir
+clearfs
+YES
+ls -a
+login root mcgoopis
+removeuser -f testuser2
+removeuser -f clearfs_tester
+echo "User & State Management tests complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+# --- NEW TEST PHASE ---
+echo ""
+echo "===== Phase 8.6: Testing Network & System Documentation Commands ====="
+delay 400
+echo "--- Test: wget and curl ---"
+wget -O license.txt https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt
+cat license.txt
+rm license.txt
+curl https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt > license_curl.txt
+cat license_curl.txt
+rm license_curl.txt
+echo "--- Test: man and help ---"
+man ls
+help cp
+echo "--- Test: backup and export (non-interactive check) ---"
+check_fail "backup" # Should succeed, check_fail will report FAILURE, which is what we want to see (that it ran)
+check_fail "export text_file.txt" # Same as above
+echo "Network & Docs tests complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
 
 # --- Phase 9: Edge Case Gauntlet (Expanded) ---
 echo ""
@@ -396,7 +492,7 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.5 Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.6 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"

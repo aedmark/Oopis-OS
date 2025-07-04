@@ -20,7 +20,6 @@
             error: null,
         };
 
-        // Simplified parser for 'pattern { action }' structures.
         // This regex is complex but safer than eval. It captures different parts of an awk script.
         const ruleRegex = /(BEGIN)\s*{([^}]*)}|(END)\s*{([^}]*)}|(\/[^/]*\/)\s*{([^}]*)}/g;
         let match;
@@ -94,20 +93,28 @@
 
     const awkCommandDefinition = {
         commandName: "awk",
-        argValidation: {
-            min: 1,
-            error: "Usage: awk 'program' [file...]"
-        },
+        // NEW: Add flag definition to handle the Field Separator.
+        flagDefinitions: [
+            { name: "fieldSeparator", short: "-F", takesValue: true }
+        ],
         coreLogic: async (context) => {
-            const { args, options, currentUser } = context;
-            const programString = args[0];
-            const filePaths = args.slice(1);
+            // MODIFIED: Use remainingArgs to correctly parse program and files after flags.
+            const { flags, remainingArgs, options, currentUser } = context;
+
+            if (remainingArgs.length === 0) {
+                return { success: false, error: "awk: missing program" };
+            }
+
+            const programString = remainingArgs[0];
+            const filePaths = remainingArgs.slice(1);
 
             const program = _parseProgram(programString);
             if (program.error) {
                 return { success: false, error: `awk: program error: ${program.error}` };
             }
 
+            // MODIFIED: Use the separator from the parsed flag, or default to whitespace.
+            const separator = flags.fieldSeparator ? new RegExp(flags.fieldSeparator) : /\s+/;
             let outputLines = [];
             let nr = 0; // Total record number
 
@@ -123,11 +130,11 @@
             const processContent = (content) => {
                 const lines = content.split('\n');
                 for (const line of lines) {
-                    // Don't process the empty string that results from a trailing newline
-                    if (line === '' && lines[lines.length -1] === '') continue;
+                    if (line === '' && lines.at(-1) === '') continue;
 
                     nr++;
-                    const fields = line.split(/\s+/);
+                    // MODIFIED: Use the separator regex to split the line into fields.
+                    const fields = line.split(separator);
                     const allFields = [line, ...fields];
                     const vars = { NR: nr, NF: fields.length };
 
@@ -171,6 +178,7 @@
 
     const awkDescription = "Pattern scanning and text processing language.";
     const awkHelpText = `Usage: awk 'program' [file...]
+       awk -F<separator> 'program' [file...]
 
 A tool for pattern scanning and processing.
 
@@ -186,17 +194,21 @@ DESCRIPTION
        - Built-in variables NR (line number) and NF (number of fields) are available.
        - Field variables like $0 (the whole line), $1, $2, etc., are available.
 
+OPTIONS
+       -F<separator>
+              Use the specified separator to split fields. Can be a single
+              character or a regular expression.
+
 EXAMPLES
        ls -l | awk '{print $9}'
               Prints only the 9th column (the filename) from the output of ls -l.
 
+       awk -F, '{print $1}' data.csv
+              Prints the first column of a comma-separated file.
+
        awk '/success/ {print "Found:", $0}' app.log
               Prints "Found:" followed by the full line for every line containing
-              "success" in the file app.log.
-
-       awk 'BEGIN { print "--- Report Start ---" } { print NR, $0 } END { print "--- Report End ---" }' data.txt
-              Prints a header, then each line of data.txt prefixed with its line
-              number, and finally a footer.`;
+              "success" in the file app.log.`;
 
     CommandRegistry.register("awk", awkCommandDefinition, awkDescription, awkHelpText);
 })();

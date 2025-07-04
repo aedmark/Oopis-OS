@@ -1,9 +1,9 @@
 #!/bin/oopis_shell
 
-# inflate.sh - The OopisOS Instant Universe Generator (v3.4)
+# inflate.sh - The OopisOS Instant Universe Generator (v3.5)
 # Run this and watch a sterile, empty void blossom into a bustling digital ecosystem.
 
-echo "Initiating World-Build Protocol v3.4..."
+echo "Initiating World-Build Protocol v3.5..."
 delay 500
 echo "Warning: Spontaneous generation of files and directories is imminent."
 delay 500
@@ -20,7 +20,7 @@ delay 300
 
 # --- Laying the foundations of your new digital kingdom ---
 echo "Constructing architectural framework... (i.e., making some folders)"
-mkdir -p docs/api src/core src/styles data/logs reports games .secret_stuff net_practice
+mkdir -p docs/api src/core/utils src/styles data/logs data/analysis reports games .secret_stuff net_practice
 delay 300
 
 # --- Populating the Capital ---
@@ -81,13 +81,14 @@ echo "3. There is no problem that cannot be made worse with a poorly-thought-out
 
 delay 300
 
-# --- /src Directory ---
+# --- /src Directory (with added subdirectory for tree/grep -R tests) ---
 echo "Simulating a bustling software development directory..."
 echo '<!DOCTYPE html><html><body><h1>It works! (Probably)</h1></body></html>' > ./src/index.html
 echo "console.log('Waking up the digital hamster...');" > ./src/core/kernel.js
 echo "// Tries to find a clean spot in memory. If it can't, it just shoves things wherever." > ./src/core/memory_manager.js
 echo "function allocateMemory(size) { return 'over_there'; }" >> ./src/core/memory_manager.js
 echo "// Decides which process gets to use the CPU. It's not fair, but it's the law." > ./src/core/scheduler.js
+echo "/* The main component for rendering UI. Contains the secret 'make_pretty' function. */" > ./src/core/utils/renderer.js
 echo "body { font-family: 'VT323', monospace; color: #00FF00; background-color: #000000; }" > ./src/styles/theme.css
 
 # Files for 'diff' and 'run' showcases
@@ -105,8 +106,10 @@ chmod 755 src/sys_check.sh
 delay 300
 
 # --- /data Directory (Expanded for Data Processing) ---
-echo "Generating juicy data and log files..."
+echo "Generating juicy data and log files for analysis..."
 echo -e "zeta\nalpha\nbeta\nalpha\n10\n2" > ./data/sort_test.txt
+echo -e "user_a,50,active\nuser_b,150,inactive\nuser_c,99,active\nuser_d,200,active" > ./data/analysis/metrics.csv
+echo -e "ERROR: Service failed\nINFO: Service started\nWARN: Deprecated call\nERROR: Connection refused\nERROR: Service failed" > ./data/analysis/events.log
 echo "The quick brown fox, known as Fred, deftly vaulted over Bartholomew, the astonishingly lazy bulldog." > ./data/pangrams.txt
 echo "This file contains the word 'fox' multiple times. A fox is a cunning creature. Fox." >> ./data/pangrams.txt
 echo "[2025-06-08T21:00:01Z] [INFO] System boot sequence initiated. All systems nominal." > ./data/logs/system.log
@@ -150,7 +153,7 @@ delay 300
 # --- Administrative tasks (as root) ---
 echo "Logging in as root. Kneel before your god."
 login root mcgoopis
-rm -r -f /vault /shared_for_guest
+rm -r -f /vault /shared_for_guest /home/clearfs_tester
 mkdir /vault
 echo "The launch codes are: 'password123'. The real secret is that there's nothing to launch." > /vault/top_secret.txt
 chmod 700 /vault
@@ -158,11 +161,20 @@ chmod 600 /vault/top_secret.txt
 mkdir /shared_for_guest
 chown Guest /shared_for_guest
 chmod 777 /shared_for_guest
-echo "This is a shared space. Please clean up your files. Or don't. I'm a sign, not a cop." > /shared_for_guest/readme.txt
-echo "Welcome to OopisOS v3.4! Today's forecast: 100% chance of awesome." > /etc/motd
+echo "Welcome to OopisOS v3.5! Today's forecast: 100% chance of awesome." > /etc/motd
 echo "127.0.0.1 localhost oopis.local" > /etc/hosts
 chmod 644 /etc/motd
 chmod 644 /etc/hosts
+# Create a dedicated user for clearfs testing
+useradd clearfs_tester
+testpass
+testpass
+login clearfs_tester testpass
+echo "This file is destined for oblivion." > ./doomed.txt
+mkdir ./doomed_dir
+echo "So long, and thanks for all the fish." > ./doomed_dir/message.txt
+login root mcgoopis
+delay 500
 login Guest
 delay 500
 
@@ -180,7 +192,7 @@ echo "  > \`alias\` to see the cool shortcuts you now have."
 echo "  > \`grep -iR 'duck' .\` to begin your investigation."
 echo "  > \`sort ./data/sort_test.txt | uniq -c\` to test data processing."
 echo "  > \`find . -name \"*.txt\" | xargs wc -l\` to see find and xargs in action."
-echo "  > \`zip my_archive.zip ./archive_this\` and then \`unzip my_archive.zip\` to test archival."
+echo "  > \`zip my_archive.zip ./src\` and then \`unzip my_archive.zip\` to test archival."
 echo "  > \`cat /vault/top_secret.txt\` to test the security system (it'll fail)."
 echo "  > \`chidi ./docs\` to have the AI read you the new, improved manuals."
 echo "  > \`adventure ./games/quest.json\` to start your epic quest."

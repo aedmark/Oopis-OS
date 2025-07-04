@@ -37,6 +37,8 @@ The "Architect's Edition" refines the core experience, focusing on robust securi
 
   - `basic`: An integrated development environment for the classic BASIC programming language.
 
+  - `log`: A journaling system for secure, private logs.
+
   
 ## User Guide
 
@@ -96,6 +98,7 @@ OopisOS comes with several built-in applications that run in a full-screen, moda
 
 - **`basic [file.bas]`** Launches the Oopis Basic Integrated Development Environment. It's a throwback to the classic days of computing, allowing you to write, `LIST`, and `RUN` line-numbered programs. Use `SAVE` and `LOAD` within the IDE to manage your `.bas` files.
 
+- **'log'** Keep a captain's log of your daily adventures.
 
 ## Advanced Topics
 
