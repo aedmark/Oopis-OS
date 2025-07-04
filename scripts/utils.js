@@ -101,8 +101,9 @@ const Utils = (() => {
      */
     function getFileExtension(filePath) {
         if (!filePath || typeof filePath !== "string") return "";
+        const separator = (typeof Config !== 'undefined' && Config.FILESYSTEM) ? Config.FILESYSTEM.PATH_SEPARATOR : '/';
         const name = filePath.substring(
-            filePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+            filePath.lastIndexOf(separator) + 1
         );
         const lastDot = name.lastIndexOf(".");
         if (lastDot === -1 || lastDot === 0 || lastDot === name.length - 1) {
@@ -114,74 +115,42 @@ const Utils = (() => {
     /**
      * A powerful and flexible utility to create DOM elements programmatically.
      * @param {string} tag - The HTML tag for the element (e.g., 'div', 'button').
-     * @param {object} [attributes={}] - An object of attributes to set on the element. Special keys include:
-     * - `textContent`: Sets the element's text content.
-     * - `innerHTML`: Sets the element's inner HTML.
-     * - `className` or `classList`: A string or array of strings for CSS classes.
-     * - `style`: An object of CSS style properties.
-     * - `eventListeners`: An object mapping event types to listener functions.
+     * @param {object} [attributes={}] - An object of attributes to set on the element.
      * @param {...(Node|string)} childrenArgs - A variable number of child nodes or strings to append to the element.
      * @returns {HTMLElement} The newly created DOM element.
      */
     function createElement(tag, attributes = {}, ...childrenArgs) {
         const element = document.createElement(tag);
         for (const key in attributes) {
-            if (attributes.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(attributes, key)) {
                 const value = attributes[key];
                 if (key === "textContent") {
                     element.textContent = value;
                 } else if (key === "innerHTML") {
                     element.innerHTML = value;
                 } else if (key === "classList" && Array.isArray(value)) {
-                    value.forEach((cls) => {
-                        if (typeof cls === "string") {
-                            cls.split(" ").forEach((c) => {
-                                if (c) element.classList.add(c);
-                            });
-                        }
-                    });
+                    element.classList.add(...value.filter(c => typeof c === 'string'));
                 } else if (key === "className" && typeof value === "string") {
-                    value.split(" ").forEach((c) => {
-                        if (c) element.classList.add(c);
-                    });
+                    element.className = value;
                 } else if (key === "style" && typeof value === "object") {
-                    for (const styleProp in value) {
-                        if (value.hasOwnProperty(styleProp)) {
-                            element.style[styleProp] = value[styleProp];
-                        }
-                    }
+                    Object.assign(element.style, value);
                 } else if (key === "eventListeners" && typeof value === "object") {
                     for (const eventType in value) {
-                        if (
-                            value.hasOwnProperty(eventType) &&
-                            typeof value[eventType] === "function"
-                        ) {
-                            element.addEventListener(eventType, value[eventType]); //False Positive
+                        if (Object.prototype.hasOwnProperty.call(value, eventType)) {
+                            element.addEventListener(eventType, value[eventType]);
                         }
                     }
                 } else if (value !== null && value !== undefined) {
-                    if (typeof value === "boolean") {
-                        if (value) element.setAttribute(key, "");
-                        else element.removeAttribute(key);
-                    } else {
-                        element.setAttribute(key, String(value));
-                    }
+                    element.setAttribute(key, String(value));
                 }
             }
         }
-        const childrenToProcess =
-            childrenArgs.length === 1 && Array.isArray(childrenArgs[0])
-                ? childrenArgs[0]
-                : childrenArgs;
-        childrenToProcess.forEach((child) => {
-            if (child instanceof Node) element.appendChild(child);
-            else if (typeof child === "string")
+        childrenArgs.flat().forEach((child) => {
+            if (child instanceof Node) {
+                element.appendChild(child);
+            } else if (typeof child === 'string') {
                 element.appendChild(document.createTextNode(child));
-            else if (child !== null && child !== undefined)
-                console.warn(
-                    "Utils.createElement: Skipping unexpected child type:",
-                    child
-                );
+            }
         });
         return element;
     }
@@ -190,73 +159,36 @@ const Utils = (() => {
      * Validates the number of arguments provided against a configuration object.
      * @param {Array<string>} argsArray - The array of arguments to validate.
      * @param {object} [config={}] - Configuration for validation.
-     * @param {number} [config.exact] - The exact number of arguments expected.
-     * @param {number} [config.min] - The minimum number of arguments expected.
-     * @param {number} [config.max] - The maximum number of arguments expected.
      * @returns {{isValid: boolean, errorDetail?: string}} An object indicating if validation passed and an error message if it failed.
      */
     function validateArguments(argsArray, config = {}) {
         const argCount = argsArray.length;
-        if (typeof config.exact === "number") {
-            if (argCount !== config.exact)
-                return {
-                    isValid: false,
-                    errorDetail: `expected exactly ${config.exact} argument(s) but got ${argCount}`,
-                };
-        } else {
-            if (typeof config.min === "number" && argCount < config.min)
-                return {
-                    isValid: false,
-                    errorDetail: `expected at least ${config.min} argument(s), but got ${argCount}`,
-                };
-            if (typeof config.max === "number" && argCount > config.max)
-                return {
-                    isValid: false,
-                    errorDetail: `expected at most ${config.max} argument(s), but got ${argCount}`,
-                };
+        if (typeof config.exact === "number" && argCount !== config.exact) {
+            return { isValid: false, errorDetail: `expected exactly ${config.exact} argument(s) but got ${argCount}` };
         }
-        return {
-            isValid: true,
-        };
+        if (typeof config.min === "number" && argCount < config.min) {
+            return { isValid: false, errorDetail: `expected at least ${config.min} argument(s), but got ${argCount}` };
+        }
+        if (typeof config.max === "number" && argCount > config.max) {
+            return { isValid: false, errorDetail: `expected at most ${config.max} argument(s), but got ${argCount}` };
+        }
+        return { isValid: true };
     }
 
     /**
      * Parses a string argument into a number with validation.
      * @param {string} argString - The string to parse.
      * @param {object} [options={}] - Parsing options.
-     * @param {boolean} [options.allowFloat=false] - Whether to allow floating-point numbers.
-     * @param {boolean} [options.allowNegative=false] - Whether to allow negative numbers.
-     * @param {number} [options.min] - The minimum allowed value.
-     * @param {number} [options.max] - The maximum allowed value.
      * @returns {{value: number|null, error: string|null}} An object containing the parsed value or an error message.
      */
     function parseNumericArg(argString, options = {}) {
         const { allowFloat = false, allowNegative = false, min, max } = options;
         const num = allowFloat ? parseFloat(argString) : parseInt(argString, 10);
-        if (isNaN(num))
-            return {
-                value: null,
-                error: "is not a valid number",
-            };
-        if (!allowNegative && num < 0)
-            return {
-                value: null,
-                error: "must be a non-negative number",
-            };
-        if (min !== undefined && num < min)
-            return {
-                value: null,
-                error: `must be at least ${min}`,
-            };
-        if (max !== undefined && num > max)
-            return {
-                value: null,
-                error: `must be at most ${max}`,
-            };
-        return {
-            value: num,
-            error: null,
-        };
+        if (isNaN(num)) return { value: null, error: "is not a valid number" };
+        if (!allowNegative && num < 0) return { value: null, error: "must be a non-negative number" };
+        if (min !== undefined && num < min) return { value: null, error: `must be at least ${min}` };
+        if (max !== undefined && num > max) return { value: null, error: `must be at most ${max}` };
+        return { value: num, error: null };
     }
 
     /**
@@ -265,49 +197,23 @@ const Utils = (() => {
      * @returns {{isValid: boolean, error: string|null}} An object indicating if validation passed and an error message if it failed.
      */
     function validateUsernameFormat(username) {
-        if (!username || typeof username !== "string" || username.trim() === "")
-            return {
-                isValid: false,
-                error: "Username cannot be empty.",
-            };
-        if (username.includes(" "))
-            return {
-                isValid: false,
-                error: "Username cannot contain spaces.",
-            };
-        if (Config.USER.RESERVED_USERNAMES.includes(username.toLowerCase()))
-            return {
-                isValid: false,
-                error: `Cannot use '${username}'. This username is reserved.`,
-            };
-        if (username.length < Config.USER.MIN_USERNAME_LENGTH)
-            return {
-                isValid: false,
-                error: `Username must be at least ${Config.USER.MIN_USERNAME_LENGTH} characters long.`,
-            };
-        if (username.length > Config.USER.MAX_USERNAME_LENGTH)
-            return {
-                isValid: false,
-                error: `Username cannot exceed ${Config.USER.MAX_USERNAME_LENGTH} characters.`,
-            };
-        return {
-            isValid: true,
-            error: null,
-        };
+        if (!username || typeof username !== "string" || username.trim() === "") return { isValid: false, error: "Username cannot be empty." };
+        if (username.includes(" ")) return { isValid: false, error: "Username cannot contain spaces." };
+        if (typeof Config !== 'undefined' && Config.USER.RESERVED_USERNAMES.includes(username.toLowerCase())) return { isValid: false, error: `Cannot use '${username}'. This username is reserved.` };
+        if (typeof Config !== 'undefined' && username.length < Config.USER.MIN_USERNAME_LENGTH) return { isValid: false, error: `Username must be at least ${Config.USER.MIN_USERNAME_LENGTH} characters long.` };
+        if (typeof Config !== 'undefined' && username.length > Config.USER.MAX_USERNAME_LENGTH) return { isValid: false, error: `Username cannot exceed ${Config.USER.MAX_USERNAME_LENGTH} characters.` };
+        return { isValid: true, error: null };
     }
 
     /**
      * Parses an array of command-line arguments into flags and remaining non-flag arguments.
-     * Supports long flags (`--force`), short flags (`-f`), combined short flags (`-la`), and flags that take values (`-o file`).
      * @param {string[]} argsArray - The array of raw arguments from the command line.
      * @param {Array<object>} flagDefinitions - An array of objects defining the valid flags for a command.
-     * @returns {{flags: object, remainingArgs: string[]}} An object containing a `flags` object (with boolean or string values) and an array of `remainingArgs`.
+     * @returns {{flags: object, remainingArgs: string[]}} An object containing a `flags` object and an array of `remainingArgs`.
      */
     function parseFlags(argsArray, flagDefinitions) {
         const flags = {};
         const remainingArgs = [];
-
-        // Initialize all defined flag names to their default state
         flagDefinitions.forEach((def) => {
             flags[def.name] = def.takesValue ? null : false;
         });
@@ -316,79 +222,61 @@ const Utils = (() => {
 
         for (let i = 0; i < argsArray.length; i++) {
             const arg = argsArray[i];
-
-            // If it's not a flag, or it's the special "-" argument for stdin, treat as a remaining arg.
             if (!arg.startsWith('-') || arg === '-' || arg === '--') {
                 remainingArgs.push(arg);
                 continue;
             }
 
-            // 1. Check for an exact match first (e.g., --force, -i)
             const exactDef = findDef(arg);
             if (exactDef) {
                 if (exactDef.takesValue) {
                     if (i + 1 < argsArray.length) {
-                        flags[exactDef.name] = argsArray[++i]; // Consume next arg as value
-                    } else {
-                        console.warn(`Flag ${arg} expects a value, but none was provided.`);
+                        flags[exactDef.name] = argsArray[++i];
                     }
                 } else {
                     flags[exactDef.name] = true;
                 }
-                continue; // Move to the next argument
+                continue;
             }
 
-            // 2. NEW: Check for short flags with an attached value (e.g., -n5, -F,)
             if (!arg.startsWith('--') && arg.length > 2) {
-                const shortFlag = arg.substring(0, 2); // e.g., "-F"
+                const shortFlag = arg.substring(0, 2);
                 const valueTakingDef = findDef(shortFlag);
                 if (valueTakingDef && valueTakingDef.takesValue) {
-                    flags[valueTakingDef.name] = arg.substring(2); // The rest of the string is the value
-                    continue; // Move to the next argument
+                    flags[valueTakingDef.name] = arg.substring(2);
+                    continue;
                 }
-            }
 
-            // 3. Handle combined short flags (e.g., -la, -rfi)
-            if (!arg.startsWith('--') && arg.length > 2) {
                 const chars = arg.substring(1);
                 let consumed = true;
                 for (const char of chars) {
-                    const charFlag = `-${char}`;
-                    const charDef = findDef(charFlag);
+                    const charDef = findDef(`-${char}`);
                     if (charDef && !charDef.takesValue) {
                         flags[charDef.name] = true;
                     } else {
-                        consumed = false; // Invalid character in combined group
+                        consumed = false;
                         break;
                     }
                 }
-                if (consumed) {
-                    continue; // Move to the next argument
-                }
+                if (consumed) continue;
             }
 
-            // If none of the above matched, it's a remaining argument.
             remainingArgs.push(arg);
         }
 
-        return {
-            flags,
-            remainingArgs,
-        };
+        return { flags, remainingArgs };
     }
-
-    // Add this new function to the Utils module in scripts/utils.js
 
     /**
      * A generic function to call an LLM API, adapting to different providers.
-     * @param {string} provider - The name of the provider (e.g., 'gemini', 'ollama').
+     * @param {string} provider - The name of the provider.
      * @param {string} model - The specific model to use.
      * @param {Array<object>} conversation - The chat history/prompt.
-     * @param {string} apiKey - The API key, required for providers like Gemini.
+     * @param {string} apiKey - The API key for the provider.
      * @returns {Promise<object>} A promise that resolves with the API response.
      */
     async function callLlmApi(provider, model, conversation, apiKey) {
-        const providerConfig = Config.API.LLM_PROVIDERS[provider];
+        const providerConfig = (typeof Config !== 'undefined') ? Config.API.LLM_PROVIDERS[provider] : null;
         if (!providerConfig) {
             return { success: false, error: `LLM provider '${provider}' not configured.` };
         }
@@ -397,23 +285,16 @@ const Utils = (() => {
         let headers = { 'Content-Type': 'application/json' };
         let body;
 
-        // Adapt the request payload based on the provider
         switch (provider) {
             case 'gemini':
                 headers['x-goog-api-key'] = apiKey;
                 body = JSON.stringify({ contents: conversation });
                 break;
             case 'ollama':
-                // Ollama expects a single prompt string
                 const promptText = conversation.map(part => part.parts.map(p => p.text).join('\n')).join('\n');
-                body = JSON.stringify({
-                    model: model || providerConfig.defaultModel,
-                    prompt: promptText,
-                    stream: false
-                });
+                body = JSON.stringify({ model: model || providerConfig.defaultModel, prompt: promptText, stream: false });
                 break;
             case 'llm-studio':
-                // LLM Studio uses a format similar to OpenAI's
                 body = JSON.stringify({
                     model: model || providerConfig.defaultModel,
                     messages: conversation.map(turn => ({
@@ -429,53 +310,28 @@ const Utils = (() => {
         }
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                body: body
-            });
-
+            const response = await fetch(url, { method: 'POST', headers, body });
             if (!response.ok) {
                 const errorText = await response.text();
                 return { success: false, error: `API request failed with status ${response.status}: ${errorText}` };
             }
 
             const responseData = await response.json();
-
-            // Adapt the response parsing based on the provider
             let finalAnswer;
             switch (provider) {
-                case 'gemini':
-                    finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-                    break;
-                case 'ollama':
-                    finalAnswer = responseData.response;
-                    break;
-                case 'llm-studio':
-                    finalAnswer = responseData.choices?.[0]?.message?.content;
-                    break;
+                case 'gemini': finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text; break;
+                case 'ollama': finalAnswer = responseData.response; break;
+                case 'llm-studio': finalAnswer = responseData.choices?.[0]?.message?.content; break;
             }
 
-            if (!finalAnswer) {
-                return { success: false, error: "AI failed to generate a valid response." };
-            }
-
-            return { success: true, answer: finalAnswer };
-
+            return finalAnswer ? { success: true, answer: finalAnswer } : { success: false, error: "AI failed to generate a valid response." };
         } catch (e) {
             return { success: false, error: `Network or fetch error: ${e.message}` };
         }
     }
 
-// Remember to expose the new function in the return object of the Utils module
-    return {
-        // ... all existing Utils functions
-        callLlmApi,
-    };
-
     /**
      * Converts a glob pattern (like *.txt) into a regular expression for matching.
-     * Supports `*`, `?`, and `[...]` character sets.
      * @param {string} glob - The glob pattern string.
      * @returns {RegExp|null} A RegExp object or null if the glob is invalid.
      */
@@ -490,32 +346,15 @@ const Utils = (() => {
                 case "?":
                     regexStr += ".";
                     break;
-                case "[": {
+                case "[":
                     let charClass = "[";
                     let k = i + 1;
                     if (k < glob.length && (glob[k] === "!" || glob[k] === "^")) {
                         charClass += "^";
                         k++;
                     }
-                    if (k < glob.length && glob[k] === "]") {
-                        charClass += "\\]";
-                        k++;
-                    }
                     while (k < glob.length && glob[k] !== "]") {
-                        if (
-                            glob[k] === "-" &&
-                            charClass.length > 1 &&
-                            charClass[charClass.length - 1] !== "[" &&
-                            charClass[charClass.length - 1] !== "^" &&
-                            k + 1 < glob.length &&
-                            glob[k + 1] !== "]"
-                        ) {
-                            charClass += "-";
-                        } else if (/[.^${}()|[\]\\]/.test(glob[k])) {
-                            charClass += "\\" + glob[k];
-                        } else {
-                            charClass += glob[k];
-                        }
+                        charClass += (/[.^${}()|[\]\\]/.test(glob[k])) ? "\\" + glob[k] : glob[k];
                         k++;
                     }
                     if (k < glob.length && glob[k] === "]") {
@@ -527,11 +366,8 @@ const Utils = (() => {
                     }
                     regexStr += charClass;
                     break;
-                }
                 default:
-                    if (/[.^${}()|[\]\\]/.test(char)) {
-                        regexStr += "\\";
-                    }
+                    if (/[.^${}()|[\]\\]/.test(char)) regexStr += "\\";
                     regexStr += char;
             }
         }
@@ -539,14 +375,13 @@ const Utils = (() => {
         try {
             return new RegExp(regexStr);
         } catch (e) {
-            console.warn(
-                `Utils.globToRegex: Failed to convert glob "${glob}" to regex: ${e.message}`
-            );
+            console.warn(`Utils.globToRegex: Failed to convert glob "${glob}" to regex: ${e.message}`);
             return null;
         }
     }
 
     return {
+        getCharacterDimensions,
         calculateSHA256,
         formatConsoleArgs,
         deepCopyNode,
@@ -557,9 +392,8 @@ const Utils = (() => {
         parseNumericArg,
         validateUsernameFormat,
         parseFlags,
-        globToRegex,
-        getCharacterDimensions,
         callLlmApi,
+        globToRegex,
     };
 })();
 
@@ -629,22 +463,12 @@ const TimestampParser = (() => {
      * @returns {string|null} An ISO 8601 string or null if parsing fails.
      */
     function parseStampToISO(stampStr) {
-        let year,
-            monthVal,
-            day,
-            hours,
-            minutes,
-            seconds = 0;
+        let year, monthVal, day, hours, minutes, seconds = 0;
         const currentDate = new Date();
         let s = stampStr;
         if (s.includes(".")) {
             const parts = s.split(".");
-            if (
-                parts.length !== 2 ||
-                parts[1].length !== 2 ||
-                isNaN(parseInt(parts[1], 10))
-            )
-                return null;
+            if (parts.length !== 2 || parts[1].length !== 2 || isNaN(parseInt(parts[1], 10))) return null;
             seconds = parseInt(parts[1], 10);
             if (seconds < 0 || seconds > 59) return null;
             s = parts[0];
@@ -670,37 +494,10 @@ const TimestampParser = (() => {
             hours = parseInt(s.substring(4, 6), 10);
             minutes = parseInt(s.substring(6, 8), 10);
         } else return null;
-        if (
-            isNaN(year) ||
-            isNaN(monthVal) ||
-            isNaN(day) ||
-            isNaN(hours) ||
-            isNaN(minutes)
-        )
-            return null;
-        if (
-            monthVal < 1 ||
-            monthVal > 12 ||
-            day < 1 ||
-            day > 31 ||
-            hours < 0 ||
-            hours > 23 ||
-            minutes < 0 ||
-            minutes > 59
-        )
-            return null;
-        const dateObj = new Date(
-            Date.UTC(year, monthVal - 1, day, hours, minutes, seconds)
-        );
-        if (
-            dateObj.getUTCFullYear() !== year ||
-            dateObj.getUTCMonth() !== monthVal - 1 ||
-            dateObj.getUTCDate() !== day ||
-            dateObj.getUTCHours() !== hours ||
-            dateObj.getUTCMinutes() !== minutes ||
-            dateObj.getUTCSeconds() !== seconds
-        )
-            return null;
+        if (isNaN(year) || isNaN(monthVal) || isNaN(day) || isNaN(hours) || isNaN(minutes)) return null;
+        if (monthVal < 1 || monthVal > 12 || day < 1 || day > 31 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+        const dateObj = new Date(Date.UTC(year, monthVal - 1, day, hours, minutes, seconds));
+        if (dateObj.getUTCFullYear() !== year || dateObj.getUTCMonth() !== monthVal - 1 || dateObj.getUTCDate() !== day || dateObj.getUTCHours() !== hours || dateObj.getUTCMinutes() !== minutes || dateObj.getUTCSeconds() !== seconds) return null;
         return dateObj.toISOString();
     }
 
@@ -712,35 +509,22 @@ const TimestampParser = (() => {
      */
     function resolveTimestampFromCommandFlags(flags, commandName) {
         if (flags.dateString && flags.stamp) {
-            return {
-                timestampISO: null,
-                error: `${commandName}: cannot use both --date and --stamp flags simultaneously.`
-            };
+            return { timestampISO: null, error: `${commandName}: cannot use both --date and --stamp flags simultaneously.` };
         }
-
         if (flags.dateString) {
             const parsedDate = parseDateString(flags.dateString);
             if (!parsedDate) {
-                return {
-                    timestampISO: null,
-                    error: `${commandName}: invalid date string format '${flags.dateString}'`
-                };
+                return { timestampISO: null, error: `${commandName}: invalid date string format '${flags.dateString}'` };
             }
             return { timestampISO: parsedDate.toISOString(), error: null };
         }
-
         if (flags.stamp) {
             const parsedISO = parseStampToISO(flags.stamp);
             if (!parsedISO) {
-                return {
-                    timestampISO: null,
-                    error: `${commandName}: invalid stamp format '${flags.stamp}' (expected [[CC]YY]MMDDhhmm[.ss])`,
-                };
+                return { timestampISO: null, error: `${commandName}: invalid stamp format '${flags.stamp}' (expected [[CC]YY]MMDDhhmm[.ss])` };
             }
             return { timestampISO: parsedISO, error: null };
         }
-
-        // If no flags are provided, return the current time.
         return { timestampISO: new Date().toISOString(), error: null };
     }
     return {
@@ -760,7 +544,7 @@ const DiffUtils = (() => {
      * Compares two strings line by line using a diff algorithm.
      * @param {string} textA - The first string to compare.
      * @param {string} textB - The second string to compare.
-     * @returns {string} A formatted diff string, with lines prefixed by '<' (in A but not B), '>' (in B but not A), or ' ' (common).
+     * @returns {string} A formatted diff string.
      */
     function compare(textA, textB) {
         const a = textA.split('\n');
@@ -780,16 +564,12 @@ const DiffUtils = (() => {
                 } else {
                     x = v[k - 1 + max] + 1;
                 }
-
                 let y = x - k;
-
                 while (x < N && y < M && a[x] === b[y]) {
                     x++;
                     y++;
                 }
-
                 v[k + max] = x;
-
                 if (x >= N && y >= M) {
                     let diffOutput = [];
                     let px = N;
@@ -798,23 +578,19 @@ const DiffUtils = (() => {
                     for (let td = d; td > 0; td--) {
                         const prev_v = trace[td - 1];
                         const p_k = px - py;
-
                         let prev_k;
                         if (p_k === -td || (p_k !== td && prev_v[p_k - 1 + max] < prev_v[p_k + 1 + max])) {
                             prev_k = p_k + 1;
                         } else {
                             prev_k = p_k - 1;
                         }
-
                         let prev_x = prev_v[prev_k + max];
                         let prev_y = prev_x - prev_k;
-
                         while (px > prev_x && py > prev_y) {
                             diffOutput.unshift(`  ${a[px - 1]}`);
                             px--;
                             py--;
                         }
-
                         if (td > 0) {
                             if (prev_x < px) {
                                 diffOutput.unshift(`< ${a[px - 1]}`);
@@ -825,13 +601,11 @@ const DiffUtils = (() => {
                         px = prev_x;
                         py = prev_y;
                     }
-
                     while (px > 0 && py > 0) {
                         diffOutput.unshift(`  ${a[px - 1]}`);
                         px--;
                         py--;
                     }
-
                     return diffOutput.join('\n');
                 }
             }
@@ -853,37 +627,31 @@ const PatchUtils = (() => {
 
     /**
      * Creates a patch object representing the difference between two strings.
-     * This is a simple implementation focusing on a single contiguous change.
      * @param {string} oldText The original string.
      * @param {string} newText The modified string.
      * @returns {object|null} A patch object or null if no difference.
-     * Patch format: { index: number, delete: number, insert: string, deleted: string }
      */
     function createPatch(oldText, newText) {
         if (oldText === newText) {
             return null;
         }
-
         let start = 0;
         while (start < oldText.length && start < newText.length && oldText[start] === newText[start]) {
             start++;
         }
-
         let oldEnd = oldText.length;
         let newEnd = newText.length;
         while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
             oldEnd--;
             newEnd--;
         }
-
         const deletedText = oldText.substring(start, oldEnd);
         const insertedText = newText.substring(start, newEnd);
-
         return {
             index: start,
             delete: deletedText.length,
             insert: insertedText,
-            deleted: deletedText // Store for inverse patch
+            deleted: deletedText
         };
     }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-cache-v9';
+const CACHE_NAME = 'oopis-cache-v11';
 const urlsToCache = [
     './',
     './index.html',
@@ -107,7 +107,6 @@ const urlsToCache = [
     './scripts/commands/wget.js',
     './scripts/commands/whoami.js',
     './scripts/commands/zip.js',
-    './docs/guide.html',
     './LICENSE.txt',
     './icons/icon-192.png',
     './icons/icon-512.png'

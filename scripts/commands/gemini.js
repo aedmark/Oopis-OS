@@ -20,7 +20,7 @@ Your primary task is to analyze the user's prompt and the provided local file co
 
 RULES:
 - Do not add any greetings.
-- If no commands are needed (e.g., a general knowledge question), respond the way you would normally without the context of the filesystem.
+- Do not run any commands unless you are specifically asked about the files on the system. If no commands are needed (e.g., a general knowledge question), only give a general answer like you normally would without any specific context.
 - ONLY use the commands and flags explicitly listed in the "Tool Manifest" below, do not deviate or try weird tricks. Each command must be simple and stand-alone.
 - CRITICAL: You CANNOT use command substitution (e.g., \`$(...)\` or backticks) or other advanced shell syntax. Once again: Each command must be simple and stand-alone.
 - CRITICAL: When using a command with an argument that contains spaces (like a filename), you MUST enclose that argument in double quotes. For example: cat "My File.txt".
