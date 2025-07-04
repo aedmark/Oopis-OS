@@ -132,7 +132,8 @@ const BasicManager = (() => {
         }
 
         BasicUI.writeln('READY.');
-        BasicUI.focusInput();
+        // FIX: Defer focus until after current execution stack clears
+        setTimeout(() => BasicUI.focusInput(), 0);
     }
 
     function _loadContentIntoBuffer(content) {
