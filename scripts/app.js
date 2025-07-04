@@ -6,12 +6,11 @@
  */
 class App {
     /**
-     * @param {object} term - The terminal UI instance.
-     * @param {object} context - A context object containing system-wide managers and event emitters.
+     * @param {object} context - The master context object from the command executor.
      */
-    constructor(term, context) {
-        this.term = term;
+    constructor(context) {
         this.context = context;
+        this.term = context.term; // Pulls the terminal from the context.
         this._init();
     }
 

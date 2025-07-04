@@ -33,14 +33,11 @@
             if (validatedPaths[0] && validatedPaths[0].node) {
                 fileContent = validatedPaths[0].node.content;
                 filePath = validatedPaths[0].resolvedPath;
-            } else if (validatedPaths[0]) {
-                filePath = validatedPaths[0].resolvedPath;
             }
 
-            const cwd = FileSystemManager.getCurrentPath();
-            BasicApp.enter(fileContent, cwd, filePath);
-
-            return { success: true, output: "" };
+            // Pass the full context and an options object with file data.
+            // Then, return the app instance to the command executor.
+            return BasicApp.enter(context, { content: fileContent, path: filePath });
         }
     };
 

@@ -1,27 +1,53 @@
 /**
  * A stateful host for the Oopis Basic Interpreter.
- * NOTE: This class `extends App` and creates a `new BasicInterpreter()`.
- * It relies on `app.js` and `BasicInterpreter.js` being loaded first.
  * @class BasicApp
  * @extends {App}
  */
 class BasicApp extends App {
-    constructor(term, context) {
-        super(term, context); // 'App' is expected to be in the global scope
-        this.interpreter = new BasicInterpreter(); // 'BasicInterpreter' is also global
+    constructor(context, loadOptions = {}) {
+        super(context); // Passes the full context to the parent App class.
+        this.interpreter = new BasicInterpreter();
         this.programBuffer = new Map();
         this.onInputPromiseResolver = null;
+        this.loadOptions = loadOptions; // Save the file data.
+    }
+
+    static enter(context, loadOptions) {
+        return new BasicApp(context, loadOptions);
     }
 
     _init() {
         this.term.writeln('Oopis BASIC [Version 1.0]');
         this.term.writeln('(c) 2025 Oopis Systems. All rights reserved.');
         this.term.writeln('');
+
+        // Check if there's file content to load on startup.
+        if (this.loadOptions.content) {
+            this._loadContentIntoBuffer(this.loadOptions.content);
+            this.term.writeln(`Loaded "${this.loadOptions.path}".`);
+        }
+
         this.term.write('READY.\r\n> ');
     }
 
+    // Helper function to parse file content into the program buffer.
+    _loadContentIntoBuffer(content) {
+        this.programBuffer.clear();
+        const lines = content.split('\n');
+        for (const line of lines) {
+            if (line.trim() === '') continue;
+            const match = line.match(/^(\d+)\s*(.*)/);
+            if (match) {
+                const lineNumber = parseInt(match[1], 10);
+                const lineContent = match[2].trim();
+                if (lineContent) {
+                    this.programBuffer.set(lineNumber, lineContent);
+                }
+            }
+        }
+    }
+
     async _handleInput(command) {
-        // ... (This entire method and the rest of the class remain identical) ...
         command = command.trim();
         if (command === '') {
             this.term.write('> ');
@@ -78,11 +104,14 @@ class BasicApp extends App {
 
     _getProgramText() {
         const sortedLines = Array.from(this.programBuffer.keys()).sort((a, b) => a - b);
-        return sortedLines.map(lineNum => `${lineNum} ${this.programBuffer.get(lineNum)}`).join('\n');
+        return sortedLines.map(lineNum => `${this.programBuffer.get(lineNum)}`).join('\n');
     }
 
     _listProgram() {
-        this.term.writeln(this._getProgramText());
+        const sortedLines = Array.from(this.programBuffer.keys()).sort((a, b) => a - b);
+        sortedLines.forEach(lineNum => {
+            this.term.writeln(`${lineNum} ${this.programBuffer.get(lineNum)}`);
+        });
     }
 
     async _runProgram() {
