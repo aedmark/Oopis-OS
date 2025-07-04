@@ -29,11 +29,16 @@
             }
 
             let fileContent = null;
+            let filePath = null;
             if (validatedPaths[0] && validatedPaths[0].node) {
                 fileContent = validatedPaths[0].node.content;
+                filePath = validatedPaths[0].resolvedPath;
+            } else if (validatedPaths[0]) {
+                filePath = validatedPaths[0].resolvedPath;
             }
 
-            BasicApp.enter(fileContent);
+            const cwd = FileSystemManager.getCurrentPath();
+            BasicApp.enter(fileContent, cwd, filePath);
 
             return { success: true, output: "" };
         }
@@ -52,7 +57,8 @@ DESCRIPTION
 IDE COMMANDS
     LIST          - Displays the current program in memory.
     RUN           - Executes the current program.
-    SAVE "file"   - Saves the program to a file.
+    SAVE "file"   - Saves the program to a file. If no filename is given,
+                  saves to the file that was originally loaded.
     LOAD "file"   - Loads a program from a file.
     NEW           - Clears the current program from memory.
     EXIT          - Exits the BASIC environment.`;

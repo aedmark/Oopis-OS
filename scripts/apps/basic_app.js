@@ -10,6 +10,12 @@ const BasicApp = (() => {
     let isActive = false;
     let elements = {};
     let programBuffer = {};
+    /**
+     * @property {Function|null} onInputPromiseResolver - If not null, this is the 'resolve'
+     * function for a promise that is waiting for user input to satisfy a BASIC 'INPUT' statement.
+     * The main event listener will call this function instead of processing an IDE command.
+     */
+    let onInputPromiseResolver = null;
 
     function _buildLayout() {
         // --- REFACTORED: Use a 3-column flexbox for the header for proper alignment ---
@@ -93,27 +99,24 @@ const BasicApp = (() => {
         switch (command) {
             case "RUN":
                 BasicInterpreter.loadProgram(Object.entries(programBuffer).map(([ln, st]) => `${ln} ${st}`).join('\n'));
-                elements.input.disabled = true; // Disable input during run
-                await BasicInterpreter.run(_print, (prompt) => {
-                    return new Promise(resolve => {
-                        _print(prompt);
-                        elements.input.disabled = false;
-                        elements.input.focus();
-                        const tempListener = (e) => {
-                            if (e.key === 'Enter') {
-                                const val = elements.input.value;
-                                _print(val);
-                                elements.input.value = '';
-                                elements.input.removeEventListener('keydown', tempListener);
-                                resolve(val);
-                            }
-                        };
-                        elements.input.addEventListener('keydown', tempListener);
+                elements.input.disabled = true;
+
+                try {
+                    await BasicInterpreter.run(_print, (prompt) => {
+                        return new Promise(resolve => {
+                            _print(prompt);
+                            elements.input.disabled = false;
+                            elements.input.focus();
+                            onInputPromiseResolver = resolve;
+                        });
                     });
-                });
-                elements.input.disabled = false;
-                elements.input.focus();
-                _print("\nReady.");
+                } catch (e) {
+                    _print(`FATAL INTERPRETER ERROR: ${e.message}`);
+                } finally {
+                    elements.input.disabled = false;
+                    elements.input.focus();
+                    _print("\nReady.");
+                }
                 break;
             case "LIST":
                 const sortedLines = Object.keys(programBuffer).map(Number).sort((a,b) => a - b);
@@ -127,13 +130,15 @@ const BasicApp = (() => {
             case "SAVE":
                 if (!arg) { _print("?SYNTAX ERROR: SAVE requires a filename."); break; }
                 const contentToSave = Object.entries(programBuffer).map(([ln, st]) => `${ln} ${st}`).join('\n');
-                await FileSystemManager.createOrUpdateFile(arg, contentToSave, { currentUser: UserManager.getCurrentUser().name, primaryGroup: UserManager.getPrimaryGroupForUser(UserManager.getCurrentUser().name) });
+                const absSavePath = FileSystemManager.getAbsolutePath(arg);
+                await FileSystemManager.createOrUpdateFile(absSavePath, contentToSave, { currentUser: UserManager.getCurrentUser().name, primaryGroup: UserManager.getPrimaryGroupForUser(UserManager.getCurrentUser().name) });
                 await FileSystemManager.save();
                 _print(`Saved to ${arg}.`);
                 break;
             case "LOAD":
                 if (!arg) { _print("?SYNTAX ERROR: LOAD requires a filename."); break; }
-                const node = FileSystemManager.getNodeByPath(arg);
+                const absLoadPath = FileSystemManager.getAbsolutePath(arg);
+                const node = FileSystemManager.getNodeByPath(absLoadPath);
                 if (!node || node.type !== 'file') { _print(`?FILE NOT FOUND: ${arg}`); break; }
                 programBuffer = {};
                 (node.content || "").split('\n').forEach(line => {
@@ -156,7 +161,15 @@ const BasicApp = (() => {
                 e.preventDefault();
                 const command = elements.input.value;
                 elements.input.value = '';
-                _handleInput(command);
+
+                if (onInputPromiseResolver) {
+                    _print(command);
+                    elements.input.disabled = true;
+                    onInputPromiseResolver(command);
+                    onInputPromiseResolver = null;
+                } else {
+                    _handleInput(command);
+                }
             }
         });
         document.addEventListener('keydown', _handleGlobalKeys);
@@ -175,6 +188,7 @@ const BasicApp = (() => {
         isActive = false;
         elements = {};
         programBuffer = {};
+        onInputPromiseResolver = null; // Clear state on exit
     }
 
     return {
@@ -182,6 +196,7 @@ const BasicApp = (() => {
             if (isActive) return;
             isActive = true;
             programBuffer = {};
+            onInputPromiseResolver = null; // Ensure clean state
 
             const appElement = _buildLayout();
             AppLayerManager.show(appElement);
