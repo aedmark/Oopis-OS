@@ -102,14 +102,7 @@ const BasicApp = (() => {
                 elements.input.disabled = true;
 
                 try {
-                    await BasicInterpreter.run(_print, (prompt) => {
-                        return new Promise(resolve => {
-                            _print(prompt);
-                            elements.input.disabled = false;
-                            elements.input.focus();
-                            onInputPromiseResolver = resolve;
-                        });
-                    });
+                    aawait BasicInterpreter.run(_print);
                 } catch (e) {
                     _print(`FATAL INTERPRETER ERROR: ${e.message}`);
                 } finally {
@@ -161,15 +154,9 @@ const BasicApp = (() => {
                 e.preventDefault();
                 const command = elements.input.value;
                 elements.input.value = '';
-
-                if (onInputPromiseResolver) {
-                    _print(command);
-                    elements.input.disabled = true;
-                    onInputPromiseResolver(command);
-                    onInputPromiseResolver = null;
-                } else {
-                    _handleInput(command);
-                }
+                // The listener now ONLY handles IDE-level commands and line entry.
+                // The running program's input is handled elsewhere.
+                _handleInput(command);
             }
         });
         document.addEventListener('keydown', _handleGlobalKeys);
