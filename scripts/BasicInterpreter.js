@@ -46,28 +46,34 @@ class BasicInterpreter {
         this._parseProgram(programText);
 
         const sortedLines = Array.from(this.program.keys()).sort((a, b) => a - b);
+        if (this.programCounter === null) {
+            return; // No program to run
+        }
 
-        while (this.programCounter !== null) {
-            if (!this.program.has(this.programCounter)) {
-                this.outputCallback(`Error: Line number ${this.programCounter} not found.`);
-                return;
-            }
+        let currentIndex = sortedLines.indexOf(this.programCounter);
+
+        while (currentIndex < sortedLines.length && currentIndex > -1) {
+            this.programCounter = sortedLines[currentIndex];
+            const pcBeforeExecute = this.programCounter;
 
             const statement = this.program.get(this.programCounter);
-            const currentLineIndex = sortedLines.indexOf(this.programCounter);
-            const nextLineIndex = currentLineIndex + 1;
-
-            // Stash the next line number before executing the statement,
-            // as GOTO/GOSUB will overwrite this.programCounter
-            const nextCounter = nextLineIndex < sortedLines.length ? sortedLines[nextLineIndex] : null;
-
             await this.executeStatement(statement);
 
-            // Only advance if program counter wasn't changed by GOTO/GOSUB
-            if (this.program.has(this.programCounter)) {
-                // no-op
+            if (this.programCounter === null) { // END statement was hit
+                break;
+            }
+
+            // If program counter was changed by GOTO, GOSUB, etc., find the new index.
+            if (this.programCounter !== pcBeforeExecute) {
+                const newIndex = sortedLines.indexOf(this.programCounter);
+                if (newIndex === -1) {
+                    this.outputCallback(`\nError: GOTO/GOSUB to non-existent line ${this.programCounter}`);
+                    return;
+                }
+                currentIndex = newIndex;
             } else {
-                this.programCounter = nextCounter;
+                // Otherwise, just advance to the next line.
+                currentIndex++;
             }
         }
     }
@@ -77,7 +83,6 @@ class BasicInterpreter {
         const closeParen = statement.lastIndexOf(')');
         if (openParen === -1 || closeParen === -1) return [];
         const argsStr = statement.substring(openParen + 1, closeParen);
-        // This is a simple split, doesn't handle nested commas in strings, but is sufficient for this BASIC dialect.
         return argsStr.split(',').map(s => s.trim());
     }
 
@@ -143,11 +148,18 @@ class BasicInterpreter {
                 }
             }
                 break;
-            case 'GOSUB':
-                const nextLineIndex = Array.from(this.program.keys()).sort((a,b) => a-b).indexOf(this.programCounter) + 1;
-                this.gosubStack.push(Array.from(this.program.keys()).sort((a,b) => a-b)[nextLineIndex-1]);
+            case 'GOSUB': {
+                const sortedLines = Array.from(this.program.keys()).sort((a,b)=>a-b);
+                const currentIndex = sortedLines.indexOf(this.programCounter);
+                const nextLine = sortedLines[currentIndex + 1];
+                if (nextLine) {
+                    this.gosubStack.push(nextLine);
+                } else {
+                    this.gosubStack.push(null); // Return to end of program
+                }
                 this.programCounter = parseInt(parts[1], 10);
                 break;
+            }
             case 'RETURN':
                 if (this.gosubStack.length === 0) throw new Error("RETURN without GOSUB");
                 this.programCounter = this.gosubStack.pop();
@@ -181,7 +193,6 @@ class BasicInterpreter {
     }
 
     async _evaluateExpression(expression) {
-        // Handle system function calls first
         const sysCmdMatch = expression.match(/SYS_CMD\((.*)\)/i);
         if (sysCmdMatch) {
             const cmd = await this._evaluateExpression(sysCmdMatch[1]);
@@ -199,44 +210,35 @@ class BasicInterpreter {
             return node.content || "";
         }
 
-        // Handle arithmetic and string concatenation
         const parts = expression.split('+').map(p => p.trim());
         let result = '';
-        let isNumeric = true;
+        let resultIsNumeric = true;
 
-        for (let i = 0; i < parts.length; i++) {
-            let part = parts[i];
-            let value;
-
-            if (part.startsWith('"') && part.endsWith('"')) {
-                value = part.substring(1, part.length - 1);
-                isNumeric = false;
-            } else if (part.endsWith('$')) {
-                value = this.variables.get(part.toUpperCase()) || "";
-                isNumeric = false;
-            } else {
-                const varValue = this.variables.get(part.toUpperCase());
-                if (varValue !== undefined) {
-                    value = varValue;
-                } else {
-                    value = parseFloat(part);
-                    if (isNaN(value)) {
-                        value = 0; // Default to 0 if not a number or defined variable
-                    }
-                }
+        if (parts.length > 1) { // If there's concatenation, treat as string unless all parts are numeric
+            let tempResult = "";
+            for (const part of parts) {
+                let value = this._evaluateSinglePart(part);
+                tempResult += String(value);
             }
-
-            if (i === 0) {
-                result = value;
-            } else {
-                if(isNumeric) {
-                    result += value;
-                } else {
-                    result = String(result) + String(value);
-                }
-            }
+            return tempResult;
+        } else {
+            return this._evaluateSinglePart(expression);
         }
-        return result;
+    }
+
+    _evaluateSinglePart(part) {
+        part = part.trim();
+        if (part.startsWith('"') && part.endsWith('"')) {
+            return part.substring(1, part.length - 1);
+        }
+        if (this.variables.has(part.toUpperCase())) {
+            return this.variables.get(part.toUpperCase());
+        }
+        const num = parseFloat(part);
+        if (!isNaN(num) && part.trim() !== '') {
+            return num;
+        }
+        return part; // Return as-is if it's not a known var or number
     }
 
     async _evaluateCondition(condition) {
