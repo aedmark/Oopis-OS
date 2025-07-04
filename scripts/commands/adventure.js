@@ -1,6 +1,7 @@
 /**
- * @file Defines the 'adventure' command, which launches the OopisOS text adventure game engine.
+ * @file Defines the 'adventure' command, which launches the OopisOS text adventure game engine or the new creation tool.
  * @author Andrew Edmark & Gemini
+ * @author The Architect (Creation Mode Additions)
  */
 
 (() => {
@@ -126,16 +127,14 @@
         }
     };
 
-
-    /**
-     * @const {object} adventureCommandDefinition
-     * @description The command definition for the 'adventure' command.
-     */
     const adventureCommandDefinition = {
         commandName: "adventure",
+        flagDefinitions: [
+            { name: 'create', short: '--create' }
+        ],
         argValidation: {
-            max: 1,
-            error: "Usage: adventure [path_to_adventure_file.json]",
+            max: 2,
+            error: "Usage: adventure [--create] [path_to_adventure.json]",
         },
         pathValidation: [
             {
@@ -147,12 +146,56 @@
                 },
             },
         ],
-        /**
-         * The core logic for the 'adventure' command.
-         */
         coreLogic: async (context) => {
-            const { args, currentUser, validatedPaths, options } = context;
+            const { args, currentUser, validatedPaths, options, flags } = context;
 
+            // --- NEW: LOGIC FOR CREATE MODE ---
+            if (flags.create) {
+                const filename = args[0];
+                if (!filename) {
+                    return { success: false, error: "Usage: adventure --create <filename.json>" };
+                }
+                if (!filename.endsWith('.json')) {
+                    return { success: false, error: "Filename must end with .json" };
+                }
+
+                // Engineer's implementation of placeholder logic
+                let initialData = {};
+                const pathInfo = FileSystemManager.validatePath("adventure_create", filename, { allowMissing: true });
+
+                if (pathInfo.node) { // File exists
+                    try {
+                        initialData = JSON.parse(pathInfo.node.content || '{}');
+                    } catch (e) {
+                        return { success: false, error: `Could not parse existing file '${filename}'. It may be corrupt.` };
+                    }
+                } else { // File does not exist, create a new structure
+                    initialData = {
+                        title: "New Adventure",
+                        startingRoomId: "start",
+                        winCondition: { type: "playerHasItem", itemId: "macguffin" },
+                        winMessage: "You found the MacGuffin! You win!",
+                        rooms: {
+                            start: { name: "The Starting Room", description: "A blank canvas for your adventure." }
+                        },
+                        items: {
+                            macguffin: { id: "macguffin", name: "a shiny MacGuffin", noun: "macguffin", description: "It's very shiny.", location: "start", canTake: true }
+                        },
+                        npcs: {},
+                        daemons: {}
+                    };
+                }
+
+                if (typeof AdventureCreator === 'undefined' || !AdventureCreator.enter) {
+                    return { success: false, error: "AdventureCreator module not found. Catastrophic blueprint failure." };
+                }
+
+                AdventureCreator.enter(filename, initialData, context);
+                return { success: true, output: "" }; // The creator app handles all further output.
+            }
+            // --- END: NEW LOGIC ---
+
+            // --- EXISTING LOGIC FOR PLAY MODE ---
             if (typeof TextAdventureModal === "undefined" || typeof TextAdventureEngine === "undefined") {
                 return { success: false, error: "Adventure module is not properly loaded." };
             }
@@ -206,53 +249,31 @@
         },
     };
 
-    const adventureDescription = "Starts an interactive text adventure game.";
-    const adventureHelpText = `Usage: adventure [path_to_game.json]
+    const adventureDescription = "Starts an interactive text adventure game or creation tool.";
+    const adventureHelpText = `Usage: adventure [--create] [path_to_game.json]
 
-Launches the OopisOS interactive text adventure game engine. The game runs in a dedicated full-screen view.
+Launches the OopisOS interactive text adventure engine.
 
-If no path to a custom game file is provided, the default built-in adventure, "The Architect's Apprentice," will be started.
+MODES
+       Play Mode (default)
+       Launches the game. If no file is provided, starts the default adventure.
+
+       Creation Mode
+       Use 'adventure --create <file.json>' to enter an interactive shell
+       for building or editing an adventure file.
 
 GAMEPLAY COMMANDS
-       The following commands are available while inside the adventure:
-       
-       look [target]      - Describes the room or a specific item/person.
-       listen             - Listen to the sounds of the room.
-       smell              - Smell the scents in the room.
-       touch [item]       - Touch an item.
-       go [direction]     - Moves the player (e.g., go north).
-       again              - Repeats the last command you typed.
-       wait               - Pass some time.
-       talk to [person]   - Start a conversation.
-       ask [person] about [topic]
-                          - Ask someone about a specific topic.
-       give [item] to [person]
-                          - Give an item from your inventory to someone.
-       show [item] to [person]
-                          - Show an item to someone without giving it away.
-       take [item]        - Picks up an item from the room.
-       drop [item]        - Drops an item from inventory.
-       read [item]        - Read a book, scroll, or leaflet.
-       eat [item]         - Eat an edible item.
-       drink [item]       - Drink a potable item.
-       open / close [item]
-                          - Open or close a container or door.
-       lock / unlock [item] with [key]
-                          - Lock or unlock something with a key.
-       push / pull / turn [item]
-                          - Interact with mechanisms.
-       wear / remove [item]
-                          - Wear or remove clothing/armor.
-       use [item] on [target]
-                          - Uses an inventory item on something in the room.
-       score              - Displays your current score and number of moves.
-       inventory (or i)   - Shows what you are carrying.
-       save / load        - Saves or loads game progress to a file in the VFS.
-       help               - Shows this list of gameplay commands.
-       quit / exit        - Exits the game and returns to the terminal.
+       look, go, take, drop, use, inventory, save, load, quit, etc.
+       Type 'help' inside the game for a full list of gameplay commands.
 
-CUSTOM ADVENTURES
-       You can create your own adventures using a specific JSON format. The JSON file must contain objects for 'rooms' and 'items', and specify a 'startingRoomId' and a 'winCondition'. Upload your .json file and run \`adventure /path/to/your_game.json\` to play.`;
+CREATION COMMANDS
+       create <type> "<name>"
+       edit <type> "<name>"
+       set <property> "<value>"
+       link "<room1>" <dir> "<room2>"
+       save
+       exit
+       Type 'help' inside the creator for a full list of building commands.`;
 
     CommandRegistry.register("adventure", adventureCommandDefinition, adventureDescription, adventureHelpText);
 })();

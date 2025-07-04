@@ -1,0 +1,163 @@
+{
+  "title": "Text-Based Carnage",
+  "startingRoomId": "e1m1_start",
+  "winCondition": {
+    "type": "itemUsedOn",
+    "itemId": "bfg",
+    "targetId": "cyberdemon"
+  },
+  "winMessage": "\n*** The BFG unleashes a massive ball of green plasma. The Cyberdemon roars, its cybernetic parts shorting out as it collapses into a smoldering heap. You have won. ***",
+  "rooms": {
+    "e1m1_start": {
+      "name": "E1M1: Hangar",
+      "description": "You stand in a dimly lit hangar. The walls are metallic and stained. A flickering light overhead casts long shadows. To the north, a heavy door beckons. A snarling Imp paces ahead, hurling a ball of fire your way.",
+      "exits": {
+        "north": "e1m1_corridor"
+      }
+    },
+    "e1m1_corridor": {
+      "name": "E1M1: Slime Corridor",
+      "description": "The corridor ahead is slick with a green, noxious slime. Pipes line the walls, dripping with acidic-looking condensation. Another Imp stands guard at the far end of the hall, which leads to a larger chamber.",
+      "exits": {
+        "south": "e1m1_start",
+        "north": "e1m1_boss_arena"
+      }
+    },
+    "e1m1_boss_arena": {
+      "name": "E1M1: Central Arena",
+      "description": "You enter a vast, circular arena. In the center, a towering Cyberdemon bellows, its leg-mounted rocket launcher tracking your movement. This is it. On a pedestal nearby, you see a weapon of immense power.",
+      "exits": {
+        "south": "e1m1_corridor"
+      }
+    }
+  },
+  "items": {
+    "fists": {
+      "id": "fists",
+      "name": "your bare fists",
+      "noun": "fists",
+      "adjectives": ["bare", "your"],
+      "description": "Just your regular hands. Good for punching, not much else.",
+      "location": "player",
+      "canTake": false
+    },
+    "shotgun": {
+      "id": "shotgun",
+      "name": "a pump-action shotgun",
+      "noun": "shotgun",
+      "adjectives": ["pump", "pump-action"],
+      "description": "A reliable pump-action shotgun. Feels good in your hands.",
+      "location": "player",
+      "canTake": false
+    },
+    "shotgun_shells": {
+      "id": "shells",
+      "name": "a box of shotgun shells",
+      "noun": "shells",
+      "adjectives": ["shotgun", "box"],
+      "description": "A box of 12-gauge shotgun shells.",
+      "location": "e1m1_start",
+      "canTake": true
+    },
+    "medkit": {
+      "id": "medkit",
+      "name": "a medkit",
+      "noun": "medkit",
+      "description": "A standard UAC medkit. Might patch up a few holes.",
+      "location": "e1m1_corridor",
+      "canTake": true
+    },
+    "bfg": {
+      "id": "bfg",
+      "name": "the BFG 9000",
+      "noun": "bfg",
+      "description": "The Big F*cking Gun. You know what this does.",
+      "location": "e1m1_boss_arena",
+      "canTake": true
+    }
+  },
+  "npcs": {
+    "imp_1": {
+      "id": "imp_1",
+      "name": "a snarling Imp",
+      "noun": "imp",
+      "location": "e1m1_start",
+      "state": "healthy",
+      "descriptions": {
+        "healthy": "A snarling, brown-skinned Imp paces ahead, hurling a ball of fire your way.",
+        "gibbed": "A messy pile of viscera is all that remains of the Imp."
+      },
+      "onUse": {
+        "shotgun": {
+          "message": "You fire the shotgun. The Imp explodes into a satisfying shower of gore.",
+          "newState": "gibbed",
+          "destroyItem": false
+        },
+        "fists": {
+          "message": "You punch the Imp. It swipes back, scratching you. This is a bad idea.",
+          "newState": "healthy"
+        },
+        "bfg": {
+          "message": "Total overkill. The Imp vaporizes instantly, leaving behind only the faint smell of ozone.",
+          "newState": "gibbed"
+        }
+      }
+    },
+    "imp_2": {
+      "id": "imp_2",
+      "name": "another Imp",
+      "noun": "imp",
+      "location": "e1m1_corridor",
+      "state": "healthy",
+      "descriptions": {
+        "healthy": "This Imp seems more agitated than the last, its claws scraping against the metal floor.",
+        "gibbed": "You paint the corridor with the Imp's insides. A masterpiece."
+      },
+      "onUse": {
+        "shotgun": {
+          "message": "BOOM. The Imp is reduced to a fine red mist.",
+          "newState": "gibbed"
+        },
+        "fists": {
+          "message": "You punch the Imp. It screeches and claws at your arm.",
+          "newState": "healthy"
+        }
+      }
+    },
+    "cyberdemon": {
+      "id": "cyberdemon",
+      "name": "a Cyberdemon",
+      "noun": "cyberdemon",
+      "location": "e1m1_boss_arena",
+      "state": "healthy",
+      "descriptions": {
+        "healthy": "The Cyberdemon towers over you, a fusion of flesh and steel. Its rocket launcher whirs as it acquires a target lock. You.",
+        "gibbed": "The Cyberdemon staggers, its cybernetics sparking violently before it crashes to the floor, silent at last."
+      },
+      "onUse": {
+        "shotgun": {
+          "message": "The shotgun pellets bounce harmlessly off its cybernetic chassis. It doesn't even flinch.",
+          "newState": "healthy"
+        },
+        "fists": {
+          "message": "You run up and punch the Cyberdemon's metal leg. It looks down at you with what can only be described as mechanical pity before raising its rocket launcher.",
+          "newState": "healthy"
+        }
+      }
+    }
+  },
+  "daemons": {
+    "distant_scream": {
+      "active": true,
+      "repeatable": true,
+      "trigger": {
+        "type": "every_x_turns",
+        "value": 5
+      },
+      "action": {
+        "type": "message",
+        "text": "You hear a bloodcurdling scream from somewhere down the corridor."
+      }
+    }
+  }
+}
