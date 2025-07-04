@@ -12,13 +12,17 @@
                     |__/  A Browser-Based OS Simulation
 ```
 
-# OopisOS v3.4: Journeyman Edition
+# OopisOS v3.6: The Portable Edition
 
-Welcome to OopisOS, a sophisticated OS simulation that runs entirely within your browser. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally in your browser; your world remains your own.
+Welcome to OopisOS, a sophisticated OS simulation that runs entirely on your local machine, now available as a standalone desktop application. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and a suite of powerful integrated tools. All user data is stored locally; your world remains your own.
+
+## What's New in v3.6: True Portability
+
+The headline feature of version 3.6 is **Portable Mode**. OopisOS can now run from a USB drive or any other portable media, carrying your entire environment with you. By simply creating a `.portable` file in the application's root directory, you instruct OopisOS to store all its data—users, files, and settings—in a `data` folder right next to the executable. This achieves true digital freedom, untethering your personal computing environment from any single machine.
 
 ## Key Features Overview
 
-OopisOS v3.4 is a major release focused on creativity, interactivity, and developer experience.
+OopisOS is more than just a terminal; it's a complete ecosystem.
 
 #### Core Shell Experience
 
@@ -60,6 +64,8 @@ OopisOS v3.4 is a major release focused on creativity, interactivity, and develo
         
     - `gemini`: A tool-using AI assistant for your terminal.
         
+    - `basic`: An integrated development environment for the classic BASIC programming language.
+        
 
 ## Core Architectural Concepts
 
@@ -67,7 +73,7 @@ OopisOS is built on several foundational principles that ensure it is secure, mo
 
 #### The Persistence Layer: A Self-Contained World
 
-The entire state of OopisOS is stored locally and persistently within your browser, requiring no server interaction.
+The entire state of OopisOS is stored locally and persistently on your machine, requiring no server interaction.
 
 - **IndexedDB:** Provides the robust, transactional database needed to manage the entire hierarchical file system.
     
@@ -113,13 +119,11 @@ The codebase is organized into modular files with clear responsibilities.
 - `user_manager.js`: Handles all logic for users, groups, and authentication.
     
 
-To add a new command, simply create a new file in `/scripts/commands/`, define the command's contract and logic using the standard pattern, and add a `<script>` tag for it in `index.html`.
+To add a new command, simply create a new file in `/scripts/commands/`, define the command's contract and logic using the standard pattern. The command will be loaded dynamically on first use.
 
 ## Further Documentation
 
 To keep this document focused, more detailed information has been moved to separate files.
-
-- **`/docs/website.html`:** A hub of all the most pertinent information.
 
 - **`/docs/guide.md`:** The full, styled User Guide.
     
@@ -132,3 +136,5 @@ To keep this document focused, more detailed information has been moved to separ
 - **`/docs/tutorial.md`:** Guided tutorials for more complex tasks.
     
 - **`/docs/adventure.md`:** A comprehensive guide to creating custom adventures with the text adventure engine.
+    
+- **`/docs/taco.md`:** A whimsical-yet-formal paper on the "El Código del Taco" architectural model.
