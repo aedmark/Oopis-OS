@@ -17,17 +17,6 @@
   "build": {
     "appId": "com.oopisos.app",
     "productName": "OopisOS",
-    "files": [
-      "electron.js",
-      "preload.js",
-      "index.html",
-      "style.css",
-      "manifest.json",
-      "scripts/",
-      "docs/",
-      "extras/",
-      "icons/"
-    ],
     "win": {
       "target": "nsis",
       "icon": "icons/icon.ico"
