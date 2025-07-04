@@ -11,4 +11,4 @@ favicon.ico
 *.deb
 *.appimage
 *.exe
-/docs/*.html
+./docs/*.html
