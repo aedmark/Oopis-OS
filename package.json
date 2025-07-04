@@ -32,10 +32,6 @@
       "target": "nsis",
       "icon": "icons/icon.ico"
     },
-    "mac": {
-      "target": "dmg",
-      "icon": "icons/icon.icns"
-    },
     "linux": {
       "target": [
         "AppImage",
