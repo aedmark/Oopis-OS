@@ -84,7 +84,9 @@
                     try {
                         const fileExtension = Utils.getFileExtension(file.name);
                         if (!ALLOWED_EXTENSIONS.has(fileExtension) && file.name.includes('.')) {
-                            operationMessages.push(`Skipped '${file.name}': File type '.${fileExtension}' not allowed.`);
+                            // REFACTOR START
+                            operationMessages.push(`${Config.MESSAGES.UPLOAD_INVALID_TYPE_PREFIX}'${fileExtension}'${Config.MESSAGES.UPLOAD_INVALID_TYPE_SUFFIX}`);
+                            // REFACTOR END
                             continue;
                         }
 
@@ -135,11 +137,15 @@
                         const explicitMode = finalFileName.endsWith(".sh") ? Config.FILESYSTEM.DEFAULT_SH_MODE : null;
                         finalTargetNode.children[finalFileName] = FileSystemManager._createNewFileNode(finalFileName, content, currentUser, primaryGroup, explicitMode);
                         finalTargetNode.mtime = nowISO;
-                        operationMessages.push(`'${relativePath}' uploaded.`);
+                        // REFACTOR START
+                        operationMessages.push(`${Config.MESSAGES.UPLOAD_SUCCESS_PREFIX}'${relativePath}'${Config.MESSAGES.UPLOAD_SUCCESS_MIDDLE}'${targetDirPath}'${Config.MESSAGES.UPLOAD_SUCCESS_SUFFIX}`);
+                        // REFACTOR END
                         anyChangeMade = true;
 
                     } catch (fileError) {
-                        operationMessages.push(`Error processing '${file.name}': ${fileError.message}`);
+                        // REFACTOR START
+                        operationMessages.push(`${Config.MESSAGES.UPLOAD_READ_ERROR_PREFIX}'${file.name}'${Config.MESSAGES.UPLOAD_READ_ERROR_SUFFIX}: ${fileError.message}`);
+                        // REFACTOR END
                         allFilesSuccess = false;
                     }
                 }

@@ -78,6 +78,9 @@
                         continue;
                     }
                     pathValidation.node.mtime = timestampToUse; // Apply the resolved timestamp.
+                    // REFACTOR START
+                    messages.push(`${Config.MESSAGES.TIMESTAMP_UPDATED_PREFIX}'${pathArg}'${Config.MESSAGES.TIMESTAMP_UPDATED_SUFFIX}`);
+                    // REFACTOR END
                     changesMade = true;
                 } else if (pathValidation.error) {
                     // If there's an error from path validation that isn't about being missing (e.g., trying to touch root).
@@ -159,6 +162,9 @@
 
                     // Update parent's modification time to now.
                     parentNode.mtime = new Date().toISOString();
+                    // REFACTOR START
+                    messages.push(`'${pathArg}'${Config.MESSAGES.FILE_CREATED_SUFFIX}`);
+                    // REFACTOR END
                     changesMade = true;
                 }
             }
@@ -177,7 +183,9 @@
                     error: outputMessage || "touch: Not all operations were successful.",
                 };
 
-            return { success: true, output: "" }; // If all successful, no output needed.
+            // REFACTOR START: Return success output instead of nothing.
+            return { success: true, output: outputMessage, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
+            // REFACTOR END
         },
     };
 

@@ -151,8 +151,13 @@
             if (anyChangesMade && !(await FileSystemManager.save())) {
                 return { success: false, error: "cp: CRITICAL - Failed to save file system changes." };
             }
-
-            return { success: true, output: "" };
+            // REFACTOR START: Return a success message
+            return {
+                success: true,
+                output: `${Config.MESSAGES.COPIED_PREFIX}${sourcePathArgs.join(" ")}${Config.MESSAGES.COPIED_TO}${destPathArg}${Config.MESSAGES.COPIED_SUFFIX}`,
+                messageType: Config.CSS_CLASSES.SUCCESS_MSG
+            };
+            // REFACTOR END
         },
     };
 

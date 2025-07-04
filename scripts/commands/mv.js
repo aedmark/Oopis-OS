@@ -141,7 +141,14 @@
                 return { success: false, error: "mv: Failed to save file system changes." };
             }
 
-            return { success: true, output: "" };
+            // REFACTOR START: Return a success message
+            const finalDest = destPathArg.endsWith('/') ? `${destPathArg}${sourcePathArgs.at(-1)}` : destPathArg;
+            return {
+                success: true,
+                output: `${Config.MESSAGES.MOVED_PREFIX}${sourcePathArgs.join(" ")}${Config.MESSAGES.MOVED_TO}${finalDest}${Config.MESSAGES.MOVED_SUFFIX}`,
+                messageType: Config.CSS_CLASSES.SUCCESS_MSG
+            };
+            // REFACTOR END
         }
     };
 

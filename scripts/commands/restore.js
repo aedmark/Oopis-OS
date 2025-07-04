@@ -183,7 +183,10 @@
                 }
                 if (backupData.manualSaveStates) {
                     for (const key in backupData.manualSaveStates)
-                        StorageManager.saveItem(key, backupData.manualSaveStates[key]);
+                        StorageManager.saveItem(
+                            key,
+                            backupData.manualSaveStates[key]
+                        );
                 }
 
                 // Restore the file system data in memory.
@@ -200,13 +203,13 @@
                     };
                 }
 
-                // Output success message and trigger a page reload to apply all changes.
-                await OutputManager.appendToOutput(
-                    "System state restored successfully. Rebooting OopisOS to apply changes...",
-                    {
-                        typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-                    }
-                );
+                // REFACTOR START: Use configured messages
+                const successMessage = `${Config.MESSAGES.RESTORE_SUCCESS_PREFIX}${context.currentUser}${Config.MESSAGES.RESTORE_SUCCESS_MIDDLE}${file.name}${Config.MESSAGES.RESTORE_SUCCESS_SUFFIX}`;
+                await OutputManager.appendToOutput(successMessage, {
+                    typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
+                });
+                // REFACTOR END
+
                 setTimeout(() => {
                     window.location.reload(true); // Force a full reload from server, not cache.
                 }, 1500);
@@ -254,7 +257,8 @@ DESCRIPTION
 
 WARNING
        THIS OPERATION IS IRREVERSIBLE AND WILL PERMANENTLY OVERWRITE
-       ALL CURRENT OOPISOS DATA.`;
+       ALL CURRENT OOPISOS DATA. THE COMMAND WILL PROMPT FOR
+       CONFIRMATION BEFORE PROCEEDING.`;
 
     CommandRegistry.register("restore", restoreCommandDefinition, restoreDescription, restoreHelpText);
 })();

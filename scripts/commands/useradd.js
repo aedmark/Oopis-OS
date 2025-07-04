@@ -33,12 +33,12 @@
                 ModalInputManager.requestInput(
                     Config.MESSAGES.PASSWORD_PROMPT,
                     async (firstPassword) => {
+                        // REFACTOR START
                         if (firstPassword.trim() === "") {
-                            await OutputManager.appendToOutput("Registering user with no password.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                            const registerResult = await UserManager.register(username, null);
-                            resolve(registerResult);
+                            resolve({ success: false, error: Config.MESSAGES.EMPTY_PASSWORD_NOT_ALLOWED });
                             return;
                         }
+                        // REFACTOR END
 
                         ModalInputManager.requestInput(
                             Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,

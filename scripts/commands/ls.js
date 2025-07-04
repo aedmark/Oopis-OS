@@ -3,7 +3,7 @@
  * It supports various flags for detailed output, sorting, and recursive listing.
  * @author Andrew Edmark
  * @author Gemini
- * @author Engineer (Refactored for v3.4)
+ * @author Engineer (Refactored for v3.5)
  */
 (() => {
     "use strict";
@@ -145,7 +145,14 @@
         if (singleItemResultOutput !== null) {
             currentPathOutputLines.push(singleItemResultOutput);
         } else {
-            if (effectiveFlags.long) {
+            // REFACTOR START
+            if (itemDetailsList.length === 0 && targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
+                // Use the configured message for empty directories, but only if not in long format.
+                if (!effectiveFlags.long) {
+                    currentPathOutputLines.push(Config.MESSAGES.DIRECTORY_EMPTY);
+                }
+            } else if (effectiveFlags.long) {
+                // REFACTOR END
                 if (itemDetailsList.length > 0) currentPathOutputLines.push(`total ${itemDetailsList.length}`);
                 itemDetailsList.forEach(item => { currentPathOutputLines.push(formatLongListItem(item, effectiveFlags)); });
             } else if (effectiveFlags.oneColumn) {

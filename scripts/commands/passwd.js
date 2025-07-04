@@ -32,26 +32,28 @@
                     ModalInputManager.requestInput(
                         `Enter new password for ${targetUsername}:`,
                         (newPassword) => {
+                            // REFACTOR START
                             if (!newPassword) {
-                                resolve({ success: false, error: "Password cannot be empty." });
+                                resolve({ success: false, error: Config.MESSAGES.EMPTY_PASSWORD_NOT_ALLOWED });
                                 return;
                             }
+                            // REFACTOR END
                             ModalInputManager.requestInput(
                                 `Confirm new password:`,
                                 async (confirmPassword) => {
                                     if (newPassword !== confirmPassword) {
-                                        resolve({ success: false, error: "Passwords do not match." });
+                                        resolve({ success: false, error: Config.MESSAGES.PASSWORD_MISMATCH });
                                         return;
                                     }
                                     const result = await UserManager.changePassword(currentUser, targetUsername, oldPassword, newPassword);
                                     resolve(result);
                                 },
-                                () => resolve({ success: true, output: "Operation cancelled." }),
+                                () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
                                 true, // Obscured input
                                 options
                             );
                         },
-                        () => resolve({ success: true, output: "Operation cancelled." }),
+                        () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
                         true, // Obscured input
                         options
                     );
@@ -64,7 +66,7 @@
                     ModalInputManager.requestInput(
                         `Enter current password for ${currentUser}:`,
                         (oldPassword) => getNewPassword(oldPassword),
-                        () => resolve({ success: true, output: "Operation cancelled." }),
+                        () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
                         true, // Obscured input
                         options
                     );
