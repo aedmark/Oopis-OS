@@ -20,19 +20,16 @@
             error: null,
         };
 
-        // This regex is complex but safer than eval. It captures different parts of an awk script.
         const ruleRegex = /(BEGIN)\s*{([^}]*)}|(END)\s*{([^}]*)}|(\/[^/]*\/)\s*{([^}]*)}/g;
         let match;
-        let lastIndex = 0;
-
         while ((match = ruleRegex.exec(programString)) !== null) {
-            if (match[1]) { // BEGIN block
+            if (match[1]) {
                 program.begin = match[2].trim();
-            } else if (match[3]) { // END block
+            } else if (match[3]) {
                 program.end = match[4].trim();
-            } else if (match[5]) { // /pattern/ { action } block
+            } else if (match[5]) {
                 try {
-                    const pattern = new RegExp(match[5].slice(1, -1)); // Create RegExp from pattern
+                    const pattern = new RegExp(match[5].slice(1, -1));
                     program.rules.push({
                         pattern: pattern,
                         action: match[6].trim()
@@ -42,12 +39,9 @@
                     return program;
                 }
             }
-            lastIndex = ruleRegex.lastIndex;
         }
 
-        // Handle default action (print all lines) if no rules are found
         if (programString.trim() && !program.begin && !program.end && program.rules.length === 0) {
-            // Check if it's a simple action block without a pattern
             const simpleActionMatch = programString.trim().match(/^{([^}]*)}$/);
             if (simpleActionMatch) {
                 program.rules.push({ pattern: /.*/, action: simpleActionMatch[1].trim() });
@@ -55,8 +49,6 @@
                 program.error = `Unrecognized program format: ${programString}`;
             }
         }
-
-
         return program;
     }
 
@@ -72,10 +64,9 @@
         if (action.startsWith("print")) {
             let argsStr = action.substring(5).trim();
             if (argsStr === "") {
-                return fields[0]; // print equivalent to print $0
+                return fields[0];
             }
 
-            // Replace variables like $1, $0, NR, NF with their values
             argsStr = argsStr.replace(/\$([0-9]+)/g, (match, n) => {
                 const index = parseInt(n, 10);
                 return fields[index] || "";
@@ -84,7 +75,6 @@
             argsStr = argsStr.replace(/NR/g, vars.NR);
             argsStr = argsStr.replace(/NF/g, vars.NF);
 
-            // Handle comma-separated arguments by replacing commas with spaces
             return argsStr.replace(/,/g, ' ');
         }
         return null;
@@ -93,12 +83,10 @@
 
     const awkCommandDefinition = {
         commandName: "awk",
-        // NEW: Add flag definition to handle the Field Separator.
         flagDefinitions: [
             { name: "fieldSeparator", short: "-F", takesValue: true }
         ],
         coreLogic: async (context) => {
-            // MODIFIED: Use remainingArgs to correctly parse program and files after flags.
             const { flags, remainingArgs, options, currentUser } = context;
 
             if (remainingArgs.length === 0) {
@@ -113,12 +101,10 @@
                 return { success: false, error: `awk: program error: ${program.error}` };
             }
 
-            // MODIFIED: Use the separator from the parsed flag, or default to whitespace.
             const separator = flags.fieldSeparator ? new RegExp(flags.fieldSeparator) : /\s+/;
             let outputLines = [];
-            let nr = 0; // Total record number
+            let nr = 0;
 
-            // --- BEGIN Block ---
             if (program.begin) {
                 const beginResult = _executeAction(program.begin, [], { NR: 0, NF: 0 });
                 if (beginResult !== null) {
@@ -126,15 +112,24 @@
                 }
             }
 
-            // --- Main Processing ---
             const processContent = (content) => {
                 const lines = content.split('\n');
                 for (const line of lines) {
                     if (line === '' && lines.at(-1) === '') continue;
 
                     nr++;
-                    // MODIFIED: Use the separator regex to split the line into fields.
-                    const fields = line.split(separator);
+
+                    const trimmedLine = line.trim();
+                    let fields = trimmedLine === '' ? [] : trimmedLine.split(separator);
+
+                    // --- DEFENSIVE FIX ---
+                    // Ensure 'fields' is always an array to prevent TypeErrors.
+                    if (!Array.isArray(fields)) {
+                        console.error("AWK internal error: 'fields' is not an array for line:", line);
+                        fields = []; // Recover by treating it as an empty line.
+                    }
+                    // --- END FIX ---
+
                     const allFields = [line, ...fields];
                     const vars = { NR: nr, NF: fields.length };
 
@@ -164,7 +159,6 @@
                 processContent(options.stdinContent);
             }
 
-            // --- END Block ---
             if (program.end) {
                 const endResult = _executeAction(program.end, [], { NR: nr, NF: 0 });
                 if (endResult !== null) {

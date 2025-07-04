@@ -64,7 +64,12 @@ const OutputManager = (() => {
             DOM.inputLineContainerDiv &&
             !DOM.inputLineContainerDiv.classList.contains(Config.CSS_CLASSES.HIDDEN)
         ) {
-            const promptText = `${DOM.promptUserSpan.textContent}${Config.TERMINAL.PROMPT_AT}${DOM.promptHostSpan.textContent}${Config.TERMINAL.PROMPT_SEPARATOR}${DOM.promptPathSpan.textContent}${Config.TERMINAL.PROMPT_CHAR} `;
+            // --- BUG FIX ---
+            // The prompt is a single element (DOM.promptContainer), not composed of sub-spans.
+            // This corrects the TypeError by using the actual DOM element that exists.
+            const promptText = DOM.promptContainer ? DOM.promptContainer.textContent : '> ';
+            // --- END FIX ---
+
             const currentInputVal = TerminalUI.getCurrentInputValue();
             const echoLine = Utils.createElement("div", {
                 className: Config.CSS_CLASSES.OUTPUT_LINE,
