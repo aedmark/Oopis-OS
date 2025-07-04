@@ -507,7 +507,9 @@ const ModalInputManager = (() => {
     function requestInput(promptMessage, onInputReceivedCallback, onCancelledCallback, isObscured = false, options = {}) {
         if (options.stdinContent) {
             const inputLine = options.stdinContent.trim().split('\n')[0];
-            void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+            if (promptMessage) {
+                void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+            }
             const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
             const promptEcho = `${document.getElementById('prompt-container').textContent} `;
             void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
@@ -526,7 +528,9 @@ const ModalInputManager = (() => {
                 }
             }
             if (inputLine !== null) {
-                void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+                if (promptMessage) {
+                    void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+                }
                 const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
                 const promptEcho = `${document.getElementById('prompt-container').textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
@@ -552,7 +556,9 @@ const ModalInputManager = (() => {
         const inputLineContainer = document.querySelector('.terminal__input-line');
         if (inputLineContainer) inputLineContainer.classList.remove('hidden');
 
-        void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+        if (promptMessage) {
+            void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+        }
         TerminalUI.clearInput();
         TerminalUI.setInputState(true, false);
         TerminalUI.focusInput();

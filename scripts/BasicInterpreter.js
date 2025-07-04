@@ -12,56 +12,151 @@ const BasicInterpreter = (() => {
     let gosubStack = [];
     let outputCallback = () => {};
     let inputCallback = async () => "";
-    let program = {}; // LineNumber -> { statement, tokens }
+    let program = {};
 
     // --- Parser ---
     function parseLine(line) {
         const trimmedLine = line.trim();
-        const parts = trimmedLine.match(/^(\d+)\s+(.*)$/);
+        const parts = trimmedLine.match(/^(\d+)\s*(.*)$/);
         if (!parts) return null;
 
         const lineNumber = parseInt(parts[1], 10);
         const statement = parts[2].trim();
+
+        const commandMatch = statement.match(/^[A-Z_]+/i);
+        const command = commandMatch ? commandMatch[0].toUpperCase() : null;
+
         const tokens = statement.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
-        const command = tokens[0]?.toUpperCase();
 
         return { lineNumber, command, statement, tokens };
     }
 
+    // --- Expression Evaluator ---
+    async function evaluateExpression(expr) {
+        const trimmedExpr = expr.trim();
+
+        const sysCmdMatch = trimmedExpr.match(/^SYS_CMD\((.*)\)$/i);
+        if (sysCmdMatch) {
+            const argExpr = sysCmdMatch[1];
+            const cmdToRun = await evaluateExpression(argExpr);
+            const cmdResult = await CommandExecutor.processSingleCommand(cmdToRun, { isInteractive: false });
+            return cmdResult.output || cmdResult.error || "";
+        }
+
+        const sysReadMatch = trimmedExpr.match(/^SYS_READ\((.*)\)$/i);
+        if (sysReadMatch) {
+            const argExpr = sysReadMatch[1];
+            const path = await evaluateExpression(argExpr);
+            const fileNode = FileSystemManager.getNodeByPath(path);
+            if (!fileNode) throw new Error(`Runtime error: File not found '${path}'`);
+            if (!FileSystemManager.hasPermission(fileNode, UserManager.getCurrentUser().name, "read")) {
+                throw new Error(`Runtime error: Permission denied for '${path}'`);
+            }
+            return fileNode.content || "";
+        }
+
+        if (trimmedExpr.startsWith('"') && trimmedExpr.endsWith('"')) {
+            return trimmedExpr.slice(1, -1);
+        }
+
+        if (variables.hasOwnProperty(trimmedExpr)) {
+            return variables[trimmedExpr];
+        }
+
+        if (trimmedExpr.includes('+')) {
+            const parts = trimmedExpr.split('+').map(p => p.trim());
+            const evaluatedParts = await Promise.all(parts.map(p => evaluateExpression(p)));
+            return evaluatedParts.join('');
+        }
+
+        const num = parseFloat(trimmedExpr);
+        if (!isNaN(num) && !/[A-Z]/i.test(trimmedExpr)) return num;
+
+        return trimmedExpr;
+    }
+
+    async function evaluateCondition(condition) {
+        const operators = ['<>', '>=', '<=', '=', '>', '<'];
+        let operator = null;
+        let parts = [];
+
+        for (const op of operators) {
+            if (condition.includes(op)) {
+                operator = op;
+                parts = condition.split(op).map(p => p.trim());
+                break;
+            }
+        }
+
+        if (!operator || parts.length !== 2) throw new Error(`Syntax error in condition: ${condition}`);
+
+        const left = await evaluateExpression(parts[0]);
+        const right = await evaluateExpression(parts[1]);
+
+        switch (operator) {
+            case '=': return left == right;
+            case '<>': return left != right;
+            case '>': return left > right;
+            case '<': return left < right;
+            case '>=': return left >= right;
+            case '<=': return left <= right;
+            default: throw new Error(`Syntax error: Unknown operator '${operator}'`);
+        }
+    }
+
     // --- Execution Engine ---
     async function executeStatement(parsedLine) {
-        const { command, tokens, statement } = parsedLine;
-        const args = tokens.slice(1);
+        const { command } = parsedLine;
 
         switch (command) {
             case "REM":
-                // Comment, do nothing
                 break;
             case "PRINT":
-                const printValue = evaluateExpression(args.join(" "));
+                let printArgStr = parsedLine.statement.substring(command.length).trim();
+                if (printArgStr.endsWith(';')) {
+                    printArgStr = printArgStr.slice(0, -1).trim();
+                }
+                const printValue = await evaluateExpression(printArgStr);
                 outputCallback(printValue);
                 break;
             case "INPUT":
-                const prompt = args.length > 1 ? evaluateExpression(args.slice(1).join(" ")) : "? ";
-                const varName = args[0];
-                if (!/^[A-Z]\$?$/.test(varName)) throw new Error(`Syntax error: Invalid variable name '${varName}'`);
-                const inputValue = await inputCallback(prompt);
-                variables[varName] = varName.endsWith('$') ? inputValue : parseFloat(inputValue);
+                const inputArgStr = parsedLine.statement.substring(command.length).trim();
+                const commaIndex = inputArgStr.lastIndexOf(',');
+                let promptText = "? ";
+                let variableName;
+
+                if (commaIndex !== -1) {
+                    promptText = await evaluateExpression(inputArgStr.substring(0, commaIndex).trim());
+                    variableName = inputArgStr.substring(commaIndex + 1).trim();
+                } else {
+                    variableName = inputArgStr;
+                }
+
+                if (!/^[A-Z][A-Z0-9_]*\$?$/.test(variableName)) throw new Error(`Syntax error: Invalid variable name '${variableName}'`);
+
+                const inputValue = await inputCallback(promptText);
+
+                if (inputValue === null) throw new Error("Execution halted by user.");
+                variables[variableName] = variableName.endsWith('$') ? inputValue : parseFloat(inputValue);
                 break;
             case "LET":
-                const eqIndex = args.indexOf("=");
+                const letStatementStr = parsedLine.statement.substring(command.length).trim();
+                const eqIndex = letStatementStr.indexOf('=');
                 if (eqIndex === -1) throw new Error("Syntax error: Missing '=' in LET statement");
-                const letVar = args[eqIndex - 1];
-                const letExpr = args.slice(eqIndex + 1).join(" ");
-                variables[letVar] = evaluateExpression(letExpr);
+
+                const letVar = letStatementStr.substring(0, eqIndex).trim();
+                if (!/^[A-Z][A-Z0-9_]*\$?$/.test(letVar)) throw new Error(`Syntax error: Invalid variable name '${letVar}'`);
+
+                const letExpr = letStatementStr.substring(eqIndex + 1).trim();
+                variables[letVar] = await evaluateExpression(letExpr);
                 break;
             case "IF":
-                const thenIndex = args.indexOf("THEN");
+                const thenIndex = parsedLine.statement.toUpperCase().indexOf("THEN");
                 if (thenIndex === -1) throw new Error("Syntax error: Missing THEN in IF statement");
-                const condition = args.slice(0, thenIndex).join(" ");
-                const action = args.slice(thenIndex + 1).join(" ");
-                if (evaluateCondition(condition)) {
-                    // Primitive support for GOTO in IF...THEN
+                const condition = parsedLine.statement.substring(command.length, thenIndex).trim();
+                const action = parsedLine.statement.substring(thenIndex + 4).trim();
+
+                if (await evaluateCondition(condition)) {
                     if (action.toUpperCase().startsWith("GOTO")) {
                         const targetLine = parseInt(action.split(/\s+/)[1], 10);
                         return targetLine;
@@ -69,71 +164,32 @@ const BasicInterpreter = (() => {
                 }
                 break;
             case "GOTO":
-                return parseInt(args[0], 10);
+                return parseInt(parsedLine.tokens[1], 10);
             case "GOSUB":
                 gosubStack.push(parsedLine.lineNumber);
-                return parseInt(args[0], 10);
+                return parseInt(parsedLine.tokens[1], 10);
             case "RETURN":
                 if (gosubStack.length === 0) throw new Error("Runtime error: RETURN without GOSUB");
                 const returnToLine = gosubStack.pop();
                 const lineNumbers = Object.keys(program).map(Number).sort((a, b) => a - b);
                 const returnToIndex = lineNumbers.indexOf(returnToLine);
                 return lineNumbers[returnToIndex + 1];
-            case "SYS_CMD":
-                const cmdResult = await CommandExecutor.processSingleCommand(evaluateExpression(args.join(" ")), { isInteractive: false });
-                return cmdResult.output || cmdResult.error || "";
-            case "SYS_READ":
-                const filePathRead = evaluateExpression(args.join(" "));
-                const fileNode = FileSystemManager.getNodeByPath(filePathRead);
-                if (!fileNode) throw new Error(`Runtime error: File not found '${filePathRead}'`);
-                return fileNode.content;
             case "SYS_WRITE":
-                const [filePathWrite, ...contentParts] = args;
-                const evaluatedPath = evaluateExpression(filePathWrite.replace(/,$/, ''));
-                const evaluatedContent = evaluateExpression(contentParts.join(" "));
+                const writeArgStr = parsedLine.statement.substring(command.length).trim();
+                const writeArgParts = writeArgStr.split(',');
+
+                if(writeArgParts.length !== 2) throw new Error("Syntax error: SYS_WRITE requires two arguments: a filepath and content.");
+
+                const evaluatedPath = await evaluateExpression(writeArgParts[0].trim());
+                const evaluatedContent = await evaluateExpression(writeArgParts[1].trim());
+
                 await FileSystemManager.createOrUpdateFile(evaluatedPath, evaluatedContent, { currentUser: UserManager.getCurrentUser().name, primaryGroup: UserManager.getPrimaryGroupForUser(UserManager.getCurrentUser().name) });
                 await FileSystemManager.save();
                 break;
             default:
                 throw new Error(`Syntax error: Unknown command '${command}'`);
         }
-        return null; // Go to next line
-    }
-
-    function evaluateExpression(expr) {
-        // String literal
-        if (expr.startsWith('"') && expr.endsWith('"')) {
-            return expr.slice(1, -1);
-        }
-        // Variable
-        if (variables.hasOwnProperty(expr)) {
-            return variables[expr];
-        }
-        // Basic string concatenation
-        if (expr.includes('+')) {
-            return expr.split('+').map(p => evaluateExpression(p.trim())).join('');
-        }
-        // Number literal
-        const num = parseFloat(expr);
-        if (!isNaN(num)) return num;
-        return expr; // Return as is if un-evaluatable
-    }
-
-    function evaluateCondition(condition) {
-        const parts = condition.match(/(.+?)\s*([=<>]+)\s*(.+)/);
-        if (!parts) throw new Error("Syntax error in condition");
-        const left = evaluateExpression(parts[1].trim());
-        const op = parts[2];
-        const right = evaluateExpression(parts[3].trim());
-        switch (op) {
-            case '=': return left == right;
-            case '<>': return left != right;
-            case '>': return left > right;
-            case '<': return left < right;
-            case '>=': return left >= right;
-            case '<=': return left <= right;
-            default: throw new Error(`Syntax error: Unknown operator '${op}'`);
-        }
+        return null;
     }
 
     // --- Public Interface ---
@@ -156,7 +212,7 @@ const BasicInterpreter = (() => {
             gosubStack = [];
 
             const lineNumbers = Object.keys(program).map(Number).sort((a, b) => a - b);
-            let pc = 0; // Program counter index
+            let pc = 0;
 
             while (pc < lineNumbers.length) {
                 const currentLineNumber = lineNumbers[pc];
@@ -164,7 +220,7 @@ const BasicInterpreter = (() => {
 
                 try {
                     const nextLineNumber = await executeStatement(parsedLine);
-                    if (typeof nextLineNumber === 'string') { // SYS_CMD and SYS_READ return strings
+                    if (typeof nextLineNumber === 'string') {
                         outputCallback(nextLineNumber);
                         pc++;
                     } else if (nextLineNumber !== null) {
@@ -176,7 +232,7 @@ const BasicInterpreter = (() => {
                     }
                 } catch (e) {
                     outputCallback(`ERROR IN LINE ${currentLineNumber}: ${e.message}`);
-                    return; // Halt execution
+                    return;
                 }
             }
         },
@@ -185,6 +241,7 @@ const BasicInterpreter = (() => {
             program = {};
             variables = {};
             gosubStack = [];
-        }
+        },
+        parseLine,
     };
 })();

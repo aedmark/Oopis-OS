@@ -5,8 +5,7 @@
 50 LET DIR_LIST$ = SYS_CMD("ls -l")
 60 PRINT DIR_LIST$
 70 PRINT ""
-80 PRINT "Now, what is your name? ";
-90 INPUT NAME$
+80 PRINT "Now, what is your name? "; INPUT NAME$
 100 LET GREETING$ = "Welcome to OopisOS, " + NAME$ + "!"
 110 PRINT GREETING$
 120 PRINT "I'll save this greeting to 'welcome.txt' for you."

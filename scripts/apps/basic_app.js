@@ -10,68 +10,39 @@ const BasicApp = (() => {
     let isActive = false;
     let elements = {};
     let programBuffer = {};
-    /**
-     * @property {Function|null} onInputPromiseResolver - If not null, this is the 'resolve'
-     * function for a promise that is waiting for user input to satisfy a BASIC 'INPUT' statement.
-     * The main event listener will call this function instead of processing an IDE command.
-     */
-    let onInputPromiseResolver = null;
+    // This is no longer a shared state variable, but the concept is moved into a temporary listener.
 
     function _buildLayout() {
-        // --- REFACTORED: Use a 3-column flexbox for the header for proper alignment ---
+        // This function remains the same as your correct version.
         const exitBtn = Utils.createElement('button', {
             className: 'basic-app__exit-btn',
             textContent: '×',
             title: 'Exit BASIC (Esc)',
             eventListeners: { click: () => exit() }
         });
-
-        // This invisible spacer ensures the title is perfectly centered
         const leftSpacer = Utils.createElement('div', { className: 'basic-app__header-spacer' });
-
         const title = Utils.createElement('h2', { className: 'basic-app__title', textContent: 'Oopis Basic v1.0' });
-
         const header = Utils.createElement('header', { className: 'basic-app__header' },
             leftSpacer,
             title,
             exitBtn
         );
-
-        elements.output = Utils.createElement('div', { id: 'basic-output', className: 'basic-app__output' });
-        elements.input = Utils.createElement('input', {
-            id: 'basic-input',
-            className: 'basic-app__input',
-            type: 'text',
-            spellcheck: 'false',
-            autocapitalize: 'none',
-            autocomplete: 'off'
-        });
-
-        const inputLine = Utils.createElement('div', { className: 'basic-app__input-line' },
-            Utils.createElement('span', { textContent: ']' }),
-            elements.input
-        );
-
-        elements.container = Utils.createElement('div', { id: 'basic-app-container', className: 'basic-app__container' },
-            header,
-            elements.output,
-            inputLine
-        );
-
-        // Set the width of the spacer to match the button after it's rendered
         setTimeout(() => {
             if (exitBtn && leftSpacer) {
                 leftSpacer.style.width = `${exitBtn.offsetWidth}px`;
             }
         }, 0);
-
-
+        elements.output = Utils.createElement('div', { id: 'basic-output', className: 'basic-app__output' });
+        elements.input = Utils.createElement('input', { id: 'basic-input', className: 'basic-app__input', type: 'text', spellcheck: 'false', autocapitalize: 'none', autocomplete: 'off' });
+        const inputLine = Utils.createElement('div', { className: 'basic-app__input-line' },
+            Utils.createElement('span', { textContent: ']' }),
+            elements.input
+        );
+        elements.container = Utils.createElement('div', { id: 'basic-app-container', className: 'basic-app__container' }, header, elements.output, inputLine);
         return elements.container;
     }
 
-
     function _print(text) {
-        // Ensure text is treated as a single block of text content
         const line = Utils.createElement('div', { textContent: text });
         elements.output.appendChild(line);
         elements.output.scrollTop = elements.output.scrollHeight;
@@ -87,7 +58,12 @@ const BasicApp = (() => {
         _print(`] ${inputString}`);
         const parsed = BasicInterpreter.parseLine(inputString);
 
-        if (parsed) {
+        if (parsed && parsed.lineNumber) {
+            if (parsed.statement.toUpperCase().replace(parsed.lineNumber, '').trim() === '') {
+                // If line is just a number, delete it
+                delete programBuffer[parsed.lineNumber];
+                return;
+            }
             programBuffer[parsed.lineNumber] = parsed.statement;
             return;
         }
@@ -100,9 +76,28 @@ const BasicApp = (() => {
             case "RUN":
                 BasicInterpreter.loadProgram(Object.entries(programBuffer).map(([ln, st]) => `${ln} ${st}`).join('\n'));
                 elements.input.disabled = true;
-
                 try {
-                    aawait BasicInterpreter.run(_print);
+                    // This is the new, more robust input handling logic.
+                    await BasicInterpreter.run(_print, (prompt) => {
+                        return new Promise(resolve => {
+                            _print(prompt);
+                            elements.input.disabled = false;
+                            elements.input.focus();
+
+                            const temporaryListener = (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const value = elements.input.value;
+                                    elements.input.removeEventListener('keydown', temporaryListener);
+                                    elements.input.value = '';
+                                    _print(value); // Echo the user's input
+                                    elements.input.disabled = true;
+                                    resolve(value);
+                                }
+                            };
+                            elements.input.addEventListener('keydown', temporaryListener);
+                        });
+                    });
                 } catch (e) {
                     _print(`FATAL INTERPRETER ERROR: ${e.message}`);
                 } finally {
@@ -149,13 +144,12 @@ const BasicApp = (() => {
     }
 
     function _setupEventListeners() {
+        // This listener is now only for IDE commands. Program INPUT is handled by the temporary listener.
         elements.input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !elements.input.disabled) {
                 e.preventDefault();
                 const command = elements.input.value;
                 elements.input.value = '';
-                // The listener now ONLY handles IDE-level commands and line entry.
-                // The running program's input is handled elsewhere.
                 _handleInput(command);
             }
         });
@@ -175,7 +169,6 @@ const BasicApp = (() => {
         isActive = false;
         elements = {};
         programBuffer = {};
-        onInputPromiseResolver = null; // Clear state on exit
     }
 
     return {
@@ -183,7 +176,6 @@ const BasicApp = (() => {
             if (isActive) return;
             isActive = true;
             programBuffer = {};
-            onInputPromiseResolver = null; // Ensure clean state
 
             const appElement = _buildLayout();
             AppLayerManager.show(appElement);
