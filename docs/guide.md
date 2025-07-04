@@ -35,7 +35,9 @@ The "Architect's Edition" refines the core experience, focusing on robust securi
 
   - `adventure`: A powerful, data-driven text adventure engine to play and build interactive fiction.
 
+  - `basic`: An integrated development environment for the classic BASIC programming language.
 
+  
 ## User Guide
 
 This guide covers the essential commands for navigating and interacting with the OopisOS environment. For a quick list of all commands, type `help`. For a detailed manual on a specific command, type `man [command_name]`.
@@ -91,6 +93,8 @@ OopisOS comes with several built-in applications that run in a full-screen, moda
 - **`adventure [file.json]`** Launches the powerful, data-driven text adventure engine. Play the built-in "Architect's Apprentice" tutorial to learn the ropes, or load your own custom adventures from a `.json` file to create and explore new worlds. For a full guide on creating your own adventures, see `/docs/adventure.md`.
 
 - **`gemini "<prompt>"`** A tool-using AI assistant that can execute shell commands to answer questions about your file system or provide general knowledge.
+
+- **`basic [file.bas]`** Launches the Oopis Basic Integrated Development Environment. It's a throwback to the classic days of computing, allowing you to write, `LIST`, and `RUN` line-numbered programs. Use `SAVE` and `LOAD` within the IDE to manage your `.bas` files.
 
 
 ## Advanced Topics

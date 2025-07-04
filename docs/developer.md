@@ -26,8 +26,8 @@ The most effective way to understand the system is through the "El Código del T
 |Layer|Ingredient|Responsibility|OopisOS Implementation|
 |---|---|---|---|
 |**1**|**The Protein**|**Core Business Logic:** The reason the app exists.|`commexec.js`, `lexpar.js`, `fs_manager.js`|
-|**2**|**The Lettuce**|**Presentation Layer:** The UI/UX.|`terminal_ui.js`, `output_manager.js`, `apps/*.js`|
-|**3**|**The Cheese**|**Feature & Enhancement Layer:** Valuable but non-essential features.|`gemini.js`, `chidi.js`, `alias.js`|
+|**2**|**The Lettuce**|**Presentation Layer:** The UI/UX.|`terminal_ui.js`, `output_manager.js`, `basic_app.js`, ...|
+|**3**|**The Cheese**|**Feature & Enhancement Layer:** Valuable but non-essential features.|`BasicInterpreter.js`, `gemini.js`, `chidi.js`, `alias.js`|
 |**4**|**The Salsa**|**API & Data Layer:** The unifying agent for data access.|`storage.js` (`StorageManager`, `IndexedDBManager`)|
 |**5**|**The Onions**|**Utility & Environment Layer:** Potent, non-negotiable helpers.|`utils.js`, `config.js`|
 |**6**|**The Jalapeño**|**Security & Validation Layer:** Controlled heat and protection.|`sudo_manager.js`, `fs_manager.js`'s `hasPermission`|
@@ -63,6 +63,15 @@ The `CommandExecutor` is the heart of the system, orchestrating a secure command
 
 - **Centralized Authentication**: All login logic resides in `UserManager`. Secure password input is handled by the `ModalInputManager` to prevent leakage into command history or the screen.
 
+### The BASIC Subsystem: A Sandboxed Environment
+
+The Oopis BASIC feature is a two-part system designed for safe, sandboxed code execution:
+
+-   **`basic_app.js` (The IDE):** This is a presentation-layer component that provides the full-screen Integrated Development Environment. It manages the UI, program buffer (`LIST`, `SAVE`, `LOAD`), and user commands (`RUN`, `NEW`).
+
+-   **`BasicInterpreter.js` (The Engine):** This is a self-contained language parser and executor. Crucially, it has **no direct access** to the file system or command executor.
+
+To interact with the host OS, the interpreter uses a specific set of `SYS_` functions (`SYS_CMD`, `SYS_READ`, `SYS_WRITE`). These functions act as a secure bridge, routing their requests through the main `CommandExecutor` and `FileSystemManager`. This design ensures that any program run via the BASIC interpreter is still subject to the OS's fundamental permission model, maintaining system integrity.
 
 ---
 
