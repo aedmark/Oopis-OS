@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-cache-v4';
+const CACHE_NAME = 'oopis-cache-v5';
 const urlsToCache = [
     './',
     './index.html',
@@ -18,6 +18,7 @@ const urlsToCache = [
     './scripts/apps/oopis_paint.js',
     './scripts/apps/chidi_app.js',
     './scripts/apps/text_adventure.js',
+    './scripts/apps/log_app.js',
     './scripts/lexpar.js',
     './scripts/commexec.js',
     './scripts/commands/registry.js',
@@ -61,6 +62,7 @@ const urlsToCache = [
     './scripts/commands/less.js',
     './scripts/commands/listusers.js',
     './scripts/commands/loadstate.js',
+    './scripts/commands/log.js',
     './scripts/commands/login.js',
     './scripts/commands/logout.js',
     './scripts/commands/ls.js',

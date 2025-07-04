@@ -168,7 +168,7 @@ const Config = (() => {
             "curl", "date", "delay", "df", "diff", "du", "echo", "edit", "explore",
             "export", "find", "gemini", "grep", "groupadd", "groupdel",
             "groups", "head", "help", "history", "kill", "less", "listusers",
-            "loadstate", "login", "logout", "ls", "man", "more", "mkdir", "mv",
+            "loadstate", "log", "login", "logout", "ls", "man", "more", "mkdir", "mv",
             "ocrypt","paint", "passwd", "printscreen", "ps", "pwd", "reboot",
             "removeuser", "reset", "restore", "rm", "rmdir", "run", "savefs",
             "savestate", "set", "shuf", "sort", "su", "sudo", "sync", "tail", "touch",
