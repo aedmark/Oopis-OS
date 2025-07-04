@@ -377,6 +377,102 @@ const Utils = (() => {
         };
     }
 
+    // Add this new function to the Utils module in scripts/utils.js
+
+    /**
+     * A generic function to call an LLM API, adapting to different providers.
+     * @param {string} provider - The name of the provider (e.g., 'gemini', 'ollama').
+     * @param {string} model - The specific model to use.
+     * @param {Array<object>} conversation - The chat history/prompt.
+     * @param {string} apiKey - The API key, required for providers like Gemini.
+     * @returns {Promise<object>} A promise that resolves with the API response.
+     */
+    async function callLlmApi(provider, model, conversation, apiKey) {
+        const providerConfig = Config.API.LLM_PROVIDERS[provider];
+        if (!providerConfig) {
+            return { success: false, error: `LLM provider '${provider}' not configured.` };
+        }
+
+        const url = providerConfig.url;
+        let headers = { 'Content-Type': 'application/json' };
+        let body;
+
+        // Adapt the request payload based on the provider
+        switch (provider) {
+            case 'gemini':
+                headers['x-goog-api-key'] = apiKey;
+                body = JSON.stringify({ contents: conversation });
+                break;
+            case 'ollama':
+                // Ollama expects a single prompt string
+                const promptText = conversation.map(part => part.parts.map(p => p.text).join('\n')).join('\n');
+                body = JSON.stringify({
+                    model: model || providerConfig.defaultModel,
+                    prompt: promptText,
+                    stream: false
+                });
+                break;
+            case 'llm-studio':
+                // LLM Studio uses a format similar to OpenAI's
+                body = JSON.stringify({
+                    model: model || providerConfig.defaultModel,
+                    messages: conversation.map(turn => ({
+                        role: turn.role === 'model' ? 'assistant' : 'user',
+                        content: turn.parts.map(p => p.text).join('\n')
+                    })),
+                    temperature: 0.7,
+                    stream: false
+                });
+                break;
+            default:
+                return { success: false, error: `Unsupported LLM provider: ${provider}` };
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: body
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return { success: false, error: `API request failed with status ${response.status}: ${errorText}` };
+            }
+
+            const responseData = await response.json();
+
+            // Adapt the response parsing based on the provider
+            let finalAnswer;
+            switch (provider) {
+                case 'gemini':
+                    finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                    break;
+                case 'ollama':
+                    finalAnswer = responseData.response;
+                    break;
+                case 'llm-studio':
+                    finalAnswer = responseData.choices?.[0]?.message?.content;
+                    break;
+            }
+
+            if (!finalAnswer) {
+                return { success: false, error: "AI failed to generate a valid response." };
+            }
+
+            return { success: true, answer: finalAnswer };
+
+        } catch (e) {
+            return { success: false, error: `Network or fetch error: ${e.message}` };
+        }
+    }
+
+// Remember to expose the new function in the return object of the Utils module
+    return {
+        // ... all existing Utils functions
+        callLlmApi,
+    };
+
     /**
      * Converts a glob pattern (like *.txt) into a regular expression for matching.
      * Supports `*`, `?`, and `[...]` character sets.
@@ -463,6 +559,7 @@ const Utils = (() => {
         parseFlags,
         globToRegex,
         getCharacterDimensions,
+        callLlmApi,
     };
 })();
 

@@ -160,7 +160,23 @@ const Config = (() => {
         },
         /** API endpoint configuration. */
         API: {
-            GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            GEMINI_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+            // --- NEW ---
+            LLM_PROVIDERS: {
+                'gemini': {
+                    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    defaultModel: "gemini-2.5-flash" // You can keep this for consistency
+                },
+                'ollama': {
+                    url: "http://localhost:11434/api/generate",
+                    defaultModel: "llama3" // Or whatever model the user wants to default to
+                },
+                'llm-studio': {
+                    url: "http://localhost:1234/v1/chat/completions",
+                    defaultModel: "lmstudio-community/gemma-2b-it-v1.1-gguf" // Example model
+                }
+            }
+            // --- END NEW ---
         },
         COMMANDS_MANIFEST: [
             "adventure", "alias", "awk", "backup", "basic", "bc", "cat", "cd", "check_fail",

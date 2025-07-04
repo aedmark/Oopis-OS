@@ -510,85 +510,23 @@ const ChidiApp = {
         }
     },
 
-    async callGeminiApi(chatHistory) {
+    async callGeminiApi(chatHistory) { // Let's keep the name for now to minimize refactoring
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
-        if (!apiKey) {
-            const errorMsg = "API key not found. Please exit and run `chidi` again to set it.";
-            this.showMessage(`Error: ${errorMsg}`, true);
-            this.appendAiOutput("API Error", errorMsg);
+
+        // For now, let's hardcode to use gemini, but we'll add a flag later
+        const provider = 'gemini';
+        const model = Config.API.LLM_PROVIDERS[provider].defaultModel;
+
+        const result = await Utils.callLlmApi(provider, model, chatHistory, apiKey);
+
+        if (!result.success) {
+            this.showMessage(`Error: ${result.error}`, true);
+            this.appendAiOutput("API Error", `Failed to get a response. Details: ${result.error}`);
             return "";
         }
 
-        try {
-            const apiUrl = Config.API.GEMINI_URL;
-            const headers = {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey
-            };
-            const payload = {
-                contents: chatHistory
-            };
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({
-                    error: {
-                        message: response.statusText
-                    }
-                }));
-                let errorMsg = `API request failed with status ${response.status}: ${errorBody.error.message}`;
-                if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
-                    StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-                    errorMsg = "Invalid API key. It has been removed. Please exit and run `chidi` again to enter a new one.";
-                }
-                this.showMessage(`Error: ${errorMsg}`, true);
-                this.appendAiOutput("API Error", `Failed to get a response. Details: ${errorMsg}`);
-                return "";
-            }
-
-            const result = await response.json();
-
-            if (result.candidates && result.candidates.length > 0) {
-                const candidate = result.candidates[0];
-
-                if (candidate.finishReason && candidate.finishReason !== "STOP") {
-                    const blockReason = candidate.finishReason;
-                    const safetyRatings = candidate.safetyRatings?.map(r => `${r.category}: ${r.probability}`).join(', ') || 'No details';
-                    const errorMsg = `Request was blocked. Reason: ${blockReason}. Details: [${safetyRatings}]`;
-                    this.showMessage(`Error: ${errorMsg}`, true);
-                    this.appendAiOutput("API Error", errorMsg);
-                    return "";
-                }
-
-                if (candidate.content && candidate.content.parts) {
-                    const fullText = candidate.content.parts.map(part => part.text || "").join("");
-                    if (fullText) {
-                        this.showMessage("Response received from Gemini.", true);
-                        return fullText;
-                    }
-                }
-            }
-
-            if (result.promptFeedback?.blockReason) {
-                const errorMsg = `Request was blocked. Reason: ${result.promptFeedback.blockReason}`;
-                this.showMessage(`Error: ${errorMsg}`, true);
-                this.appendAiOutput("API Error", errorMsg);
-                return "";
-            }
-
-            this.appendAiOutput("API Error", "The AI returned an empty or un-parsable response. The context might be too large or the query unsupported.");
-            return "";
-
-        } catch (networkError) {
-            this.toggleLoader(false);
-            this.showMessage(`Error: ${networkError.message}`, true);
-            this.appendAiOutput("Network Error", networkError.message);
-            return "";
-        }
+        this.showMessage("Response received.", true);
+        return result.answer;
     },
 
     _packageSessionAsHTML() {

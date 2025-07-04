@@ -12,7 +12,7 @@
 
     // --- STATE & CONFIGURATION ---
     let geminiConversationHistory = [];
-    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail'];
+    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail', 'csplit'];
 
     const PLANNER_SYSTEM_PROMPT = `You are a helpful and witty digital archivist embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions about their file system, but you are also able to gather answers from outside sources when relevant.
 
@@ -73,13 +73,21 @@ RULES:
         flagDefinitions: [
             { name: "new", short: "-n", long: "--new" },
             { name: "verbose", short: "-v", long: "--verbose" },
+            // --- NEW FLAGS ---
+            { name: "provider", short: "-p", long: "--provider", takesValue: true },
+            { name: "model", short: "-m", long: "--model", takesValue: true }
+            // --- END NEW ---
         ],
         argValidation: {
             min: 1,
-            error: 'Insufficient arguments. Usage: gemini [-n|--new] "<prompt>"',
+            error: 'Insufficient arguments. Usage: gemini [-p provider] [-m model] "<prompt>"',
         },
         coreLogic: async (context) => {
             const { args, options, flags } = context;
+
+            // Determine the provider and model from flags, or use defaults
+            const provider = flags.provider || 'gemini'; // Default to gemini
+            const model = flags.model || null; // Let the API function handle the default
 
             const _getApiKey = () => {
                 return new Promise((resolve) => {
