@@ -1,38 +1,142 @@
 /**
- * A stateful host for the Oopis Basic Interpreter.
- * @class BasicApp
- * @extends {App}
+ * @file Manages the Oopis Basic IDE application.
+ * This file contains the UI and Manager modules for the BASIC app.
+ * @author The Engineer
  */
-class BasicApp extends App {
-    constructor(context, loadOptions = {}) {
-        super(context); // Passes the full context to the parent App class.
-        this.interpreter = new BasicInterpreter();
-        this.programBuffer = new Map();
-        this.onInputPromiseResolver = null;
-        this.loadOptions = loadOptions; // Save the file data.
+
+const BasicUI = (() => {
+    "use strict";
+    let elements = {};
+    let callbacks = {};
+
+    function buildLayout(cb) {
+        callbacks = cb;
+        // Re-using styles from the adventure game for a retro feel.
+        elements.output = Utils.createElement('div', { id: 'basic-app-output', className: 'basic-app__output' });
+        elements.input = Utils.createElement('input', { id: 'basic-app-input', className: 'basic-app__input', type: 'text', spellcheck: 'false', autocapitalize: 'none' });
+        const inputContainer = Utils.createElement('div', { className: 'basic-app__input-line' },
+            Utils.createElement('span', { textContent: '>' }),
+            elements.input
+        );
+
+        elements.exitBtn = Utils.createElement('button', {
+            className: 'basic-app__exit-btn',
+            textContent: '×',
+            title: 'Exit BASIC (EXIT)',
+            eventListeners: { click: () => callbacks.onExit() }
+        });
+
+        const header = Utils.createElement('header', { className: 'basic-app__header' },
+            Utils.createElement('h2', { className: 'basic-app__title', textContent: 'Oopis BASIC v1.0' }),
+            elements.exitBtn
+        );
+
+        elements.container = Utils.createElement('div', { id: 'basic-app-container', className: 'basic-app__container' }, header, elements.output, inputContainer);
+
+        elements.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const command = elements.input.value;
+                elements.input.value = '';
+                callbacks.onInput(command);
+            }
+        });
+
+        return elements.container;
     }
 
-    static enter(context, loadOptions) {
-        return new BasicApp(context, loadOptions);
+    function appendOutput(text, withNewline = true) {
+        if (!elements.output) return;
+        // BASIC interpreter expects raw text, not styled paragraphs.
+        elements.output.textContent += text + (withNewline ? '\n' : '');
+        elements.output.scrollTop = elements.output.scrollHeight;
     }
 
-    _init() {
-        this.term.writeln('Oopis BASIC [Version 1.0]');
-        this.term.writeln('(c) 2025 Oopis Systems. All rights reserved.');
-        this.term.writeln('');
+    function write(text) {
+        appendOutput(text, false);
+    }
 
-        // Check if there's file content to load on startup.
-        if (this.loadOptions.content) {
-            this._loadContentIntoBuffer(this.loadOptions.content);
-            this.term.writeln(`Loaded "${this.loadOptions.path}".`);
+    function writeln(text) {
+        appendOutput(text, true);
+    }
+
+    function focusInput() {
+        if (elements.input) {
+            elements.input.focus();
+        }
+    }
+
+    function reset() {
+        elements = {};
+        callbacks = {};
+    }
+
+    return { buildLayout, write, writeln, focusInput, reset };
+})();
+
+
+const BasicManager = (() => {
+    "use strict";
+    let isActive = false;
+    let interpreter = new BasicInterpreter();
+    let programBuffer = new Map();
+    let onInputPromiseResolver = null;
+    let loadOptions = {};
+
+    const callbacks = {
+        onInput: async (command) => {
+            if (isActive) {
+                await _handleIdeInput(command);
+            }
+        },
+        onExit: () => {
+            exit();
+        }
+    };
+
+    function enter(context, options) {
+        if (isActive) return;
+        isActive = true;
+
+        loadOptions = options; // Store file data
+        const layout = BasicUI.buildLayout(callbacks);
+        AppLayerManager.show(layout);
+        document.addEventListener('keydown', handleKeyDown, true); // Capture keys globally
+
+        _init();
+    }
+
+    function exit() {
+        if (!isActive) return;
+
+        document.removeEventListener('keydown', handleKeyDown, true);
+        AppLayerManager.hide();
+        BasicUI.reset();
+
+        // Reset state
+        isActive = false;
+        interpreter = new BasicInterpreter();
+        programBuffer.clear();
+        onInputPromiseResolver = null;
+        loadOptions = {};
+    }
+
+    function _init() {
+        BasicUI.writeln('Oopis BASIC [Version 1.0]');
+        BasicUI.writeln('(c) 2025 Oopis Systems. All rights reserved.');
+        BasicUI.writeln('');
+
+        if (loadOptions.content) {
+            _loadContentIntoBuffer(loadOptions.content);
+            BasicUI.writeln(`Loaded "${loadOptions.path}".`);
         }
 
-        this.term.write('READY.\r\n> ');
+        BasicUI.writeln('READY.');
+        BasicUI.focusInput();
     }
 
-    // Helper function to parse file content into the program buffer.
-    _loadContentIntoBuffer(content) {
-        this.programBuffer.clear();
+    function _loadContentIntoBuffer(content) {
+        programBuffer.clear();
         const lines = content.split('\n');
         for (const line of lines) {
             if (line.trim() === '') continue;
@@ -41,104 +145,167 @@ class BasicApp extends App {
                 const lineNumber = parseInt(match[1], 10);
                 const lineContent = match[2].trim();
                 if (lineContent) {
-                    this.programBuffer.set(lineNumber, lineContent);
+                    programBuffer.set(lineNumber, lineContent);
                 }
             }
         }
     }
 
-    async _handleInput(command) {
+    async function _handleIdeInput(command) {
         command = command.trim();
-        if (command === '') {
-            this.term.write('> ');
-            return;
-        };
+        BasicUI.writeln(`> ${command}`);
 
-        if (this.onInputPromiseResolver) {
-            this.onInputPromiseResolver(command);
-            this.onInputPromiseResolver = null;
+        if (onInputPromiseResolver) {
+            onInputPromiseResolver(command);
+            onInputPromiseResolver = null;
             return;
         }
+
+        if (command === '') {
+            BasicUI.writeln('READY.');
+            return;
+        };
 
         const lineMatch = command.match(/^(\d+)(.*)/);
         if (lineMatch) {
             const lineNumber = parseInt(lineMatch[1], 10);
             const lineContent = lineMatch[2].trim();
             if (lineContent === '') {
-                this.programBuffer.delete(lineNumber);
+                programBuffer.delete(lineNumber);
             } else {
-                this.programBuffer.set(lineNumber, lineContent);
+                programBuffer.set(lineNumber, lineContent);
             }
         } else {
-            await this._executeIdeCommand(command.toUpperCase());
+            await _executeIdeCommand(command.toUpperCase());
         }
-        this.term.write('READY.\r\n> ');
+        if (isActive) { // Check if not exited
+            BasicUI.writeln('READY.');
+        }
     }
 
-    async _executeIdeCommand(command) {
-        switch (command) {
+    async function _executeIdeCommand(command) {
+        const parts = command.split(/ /);
+        const cmd = parts[0];
+
+        switch (cmd) {
             case 'RUN':
-                await this._runProgram();
+                await _runProgram();
                 break;
             case 'LIST':
-                this._listProgram();
+                _listProgram();
                 break;
             case 'NEW':
-                this.programBuffer.clear();
-                this.term.writeln('OK');
+                programBuffer.clear();
+                loadOptions = {}; // Clear file info
+                BasicUI.writeln('OK');
                 break;
             case 'SAVE':
-                this.term.writeln('SAVE is not yet implemented.');
+                await _saveProgram(parts[1]);
                 break;
             case 'LOAD':
-                this.term.writeln('LOAD is not yet implemented.');
+                await _loadProgram(parts[1]);
                 break;
             case 'EXIT':
-                this.exit();
+                exit();
                 break;
             default:
-                this.term.writeln('SYNTAX ERROR');
+                BasicUI.writeln('SYNTAX ERROR');
                 break;
         }
     }
 
-    _getProgramText() {
-        const sortedLines = Array.from(this.programBuffer.keys()).sort((a, b) => a - b);
-        return sortedLines.map(lineNum => `${this.programBuffer.get(lineNum)}`).join('\n');
+    function _getProgramText() {
+        const sortedLines = Array.from(programBuffer.keys()).sort((a, b) => a - b);
+        return sortedLines.map(lineNum => `${lineNum} ${programBuffer.get(lineNum)}`).join('\n');
     }
 
-    _listProgram() {
-        const sortedLines = Array.from(this.programBuffer.keys()).sort((a, b) => a - b);
+    function _listProgram() {
+        const sortedLines = Array.from(programBuffer.keys()).sort((a, b) => a - b);
         sortedLines.forEach(lineNum => {
-            this.term.writeln(`${lineNum} ${this.programBuffer.get(lineNum)}`);
+            BasicUI.writeln(`${lineNum} ${programBuffer.get(lineNum)}`);
         });
+        BasicUI.writeln('OK');
     }
 
-    async _runProgram() {
-        this.term.writeln('RUNNING...');
-        const programText = this._getProgramText();
+    async function _runProgram() {
+        const programText = _getProgramText();
         if (programText.length === 0) {
-            this.term.writeln('');
+            BasicUI.writeln('OK');
             return;
         }
         try {
-            await this.interpreter.run(programText, {
-                outputCallback: (text, newline = true) => {
-                    if (newline) {
-                        this.term.writeln(text);
-                    } else {
-                        this.term.write(text);
-                    }
+            await interpreter.run(programText, {
+                outputCallback: (text) => {
+                    BasicUI.write(text);
                 },
-                inputCallback: () => {
+                inputCallback: async (prompt) => {
+                    BasicUI.write(prompt);
                     return new Promise(resolve => {
-                        this.onInputPromiseResolver = resolve;
+                        onInputPromiseResolver = resolve;
                     });
                 }
             });
         } catch (error) {
-            this.term.writeln(`\r\nRUNTIME ERROR: ${error.message}`);
+            BasicUI.writeln(`\nRUNTIME ERROR: ${error.message}`);
         }
-        this.term.writeln('');
+        BasicUI.writeln('');
     }
-}
+
+    async function _saveProgram(filePathArg) {
+        let savePath = filePathArg ? filePathArg.replace(/["']/g, '') : loadOptions.path;
+        if (!savePath) {
+            BasicUI.writeln("?NO FILENAME SPECIFIED");
+            return;
+        }
+        if (!savePath.endsWith('.bas')) {
+            savePath += '.bas';
+        }
+        const content = _getProgramText();
+        const absPath = FileSystemManager.getAbsolutePath(savePath);
+        const currentUser = UserManager.getCurrentUser().name;
+        const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+
+        const saveResult = await FileSystemManager.createOrUpdateFile(absPath, content, { currentUser, primaryGroup });
+        if (saveResult.success) {
+            if (await FileSystemManager.save()) {
+                loadOptions.path = savePath; // Update the current path
+                BasicUI.writeln('OK');
+            } else {
+                BasicUI.writeln("?FILESYSTEM SAVE FAILED");
+            }
+        } else {
+            BasicUI.writeln(`?ERROR SAVING FILE: ${saveResult.error}`);
+        }
+    }
+
+    async function _loadProgram(filePathArg) {
+        if (!filePathArg) {
+            BasicUI.writeln("?FILENAME REQUIRED");
+            return;
+        }
+        const path = filePathArg.replace(/["']/g, '');
+        const pathValidation = FileSystemManager.validatePath("basic load", path, {expectedType: 'file'});
+        if (pathValidation.error) {
+            BasicUI.writeln(`?ERROR: ${pathValidation.error}`);
+            return;
+        }
+        const node = pathValidation.node;
+        if (!FileSystemManager.hasPermission(node, UserManager.getCurrentUser().name, 'read')) {
+            BasicUI.writeln("?PERMISSION DENIED");
+            return;
+        }
+        _loadContentIntoBuffer(node.content);
+        loadOptions = { path: path, content: node.content };
+        BasicUI.writeln("OK");
+    }
+
+    function handleKeyDown(e) {
+        if (!isActive) return;
+        // Allows the app to handle all keydown events it needs
+        if (e.key === 'Escape') {
+            exit();
+        }
+    }
+
+    return { enter, exit, isActive: () => isActive };
+})();

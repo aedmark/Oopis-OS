@@ -28,6 +28,11 @@
                 return { success: false, error: "basic: Cannot be run in a non-interactive mode." };
             }
 
+            // Ensure the application modules are loaded
+            if (typeof BasicManager === 'undefined' || typeof BasicUI === 'undefined' || typeof BasicInterpreter === 'undefined') {
+                return { success: false, error: "basic: The BASIC application modules are not loaded." };
+            }
+
             let fileContent = null;
             let filePath = null;
             if (validatedPaths[0] && validatedPaths[0].node) {
@@ -35,9 +40,11 @@
                 filePath = validatedPaths[0].resolvedPath;
             }
 
-            // Pass the full context and an options object with file data.
-            // Then, return the app instance to the command executor.
-            return BasicApp.enter(context, { content: fileContent, path: filePath });
+            // Launch the modal app. The app itself will handle the lifecycle.
+            BasicManager.enter(context, { content: fileContent, path: filePath });
+
+            // The command's job is done once the app is launched.
+            return { success: true, output: "" };
         }
     };
 
