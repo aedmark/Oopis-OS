@@ -1,0 +1,47 @@
+{
+  "name": "oopisos-electron",
+  "version": "3.6.0",
+  "description": "OopisOS Standalone Application",
+  "main": "electron.js",
+  "author": "Andrew Edmark & Gemini",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.oopisos.app",
+    "productName": "OopisOS",
+    "files": [
+      "electron.js",
+      "preload.js",
+      "index.html",
+      "style.css",
+      "manifest.json",
+      "scripts/",
+      "docs/",
+      "extras/",
+      "icons/"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icons/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "icons/"
+    }
+  }
+}
