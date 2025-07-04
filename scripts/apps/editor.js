@@ -16,6 +16,7 @@
 const EditorAppConfig = {
   EDITOR: {
     DEBOUNCE_DELAY_MS: 250,
+    FIND_DEBOUNCE_DELAY_MS: 150, // Added for find functionality
     TAB_REPLACEMENT: "    ",
     DEFAULT_MODE: "text",
     MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html" },
@@ -549,6 +550,8 @@ const EditorManager = (() => {
     activeIndex: -1,
   };
 
+  let findDebounceTimer = null; // Debounce timer for find input
+
   function _loadWordWrapSetting() {
     const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
     isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
@@ -593,7 +596,7 @@ const EditorManager = (() => {
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
     isDirty = currentContent !== _getPatchedContent();
     _updateFullEditorUI();
-    _find();
+    _debouncedFind();
   }
   function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
   function _handleEditorSelectionChange() {
@@ -855,6 +858,14 @@ const EditorManager = (() => {
     EditorUI.setEditorFocus();
   }
 
+  function _debouncedFind() {
+    if (findDebounceTimer) clearTimeout(findDebounceTimer);
+    findDebounceTimer = setTimeout(() => {
+      _find();
+      findDebounceTimer = null;
+    }, EditorAppConfig.EDITOR.FIND_DEBOUNCE_DELAY_MS);
+  }
+
   function _find() {
     if (!findState.isOpen) return;
     const query = EditorUI.getFindQuery();
@@ -870,7 +881,7 @@ const EditorManager = (() => {
     }
     EditorUI.updateFindBar(findState);
     EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-    _scrollToMatch(findState.activeIndex);
+    _scrollToMatch(findState.activeIndex, false); // FIX: Do not focus textarea on find
   }
 
   function _goToNextMatch() {
@@ -878,7 +889,7 @@ const EditorManager = (() => {
     findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
     EditorUI.updateFindBar(findState);
     EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-    _scrollToMatch(findState.activeIndex);
+    _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
   }
 
   function _goToPrevMatch() {
@@ -886,14 +897,18 @@ const EditorManager = (() => {
     findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
     EditorUI.updateFindBar(findState);
     EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-    _scrollToMatch(findState.activeIndex);
+    _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
   }
 
-  function _scrollToMatch(index) {
+  function _scrollToMatch(index, shouldFocusTextarea = true) { // FIX: Added parameter
     if (index === -1) return;
     const match = findState.matches[index];
     const textarea = EditorUI.elements.textarea;
-    textarea.focus();
+
+    if (shouldFocusTextarea) { // FIX: Conditional focus
+      textarea.focus();
+    }
+
     textarea.setSelectionRange(match.index, match.index + match[0].length);
     const textToMatch = textarea.value.substring(0, match.index);
     const lineBreaks = (textToMatch.match(/\n/g) || []).length;
@@ -976,7 +991,7 @@ const EditorManager = (() => {
         onUndo: _performUndo.bind(this),
         onRedo: _performRedo.bind(this),
         onFindBarClose: _closeFindBar.bind(this),
-        onFindInputChange: _find.bind(this),
+        onFindInputChange: _debouncedFind.bind(this),
         onFindNext: _goToNextMatch.bind(this),
         onFindPrev: _goToPrevMatch.bind(this),
         onReplace: _replace.bind(this),

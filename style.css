@@ -1563,3 +1563,92 @@ aspect-ratio: 4 / 3;
   color: var(--color-text-primary);
   line-height: var(--line-height-base);
 }
+/* 13. BASIC Application Component */
+/* ========================================================================== */
+
+.basic-app__container {
+  display: flex;
+  flex-direction: column;
+  width: 95%;
+  height: 95%;
+  max-width: 1200px;
+  background-color: #00002a; /* Deep blue background */
+  border: var(--border-width-thick) solid var(--color-accent-sky);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-inset-light), var(--shadow-drop-medium);
+}
+
+.basic-app__header {
+  flex-shrink: 0;
+  text-align: center;
+  padding: var(--spacing-xs) 0;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-link-hover);
+  font-size: var(--font-size-lg);
+  border-bottom: var(--border-width-thick) double var(--color-accent-sky);
+}
+
+.basic-app__title {
+  font-size: var(--font-size-xl);
+  color: var(--color-info);
+}
+
+.basic-app__exit-btn {
+  font-size: var(--font-size-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease-in-out;
+}
+
+.basic-app__exit-btn:hover {
+  color: var(--color-error);
+}
+
+.basic-app__output {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: var(--line-height-terminal);
+}
+
+.basic-app__input-line {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: var(--spacing-sm);
+  border-top: var(--border-width) solid var(--color-border-primary);
+}
+
+.basic-app__input-line > span {
+  margin-right: var(--spacing-sm);
+  color: var(--color-text-primary);
+}
+
+.basic-app__input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  caret-color: var(--color-text-primary);
+}
+
+.basic-app__input:focus {
+  animation: blink-cursor 1.2s steps(2, start) infinite;
+}
+
+@keyframes blink-cursor {
+  to {
+    background-color: var(--color-text-primary);
+    color: var(--color-background-darkest);
+  }
+}

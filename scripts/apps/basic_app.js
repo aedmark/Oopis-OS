@@ -12,20 +12,44 @@ const BasicApp = (() => {
     let programBuffer = {};
 
     function _buildLayout() {
-        elements.output = Utils.createElement('div', { id: 'basic-output', className: 'basic-app__output' });
-        elements.input = Utils.createElement('input', { id: 'basic-input', className: 'basic-app__input', type: 'text', spellcheck: 'false' });
-        elements.container = Utils.createElement('div', { id: 'basic-app-container', className: 'basic-app__container' },
-            Utils.createElement('header', { className: 'basic-app__header', textContent: 'Oopis Basic v1.0' }),
-            elements.output,
-            Utils.createElement('div', { className: 'basic-app__input-line' },
-                Utils.createElement('span', { textContent: ']' }),
-                elements.input
-            )
+        // --- REFACTORED: Use more semantic, style-friendly structure ---
+        const header = Utils.createElement('header', { className: 'basic-app__header' },
+            Utils.createElement('h2', { className: 'basic-app__title', textContent: 'Oopis Basic v1.0' }),
+            Utils.createElement('button', {
+                className: 'basic-app__exit-btn',
+                textContent: '×',
+                title: 'Exit BASIC (Esc)',
+                eventListeners: { click: () => exit() }
+            })
         );
+
+        elements.output = Utils.createElement('div', { id: 'basic-output', className: 'basic-app__output' });
+        elements.input = Utils.createElement('input', {
+            id: 'basic-input',
+            className: 'basic-app__input',
+            type: 'text',
+            spellcheck: 'false',
+            autocapitalize: 'none',
+            autocomplete: 'off'
+        });
+
+        const inputLine = Utils.createElement('div', { className: 'basic-app__input-line' },
+            Utils.createElement('span', { textContent: ']' }),
+            elements.input
+        );
+
+        elements.container = Utils.createElement('div', { id: 'basic-app-container', className: 'basic-app__container' },
+            header,
+            elements.output,
+            inputLine
+        );
+
         return elements.container;
     }
 
+
     function _print(text) {
+        // Ensure text is treated as a single block of text content
         const line = Utils.createElement('div', { textContent: text });
         elements.output.appendChild(line);
         elements.output.scrollTop = elements.output.scrollHeight;
@@ -53,20 +77,26 @@ const BasicApp = (() => {
         switch (command) {
             case "RUN":
                 BasicInterpreter.loadProgram(Object.entries(programBuffer).map(([ln, st]) => `${ln} ${st}`).join('\n'));
+                elements.input.disabled = true; // Disable input during run
                 await BasicInterpreter.run(_print, (prompt) => {
                     return new Promise(resolve => {
                         _print(prompt);
+                        elements.input.disabled = false;
+                        elements.input.focus();
                         elements.input.onkeydown = (e) => {
                             if (e.key === 'Enter') {
                                 const val = elements.input.value;
                                 _print(val);
                                 elements.input.value = '';
+                                // Restore original event listener
                                 elements.input.onkeydown = (e) => { if(e.key === 'Enter') _handleInput(e.target.value); };
                                 resolve(val);
                             }
                         };
                     });
                 });
+                elements.input.disabled = false;
+                elements.input.focus();
                 _print("\nReady.");
                 break;
             case "LIST":

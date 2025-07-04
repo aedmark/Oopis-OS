@@ -140,6 +140,7 @@ The commands in this reference are presented in a deliberate order designed to b
 |`chidi`|The "AI Librarian." Launches a modal application to read and analyze Markdown files with AI.|
 |`gemini`|Interacts with a tool-using Gemini AI model that can execute commands to answer questions.|
 |`adventure`|Starts the interactive text adventure game engine.|
+|`basic`|Launches the Oopis Basic Integrated Development Environment.|
 
 ---
 
