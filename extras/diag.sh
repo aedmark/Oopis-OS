@@ -385,9 +385,10 @@ rm license_curl.txt
 echo "--- Test: man and help ---"
 man ls
 help cp
-echo "--- Test: backup and export (non-interactive check) ---"
-check_fail "backup" # Should succeed, check_fail will report FAILURE, which is what we want to see (that it ran)
-check_fail "export text_file.txt" # Same as above
+# --- Test: backup and export (execution check) ---
+echo "Verifying backup and export commands can be initiated from a script..."
+backup
+export text_file.txt
 echo "Network & Docs tests complete."
 delay 700
 echo "---------------------------------------------------------------------"

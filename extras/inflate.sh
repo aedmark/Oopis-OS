@@ -90,6 +90,12 @@ echo "function allocateMemory(size) { return 'over_there'; }" >> ./src/core/memo
 echo "// Decides which process gets to use the CPU. It's not fair, but it's the law." > ./src/core/scheduler.js
 echo "/* The main component for rendering UI. Contains the secret 'make_pretty' function. */" > ./src/core/utils/renderer.js
 echo "body { font-family: 'VT323', monospace; color: #00FF00; background-color: #000000; }" > ./src/styles/theme.css
+echo "Creating evidence of a rival..."
+echo -e "config_option_a=true\nconfig_option_b=999\n# A shared line\nconfig_option_d=hello\n# Hacked by Morpheus" > src/config_v1.hacked
+# A broken script for the user to fix
+echo "echo 'This script is supposed to work, but it needs your help!'" > src/fix_me.sh
+chmod 644 src/fix_me.sh
+delay 300
 
 # Files for 'diff' and 'run' showcases
 echo -e "config_option_a=true\nconfig_option_b=123\n# A shared line\nconfig_option_d=hello" > src/config_v1.txt
@@ -121,6 +127,17 @@ echo "./data/sort_test.txt" > ./data/files_to_process.txt
 echo "./data/pangrams.txt" >> ./data/files_to_process.txt
 
 delay 300
+
+# --- BASIC Showcase ---
+echo "Writing a sample BASIC program..."
+mkdir -p programs
+echo '10 REM Oopis Basic Showcase' > ./programs/demo.bas
+echo '20 PRINT "HELLO FROM OOPIS BASIC!"' >> ./programs/demo.bas
+echo '30 PRINT "LISTING FILES IN /home/Guest..."' >> ./programs/demo.bas
+echo '40 LET D$ = SYS_CMD("ls /home/Guest")' >> ./programs/demo.bas
+echo '50 PRINT D$' >> ./programs/demo.bas
+echo '60 INPUT "WHAT IS YOUR NAME? ", N$' >> ./programs/demo.bas
+echo '70 PRINT "GOODBYE, " + N$' >> ./programs/demo.bas
 
 # --- Assets for find, zip, and other new tests ---
 echo "Creating dedicated assets for advanced diagnostics..."
@@ -174,6 +191,17 @@ echo "This file is destined for oblivion." > ./doomed.txt
 mkdir ./doomed_dir
 echo "So long, and thanks for all the fish." > ./doomed_dir/message.txt
 login root mcgoopis
+echo "Setting up a shared project for a new developer..."
+groupadd developers
+useradd dev1
+newpass
+newpass
+usermod -aG developers dev1
+mkdir /home/project_x
+chgrp developers /home/project_x
+chmod 770 /home/project_x
+echo "# Project X - Top Secret\nDo not share with marketing." > /home/project_x/brief.md
+
 delay 500
 login Guest
 delay 500
@@ -197,3 +225,10 @@ echo "  > \`cat /vault/top_secret.txt\` to test the security system (it'll fail)
 echo "  > \`chidi ./docs\` to have the AI read you the new, improved manuals."
 echo "  > \`adventure ./games/quest.json\` to start your epic quest."
 echo " "
+
+# A todo list to guide the user
+echo "# My OopisOS Todo List" > ./todo.txt
+echo "- [ ] Investigate the .secret_stuff directory." >> ./todo.txt
+echo "- [ ] Figure out what 'sys_check.sh' is for and run it." >> ./todo.txt
+echo "- [ ] Find out who 'Morpheus' is." >> ./todo.txt
+echo "- [ ] Beat the 'Quest for the Lost Semicolon' adventure." >> ./todo.txt
