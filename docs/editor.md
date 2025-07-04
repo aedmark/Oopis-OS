@@ -1,12 +1,4 @@
-### OopisOS and Edit: The Context-Aware Creative Suite
-
-- [OopisOS and Edit: The Context-Aware Creative Suite](#oopisos-and-edit-the-context-aware-creative-suite)
-   * [1. Executive Summary](#1-executive-summary)
-   * [2. Core Functionality & User Experience](#2-core-functionality--user-experience)
-   * [3. Technical & Architectural Deep-Dive](#3-technical--architectural-deep-dive)
-   * [4. Synergy with the OopisOS Ecosystem](#4-synergy-with-the-oopisos-ecosystem)
-   * [5. Strengths & Opportunities](#5-strengths--opportunities)
-   * [6. Conclusion](#6-conclusion)
+# OopisOS and Edit: The Context-Aware Creative Suite
 
 #### 1. Executive Summary
 
@@ -20,18 +12,17 @@ The `edit` command launches a sophisticated modal application designed for a sea
 
 2. **Context-Aware Modes:** The editor inspects the file's extension and automatically configures itself:
 
-   - **`.txt`, `.sh`, `.js`, etc. (Text Mode):** Provides a clean, straightforward text editing experience focused on code and plain text.
+    - **`.txt`, `.sh`, `.js`, etc. (Text Mode):** Provides a clean, straightforward text editing experience focused on code and plain text.
 
-   - **`.md` (Markdown Mode):** Activates a powerful split-screen view with the raw text on one side and a live, rendered HTML preview on the other. A formatting toolbar appears, offering one-click access to common Markdown syntax like bold, italics, lists, and links.
+    - **`.md` (Markdown Mode):** Activates a powerful split-screen view with the raw text on one side and a live, rendered HTML preview on the other. A formatting toolbar appears, offering one-click access to common Markdown syntax like bold, italics, lists, and links.
 
-   - **`.html` (HTML Mode):** Also uses the split-screen view, rendering the user's HTML code in a sandboxed `<iframe>` for a live, safe preview.
+    - **`.html` (HTML Mode):** Also uses the split-screen view, rendering the user's HTML code in a sandboxed `<iframe>` for a live, safe preview.
 
-3. **Productivity-Focused UI:**  
-   - **View Toggling (`Ctrl+P`):** Users can cycle between the split-screen view, an editor-only view for focused writing, and a preview-only view for clean reading.
+3. **Productivity-Focused UI:** - **View Toggling (`Ctrl+P`):** Users can cycle between the split-screen view, an editor-only view for focused writing, and a preview-only view for clean reading.
 
-   - **Status Bar:** A persistent status bar provides crucial information at a glance, including the current filename, dirty status (unsaved changes), line/word/character counts, and the precise cursor position.
+    - **Status Bar:** A persistent status bar provides crucial information at a glance, including the current filename, dirty status (unsaved changes), line/word/character counts, and the precise cursor position.
 
-   - **Keyboard-First Design:** The editor is built for efficiency, with essential keyboard shortcuts for saving (`Ctrl+S`), exiting (`Ctrl+O`), undo/redo (`Ctrl+Z`/`Ctrl+Y`), and text formatting.
+    - **Keyboard-First Design:** The editor is built for efficiency, with essential keyboard shortcuts for saving (`Ctrl+S`), exiting (`Ctrl+O`), undo/redo (`Ctrl+Z`/`Ctrl+Y`), and text formatting.
 
 #### 3. Technical & Architectural Deep-Dive
 

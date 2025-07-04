@@ -166,6 +166,22 @@ const EditorUI = (() => {
   function buildLayout(callbacks) {
     eventCallbacks = callbacks;
 
+    // --- Find & Replace Bar ---
+    elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
+    elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
+    elements.findMatchesDisplay = Utils.createElement("span", { className: "find-bar__matches" });
+    elements.prevBtn = Utils.createElement("button", { className: "find-bar__btn", textContent: "▲", title: "Previous Match (Shift+Enter)", eventListeners: { click: eventCallbacks.onFindPrev } });
+    elements.nextBtn = Utils.createElement("button", { className: "find-bar__btn", textContent: "▼", title: "Next Match (Enter)", eventListeners: { click: eventCallbacks.onFindNext } });
+    elements.replaceBtn = Utils.createElement("button", { className: "find-bar__btn", textContent: "Replace", eventListeners: { click: eventCallbacks.onReplace } });
+    elements.replaceAllBtn = Utils.createElement("button", { className: "find-bar__btn", textContent: "All", eventListeners: { click: eventCallbacks.onReplaceAll } });
+    elements.closeFindBtn = Utils.createElement("button", { className: "find-bar__btn find-bar__btn--close", textContent: "×", title: "Close (Esc)", eventListeners: { click: eventCallbacks.onFindBarClose } });
+
+    const findNavGroup = Utils.createElement("div", { className: "find-bar__button-group" }, elements.prevBtn, elements.nextBtn);
+    const replaceGroup = Utils.createElement("div", { className: "find-bar__button-group" }, elements.replaceBtn, elements.replaceAllBtn);
+    elements.findBar = Utils.createElement("div", { id: "editor-find-bar", className: "editor__find-bar hidden" },
+        elements.findInput, findNavGroup, elements.findMatchesDisplay, elements.replaceInput, replaceGroup, elements.closeFindBtn
+    );
+
     // --- Markdown Toolbar Buttons ---
     const mdButtonDetails = [{
       name: 'undoButton',
@@ -218,7 +234,6 @@ const EditorUI = (() => {
       title: 'Ordered List',
       callbackName: 'onFormatOl'
     }];
-
     elements.formattingToolbar = Utils.createElement("div", { className: `editor__toolbar hidden` });
     mdButtonDetails.forEach(detail => {
       elements[detail.name] = Utils.createElement("button", {
@@ -262,8 +277,9 @@ const EditorUI = (() => {
     const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
     elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
     elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
+    elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
     elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
-    elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.textarea);
+    elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
     elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
     elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
     elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.textareaWrapper, elements.previewWrapper);
@@ -275,8 +291,15 @@ const EditorUI = (() => {
     const statusBarLeft = Utils.createElement("div", { className: "editor__status-bar-group" }, elements.statusBarCursorPos, elements.statusBarLineCount);
     const statusBarRight = Utils.createElement("div", { className: "editor__status-bar-group" }, elements.statusBarWordCount, elements.statusBarCharCount);
     elements.statusBar = Utils.createElement("div", { id: "editor-status-bar", className: "editor__status-bar" }, statusBarLeft, elements.filenameDisplay, statusBarRight);
-    elements.instructionsFooter = Utils.createElement("div", { id: "editor-instructions-footer", className: "editor__footer", textContent: `Ctrl+S: Save & Exit | Ctrl+O: Exit (confirm if unsaved) | Ctrl+P: Toggle Preview | Ctrl+Z: Undo | Ctrl+Y/Ctrl+Shift+Z: Redo` });
-    elements.editorContainer = Utils.createElement("div", { id: "editor-container", className: "editor-container" }, elements.controlsDiv, elements.mainArea, elements.statusBar, elements.instructionsFooter);
+    elements.instructionsFooter = Utils.createElement("div", { id: "editor-instructions-footer", className: "editor__footer", textContent: `Ctrl+S: Save | Ctrl+O: Exit | Ctrl+P: Preview | Ctrl+F: Find | Ctrl+H: Replace` });
+
+    elements.editorContainer = Utils.createElement("div", { id: "editor-container", className: "editor-container" },
+        elements.controlsDiv,
+        elements.findBar,
+        elements.mainArea,
+        elements.statusBar,
+        elements.instructionsFooter
+    );
 
     return elements.editorContainer;
   }
@@ -316,9 +339,13 @@ const EditorUI = (() => {
     elements.lineGutter.scrollTop = elements.textarea.scrollTop;
   }
 
-  function syncLineGutterScroll() {
+  function syncScrolls() {
     if (elements.lineGutter && elements.textarea) {
       elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+    }
+    if (elements.highlighter && elements.textarea) {
+      elements.highlighter.scrollTop = elements.textarea.scrollTop;
+      elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
     }
   }
 
@@ -449,11 +476,56 @@ const EditorUI = (() => {
     }
   }
 
+  function updateFindBar(findState) {
+    if (!elements.findBar) return;
+    elements.findBar.classList.toggle('hidden', !findState.isOpen);
+    if (!findState.isOpen) return;
+
+    elements.replaceInput.classList.toggle('hidden', !findState.isReplace);
+    elements.replaceBtn.classList.toggle('hidden', !findState.isReplace);
+    elements.replaceAllBtn.classList.toggle('hidden', !findState.isReplace);
+
+    if (findState.query) {
+      const matchCount = findState.matches.length;
+      if (matchCount > 0) {
+        elements.findMatchesDisplay.textContent = `${findState.activeIndex + 1} of ${matchCount}`;
+      } else {
+        elements.findMatchesDisplay.textContent = "Not Found";
+      }
+    } else {
+      elements.findMatchesDisplay.textContent = "";
+    }
+  }
+
+  function getFindQuery() {
+    return elements.findInput ? elements.findInput.value : "";
+  }
+
+  function getReplaceQuery() {
+    return elements.replaceInput ? elements.replaceInput.value : "";
+  }
+
+  function renderHighlights(text, matches, activeIndex) {
+    if (!elements.highlighter) return;
+    let highlightedHtml = '';
+    let lastIndex = 0;
+    matches.forEach((match, index) => {
+      highlightedHtml += text.substring(lastIndex, match.index);
+      const className = index === activeIndex ? 'highlight-match--active' : 'highlight-match';
+      highlightedHtml += `<span class="${className}">${match[0]}</span>`;
+      lastIndex = match.index + match[0].length;
+    });
+    highlightedHtml += text.substring(lastIndex);
+    elements.highlighter.innerHTML = highlightedHtml;
+    syncScrolls();
+  }
+
   return {
-    buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncLineGutterScroll,
+    buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
     setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
     applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
-    getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles
+    getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
+    updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
   };
 })();
 
@@ -468,6 +540,14 @@ const EditorManager = (() => {
       originalContent = "", isDirty = false, undoStack = [], redoStack = [],
       saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
   const MAX_UNDO_STATES = 100;
+
+  let findState = {
+    isOpen: false,
+    isReplace: false,
+    query: '',
+    matches: [],
+    activeIndex: -1,
+  };
 
   function _loadWordWrapSetting() {
     const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
@@ -500,6 +580,8 @@ const EditorManager = (() => {
     if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
       EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
     }
+    EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
+    EditorUI.syncScrolls();
   }
   function _handleEditorInput() {
     if (!isActiveState) return;
@@ -511,8 +593,9 @@ const EditorManager = (() => {
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
     isDirty = currentContent !== _getPatchedContent();
     _updateFullEditorUI();
+    _find();
   }
-  function _handleEditorScroll() { if (isActiveState) EditorUI.syncLineGutterScroll(); }
+  function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
   function _handleEditorSelectionChange() {
     if (!isActiveState) return;
     const textContent = EditorUI.getTextareaContent();
@@ -754,6 +837,91 @@ const EditorManager = (() => {
 
     await manipulate();
   }
+  function _openFindBar(isReplace = false) {
+    findState.isOpen = true;
+    findState.isReplace = isReplace;
+    EditorUI.updateFindBar(findState);
+    EditorUI.elements.findInput.focus();
+    EditorUI.elements.findInput.select();
+    _find();
+  }
+
+  function _closeFindBar() {
+    findState.isOpen = false;
+    findState.matches = [];
+    findState.activeIndex = -1;
+    EditorUI.updateFindBar(findState);
+    EditorUI.renderHighlights(EditorUI.getTextareaContent(), [], -1); // Clear highlights
+    EditorUI.setEditorFocus();
+  }
+
+  function _find() {
+    if (!findState.isOpen) return;
+    const query = EditorUI.getFindQuery();
+    findState.query = query;
+    if (!query) {
+      findState.matches = [];
+      findState.activeIndex = -1;
+    } else {
+      const text = EditorUI.getTextareaContent();
+      const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+      findState.matches = [...text.matchAll(regex)];
+      findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
+    }
+    EditorUI.updateFindBar(findState);
+    EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+    _scrollToMatch(findState.activeIndex);
+  }
+
+  function _goToNextMatch() {
+    if (findState.matches.length === 0) return;
+    findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
+    EditorUI.updateFindBar(findState);
+    EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+    _scrollToMatch(findState.activeIndex);
+  }
+
+  function _goToPrevMatch() {
+    if (findState.matches.length === 0) return;
+    findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
+    EditorUI.updateFindBar(findState);
+    EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+    _scrollToMatch(findState.activeIndex);
+  }
+
+  function _scrollToMatch(index) {
+    if (index === -1) return;
+    const match = findState.matches[index];
+    const textarea = EditorUI.elements.textarea;
+    textarea.focus();
+    textarea.setSelectionRange(match.index, match.index + match[0].length);
+    const textToMatch = textarea.value.substring(0, match.index);
+    const lineBreaks = (textToMatch.match(/\n/g) || []).length;
+    textarea.scrollTop = lineBreaks * 16;
+  }
+
+  function _replace() {
+    if (findState.activeIndex === -1 || !findState.isReplace) return;
+
+    const match = findState.matches[findState.activeIndex];
+    const replaceText = EditorUI.getReplaceQuery();
+    const originalText = EditorUI.getTextareaContent();
+
+    const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
+
+    EditorUI.setTextareaContent(newText);
+    _handleEditorInput();
+  }
+
+  function _replaceAll() {
+    if (findState.matches.length === 0 || !findState.isReplace) return;
+    const replaceText = EditorUI.getReplaceQuery();
+    const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+    const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
+
+    EditorUI.setTextareaContent(newText);
+    _handleEditorInput();
+  }
   function _toggleViewModeHandler() {
     if (!isActiveState) return;
     const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
@@ -780,6 +948,7 @@ const EditorManager = (() => {
       onSaveCallback = callback;
       undoStack = [content]; // Start with the full original content
       redoStack = [];
+      findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
       const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
       document.addEventListener('keydown', handleKeyDown);
@@ -805,7 +974,18 @@ const EditorManager = (() => {
         onFormatB: () => _applyTextManipulation('b'),
         onFormatI_html: () => _applyTextManipulation('i_html'),
         onUndo: _performUndo.bind(this),
-        onRedo: _performRedo.bind(this)
+        onRedo: _performRedo.bind(this),
+        onFindBarClose: _closeFindBar.bind(this),
+        onFindInputChange: _find.bind(this),
+        onFindNext: _goToNextMatch.bind(this),
+        onFindPrev: _goToPrevMatch.bind(this),
+        onReplace: _replace.bind(this),
+        onReplaceAll: _replaceAll.bind(this),
+        onFindBarKeyDown: (e) => {
+          if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); _goToPrevMatch(); }
+          else if (e.key === 'Enter') { e.preventDefault(); _goToNextMatch(); }
+          else if (e.key === 'Escape') { e.preventDefault(); _closeFindBar(); }
+        }
       };
       const editorElement = EditorUI.buildLayout(editorCallbacks);
       AppLayerManager.show(editorElement);
@@ -897,6 +1077,11 @@ const EditorManager = (() => {
   }
   async function handleKeyDown(event) {
     if (!isActiveState) return;
+    if (findState.isOpen && event.key === 'Escape') {
+      event.preventDefault();
+      _closeFindBar();
+      return;
+    }
     if (event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
       event.preventDefault();
       const selection = EditorUI.getTextareaSelection();
@@ -911,6 +1096,8 @@ const EditorManager = (() => {
         case "s": event.preventDefault(); await exit(true); break;
         case "o": event.preventDefault(); await exit(false); break;
         case "p": event.preventDefault(); _toggleViewModeHandler(); break;
+        case "f": event.preventDefault(); _openFindBar(false); break;
+        case "h": event.preventDefault(); _openFindBar(true); break;
         case "b": if (currentFileMode !== 'text') { event.preventDefault(); _applyTextManipulation('bold'); } break;
         case "i": if (!event.shiftKey && currentFileMode !== 'text') { event.preventDefault(); _applyTextManipulation('italic'); } break;
         case "z": event.preventDefault(); event.shiftKey ? _performRedo() : _performUndo(); break;

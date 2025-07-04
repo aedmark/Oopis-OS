@@ -19,6 +19,7 @@ const urlsToCache = [
     './scripts/apps/chidi_app.js',
     './scripts/apps/text_adventure.js',
     './scripts/apps/log_app.js',
+    './scripts/apps/BasicInterpreter.js',
     './scripts/lexpar.js',
     './scripts/commexec.js',
     './scripts/commands/registry.js',

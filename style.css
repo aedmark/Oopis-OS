@@ -574,9 +574,7 @@ body {
   background-color: var(--color-background-light);
 }
 
-/* Locate this existing rule */
 .editor__status-bar {
-  /* Replace this line: font-size: var(--font-size-sm); */
   font-size: clamp(0.6rem, 1.2vw, 0.875rem); /* Dynamically scales font */
   white-space: nowrap; /* Prevents text wrapping */
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -594,10 +592,8 @@ body {
   gap: var(--spacing-md);
 }
 
-/* Locate this existing rule */
 .editor__footer {
   padding-top: var(--spacing-sm);
-  /* Replace this line: font-size: var(--font-size-sm); */
   font-size: clamp(0.6rem, 1.2vw, 0.875rem); /* Dynamically scales font */
   white-space: nowrap; /* Prevents text wrapping */
   overflow: hidden; /* Clips content if it still overflows */
@@ -642,6 +638,114 @@ body {
   width: 1.25em;
   height: 1.25em;
   fill: currentColor;
+}
+.editor__find-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-background-light);
+  border-bottom: var(--border-width) solid var(--color-border-secondary);
+  flex-shrink: 0;
+}
+
+.find-bar__input {
+  background-color: var(--color-background-darkest);
+  border: var(--border-width) solid var(--color-border-primary);
+  color: var(--color-text-secondary);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  flex-grow: 1;
+  min-width: 100px;
+}
+
+.find-bar__input:focus {
+  outline: none;
+  border-color: var(--color-info);
+}
+
+.find-bar__matches {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-subtle);
+  padding: 0 var(--spacing-sm);
+  white-space: nowrap;
+}
+
+.find-bar__button-group {
+  display: flex;
+  align-items: center;
+}
+
+.find-bar__btn {
+  background-color: transparent;
+  border: var(--border-width) solid var(--color-border-primary);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs);
+  cursor: pointer;
+  min-width: 28px;
+}
+.find-bar__btn:hover {
+  background-color: var(--color-border-primary);
+}
+.find-bar__btn:first-child {
+  border-top-left-radius: var(--border-radius-sm);
+  border-bottom-left-radius: var(--border-radius-sm);
+}
+.find-bar__btn:last-child {
+  border-top-right-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+  border-left: none;
+}
+.find-bar__btn.find-bar__btn--close {
+  border-radius: var(--border-radius-sm);
+  margin-left: var(--spacing-sm);
+  border-left: var(--border-width) solid var(--color-border-primary);
+}
+
+/* Highlighter styles */
+.editor__textarea-wrapper {
+  position: relative; /* This is crucial for positioning children */
+}
+
+.editor__highlighter, .editor__textarea {
+  /* Both must share the exact same font, size, padding, and border settings */
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  white-space: pre;
+  overflow: hidden; /* Scroll is handled by the parent wrapper */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.editor__highlighter {
+  color: transparent; /* Makes the underlying text invisible */
+  pointer-events: none; /* Allows clicks to pass through to the textarea */
+  z-index: 1;
+}
+
+.editor__textarea {
+  background-color: transparent; /* THE CRITICAL CHANGE */
+  color: var(--color-text-primary);
+  z-index: 2; /* Sits on top of the highlighter */
+  resize: none;
+}
+
+.highlight-match {
+  background-color: rgba(251, 191, 36, 0.4); /* --color-accent-amber with alpha */
+  border-radius: 2px;
+}
+
+.highlight-match--active {
+  background-color: rgba(56, 189, 248, 0.6); /* --color-info with alpha */
+  border-radius: 2px;
 }
 
 /* 8. Explorer Component
