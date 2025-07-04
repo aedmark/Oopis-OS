@@ -8,7 +8,7 @@
    easy maintenance. */
 :root {
   /* Colors */
-  --color-text-primary: #08ff64;      /* text-green-500 */
+  --color-text-primary: #00ff5b;      /* text-green-500 */
   --color-text-secondary: #a3a3a3;  /* text-neutral-400 */
   --color-text-subtle: #737373;     /* text-neutral-500 */
   --color-text-link: #2dd4bf;         /* custom */
@@ -1572,12 +1572,12 @@ aspect-ratio: 4 / 3;
   width: 95%;
   height: 95%;
   max-width: 1200px;
-  background-color: #0000df; /* Deep blue background */
-  border: var(--border-width-thick) solid var(--color-accent-sky);
+  background-color: #0088FF; /* C64-inspired blue background */
+  border: var(--border-width-thick) solid #AAFFEE;
   border-radius: var(--border-radius-md);
   padding: var(--spacing-sm);
   font-family: var(--font-family-mono);
-  color: var(--color-text-primary);
+  color: #AAFFEE; /* C64-inspired light blue text */
   box-shadow: var(--shadow-inset-light), var(--shadow-drop-medium);
 }
 
@@ -1585,9 +1585,9 @@ aspect-ratio: 4 / 3;
   flex-shrink: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
-  color: var(--color-text-link-hover);
+  color: #AAFFEE; /* Match new text color */
   font-size: var(--font-size-lg);
-  border-bottom: var(--border-width-thick) double var(--color-accent-sky);
+  border-bottom: var(--border-width-thick) double #AAFFEE; /* Match new text color */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1595,7 +1595,7 @@ aspect-ratio: 4 / 3;
 
 .basic-app__title {
   font-size: var(--font-size-xl);
-  color: var(--color-info);
+  color: #FFFFFF; /* Brighter white for title contrast */
 }
 
 .basic-app__exit-btn {
@@ -1603,7 +1603,7 @@ aspect-ratio: 4 / 3;
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: #AAFFEE; /* Match new text color */
   transition: color 0.2s ease-in-out;
 }
 
@@ -1625,12 +1625,12 @@ aspect-ratio: 4 / 3;
   align-items: center;
   flex-shrink: 0;
   padding: var(--spacing-sm);
-  border-top: var(--border-width) solid var(--color-border-primary);
+  border-top: var(--border-width) solid #AAFFEE; /* Match new text color */
 }
 
 .basic-app__input-line > span {
   margin-right: var(--spacing-sm);
-  color: var(--color-text-primary);
+  color: #AAFFEE; /* Match new text color for prompt consistency */
 }
 
 .basic-app__input {
@@ -1638,19 +1638,8 @@ aspect-ratio: 4 / 3;
   background: transparent;
   border: none;
   outline: none;
-  color: var(--color-text-primary);
+  color: #AAFFEE; /* Match new text color */
   font-family: inherit;
   font-size: inherit;
-  caret-color: var(--color-text-primary);
-}
-
-.basic-app__input:focus {
-  animation: blink-cursor 1.2s steps(2, start) infinite;
-}
-
-@keyframes blink-cursor {
-  to {
-    background-color: var(--color-text-primary);
-    color: var(--color-background-darkest);
-  }
+  caret-color: #AAFFEE; /* Match new text color */
 }

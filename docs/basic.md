@@ -27,12 +27,14 @@ Every line in a BASIC program must start with a line number.
     `20 INPUT "WHAT IS YOUR NAME? ", N$`
 
 -   **LET** _variable_ = _expression_
-    Assigns the value of an expression to a variable. The `LET` keyword is mandatory.
+    Assigns the value of an expression to a variable. The `LET` keyword is optional.
     `30 LET A = 10`
+    `35 B = 20`
 
 -   **IF** _condition_ **THEN** _action_
-    If the condition is true, it performs the action. The only action currently supported is `GOTO linenumber`.
+    If the condition is true, it performs the action. The action can be any valid BASIC statement, such as `GOTO` or `PRINT`.
     `40 IF A > 5 THEN GOTO 100`
+    `45 IF N$ = "ANDREW" THEN PRINT "GREETINGS, CREATOR."`
 
 -   **GOTO** _linenumber_
     Unconditionally jumps program execution to the specified line number.

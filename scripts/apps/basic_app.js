@@ -176,17 +176,27 @@ const BasicManager = (() => {
                 programBuffer.set(lineNumber, lineContent);
             }
         } else {
-            await _executeIdeCommand(command.toUpperCase());
+            // Intelligently parse the command from its arguments before uppercasing.
+            const firstSpaceIndex = command.indexOf(' ');
+            let cmd, argsStr;
+
+            if (firstSpaceIndex === -1) {
+                // No arguments, the whole string is the command.
+                cmd = command.toUpperCase();
+                argsStr = '';
+            } else {
+                // Split command and arguments, uppercasing only the command.
+                cmd = command.substring(0, firstSpaceIndex).toUpperCase();
+                argsStr = command.substring(firstSpaceIndex + 1).trim();
+            }
+            await _executeIdeCommand(cmd, argsStr);
         }
         if (isActive) { // Check if not exited
             BasicUI.writeln('READY.');
         }
     }
 
-    async function _executeIdeCommand(command) {
-        const parts = command.split(/ /);
-        const cmd = parts[0];
-
+    async function _executeIdeCommand(cmd, argsStr) {
         switch (cmd) {
             case 'RUN':
                 await _runProgram();
@@ -200,10 +210,10 @@ const BasicManager = (() => {
                 BasicUI.writeln('OK');
                 break;
             case 'SAVE':
-                await _saveProgram(parts[1]);
+                await _saveProgram(argsStr);
                 break;
             case 'LOAD':
-                await _loadProgram(parts[1]);
+                await _loadProgram(argsStr);
                 break;
             case 'EXIT':
                 exit();
@@ -235,11 +245,17 @@ const BasicManager = (() => {
         }
         try {
             await interpreter.run(programText, {
-                outputCallback: (text) => {
-                    BasicUI.writeln(text);
+                // This callback now respects the 'withNewline' flag passed by the interpreter.
+                outputCallback: (text, withNewline = true) => {
+                    if (withNewline) {
+                        BasicUI.writeln(text);
+                    } else {
+                        BasicUI.write(text);
+                    }
                 },
-                inputCallback: async (prompt) => {
-                    BasicUI.write(prompt);
+                // This callback's only job is to wait for and return user input.
+                // The interpreter handles printing the prompt via the outputCallback.
+                inputCallback: async () => {
                     return new Promise(resolve => {
                         onInputPromiseResolver = resolve;
                     });
