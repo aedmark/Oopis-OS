@@ -1,0 +1,14 @@
+favicon.ico
+*.zip
+*.yaml
+/.idea/
+/node_modules/
+*.bak
+*.rar
+.ftpquota
+/dist/
+*.7z
+*.deb
+*.appimage
+*.exe
+/docs/*.html
