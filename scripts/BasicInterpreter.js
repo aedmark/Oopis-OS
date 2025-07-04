@@ -82,32 +82,67 @@ class BasicInterpreter {
         const openParen = statement.indexOf('(');
         const closeParen = statement.lastIndexOf(')');
         if (openParen === -1 || closeParen === -1) return [];
+
         const argsStr = statement.substring(openParen + 1, closeParen);
-        return argsStr.split(',').map(s => s.trim());
+        const args = [];
+        let inQuote = false;
+        let currentArg = '';
+
+        for (let i = 0; i < argsStr.length; i++) {
+            const char = argsStr[i];
+
+            if (char === '"') {
+                inQuote = !inQuote;
+            }
+
+            if (char === ',' && !inQuote) {
+                args.push(currentArg.trim());
+                currentArg = '';
+            } else {
+                currentArg += char;
+            }
+        }
+        // Add the final argument after the loop
+        args.push(currentArg.trim());
+
+        return args;
     }
 
     async executeStatement(statement) {
-        const parts = statement.split(/\s+/);
-        const command = parts[0].toUpperCase();
+        // Regex to robustly capture the command and the rest of the statement.
+        const match = statement.match(/^([a-zA-Z_]+)\s*(.*)/s);
+
+        // If no standard command is found, it might be an implicit LET.
+        if (!match) {
+            if (statement.includes('=')) {
+                await this.executeStatement(`LET ${statement}`);
+            } else if (statement.trim()) { // Avoid errors on empty lines
+                throw new Error(`Syntax Error: Invalid statement format '${statement}'`);
+            }
+            return;
+        }
+
+        const command = match[1].toUpperCase();
+        const rest = match[2].trim();
 
         switch (command) {
             case 'PRINT': {
-                const valueToPrint = await this._evaluateExpression(statement.substring(5).trim());
+                const valueToPrint = await this._evaluateExpression(rest);
                 this.outputCallback(valueToPrint);
                 break;
             }
             case 'LET': {
-                const eqIndex = statement.indexOf('=');
-                const varName = statement.substring(3, eqIndex).trim();
-                const expr = statement.substring(eqIndex + 1).trim();
+                const eqIndex = rest.indexOf('=');
+                const varName = rest.substring(0, eqIndex).trim();
+                const expr = rest.substring(eqIndex + 1).trim();
                 const valueToLet = await this._evaluateExpression(expr);
                 this.variables.set(varName.toUpperCase(), valueToLet);
                 break;
             }
             case 'INPUT': {
-                let restOfStatement = statement.substring(5).trim();
+                let restOfStatement = rest; // Use the already-parsed 'rest'
                 let prompt = '? ';
-
+                // ... (rest of INPUT logic remains the same)
                 if (restOfStatement.startsWith('"')) {
                     const endQuoteIndex = restOfStatement.indexOf('"', 1);
                     if (endQuoteIndex !== -1) {
@@ -137,12 +172,12 @@ class BasicInterpreter {
                 break;
             }
             case 'GOTO':
-                this.programCounter = parseInt(parts[1], 10);
+                this.programCounter = parseInt(rest, 10);
                 break;
             case 'IF': {
-                const thenIndex = statement.toUpperCase().indexOf('THEN');
-                const conditionPart = statement.substring(2, thenIndex).trim();
-                const actionPart = statement.substring(thenIndex + 4).trim();
+                const thenIndex = rest.toUpperCase().indexOf('THEN');
+                const conditionPart = rest.substring(0, thenIndex).trim();
+                const actionPart = rest.substring(thenIndex + 4).trim();
                 if (await this._evaluateCondition(conditionPart)) {
                     await this.executeStatement(actionPart);
                 }
@@ -157,7 +192,7 @@ class BasicInterpreter {
                 } else {
                     this.gosubStack.push(null); // Return to end of program
                 }
-                this.programCounter = parseInt(parts[1], 10);
+                this.programCounter = parseInt(rest, 10);
                 break;
             }
             case 'RETURN':
@@ -165,7 +200,7 @@ class BasicInterpreter {
                 this.programCounter = this.gosubStack.pop();
                 break;
             case 'SYS_WRITE': {
-                const sysWriteArgs = this._parseFunctionArgs(statement);
+                const sysWriteArgs = this._parseFunctionArgs(rest);
                 if (sysWriteArgs.length !== 2) throw new Error("SYS_WRITE requires 2 arguments: filepath and content");
                 const filePath = await this._evaluateExpression(sysWriteArgs[0]);
                 const content = await this._evaluateExpression(sysWriteArgs[1]);
@@ -183,12 +218,7 @@ class BasicInterpreter {
                 this.programCounter = null;
                 break;
             default:
-                if (statement.includes('=')) {
-                    await this.executeStatement(`LET ${statement}`);
-                } else {
-                    throw new Error(`Syntax Error: Unknown command '${command}'`);
-                }
-                break;
+                throw new Error(`Syntax Error: Unknown command '${command}'`);
         }
     }
 

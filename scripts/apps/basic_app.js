@@ -236,7 +236,7 @@ const BasicManager = (() => {
         try {
             await interpreter.run(programText, {
                 outputCallback: (text) => {
-                    BasicUI.write(text);
+                    BasicUI.writeln(text);
                 },
                 inputCallback: async (prompt) => {
                     BasicUI.write(prompt);
