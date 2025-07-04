@@ -237,7 +237,11 @@ const UserManager = (() => {
 
         users[targetUsername].passwordHash = newPasswordHash;
 
-        if (StorageManager.saveItem(Config.STORAGE_KEYS.USER_CREDENTIALS, users, "User list")) {
+        if (StorageManager.saveItem(
+            Config.STORAGE_KEYS.USER_CREDENTIALS,
+            users,
+            "User list"
+        )) {
             return { success: true, message: `Password for '${targetUsername}' updated successfully.` };
         } else {
             return { success: false, error: "Failed to save updated password." };
@@ -292,6 +296,25 @@ const UserManager = (() => {
      * @returns {Promise<object>} A command result object.
      */
     async function login(username, providedPassword, options = {}) {
+        const currentStack = SessionManager.getStack();
+        const currentUserName = getCurrentUser().name;
+
+        // Check if user is trying to log in as themselves.
+        if (username === currentUserName) {
+            // Correctly use the configuration for the message.
+            const message = `${Config.MESSAGES.ALREADY_LOGGED_IN_AS_PREFIX}${username}${Config.MESSAGES.ALREADY_LOGGED_IN_AS_SUFFIX}`;
+            return { success: true, message: message, noAction: true };
+        }
+
+        // Check if the user is present anywhere else in the session stack (e.g., from a previous `su`).
+        if (currentStack.includes(username)) {
+            return {
+                success: false,
+                error: `${Config.MESSAGES.ALREADY_LOGGED_IN_AS_PREFIX}${username}${Config.MESSAGES.ALREADY_LOGGED_IN_AS_SUFFIX}`
+            };
+        }
+
+        // If checks pass, proceed with the standard authentication flow.
         return _handleAuthFlow(username, providedPassword, _performLogin, "Login failed.", options);
     }
 
@@ -302,10 +325,12 @@ const UserManager = (() => {
      * @returns {Promise<object>} A command result object.
      */
     async function _performLogin(username) {
+        // Save state of the *current* user before logging out of their session entirely.
         if (currentUser.name !== Config.USER.DEFAULT_NAME) {
             SessionManager.saveAutomaticState(currentUser.name);
             SudoManager.clearUserTimestamp(currentUser.name);
         }
+        // This is the key action for `login` - it starts a new session stack.
         SessionManager.clearUserStack(username);
         currentUser = { name: username };
         SessionManager.loadAutomaticState(username);
