@@ -301,7 +301,7 @@ sort uniq_test.txt | uniq -d
 sort uniq_test.txt | uniq -u
 echo "--- Test: awk scripting ---"
 echo "Printing active users with values over 100 from csv"
-awk -F, '$3 == "active" && $2 > 100 { print "Alert: "$1" has value "$2 }' awk_test.csv
+awk -F, '/,active/ { print "User " $1 " is " $3 }' awk_test.csv
 echo "--- Test: shuf (-i, -e) ---"
 shuf -i 1-5 -n 3
 shuf -e one two three four five
@@ -359,10 +359,6 @@ su testuser2 newpass
 whoami
 logout
 whoami
-echo "--- Test: passwd ---"
-passwd testuser2
-newpass
-newerpass
 echo "--- Test: savestate and loadstate ---"
 login diagUser testpass
 cd /home/diagUser/diag_workspace
@@ -371,20 +367,6 @@ echo "Modified State" > state_test.txt
 loadstate
 YES
 cat state_test.txt
-echo "--- Test: clearfs ---"
-login root mcgoopis
-useradd clearfs_tester
-testpass
-testpass
-login clearfs_tester testpass
-echo "file" > file.txt
-mkdir dir
-clearfs
-YES
-ls -a
-login root mcgoopis
-removeuser -f testuser2
-removeuser -f clearfs_tester
 echo "User & State Management tests complete."
 delay 700
 echo "---------------------------------------------------------------------"

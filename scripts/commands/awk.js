@@ -87,7 +87,7 @@
             { name: "fieldSeparator", short: "-F", takesValue: true }
         ],
         coreLogic: async (context) => {
-            const { flags, remainingArgs, options, currentUser } = context;
+            const { flags, args: remainingArgs, options, currentUser } = context;
 
             if (remainingArgs.length === 0) {
                 return { success: false, error: "awk: missing program" };
@@ -113,6 +113,11 @@
             }
 
             const processContent = (content) => {
+                if (typeof content !== 'string') {
+                    console.error("AWK internal error: processContent received non-string input:", content);
+                    return;
+                }
+
                 const lines = content.split('\n');
                 for (const line of lines) {
                     if (line === '' && lines.at(-1) === '') continue;
@@ -122,9 +127,10 @@
                     const trimmedLine = line.trim();
                     let fields = trimmedLine === '' ? [] : trimmedLine.split(separator);
 
+                    // (Your previous fix can remain here as an extra layer of safety)
                     if (!Array.isArray(fields)) {
                         console.error("AWK internal error: 'fields' was not an array for line:", line);
-                        fields = []; // Recover by treating it as an empty array.
+                        fields = [];
                     }
 
                     const allFields = [line, ...fields];

@@ -306,104 +306,71 @@ const Utils = (() => {
     function parseFlags(argsArray, flagDefinitions) {
         const flags = {};
         const remainingArgs = [];
+
         // Initialize all defined flag names to their default state
         flagDefinitions.forEach((def) => {
             flags[def.name] = def.takesValue ? null : false;
         });
+
+        const findDef = (argument) => flagDefinitions.find(d => [d.long, d.short, ...(d.aliases || [])].includes(argument));
+
         for (let i = 0; i < argsArray.length; i++) {
             const arg = argsArray[i];
-            let consumedAsFlag = false;
-            // Function to check if an argument matches a flag definition (including aliases)
-            const isFlagMatch = (definition, argument) => {
-                const allIdentifiers = [
-                    definition.long,
-                    definition.short,
-                    ...(definition.aliases || []),
-                ];
-                return allIdentifiers.includes(argument);
-            };
-            // Function to find the definition that matches the argument
-            const findDef = (argument) => {
-                for (const def of flagDefinitions) {
-                    if (isFlagMatch(def, argument)) {
-                        return def;
-                    }
-                }
-                return null;
-            };
-            if (arg.startsWith("-") && arg.length > 1) {
-                // Handle long flags (--flag) and exact short flags (-f)
-                const def = findDef(arg);
-                if (def) {
-                    if (def.takesValue) {
-                        if (i + 1 < argsArray.length) {
-                            flags[def.name] = argsArray[i + 1];
-                            i++; // Consume the value
-                        } else {
-                            console.warn(
-                                `Flag ${arg} expects a value, but none was provided.`
-                            );
-                            flags[def.name] = null; // Or handle as an error
-                        }
-                    } else {
-                        flags[def.name] = true;
-                    }
-                    consumedAsFlag = true;
-                }
-                // Handle combined short flags like -la (but not if it was an exact match above)
-                else if (
-                    arg.startsWith("-") &&
-                    !arg.startsWith("--") &&
-                    arg.length > 2
-                ) {
-                    const chars = arg.substring(1);
-                    let allCharsAreFlags = true;
-                    let tempCombinedFlags = {};
-                    let valueTaken = false;
-                    for (let j = 0; j < chars.length; j++) {
-                        const charAsFlag = "-" + chars[j];
-                        const charDef = findDef(charAsFlag);
-                        if (charDef) {
-                            if (charDef.takesValue) {
-                                // A value-taking flag must be the last in a combined group
-                                if (j === chars.length - 1) {
-                                    if (i + 1 < argsArray.length) {
-                                        tempCombinedFlags[charDef.name] = argsArray[i + 1];
-                                        valueTaken = true; // Mark that the next arg is consumed
-                                    } else {
-                                        console.warn(
-                                            `Flag ${charAsFlag} in group ${arg} expects a value, but none was provided.`
-                                        );
-                                        tempCombinedFlags[charDef.name] = null;
-                                    }
-                                } else {
-                                    console.warn(
-                                        `Value-taking flag ${charAsFlag} in combined group ${arg} must be at the end.`
-                                    );
-                                    allCharsAreFlags = false;
-                                    break;
-                                }
-                            } else {
-                                tempCombinedFlags[charDef.name] = true;
-                            }
-                        } else {
-                            allCharsAreFlags = false;
-                            break;
-                        }
-                    }
-                    if (allCharsAreFlags) {
-                        Object.assign(flags, tempCombinedFlags);
-                        consumedAsFlag = true;
-                        if (valueTaken) {
-                            i++; // Consume the value for the last flag in the group
-                        }
-                    }
-                }
-            }
-            if (!consumedAsFlag) {
+
+            // If it's not a flag, or it's the special "-" argument for stdin, treat as a remaining arg.
+            if (!arg.startsWith('-') || arg === '-' || arg === '--') {
                 remainingArgs.push(arg);
+                continue;
             }
+
+            // 1. Check for an exact match first (e.g., --force, -i)
+            const exactDef = findDef(arg);
+            if (exactDef) {
+                if (exactDef.takesValue) {
+                    if (i + 1 < argsArray.length) {
+                        flags[exactDef.name] = argsArray[++i]; // Consume next arg as value
+                    } else {
+                        console.warn(`Flag ${arg} expects a value, but none was provided.`);
+                    }
+                } else {
+                    flags[exactDef.name] = true;
+                }
+                continue; // Move to the next argument
+            }
+
+            // 2. NEW: Check for short flags with an attached value (e.g., -n5, -F,)
+            if (!arg.startsWith('--') && arg.length > 2) {
+                const shortFlag = arg.substring(0, 2); // e.g., "-F"
+                const valueTakingDef = findDef(shortFlag);
+                if (valueTakingDef && valueTakingDef.takesValue) {
+                    flags[valueTakingDef.name] = arg.substring(2); // The rest of the string is the value
+                    continue; // Move to the next argument
+                }
+            }
+
+            // 3. Handle combined short flags (e.g., -la, -rfi)
+            if (!arg.startsWith('--') && arg.length > 2) {
+                const chars = arg.substring(1);
+                let consumed = true;
+                for (const char of chars) {
+                    const charFlag = `-${char}`;
+                    const charDef = findDef(charFlag);
+                    if (charDef && !charDef.takesValue) {
+                        flags[charDef.name] = true;
+                    } else {
+                        consumed = false; // Invalid character in combined group
+                        break;
+                    }
+                }
+                if (consumed) {
+                    continue; // Move to the next argument
+                }
+            }
+
+            // If none of the above matched, it's a remaining argument.
+            remainingArgs.push(arg);
         }
+
         return {
             flags,
             remainingArgs,
