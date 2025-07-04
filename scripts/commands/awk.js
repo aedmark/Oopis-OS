@@ -122,13 +122,10 @@
                     const trimmedLine = line.trim();
                     let fields = trimmedLine === '' ? [] : trimmedLine.split(separator);
 
-                    // --- DEFENSIVE FIX ---
-                    // Ensure 'fields' is always an array to prevent TypeErrors.
                     if (!Array.isArray(fields)) {
-                        console.error("AWK internal error: 'fields' is not an array for line:", line);
-                        fields = []; // Recover by treating it as an empty line.
+                        console.error("AWK internal error: 'fields' was not an array for line:", line);
+                        fields = []; // Recover by treating it as an empty array.
                     }
-                    // --- END FIX ---
 
                     const allFields = [line, ...fields];
                     const vars = { NR: nr, NF: fields.length };
