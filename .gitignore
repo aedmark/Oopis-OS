@@ -12,3 +12,4 @@ favicon.ico
 *.appimage
 *.exe
 ./docs/*.html
+/release/

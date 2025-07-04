@@ -1,259 +1,339 @@
-# OopisOS v3.5 Tutorials
+Of course. A good set of tutorials is key to understanding the soul of an operating system. I've analyzed the full capabilities of OopisOS, from its core security model to its advanced AI and creative tools, to design a more comprehensive and useful set of tutorials.
+
+Here is the new `tutorial.md`, your revised Rosetta Stone for mastering OopisOS.
+
+---
+
+# OopisOS v3.6 Tutorials
 
 Welcome, Architect. This guide is your first step into the larger world of OopisOS. While the Command Reference is your dictionary, these tutorials are your Rosetta Stone, teaching you not just what commands do, but how to combine them into powerful, meaningful workflows.
 
 Our goal is to transition control of the system to you, providing the tools and knowledge needed to explore with confidence and security. Let's begin.
 
-### Your First Shell Script
+---
 
-**Objective:** To create and run a simple, executable script that can accept arguments from the command line.
+## 1. The Basics: Creating and Automating
 
-This tutorial will teach you how to use the `edit` program, change file permissions with `chmod`, and execute your new script with `run`.
+### Tutorial 1.1: Your First Shell Script
 
-Step 1: Create the Script File
+**Objective:** To create and run a simple, executable script that can accept arguments from the command line. This tutorial covers `edit`, `chmod`, and `run`.
 
-First, let's create a file for our script using the text editor.
+- Step 1: Create the Script File
 
-Bash
+  First, let's create a file for our script using the text editor.
 
-```
-edit welcome.sh
-```
+  Bash
 
-Step 2: Write the Script's Logic
+    ```
+    edit welcome.sh
+    ```
 
-The edit application will open. Type the following line into the editor:
+- Step 2: Write the Script's Logic
 
-Bash
+  The edit application will open. Type the following line into the editor:
 
-```
-echo "Welcome to OopisOS, $1!"
-```
+  Bash
 
-The `$1` is a special variable that represents the _first argument_ you pass to the script. After typing the line, save and exit the editor by pressing `Ctrl+S`.
+    ```
+    echo "Welcome to OopisOS, $1!"
+    ```
 
-Step 3: Make the Script Executable
+  The `$1` is a special variable that represents the _first argument_ you pass to the script. After typing the line, save and exit the editor by pressing `Ctrl+S`.
 
-By default, new files are not executable. Use chmod to add execute permissions. A mode of 700 is perfect for a personal script, as it gives you full control.
+- Step 3: Make the Script Executable
 
-Bash
+  By default, new files are not executable. Use chmod to add execute permissions. A mode of 700 is perfect for a personal script, as it gives you full control.
 
-```
-chmod 700 welcome.sh
-```
+  Bash
 
-Run `ls -l welcome.sh` to see the permissions change from `-rw-r--r--` to `-rwx------`.
+    ```
+    chmod 700 welcome.sh
+    ```
 
-Step 4: Run the Script
+  Run `ls -l welcome.sh` to see the permissions change from `-rw-r--r--` to `-rwx------`.
 
-Finally, execute your script using the run command, and give it an argument to see the $1 variable in action.
+- Step 4: Run the Script
 
-Bash
+  Finally, execute your script using the run command, and give it an argument to see the $1 variable in action.
 
-```
-run ./welcome.sh "Developer"
-```
+  Bash
 
-The system will output: `Welcome to OopisOS, Developer!` You have successfully created and run your first shell script.
+    ```
+    run ./welcome.sh "Developer"
+    ```
+
+  The system will output: `Welcome to OopisOS, Developer!` You have successfully created and run your first shell script.
+
 
 ---
 
-### Setting Up a Shared Project
+## 2. The Security Model in Practice
 
-**Objective:** To demonstrate the full security model by creating a new group, adding users to it, and creating a shared directory that only group members can access.
+### Tutorial 2.1: Setting Up a Shared Project
 
-Step 1: Assume Administrative Role with sudo
+**Objective:** To demonstrate the full security model by creating a new group, adding a user, and creating a shared directory that only group members can access.
 
-To manage users and groups, you need administrative privileges. Use the sudo command to run these commands. You will be prompted for the root user's password (mcgoopis).
+- Step 1: Assume Administrative Role
 
-Bash
+  To manage users and groups, you need root privileges. If you are not root, use su or login. For this tutorial, we will log in as root using the default password, mcgoopis.
 
-```
-sudo useradd devone
-# (set password for devone)
-sudo useradd devtwo
-# (set password for devtwo)
-sudo groupadd project_phoenix
-```
+  Bash
 
-Step 2: Add Users to the Group
+    ```
+    login root mcgoopis
+    ```
 
-Now, add both new users to the project_phoenix group.
+- Step 2: Create a User and Group
 
-Bash
+  Now, create a new user and a group for your project.
 
-```
-sudo usermod -aG project_phoenix devone
-sudo usermod -aG project_phoenix devtwo
-```
+  Bash
 
-Step 3: Create and Secure the Project Directory
+    ```
+    useradd devone
+    # (set a password for devone when prompted)
+    groupadd project_phoenix
+    ```
 
-Log in as one of the developers to create the shared directory.
+- Step 3: Add the User to the Group
 
-Bash
+  Use the usermod command with the -aG flag to append the user to the new group.
 
-```
-login devone
-# (enter devone's password)
-mkdir /home/project_phoenix
-```
+  Bash
 
-By default, this directory is owned by `devone`. We need to change its group and permissions. Since `devone` owns the directory, they don't need `sudo` for these commands. The mode `770` (`rwxrwx---`) gives the owner (`devone`) and the group (`project_phoenix`) full access, while denying access to anyone else.
+    ```
+    usermod -aG project_phoenix devone
+    ```
 
-Bash
+  You can verify the membership with `groups devone`.
 
-```
-chgrp project_phoenix /home/project_phoenix
-chmod 770 /home/project_phoenix
-```
+- Step 4: Create and Secure the Project Directory
 
-Step 4: Test the Permissions
+  Create a shared directory. By default, it will be owned by root.
 
-As devone, you can create a file. Now, log out and log in as devtwo, who should also be able to create a file, proving the group permissions work.
+  Bash
 
-Bash
+    ```
+    mkdir /home/project_phoenix
+    ```
 
-```
-touch /home/project_phoenix/devone_file.txt
-logout
-login devtwo
-# (enter devtwo's password)
-touch /home/project_phoenix/devtwo_file.txt
-```
+  Now, change the group ownership to `project_phoenix` and set the permissions. A mode of `770` (`rwxrwx---`) gives the owner (`root`) and the group (`project_phoenix`) full access, while denying access to all others.
 
-You have successfully created a secure, collaborative workspace.
+  Bash
 
----
+    ```
+    chgrp project_phoenix /home/project_phoenix
+    chmod 770 /home/project_phoenix
+    ```
 
-### Ensuring Data Integrity: The Security Chain
+- Step 5: Test the Permissions
 
-**Objective:** To learn how to verify, transform, and protect your data using OopisOS's data integrity tools.
+  Log in as your new developer. They should be able to cd into the directory and create a file, proving the group permissions work.
 
-This tutorial demonstrates a workflow using `cksum`, `ocrypt`, and `base64` to create a verifiable "chain of custody" for your information.
+  Bash
 
-Step 1: Create a Secret Message
+    ```
+    login devone
+    # (enter devone's password)
+    cd /home/project_phoenix
+    touch devone_report.txt
+    ls
+    ```
 
-First, create a file containing a secret message.
+  You have successfully created a secure, collaborative workspace.
 
-Bash
-
-```
-echo "The obstacle is the way." > my_secret.txt
-```
-
-Step 2: Get the Original Fingerprint
-
-Use the cksum command to generate a checksum. This is the unique "fingerprint" of your original, unaltered file. Note this number down.
-
-Bash
-
-```
-cksum my_secret.txt
-```
-
-Step 3: Obscure and Encode the Data
-
-Now, let's obscure the file's content using ocrypt and encode it for safe transport using base64. This is done in a single, powerful pipeline.
-
-Bash
-
-```
-cat my_secret.txt | ocrypt "taco-tuesday" | base64 > safe_to_send.txt
-```
-
-Your original file is untouched, but `safe_to_send.txt` now contains a seemingly random string of characters, safe to send over any text-based medium.
-
-Step 4: Decode and Restore the Data
-
-To get the original message back, you simply reverse the process.
-
-Bash
-
-```
-cat safe_to_send.txt | base64 -d | ocrypt "taco-tuesday" > restored_secret.txt
-```
-
-Step 5: Verify the Integrity
-
-The final, crucial step. Run cksum on the restored file.
-
-Bash
-
-```
-cksum restored_secret.txt
-```
-
-The checksum number should be **identical** to the one you noted in Step 2. This proves, with mathematical certainty, that your data has survived the transformation process perfectly intact. You have mastered the chain of data integrity.
 
 ---
 
-### Visualizing Your World: The File Explorer
+## 3. Advanced Workflows & Data Integrity
 
-**Objective:** To learn how to navigate the file system using the graphical file explorer.
+### Tutorial 3.1: Mastering the Pipeline
 
-Step 1: Launch the Explorer
+**Objective:** To find all log files in the system, count the number of errors in each, and output a sorted report. This tutorial demonstrates a powerful workflow using `find`, `xargs`, `grep`, and `sort`.
 
-The explore command opens the graphical user interface. You can launch it without arguments to start in your current directory, or give it a path.
+- Step 1: Find the Target Files
 
-Bash
+  Use the find command to locate all files ending in .log within your home directory.
 
-```
-explore /
-```
+  Bash
 
-Step 2: Navigate and View
+    ```
+    find /home/Guest -name "*.log"
+    ```
 
-The left pane shows an expandable directory tree. The right pane shows the contents of the selected directory. Double-click a folder in the right pane to navigate into it.
+  This will output a list of paths, one per line.
 
-Step 3: Exit
+- Step 2: Process Each File with xargs and grep
 
-Press the Esc key or click the '×' button in the top-right corner to close the explorer.
+  Now, we'll pipe the output of find to xargs. xargs will take each line (each file path) and run a command on it. We'll use grep -c "ERROR" to count the occurrences of "ERROR" in each file.
+
+  Bash
+
+    ```
+    find /home/Guest -name "*.log" | xargs grep -c "ERROR"
+    ```
+
+  The output will be a list of file paths, each followed by a number (e.g., `/home/Guest/data/logs/system.log:1`).
+
+- Step 3: Sort the Results
+
+  The output is useful, but not organized. Let's pipe the entire result to the sort command. Using the -n (numeric) and -r (reverse) flags, we can see the files with the most errors at the top.
+
+  Bash
+
+    ```
+    find /home/Guest -name "*.log" | xargs grep -c "ERROR" | sort -nr
+    ```
+
+  You've just created a powerful one-line diagnostic tool by chaining simple, modular commands.
+
+
+### Tutorial 3.2: Ensuring Data Integrity
+
+**Objective:** To learn how to verify, transform, and protect your data using OopisOS's data integrity tools (`cksum`, `ocrypt`, and `base64`).
+
+- **Step 1: Create a Secret Message**
+
+  Bash
+
+    ```
+    echo "The obstacle is the way." > my_secret.txt
+    ```
+
+- Step 2: Get the Original Fingerprint
+
+  Use cksum to generate a checksum, the unique "fingerprint" of your unaltered file. Note this number.
+
+  Bash
+
+    ```
+    cksum my_secret.txt
+    ```
+
+- Step 3: Obscure and Encode the Data
+
+  Obscure the file's content using ocrypt and encode it for safe transport using base64.
+
+  Bash
+
+    ```
+    cat my_secret.txt | ocrypt "taco-tuesday" | base64 > safe_to_send.txt
+    ```
+
+- Step 4: Decode and Restore the Data
+
+  To get the message back, reverse the process.
+
+  Bash
+
+    ```
+    cat safe_to_send.txt | base64 -d | ocrypt "taco-tuesday" > restored_secret.txt
+    ```
+
+- Step 5: Verify the Integrity
+
+  The final, crucial step. Run cksum on the restored file.
+
+  Bash
+
+    ```
+    cksum restored_secret.txt
+    ```
+
+  The checksum number should be **identical** to the one from Step 2, proving with mathematical certainty that your data is intact. You have mastered the chain of data integrity.
+
 
 ---
 
-### Cloning Your Universe: Backup and Restore
+## 4. The Creative & AI Suite
 
-**Objective:** To create a complete, verifiable backup of your OS, simulate a disaster, and restore your system from the backup file.
+### Tutorial 4.1: Building Your First Adventure
 
-Step 1: Make a Change & Create Backup
+**Objective:** To create a simple, two-room text adventure using the built-in `adventure` creation tool.
 
-First, create a marker file. Then, run the backup command. Your browser will prompt you to download a .json file containing your entire OS state.
+- Step 1: Launch the Adventure Creator
 
-Bash
+  Use the --create flag to enter the interactive creation mode.
 
-```
-echo "This is a test of the backup system." > /home/Guest/marker.txt
-backup
-```
+  Bash
 
-Step 2: Simulate a System Reset
+    ```
+    adventure --create my_first_game.json
+    ```
 
-The reset command will completely wipe OopisOS. This is the ultimate test.
+- Step 2: Create a Second Room
 
-Bash
+  You start in a default room. Let's create another one.
 
-```
-reset
-# Type 'YES' and press Enter to confirm.
-```
+    ```
+    (creator)> create room "A Dusty Attic"
+    ```
 
-Step 3: Restore Your Universe
+  The creator will confirm the new room and automatically put you in "edit" mode for it.
 
-Run the restore command. Your browser will open a file dialog. Select the .json backup file you just downloaded. The system will verify the checksum, restore all your data, and then automatically reboot.
+- Step 3: Add a Description
 
-Bash
+  While in edit mode for the attic, set its description.
 
-```
-restore
-```
+    ```
+    (editing room 'A Dusty Attic')> set description "A small, dusty attic. A single window lets in a sliver of light."
+    ```
 
-Step 4: Verify the Restoration
+- Step 4: Link the Rooms
 
-Once OopisOS reloads, your marker.txt file will be back. You have successfully cloned and restored your digital universe.
+  Exit edit mode by typing edit, then use link to create a two-way exit.
 
-Bash
+    ```
+    (editing room 'A Dusty Attic')> edit
+    (creator)> link "The Starting Room" north "A Dusty Attic"
+    ```
 
-```
-ls /home/Guest/marker.txt
-```
+- Step 5: Save and Play
+
+  Save your work and exit the creator.
+
+    ```
+    (creator)> save
+    (creator)> exit
+    ```
+
+  Now, play your creation!
+
+  Bash
+
+    ```
+    adventure my_first_game.json
+    ```
+
+
+### Tutorial 4.2: Your AI Research Assistant
+
+**Objective:** To use the `chidi` application to analyze a collection of documents and answer a complex question.
+
+- Step 1: Prepare Your Corpus
+
+  Ensure you have run the inflate.sh script, which creates a /docs directory full of Markdown files.
+
+- Step 2: Launch Chidi
+
+  Point chidi at the directory containing your research.
+
+  Bash
+
+    ```
+    chidi /home/Guest/docs
+    ```
+
+- Step 3: Ask a Cross-File Question
+
+  The chidi application will open. Use the dropdown to familiarize yourself with the files (command_reference.md, developer.md, etc.). Now, click the "Ask" button and type a question that requires information from multiple files:
+
+  > "Based on the developer and command reference documents, explain how the 'Command Contract' ensures security."
+
+- Step 4: Analyze the Result
+
+  chidi will identify the most relevant documents, combine their content into a single context, and send it to the Gemini AI to synthesize an answer. It will then display the comprehensive answer in the main window.
+
+- Step 5: Save Your Session
+
+  Click the "Save" button. This will package the original documents and all of your AI-generated analysis into a single HTML file, creating a permanent, shareable artifact of your research.
