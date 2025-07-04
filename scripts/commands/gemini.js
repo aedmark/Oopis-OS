@@ -51,7 +51,7 @@ RULES:
 10. xargs [FLAGS] [COMMAND]: Runs a command for each input line.
 11. echo [ARG]...: Prints the arguments to the screen.
 12. wc [FLAGS] [FILE]: Counts the number of lines, words, and characters in files.
-13. 
+13.
 --- END MANIFEST ---
 
 To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. DO NOT TAKE SHORTCUTS.`;
@@ -73,10 +73,8 @@ RULES:
         flagDefinitions: [
             { name: "new", short: "-n", long: "--new" },
             { name: "verbose", short: "-v", long: "--verbose" },
-            // --- NEW FLAGS ---
             { name: "provider", short: "-p", long: "--provider", takesValue: true },
             { name: "model", short: "-m", long: "--model", takesValue: true }
-            // --- END NEW ---
         ],
         argValidation: {
             min: 1,
@@ -85,9 +83,8 @@ RULES:
         coreLogic: async (context) => {
             const { args, options, flags } = context;
 
-            // Determine the provider and model from flags, or use defaults
-            const provider = flags.provider || 'gemini'; // Default to gemini
-            const model = flags.model || null; // Let the API function handle the default
+            const provider = flags.provider || 'gemini';
+            const model = flags.model || null;
 
             const _getApiKey = () => {
                 return new Promise((resolve) => {
@@ -166,7 +163,6 @@ RULES:
                 }
             };
 
-            // --- Main Orchestration Logic ---
             const apiKeyResult = await _getApiKey();
             if (!apiKeyResult.success) {
                 return { success: false, error: `gemini: ${apiKeyResult.error}` };
@@ -181,8 +177,6 @@ RULES:
             }
 
             const userPrompt = args.join(" ");
-
-            // --- 1. LOCAL TRIAGE ---
             const lsResult = await CommandExecutor.processSingleCommand("ls -l", { suppressOutput: true });
             const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
             const plannerPrompt = `User Prompt: "${userPrompt}"\n\n${localContext}`;
@@ -191,8 +185,6 @@ RULES:
                 await OutputManager.appendToOutput("Gemini is thinking...", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
 
-            // --- 2. STAGE 1: PLANNER ---
-            // MODIFICATION: Pass the entire conversation history to the planner
             const plannerConversation = [
                 ...geminiConversationHistory,
                 { role: "user", parts: [{ text: plannerPrompt }] }
@@ -215,32 +207,40 @@ RULES:
                 return { success: false, error: "gemini: AI failed to generate a valid plan." };
             }
 
-            // --- 3. EXECUTION LOOP ---
+            // --- MODIFICATION START ---
+            // Check if the AI's response is a direct answer or a command plan.
+            const firstWordOfPlan = planText.split(/\s+/)[0];
+            if (!COMMAND_WHITELIST.includes(firstWordOfPlan)) {
+                // If the first word is not a whitelisted command, treat the whole response as the final answer.
+                geminiConversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+                geminiConversationHistory.push({ role: "model", parts: [{ text: planText }] });
+                return { success: true, output: planText };
+            }
+            // --- MODIFICATION END ---
+
+
             let executedCommandsOutput = "";
-            if (planText.toUpperCase() !== "ANSWER") {
-                const commandsToExecute = planText.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
-                if (flags.verbose && options.isInteractive) {
-                    await OutputManager.appendToOutput(`Gemini's Plan:\n${commandsToExecute.map(c => `- ${c}`).join('\n')}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                }
-
-                for (const commandStr of commandsToExecute) {
-                    const commandName = commandStr.split(' ')[0];
-                    if (!COMMAND_WHITELIST.includes(commandName)) {
-                        await OutputManager.appendToOutput(`Execution HALTED: AI attempted to run a non-whitelisted command: '${commandName}'.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                        return { success: false, error: `Attempted to run restricted command: ${commandName}` };
-                    }
-
-                    if (flags.verbose && options.isInteractive) {
-                        await OutputManager.appendToOutput(`> ${commandStr}`, { typeClass: Config.CSS_CLASSES.EDITOR_MSG });
-                    }
-                    const execResult = await CommandExecutor.processSingleCommand(commandStr, { suppressOutput: !flags.verbose });
-                    const output = execResult.success ? execResult.output : `Error: ${execResult.error}`;
-
-                    executedCommandsOutput += `--- Output of '${commandStr}' ---\n${output}\n\n`;
-                }
+            const commandsToExecute = planText.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+            if (flags.verbose && options.isInteractive) {
+                await OutputManager.appendToOutput(`Gemini's Plan:\n${commandsToExecute.map(c => `- ${c}`).join('\n')}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
 
-            // --- 4. STAGE 2: SYNTHESIZER ---
+            for (const commandStr of commandsToExecute) {
+                const commandName = commandStr.split(' ')[0];
+                if (!COMMAND_WHITELIST.includes(commandName)) {
+                    await OutputManager.appendToOutput(`Execution HALTED: AI attempted to run a non-whitelisted command: '${commandName}'.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                    return { success: false, error: `Attempted to run restricted command: ${commandName}` };
+                }
+
+                if (flags.verbose && options.isInteractive) {
+                    await OutputManager.appendToOutput(`> ${commandStr}`, { typeClass: Config.CSS_CLASSES.EDITOR_MSG });
+                }
+                const execResult = await CommandExecutor.processSingleCommand(commandStr, { suppressOutput: !flags.verbose });
+                const output = execResult.success ? execResult.output : `Error: ${execResult.error}`;
+
+                executedCommandsOutput += `--- Output of '${commandStr}' ---\n${output}\n\n`;
+            }
+
             const synthesizerPrompt = `Original user question: "${userPrompt}"\n\nContext from file system:\n${executedCommandsOutput || "No commands were run."}`;
             const synthesizerResult = await _callGeminiApi(apiKey, [{ role: "user", parts: [{ text: synthesizerPrompt }] }], SYNTHESIZER_SYSTEM_PROMPT);
 
@@ -254,7 +254,6 @@ RULES:
                 return { success: false, error: "gemini: AI failed to synthesize a final answer." };
             }
 
-            // Add the full exchange to history for context in follow-up questions
             geminiConversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
             geminiConversationHistory.push({ role: "model", parts: [{ text: finalAnswer }] });
 
@@ -296,7 +295,7 @@ OPTIONS
        -n, --new
               Starts a new, fresh conversation, clearing any previous
               conversational memory from the current session.
-              
+
        -v, --verbose
           Enable verbose logging to see the AI's step-by-step plan
           and the output of the commands it executes.
