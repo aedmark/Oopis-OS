@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-cache-v5';
+const CACHE_NAME = 'oopis-cache-v9';
 const urlsToCache = [
     './',
     './index.html',
@@ -19,8 +19,8 @@ const urlsToCache = [
     './scripts/apps/chidi_app.js',
     './scripts/apps/text_adventure.js',
     './scripts/apps/log_app.js',
-    './scripts/apps/explorer.js', // Added missing app
-    './scripts/apps/pager.js', // Added missing app
+    './scripts/apps/explorer.js',
+    './scripts/apps/pager.js',
     './scripts/BasicInterpreter.js',
     './scripts/apps/basic_app.js',
     './scripts/lexpar.js',
