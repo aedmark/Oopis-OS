@@ -12,15 +12,23 @@ const BasicApp = (() => {
     let programBuffer = {};
 
     function _buildLayout() {
-        // --- REFACTORED: Use more semantic, style-friendly structure ---
+        // --- REFACTORED: Use a 3-column flexbox for the header for proper alignment ---
+        const exitBtn = Utils.createElement('button', {
+            className: 'basic-app__exit-btn',
+            textContent: '×',
+            title: 'Exit BASIC (Esc)',
+            eventListeners: { click: () => exit() }
+        });
+
+        // This invisible spacer ensures the title is perfectly centered
+        const leftSpacer = Utils.createElement('div', { className: 'basic-app__header-spacer' });
+
+        const title = Utils.createElement('h2', { className: 'basic-app__title', textContent: 'Oopis Basic v1.0' });
+
         const header = Utils.createElement('header', { className: 'basic-app__header' },
-            Utils.createElement('h2', { className: 'basic-app__title', textContent: 'Oopis Basic v1.0' }),
-            Utils.createElement('button', {
-                className: 'basic-app__exit-btn',
-                textContent: '×',
-                title: 'Exit BASIC (Esc)',
-                eventListeners: { click: () => exit() }
-            })
+            leftSpacer,
+            title,
+            exitBtn
         );
 
         elements.output = Utils.createElement('div', { id: 'basic-output', className: 'basic-app__output' });
@@ -43,6 +51,14 @@ const BasicApp = (() => {
             elements.output,
             inputLine
         );
+
+        // Set the width of the spacer to match the button after it's rendered
+        setTimeout(() => {
+            if (exitBtn && leftSpacer) {
+                leftSpacer.style.width = `${exitBtn.offsetWidth}px`;
+            }
+        }, 0);
+
 
         return elements.container;
     }
@@ -83,16 +99,16 @@ const BasicApp = (() => {
                         _print(prompt);
                         elements.input.disabled = false;
                         elements.input.focus();
-                        elements.input.onkeydown = (e) => {
+                        const tempListener = (e) => {
                             if (e.key === 'Enter') {
                                 const val = elements.input.value;
                                 _print(val);
                                 elements.input.value = '';
-                                // Restore original event listener
-                                elements.input.onkeydown = (e) => { if(e.key === 'Enter') _handleInput(e.target.value); };
+                                elements.input.removeEventListener('keydown', tempListener);
                                 resolve(val);
                             }
                         };
+                        elements.input.addEventListener('keydown', tempListener);
                     });
                 });
                 elements.input.disabled = false;
@@ -136,7 +152,7 @@ const BasicApp = (() => {
 
     function _setupEventListeners() {
         elements.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !elements.input.disabled) {
                 e.preventDefault();
                 const command = elements.input.value;
                 elements.input.value = '';

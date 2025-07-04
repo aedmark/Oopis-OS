@@ -8,11 +8,11 @@
    easy maintenance. */
 :root {
   /* Colors */
-  --color-text-primary: #22c55e;      /* text-green-500 */
+  --color-text-primary: #08ff64;      /* text-green-500 */
   --color-text-secondary: #a3a3a3;  /* text-neutral-400 */
   --color-text-subtle: #737373;     /* text-neutral-500 */
   --color-text-link: #2dd4bf;         /* custom */
-  --color-text-link-hover: #5eead4;   /* custom */
+  --color-text-link-hover: #0a3b36;   /* custom */
 
   --color-accent-sky: #38bdf8;        /* text-sky-400 */
   --color-accent-amber: #fbbF24;      /* text-amber-400 */
@@ -1572,7 +1572,7 @@ aspect-ratio: 4 / 3;
   width: 95%;
   height: 95%;
   max-width: 1200px;
-  background-color: #00002a; /* Deep blue background */
+  background-color: #0000df; /* Deep blue background */
   border: var(--border-width-thick) solid var(--color-accent-sky);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-sm);
@@ -1583,12 +1583,14 @@ aspect-ratio: 4 / 3;
 
 .basic-app__header {
   flex-shrink: 0;
-  text-align: center;
-  padding: var(--spacing-xs) 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
   color: var(--color-text-link-hover);
   font-size: var(--font-size-lg);
   border-bottom: var(--border-width-thick) double var(--color-accent-sky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .basic-app__title {

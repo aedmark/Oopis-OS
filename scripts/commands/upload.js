@@ -74,7 +74,7 @@
 
                 const filesToUpload = fileResult.files;
                 const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-                const ALLOWED_EXTENSIONS = new Set(['txt', 'md', 'html', 'sh', 'js', 'css', 'json', 'oopic']);
+                const ALLOWED_EXTENSIONS = new Set(['txt', 'md', 'html', 'sh', 'js', 'css', 'json', 'oopic', 'bas']);
 
                 if (!primaryGroup) {
                     return { success: false, error: "upload: Could not determine primary group for user." };
