@@ -779,3 +779,77 @@ const DiffUtils = (() => {
         compare
     };
 })();
+
+/**
+ * @module PatchUtils
+ * @description Provides utilities for creating and applying patches for undo/redo functionality.
+ */
+const PatchUtils = (() => {
+    "use strict";
+
+    /**
+     * Creates a patch object representing the difference between two strings.
+     * This is a simple implementation focusing on a single contiguous change.
+     * @param {string} oldText The original string.
+     * @param {string} newText The modified string.
+     * @returns {object|null} A patch object or null if no difference.
+     * Patch format: { index: number, delete: number, insert: string, deleted: string }
+     */
+    function createPatch(oldText, newText) {
+        if (oldText === newText) {
+            return null;
+        }
+
+        let start = 0;
+        while (start < oldText.length && start < newText.length && oldText[start] === newText[start]) {
+            start++;
+        }
+
+        let oldEnd = oldText.length;
+        let newEnd = newText.length;
+        while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
+            oldEnd--;
+            newEnd--;
+        }
+
+        const deletedText = oldText.substring(start, oldEnd);
+        const insertedText = newText.substring(start, newEnd);
+
+        return {
+            index: start,
+            delete: deletedText.length,
+            insert: insertedText,
+            deleted: deletedText // Store for inverse patch
+        };
+    }
+
+    /**
+     * Applies a patch to a string to get the new version.
+     * @param {string} text The original string.
+     * @param {object} patch The patch object.
+     * @returns {string} The text after applying the patch.
+     */
+    function applyPatch(text, patch) {
+        const head = text.substring(0, patch.index);
+        const tail = text.substring(patch.index + patch.delete);
+        return head + patch.insert + tail;
+    }
+
+    /**
+     * Applies the inverse of a patch to a string to get the old version.
+     * @param {string} text The modified string.
+     * @param {object} patch The patch object containing the 'deleted' property.
+     * @returns {string} The text after applying the inverse patch.
+     */
+    function applyInverse(text, patch) {
+        const head = text.substring(0, patch.index);
+        const tail = text.substring(patch.index + patch.insert.length);
+        return head + patch.deleted + tail;
+    }
+
+    return {
+        createPatch,
+        applyPatch,
+        applyInverse
+    };
+})();

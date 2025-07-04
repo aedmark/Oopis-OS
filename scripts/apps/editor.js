@@ -7,7 +7,7 @@
  * @see EditorManager
  */
 
-/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager */
+/* global marked, Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager, PatchUtils */
 
 /**
  * @module EditorAppConfig
@@ -491,8 +491,9 @@ const EditorManager = (() => {
   }
   function _updateFullEditorUI() {
     if (!isActiveState) return;
-    EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
     const textContent = EditorUI.getTextareaContent();
+    isDirty = textContent !== _getPatchedContent(); // Updated isDirty check
+    EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
     EditorUI.updateLineNumbers(textContent);
     const selection = EditorUI.getTextareaSelection();
     EditorUI.updateStatusBar(textContent, selection.start);
@@ -508,7 +509,7 @@ const EditorManager = (() => {
       _saveUndoState(currentContent);
       saveUndoStateTimeout = null;
     }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
-    isDirty = currentContent !== originalContent;
+    isDirty = currentContent !== _getPatchedContent();
     _updateFullEditorUI();
   }
   function _handleEditorScroll() { if (isActiveState) EditorUI.syncLineGutterScroll(); }
@@ -554,39 +555,71 @@ const EditorManager = (() => {
 
     await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
   }
-  function _saveUndoState(content) {
-    if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== content) {
-      undoStack.push(content);
-      if (undoStack.length > MAX_UNDO_STATES) undoStack.shift();
+
+  // --- REFACTORED UNDO/REDO LOGIC ---
+
+  function _getPatchedContent() {
+    if (undoStack.length === 0) return "";
+    let content = undoStack[0];
+    for (let i = 1; i < undoStack.length; i++) {
+      content = PatchUtils.applyPatch(content, undoStack[i]);
+    }
+    return content;
+  }
+
+  function _saveUndoState(currentContent) {
+    const lastKnownState = _getPatchedContent();
+    const patch = PatchUtils.createPatch(lastKnownState, currentContent);
+
+    if (patch) {
+      undoStack.push(patch);
+      if (undoStack.length > MAX_UNDO_STATES + 1) { // +1 for original content
+        // To keep memory usage down, we'd need to occasionally re-base
+        // For now, just cap the stack
+        undoStack.shift();
+        undoStack[0] = _getPatchedContent(); // Re-base
+        const rebasePatches = undoStack.slice(1);
+        undoStack = [undoStack[0], ...rebasePatches];
+      }
       redoStack = [];
       _updateUndoRedoButtonStates();
     }
   }
+
   function _performUndo() {
-    if (undoStack.length > 1) {
-      const currentState = undoStack.pop();
-      redoStack.push(currentState);
-      const prevState = undoStack[undoStack.length - 1];
-      EditorUI.setTextareaContent(prevState);
-      isDirty = (prevState !== originalContent);
-      _updateFullEditorUI();
-      _updateUndoRedoButtonStates();
-      EditorUI.setTextareaSelection(prevState.length, prevState.length);
-      EditorUI.setEditorFocus();
-    }
+    if (undoStack.length <= 1) return;
+    const patchToUndo = undoStack.pop();
+    redoStack.push(patchToUndo);
+
+    const currentContent = EditorUI.getTextareaContent();
+    const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
+
+    EditorUI.setTextareaContent(previousContent);
+    isDirty = (previousContent !== originalContent); // Simple check is okay here because we reverted to a known state
+    _updateFullEditorUI();
+    _updateUndoRedoButtonStates();
+    EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
+    EditorUI.setEditorFocus();
   }
+
   function _performRedo() {
-    if (redoStack.length > 0) {
-      const nextState = redoStack.pop();
-      undoStack.push(nextState);
-      EditorUI.setTextareaContent(nextState);
-      isDirty = (nextState !== originalContent);
-      _updateFullEditorUI();
-      _updateUndoRedoButtonStates();
-      EditorUI.setTextareaSelection(nextState.length, nextState.length);
-      EditorUI.setEditorFocus();
-    }
+    if (redoStack.length === 0) return;
+    const patchToRedo = redoStack.pop();
+    undoStack.push(patchToRedo);
+
+    const currentContent = EditorUI.getTextareaContent();
+    const nextContent = PatchUtils.applyPatch(currentContent, patchToRedo);
+
+    EditorUI.setTextareaContent(nextContent);
+    isDirty = (nextContent !== originalContent);
+    _updateFullEditorUI();
+    _updateUndoRedoButtonStates();
+    EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
+    EditorUI.setEditorFocus();
   }
+
+  // --- END REFACTORED LOGIC ---
+
   function _updateUndoRedoButtonStates() {
     if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
     if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
@@ -745,9 +778,9 @@ const EditorManager = (() => {
       originalContent = content;
       isDirty = false;
       onSaveCallback = callback;
-      undoStack = [];
+      undoStack = [content]; // Start with the full original content
       redoStack = [];
-      _saveUndoState(content);
+
       const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
       document.addEventListener('keydown', handleKeyDown);
       const editorCallbacks = {
