@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-cache-v1';
+const CACHE_NAME = 'oopis-cache-v20';
 const urlsToCache = [
     './',
     './index.html',
@@ -113,6 +113,11 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
+    // ================== START: ADDED LOGIC ==================
+    // Force the waiting service worker to become the active service worker.
+    self.skipWaiting();
+    // =================== END: ADDED LOGIC ===================
+
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
@@ -145,6 +150,9 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        })
+            // ================== START: ADDED LOGIC ==================
+            // After activating, take control of all open clients.
+        }).then(() => self.clients.claim())
+        // =================== END: ADDED LOGIC ===================
     );
 });

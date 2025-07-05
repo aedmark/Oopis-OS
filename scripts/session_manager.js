@@ -509,7 +509,14 @@ const SessionManager = (() => {
                 FileSystemManager.setCurrentPath(Config.FILESYSTEM.ROOT_PATH);
             }
             HistoryManager.clearHistory();
-            EnvironmentManager.initialize();
+
+            const newEnv = {};
+            newEnv['USER'] = username;
+            newEnv['HOME'] = `/home/${username}`;
+            newEnv['HOST'] = Config.OS.DEFAULT_HOST_NAME;
+            newEnv['PATH'] = '/bin:/usr/bin';
+            EnvironmentManager.load(newEnv);
+
             void OutputManager.appendToOutput(
                 `${Config.MESSAGES.WELCOME_PREFIX} ${username}${Config.MESSAGES.WELCOME_SUFFIX}`
             );
