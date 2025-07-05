@@ -1,3 +1,4 @@
+// scripts/utils.js
 /**
  * @file Provides globally accessible utility functions for various tasks such as string manipulation,
  * DOM creation, data validation, and command-line parsing. Also includes specialized parsers for timestamps and diffing.
@@ -218,8 +219,6 @@ const Utils = (() => {
             flags[def.name] = def.takesValue ? null : false;
         });
 
-        const findDef = (argument) => flagDefinitions.find(d => [d.long, d.short, ...(d.aliases || [])].includes(argument));
-
         for (let i = 0; i < argsArray.length; i++) {
             const arg = argsArray[i];
             if (!arg.startsWith('-') || arg === '-' || arg === '--') {
@@ -227,7 +226,7 @@ const Utils = (() => {
                 continue;
             }
 
-            const exactDef = findDef(arg);
+            const exactDef = flagDefinitions.find(d => [d.long, d.short, ...(d.aliases || [])].includes(arg));
             if (exactDef) {
                 if (exactDef.takesValue) {
                     if (i + 1 < argsArray.length) {
@@ -241,8 +240,8 @@ const Utils = (() => {
 
             if (!arg.startsWith('--') && arg.length > 2) {
                 const shortFlag = arg.substring(0, 2);
-                const valueTakingDef = findDef(shortFlag);
-                if (valueTakingDef && valueTakingDef.takesValue) {
+                const valueTakingDef = flagDefinitions.find(d => [d.short].includes(shortFlag) && d.takesValue);
+                if (valueTakingDef) {
                     flags[valueTakingDef.name] = arg.substring(2);
                     continue;
                 }
@@ -250,8 +249,8 @@ const Utils = (() => {
                 const chars = arg.substring(1);
                 let consumed = true;
                 for (const char of chars) {
-                    const charDef = findDef(`-${char}`);
-                    if (charDef && !charDef.takesValue) {
+                    const charDef = flagDefinitions.find(d => [d.short].includes(`-${char}`) && !d.takesValue);
+                    if (charDef) {
                         flags[charDef.name] = true;
                     } else {
                         consumed = false;
@@ -331,7 +330,10 @@ const Utils = (() => {
             let finalAnswer;
             switch (provider) {
                 case 'gemini': finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text; break;
-                case 'ollama': finalAnswer = responseData.response; break;
+                case 'ollama':
+                    // Check for message.content first, then response.
+                    finalAnswer = responseData.message?.content || responseData.response;
+                    break;
                 case 'llm-studio': finalAnswer = responseData.choices?.[0]?.message?.content; break;
             }
 
@@ -377,7 +379,7 @@ const Utils = (() => {
                         i = k;
                     } else {
                         // Unclosed bracket, treat as literal
-                        regexStr += "\\\\["; // Escaped for JS, then escaped for regex
+                        regexStr += "\\["; // Escaped for JS, then escaped for regex
                         continue;
                     }
                     regexStr += charClass;
