@@ -19,6 +19,12 @@
             min: 2,
             error: "Usage: mv [OPTION]... <source> <destination> or mv [OPTION]... <source>... <directory>",
         },
+        // --- ADDED FOR AUTO-COMPLETION ---
+        pathValidation: [
+            { argIndex: 0, options: { allowMissing: false } },
+            { argIndex: 1, options: { allowMissing: true } }
+        ],
+        // --- END ADDITION ---
         coreLogic: async (context) => {
             const { args, currentUser, flags, options } = context;
             const nowISO = new Date().toISOString();
@@ -35,13 +41,10 @@
 
             const destNode = destValidation.node;
 
-            // --- REFINED OVERWRITE PROTECTION LOGIC v2 ---
-            // This logic correctly distinguishes between `mv file dir` and `mv file dir/`
             if (destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
                 if (sourcePathArgs.length === 1) {
                     const sourceValidation = FileSystemManager.validatePath("mv (source)", sourcePathArgs[0]);
                     if (sourceValidation.node && sourceValidation.node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE && !destPathArg.endsWith(Config.FILESYSTEM.PATH_SEPARATOR)) {
-                        // This case is now specifically for `mv file dir` (no trailing slash), which we disallow.
                         return {
                             success: false,
                             error: `mv: cannot overwrite directory '${destPathArg}' with non-directory; to move into directory, use '${destPathArg}/'`
@@ -49,7 +52,6 @@
                     }
                 }
             }
-            // --- END REFINED LOGIC ---
 
             const isDestADirectory = destNode && destNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE;
 
@@ -141,14 +143,12 @@
                 return { success: false, error: "mv: Failed to save file system changes." };
             }
 
-            // REFACTOR START: Return a success message
             const finalDest = destPathArg.endsWith('/') ? `${destPathArg}${sourcePathArgs.at(-1)}` : destPathArg;
             return {
                 success: true,
                 output: `${Config.MESSAGES.MOVED_PREFIX}${sourcePathArgs.join(" ")}${Config.MESSAGES.MOVED_TO}${finalDest}${Config.MESSAGES.MOVED_SUFFIX}`,
                 messageType: Config.CSS_CLASSES.SUCCESS_MSG
             };
-            // REFACTOR END
         }
     };
 

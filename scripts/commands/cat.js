@@ -9,13 +9,16 @@
 
     const catCommandDefinition = {
         commandName: "cat",
-        // --- NEW FLAGS START ---
         flagDefinitions: [
             { name: "numberLines", short: "-n", long: "--number" }
         ],
-        // --- NEW FLAGS END ---
+        // --- ADDED FOR AUTO-COMPLETION ---
+        pathValidation: [
+            { argIndex: 0, optional: true, options: { expectedType: 'file' } }
+        ],
+        // --- END ADDITION ---
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context; // Added 'flags'
+            const { args, flags, options, currentUser } = context;
 
             if (args.length === 0 && (options.stdinContent === null || options.stdinContent === undefined)) {
                 return { success: true, output: "" };
@@ -23,24 +26,19 @@
 
             let outputContent = "";
             let firstFile = true;
-            let lineCounter = 1; // For the -n flag
+            let lineCounter = 1;
 
-            // --- NEW HELPER FUNCTION ---
             const processAndNumberContent = (content) => {
                 if (!flags.numberLines) {
                     return content;
                 }
                 const lines = content.split('\n');
-                // Don't number a final empty line if the file ends with a newline
                 const processedLines = (lines.at(-1) === '' ? lines.slice(0, -1) : lines);
                 return processedLines.map(line => `     ${lineCounter++}  ${line}`).join('\n');
             };
-            // --- END NEW HELPER ---
 
             if (options.stdinContent !== null && options.stdinContent !== undefined) {
-                // --- MODIFICATION FOR -n ---
                 outputContent += processAndNumberContent(options.stdinContent);
-                // --- END MODIFICATION ---
                 firstFile = false;
             }
 
@@ -53,10 +51,8 @@
 
                 if (!firstFile && outputContent && !outputContent.endsWith("\n")) outputContent += "\n";
 
-                // --- MODIFICATION FOR -n ---
                 const fileContent = pathValidation.node.content || "";
                 outputContent += processAndNumberContent(fileContent);
-                // --- END MODIFICATION ---
                 firstFile = false;
             }
 
@@ -64,16 +60,8 @@
         },
     };
 
-    /**
-     * @const {string} catDescription
-     * @description A brief, one-line description of the 'cat' command for the 'help' command.
-     */
     const catDescription = "Concatenate and display the content of files.";
 
-    /**
-     * @const {string} catHelpText
-     * @description The detailed help text for the 'cat' command, used by 'man'.
-     */
     const catHelpText = `Usage: cat [FILE]...
 
 Concatenate and print files to the standard output.
@@ -102,7 +90,5 @@ EXAMPLES
        -n, --number
               Number all output lines, starting from 1.`;
 
-
-    // Register the command with the system
     CommandRegistry.register("cat", catCommandDefinition, catDescription, catHelpText);
 })();

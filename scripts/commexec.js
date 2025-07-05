@@ -198,25 +198,25 @@ const CommandExecutor = (() => {
    */
   async function _expandGlobPatterns(commandString) {
     const GLOB_WHITELIST = ['ls', 'rm', 'cat', 'cp', 'mv', 'chmod', 'chown', 'chgrp'];
-    // This regex correctly handles quoted arguments.
     const args = commandString.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
 
     if (args.length === 0 || !GLOB_WHITELIST.includes(args[0])) {
       return commandString;
     }
 
-    const expandedArgs = [args[0]]; // Start with the command name itself.
+    const expandedArgs = [args[0]];
     let hasExpansionOccurred = false;
 
     for (let i = 1; i < args.length; i++) {
-      const arg = args[i];
-      const isQuoted = (arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'"));
-      const hasGlobChar = arg.includes('*') || arg.includes('?');
+      const originalArg = args[i];
+      const isQuoted = (originalArg.startsWith('"') && originalArg.endsWith('"')) || (originalArg.startsWith("'") && originalArg.endsWith("'"));
 
-      if (!isQuoted && hasGlobChar) {
-        const globPattern = arg;
+      // Use the unquoted version for pattern matching
+      const globPattern = isQuoted ? originalArg.slice(1, -1) : originalArg;
+      const hasGlobChar = globPattern.includes('*') || globPattern.includes('?');
+
+      if (hasGlobChar) {
         const lastSlashIndex = globPattern.lastIndexOf('/');
-
         let pathPrefix = '.';
         let patternPart = globPattern;
 
@@ -224,7 +224,7 @@ const CommandExecutor = (() => {
           pathPrefix = globPattern.substring(0, lastSlashIndex + 1);
           patternPart = globPattern.substring(lastSlashIndex + 1);
         }
-        // If the prefix is just "/", handle it as root. Otherwise, resolve it.
+
         const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix, FileSystemManager.getCurrentPath());
         const dirNode = FileSystemManager.getNodeByPath(searchDir);
 
@@ -235,7 +235,6 @@ const CommandExecutor = (() => {
                 .filter(name => regex.test(name))
                 .map(name => {
                   const fullPath = FileSystemManager.getAbsolutePath(name, searchDir);
-                  // Quote paths with spaces to ensure they are treated as a single argument.
                   return fullPath.includes(' ') ? `"${fullPath}"` : fullPath;
                 });
 
@@ -243,24 +242,19 @@ const CommandExecutor = (() => {
               expandedArgs.push(...matches);
               hasExpansionOccurred = true;
             } else {
-              // No matches found, preserve the original glob pattern.
-              expandedArgs.push(globPattern);
+              expandedArgs.push(originalArg);
             }
           } else {
-            // Invalid glob pattern, preserve it.
-            expandedArgs.push(globPattern);
+            expandedArgs.push(originalArg);
           }
         } else {
-          // Path doesn't exist or isn't a directory, preserve the original glob pattern.
-          expandedArgs.push(globPattern);
+          expandedArgs.push(originalArg);
         }
       } else {
-        // Not a glob pattern (or is quoted), just add the argument as is.
-        expandedArgs.push(arg);
+        expandedArgs.push(originalArg);
       }
     }
 
-    // Only reconstruct the string if an expansion actually happened.
     return hasExpansionOccurred ? expandedArgs.join(' ') : commandString;
   }
 

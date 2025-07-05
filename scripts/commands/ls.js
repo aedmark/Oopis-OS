@@ -145,14 +145,11 @@
         if (singleItemResultOutput !== null) {
             currentPathOutputLines.push(singleItemResultOutput);
         } else {
-            // REFACTOR START
             if (itemDetailsList.length === 0 && targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
-                // Use the configured message for empty directories, but only if not in long format.
                 if (!effectiveFlags.long) {
                     currentPathOutputLines.push(Config.MESSAGES.DIRECTORY_EMPTY);
                 }
             } else if (effectiveFlags.long) {
-                // REFACTOR END
                 if (itemDetailsList.length > 0) currentPathOutputLines.push(`total ${itemDetailsList.length}`);
                 itemDetailsList.forEach(item => { currentPathOutputLines.push(formatLongListItem(item, effectiveFlags)); });
             } else if (effectiveFlags.oneColumn) {
@@ -304,6 +301,11 @@
             { name: "oneColumn", short: "-1" },
             { name: "humanReadable", short: "-h", long: "--human-readable" }
         ],
+        // --- ADDED FOR AUTO-COMPLETION ---
+        pathValidation: [
+            { argIndex: 0, optional: true, options: { allowMissing: false } }
+        ],
+        // --- END ADDITION ---
         coreLogic: async (context) => {
             const { args, flags, currentUser, options } = context;
 

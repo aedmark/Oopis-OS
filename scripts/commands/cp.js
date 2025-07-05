@@ -20,6 +20,12 @@
             min: 2,
             error: "Usage: cp [OPTION]... <source> <destination> or cp [OPTION]... <source>... <directory>",
         },
+        // --- ADDED FOR AUTO-COMPLETION ---
+        pathValidation: [
+            { argIndex: 0, options: { allowMissing: false } },
+            { argIndex: 1, options: { allowMissing: true } }
+        ],
+        // --- END ADDITION ---
         coreLogic: async (context) => {
             const { args, flags, currentUser, options } = context;
             const nowISO = new Date().toISOString();
@@ -151,13 +157,12 @@
             if (anyChangesMade && !(await FileSystemManager.save())) {
                 return { success: false, error: "cp: CRITICAL - Failed to save file system changes." };
             }
-            // REFACTOR START: Return a success message
+
             return {
                 success: true,
                 output: `${Config.MESSAGES.COPIED_PREFIX}${sourcePathArgs.join(" ")}${Config.MESSAGES.COPIED_TO}${destPathArg}${Config.MESSAGES.COPIED_SUFFIX}`,
                 messageType: Config.CSS_CLASSES.SUCCESS_MSG
             };
-            // REFACTOR END
         },
     };
 

@@ -37,6 +37,11 @@
             min: 1, // Requires at least one operand (file/directory to remove).
             error: "missing operand",
         },
+        // --- ADDED FOR AUTO-COMPLETION ---
+        pathValidation: [
+            { argIndex: 0, options: { allowMissing: true } }
+        ],
+        // --- END ADDITION ---
         /**
          * The core logic for the 'rm' command.
          * It iterates through each provided path argument and attempts to remove the corresponding
@@ -91,9 +96,6 @@
                     continue;
                 }
 
-                // --- REFACTORED CONFIRMATION LOGIC ---
-                // Determine if a prompt is needed. A prompt is needed if -i is used,
-                // or if it's an interactive session and -f is NOT used.
                 const isPromptRequired = flags.interactive || (options.isInteractive && !flags.force);
                 let confirmed = false;
 
@@ -128,13 +130,11 @@
                     );
                     if (deleteResult.success) {
                         if (deleteResult.anyChangeMade) anyChangeMade = true; // Flag for saving changes.
-                        // REFACTOR START
                         if(flags.force) {
                             messages.push(`${Config.MESSAGES.FORCIBLY_REMOVED_PREFIX}'${pathArg}'${Config.MESSAGES.FORCIBLY_REMOVED_SUFFIX}`);
                         } else {
                             messages.push(`'${pathArg}'${Config.MESSAGES.ITEM_REMOVED_SUFFIX}`);
                         }
-                        // REFACTOR END
                     } else {
                         allSuccess = false;
                         messages.push(...deleteResult.messages); // Collect messages from failed recursive deletions.
@@ -153,9 +153,7 @@
             const finalOutput = messages.filter((m) => m).join("\n");
             return {
                 success: allSuccess,
-                // REFACTOR START: Return output on success
                 output: allSuccess ? finalOutput : null,
-                // REFACTOR END
                 error: allSuccess // If overall success, no error; otherwise, use collected messages as error.
                     ? null
                     : finalOutput || "Unknown error during rm operation.",
