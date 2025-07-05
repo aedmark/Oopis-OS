@@ -13,3 +13,4 @@ favicon.ico
 *.exe
 ./docs/*.html
 /release/
+/docs/keynote.html
