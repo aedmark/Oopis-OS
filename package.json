@@ -17,6 +17,16 @@
   "build": {
     "appId": "com.oopisos.app",
     "productName": "OopisOS",
+    "files": [
+      "index.html",
+      "style.css",
+      "electron.js",
+      "preload.js",
+      "manifest.json",
+      "LICENSE.txt",
+      "scripts/",
+      "icons/"
+    ],
     "win": {
       "target": "nsis",
       "icon": "icons/icon.ico"

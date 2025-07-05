@@ -8,7 +8,6 @@ const fs = require('fs');
 const ispackaged = app.ispackaged;
 
 // Define the root directory of the application
-// CORRECTED LINE: app.getPath('exe') and app.getAppPath()
 const rootdir = ispackaged ? path.dirname(app.getPath('exe')) : app.getAppPath();
 
 // Define the path to our portable mode marker file
@@ -32,9 +31,8 @@ function createWindow() {
     const mainWindow = new BrowserWindow({
         width: 1280,
         height: 960,
-        resizable: true,
-        frame: process.platform === 'darwin' ? true : false, // On macOS, we handle the frame differently
-        titleBarStyle: process.platform === 'darwin' ? 'hidden' : 'default',
+        resizable: true, // This is correct, window remains resizable.
+        // The 'frame' and 'titleBarStyle' properties have been removed to restore native window controls.
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
