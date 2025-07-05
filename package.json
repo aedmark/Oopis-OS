@@ -3,7 +3,7 @@
   "version": "3.7.0",
   "description": "OopisOS Standalone Application",
   "main": "electron.js",
-  "author": "Andrew Edmark & Gemini",
+  "author": "Andrew Edmark & Gemini <oopismcgoopis@gmail.com> (https://oopisos.com/)",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
