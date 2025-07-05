@@ -63,6 +63,7 @@
             scriptingContext.recursionDepth++;
 
             if (isTopLevelCall) {
+                EnvironmentManager.push(); // Create a new environment scope for the script
                 CommandExecutor.setScriptExecutionInProgress(true);
                 if (options.isInteractive) TerminalUI.setInputState(false);
             }
@@ -131,6 +132,7 @@
                 }
 
                 if (isTopLevelCall) {
+                    EnvironmentManager.pop(); // Pop the script's environment scope
                     CommandExecutor.setScriptExecutionInProgress(false);
                     if (options.isInteractive) {
                         TerminalUI.setInputState(true);

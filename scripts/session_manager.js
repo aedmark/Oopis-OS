@@ -7,83 +7,113 @@
 
 /**
  * @module EnvironmentManager
- * @description Manages session-specific environment variables.
+ * @description Manages session-specific environment variables using a stack for proper scoping.
  */
 const EnvironmentManager = (() => {
     "use strict";
     /**
-     * In-memory object storing the current session's environment variables.
+     * A stack to manage environment scopes. Each script execution pushes a new scope.
      * @private
-     * @type {Object.<string, string>}
+     * @type {Array<Object.<string, string>>}
      */
-    let envVars = {};
+    let envStack = [{}];
 
     /**
-     * Initializes the environment variables with default values for the current user.
+     * Gets the currently active environment from the top of the stack.
+     * @private
+     * @returns {Object.<string, string>}
      */
-    function initialize() {
-        const currentUser = UserManager.getCurrentUser().name;
-        envVars = {
-            'USER': currentUser,
-            'HOME': `/home/${currentUser}`,
-            'HOST': Config.OS.DEFAULT_HOST_NAME,
-            'PATH': '/bin:/usr/bin', // Standard practice
-        };
+    function _getActiveEnv() {
+        return envStack[envStack.length - 1];
     }
 
     /**
-     * Gets the value of a specific environment variable.
+     * Pushes a new, sandboxed environment scope onto the stack.
+     * This is used when entering a new execution context, like a script.
+     */
+    function push() {
+        // Push a clone of the current environment to create a new scope
+        envStack.push(JSON.parse(JSON.stringify(_getActiveEnv())));
+    }
+
+    /**
+     * Pops the current environment scope from the stack, restoring the previous one.
+     * This is used when exiting an execution context.
+     */
+    function pop() {
+        if (envStack.length > 1) {
+            envStack.pop();
+        } else {
+            console.error("EnvironmentManager: Attempted to pop the base environment stack.");
+        }
+    }
+
+    /**
+     * Initializes the base environment for a new session.
+     */
+    function initialize() {
+        const baseEnv = {};
+        const currentUser = UserManager.getCurrentUser().name;
+        baseEnv['USER'] = currentUser;
+        baseEnv['HOME'] = `/home/${currentUser}`;
+        baseEnv['HOST'] = Config.OS.DEFAULT_HOST_NAME;
+        baseEnv['PATH'] = '/bin:/usr/bin';
+        // Reset the stack with the new base environment
+        envStack = [baseEnv];
+    }
+
+    /**
+     * Gets the value of a specific environment variable from the current scope.
      * @param {string} varName - The name of the variable to retrieve.
      * @returns {string} The value of the variable, or an empty string if not found.
      */
     function get(varName) {
-        return envVars[varName] || '';
+        return _getActiveEnv()[varName] || '';
     }
 
     /**
-     * Sets the value of an environment variable.
+     * Sets the value of an environment variable in the current scope.
      * @param {string} varName - The name of the variable to set.
      * @param {string} value - The value to assign to the variable.
      * @returns {{success: boolean, error?: string}} A result object.
      */
     function set(varName, value) {
-        // Basic validation for variable names
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(varName)) {
             return { success: false, error: `Invalid variable name: '${varName}'. Must start with a letter or underscore, followed by letters, numbers, or underscores.` };
         }
-        envVars[varName] = value;
+        _getActiveEnv()[varName] = value;
         return { success: true };
     }
 
     /**
-     * Deletes an environment variable.
+     * Deletes an environment variable from the current scope.
      * @param {string} varName - The name of the variable to unset.
      */
     function unset(varName) {
-        delete envVars[varName];
+        delete _getActiveEnv()[varName];
     }
 
     /**
-     * Gets a copy of all current environment variables.
+     * Gets a copy of all variables in the current environment scope.
      * @returns {Object.<string, string>} An object containing all variables.
      */
     function getAll() {
-        return { ...envVars };
+        return { ..._getActiveEnv() };
     }
 
     /**
-     * Loads a new set of environment variables, replacing the existing ones. Used for session restoration.
+     * Loads a new set of environment variables into the current scope, replacing existing ones.
      * @param {Object.<string, string>} vars - The new set of variables.
      */
     function load(vars) {
-        envVars = { ...(vars || {}) };
+        envStack[envStack.length - 1] = { ...(vars || {}) };
     }
 
     /**
-     * Clears all environment variables.
+     * Clears all variables from the current environment scope.
      */
     function clear() {
-        envVars = {};
+        envStack[envStack.length - 1] = {};
     }
 
     return {
@@ -93,9 +123,12 @@ const EnvironmentManager = (() => {
         unset,
         getAll,
         load,
-        clear
+        clear,
+        push,
+        pop
     };
 })();
+
 
 /**
  * @module HistoryManager

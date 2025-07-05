@@ -1,4 +1,3 @@
-// scripts/utils.js
 /**
  * @file Provides globally accessible utility functions for various tasks such as string manipulation,
  * DOM creation, data validation, and command-line parsing. Also includes specialized parsers for timestamps and diffing.
@@ -352,6 +351,8 @@ const Utils = (() => {
      * @returns {RegExp|null} A RegExp object or null if the glob is invalid.
      */
     function globToRegex(glob) {
+        if (glob === '*') return /.*/; // Optimization for the most common case
+
         let regexStr = "^";
         for (let i = 0; i < glob.length; i++) {
             const char = glob[i];
@@ -370,29 +371,31 @@ const Utils = (() => {
                         k++;
                     }
                     while (k < glob.length && glob[k] !== "]") {
-                        // Escape characters that have special meaning in regex character classes
-                        charClass += (/[\\-]/).test(glob[k]) ? "\\\\" + glob[k] : glob[k];
+                        if (['\\', '-', ']'].includes(glob[k])) {
+                            charClass += '\\';
+                        }
+                        charClass += glob[k];
                         k++;
                     }
                     if (k < glob.length && glob[k] === "]") {
                         charClass += "]";
                         i = k;
                     } else {
-                        // Unclosed bracket, treat as literal
-                        regexStr += "\\["; // Escaped for JS, then escaped for regex
-                        continue;
+                        regexStr += "\\[";
                     }
-                    regexStr += charClass;
                     break;
                 default:
-                    // Escape special regex characters outside of character classes
-                    if (/[.^$*+?()|{}\\]/.test(char)) regexStr += "\\\\"; // Escaped for JS, then escaped for regex
-                    regexStr += char;
+                    if (/[.\\+?()|[\]{}^$]/.test(char)) {
+                        regexStr += '\\' + char;
+                    } else {
+                        regexStr += char;
+                    }
+                    break;
             }
         }
         regexStr += "$";
         try {
-            return new RegExp(regexStr);
+            return new RegExp(regexStr, 'u');
         } catch (e) {
             console.warn(`Utils.globToRegex: Failed to convert glob "${glob}" to regex: ${e.message}`);
             return null;
@@ -431,49 +434,57 @@ const TimestampParser = (() => {
     function parseDateString(dateStr) {
         if (typeof dateStr !== "string") return null;
 
-        const relativeMatch = dateStr.match(
-            /([-+]|ago$)?\\s*(\\d+)\\s*(minute|hour|day|week|month|year)s?/i
-        );
-        if (relativeMatch) {
-            let sign = relativeMatch[1] === "-" ? -1 : 1;
-            if (dateStr.toLowerCase().endsWith("ago")) {
-                sign = -1;
+        // Try to parse absolute date first, e.g., "2025-01-01"
+        const absoluteDate = new Date(dateStr);
+        if (!isNaN(absoluteDate.getTime())) {
+            // Check if the input string is purely numeric, which Date() might interpret as milliseconds from epoch.
+            // We want to avoid treating "12345" as a valid absolute date string for our use case.
+            if (isNaN(parseInt(dateStr.trim(), 10)) || !/^\d+$/.test(dateStr.trim())) {
+                return absoluteDate;
             }
-            const amount = parseInt(relativeMatch[2], 10);
-            const unit = relativeMatch[3].toLowerCase();
+        }
+
+        // Regex to handle formats like: "2 days ago", "-1 week", "+3 hours"
+        const relativeMatch = dateStr.match(/([-+]?\d+)\s*(minute|hour|day|week|month|year)s?(\s+ago)?/i);
+
+        if (relativeMatch) {
+            let amount = parseInt(relativeMatch[1], 10);
+            const unit = relativeMatch[2].toLowerCase();
+            const isAgo = !!relativeMatch[3];
+
+            // If "ago" is present, ensure the amount is negative.
+            if (isAgo) {
+                amount = -Math.abs(amount);
+            }
+
             const now = new Date();
 
             switch (unit) {
                 case "minute":
-                    now.setMinutes(now.getMinutes() + sign * amount);
+                    now.setMinutes(now.getMinutes() + amount);
                     break;
                 case "hour":
-                    now.setHours(now.getHours() + sign * amount);
+                    now.setHours(now.getHours() + amount);
                     break;
                 case "day":
-                    now.setDate(now.getDate() + sign * amount);
+                    now.setDate(now.getDate() + amount);
                     break;
                 case "week":
-                    now.setDate(now.getDate() + sign * amount * 7);
+                    now.setDate(now.getDate() + amount * 7);
                     break;
                 case "month":
-                    now.setMonth(now.getMonth() + sign * amount);
+                    now.setMonth(now.getMonth() + amount);
                     break;
                 case "year":
-                    now.setFullYear(now.getFullYear() + sign * amount);
+                    now.setFullYear(now.getFullYear() + amount);
                     break;
                 default:
-                    return null;
+                    return null; // Should not happen with the regex, but good practice
             }
             return now;
         }
 
-        const absoluteDate = new Date(dateStr);
-        if (!isNaN(absoluteDate.getTime())) {
-            return absoluteDate;
-        }
-
-        return null;
+        return null; // Return null if no format matches
     }
 
     /**

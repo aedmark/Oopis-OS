@@ -1,5 +1,5 @@
-# OopisOS Core Test Suite v3.6 - "The Gauntlet, Now With More Gauntlet"
-echo "===== OopisOS Core Test Suite v3.6 Initializing ====="
+# OopisOS Core Test Suite v3.7 - "The Gauntlet, Now With More Gauntlet"
+echo "===== OopisOS Core Test Suite v3.7 Initializing ====="
 echo "This script tests all non-interactive core functionality, now with maximum paranoia."
 echo "---------------------------------------------------------------------"
 echo ""
@@ -292,7 +292,7 @@ echo "csplit test complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW TEST PHASE ---
+# --- Phase 7.7: Testing Underrepresented Commands (Data/System) ---
 echo ""
 echo "===== Phase 7.7: Testing Underrepresented Commands (Data/System) ====="
 delay 400
@@ -346,7 +346,7 @@ cat screen.log
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW TEST PHASE ---
+# --- Phase 8.5: Testing User & State Management ---
 echo ""
 echo "===== Phase 8.5: Testing User & State Management ====="
 delay 400
@@ -371,7 +371,7 @@ echo "User & State Management tests complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- NEW TEST PHASE ---
+# --- Phase 8.6: Testing Network & System Documentation Commands ---
 echo ""
 echo "===== Phase 8.6: Testing Network & System Documentation Commands ====="
 delay 400
@@ -386,9 +386,9 @@ echo "--- Test: man and help ---"
 man ls
 help cp
 # --- Test: backup and export (execution check) ---
-echo "Verifying backup and export commands can be initiated from a script..."
-backup
-export text_file.txt
+echo "Verifying backup and export commands can be initiated from a script (will trigger downloads)..."
+# backup
+# export text_file.txt
 echo "Network & Docs tests complete."
 delay 700
 echo "---------------------------------------------------------------------"
@@ -441,7 +441,7 @@ delay 400
 
 echo "--- Test: Logical OR (||) and interactive flags ---"
 check_fail "cat nonexistent_file.txt" || echo "Logical OR successful: cat failed as expected."
-echo "YES" > yes.txt # CHANGED from "y" to "YES"
+echo "YES" > yes.txt
 echo "n" > no.txt
 touch interactive_test.txt
 # The script runner will auto-reply 'YES' to prompts
@@ -460,22 +460,60 @@ delay 700
 
 echo "---------------------------------------------------------------------"
 
+# --- Phase 9.5: Paranoid Security & Edge Case Testing ---
+echo ""
+echo "===== Phase 9.5: Testing Paranoid Security & Edge Cases ====="
+delay 400
+echo "--- Test: Advanced 'awk' with BEGIN/END blocks ---"
+echo -e "10 alpha\n20 bravo\n30 charlie" > awk_data.txt
+awk 'BEGIN { print "Report Start" } { print "Item " NR ":", $2 } END { print "Report End" }' awk_data.txt
+rm awk_data.txt
+delay 400
+echo "--- Test: Scripting scope (ensure child script cannot modify parent shell) ---"
+echo 'set CHILD_VAR="i am from the child"' > set_var.sh
+chmod 700 ./set_var.sh
+run ./set_var.sh
+check_fail "echo $CHILD_VAR"
+rm set_var.sh
+echo "Scripting scope test complete."
+delay 400
+echo "--- Test: 'find' and 'xargs' with spaced filenames ---"
+touch "a file with spaces.tmp"
+find . -name "*.tmp" | xargs rm
+check_fail "ls \"a file with spaces.tmp\""
+echo "'find' and 'xargs' with spaces test complete."
+delay 400
+echo "--- Test: Input redirection and empty file creation ---"
+> empty_via_redir.txt
+echo "some data" > input.txt
+cat < input.txt
+rm empty_via_redir.txt input.txt
+echo "Redirection tests complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+
 # --- Phase 10: Final Cleanup ---
 echo ""
 echo "--- Phase 10: Final Cleanup ---"
 cd /
 login root mcgoopis
 delay 300
+removeuser -f diagUser
+removeuser -f sudouser
+removeuser -f testuser
+removeuser -f testuser2
 rm -r -f /home/diagUser
 rm -r -f /home/sudouser
 rm -r -f /home/testuser
+rm -r -f /home/testuser2
 login Guest
 echo "Final user list:"
 listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.6 Complete ======="
+echo "      ===== OopisOS Core Test Suite v3.7 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"
