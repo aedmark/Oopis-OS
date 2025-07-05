@@ -74,13 +74,30 @@ RULES:
                     else ModalInputManager.requestInput(
                         "Please enter your Gemini API key:",
                         (providedKey) => {
-                            if (!providedKey) {
-                                resolve({ success: false, error: "API key entry cancelled." });
-                            } else {
-                                resolve({ success: true, key: providedKey, fromStorage: false });
+                            if (!providedKey || providedKey.trim() === "") {
+                                resolve({
+                                    success: false,
+                                    error: "API key entry cancelled or empty."
+                                });
+                                return;
                             }
+                            StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, providedKey, "Gemini API Key");
+                            OutputManager.appendToOutput("API Key saved. Launching Chidi...", {
+                                typeClass: Config.CSS_CLASSES.SUCCESS_MSG
+                            });
+                            resolve({
+                                success: true,
+                                key: providedKey
+                            });
                         },
-                        () => resolve({ success: false, error: "API key entry cancelled." }), true, options
+                        () => {
+                            resolve({
+                                success: false,
+                                error: "API key entry cancelled."
+                            });
+                        },
+                        false, // --- UX IMPROVEMENT: Do not obscure the API key input. ---
+                        options
                     );
                 });
 

@@ -56,10 +56,6 @@ function initializeTerminalEventListeners() {
         // Let the 'paste' event listener handle it.
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
           // Do nothing here on keydown for paste. Allow the 'paste' event to fire naturally.
-          // The 'paste' event listener on DOM.editableInputDiv will then call ModalInputManager.handlePaste.
-        } else if (e.key === 'Tab') {
-          // Allow tab to propagate for native Tab key handling in some contexts, but prevent default for this listener.
-          e.preventDefault(); // Keep this to prevent tab from moving focus away
         } else {
           // For all other regular key presses in obscured mode, prevent default
           // to hide the actual characters and update internal buffer.
@@ -152,28 +148,24 @@ function initializeTerminalEventListeners() {
     }
   });
 
-  // Handle pasting text into the input area, sanitizing newlines.
+  // --- REFACTORED PASTE HANDLER ---
   if (DOM.editableInputDiv) {
     DOM.editableInputDiv.addEventListener("paste", (e) => {
-      e.preventDefault(); // Always prevent default native paste to control it
+      e.preventDefault(); // Always prevent default native paste to control it.
       if (DOM.editableInputDiv.contentEditable !== "true") return;
 
-      const text = (e.clipboardData || window.clipboardData).getData(
-          "text/plain"
-      );
+      const text = (e.clipboardData || window.clipboardData).getData("text/plain");
       const processedText = text.replace(/\r?\n|\r/g, " ");
 
-      // If a modal input is currently active (like a password prompt),
-      // let the ModalInputManager handle the paste event internally.
-      if (ModalInputManager.isAwaiting()) {
+      // If a modal input is active and obscured, delegate paste handling.
+      if (ModalInputManager.isAwaiting() && ModalInputManager.isObscured()) {
         ModalInputManager.handlePaste(processedText);
       } else {
-        // Existing logic for normal terminal input paste
+        // Existing logic for normal terminal input paste.
         const selection = window.getSelection();
         if (!selection || !selection.rangeCount) return;
 
         const range = selection.getRangeAt(0);
-
         if (!DOM.editableInputDiv.contains(range.commonAncestorContainer)) return;
 
         range.deleteContents();
@@ -187,6 +179,7 @@ function initializeTerminalEventListeners() {
       }
     });
   }
+  // --- END REFACTORED PASTE HANDLER ---
 }
 
 /**

@@ -581,7 +581,7 @@ const ModalInputManager = (() => {
             void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
         }
         TerminalUI.clearInput();
-        TerminalUI.setInputState(true, false);
+        TerminalUI.setInputState(true, isObscured); // --- Pass obscured status to setInputState ---
         TerminalUI.focusInput();
 
         const outputDiv = document.getElementById('output');
@@ -599,6 +599,7 @@ const ModalInputManager = (() => {
         const callback = _inputContext.onInputReceived;
         _isAwaitingInput = false;
         _inputContext = null;
+        TerminalUI.setInputState(true, false); // --- REVERT STATE ON COMPLETION ---
         TerminalUI.clearInput();
         if (typeof callback === "function") {
             await callback(finalInput.trim());
@@ -639,12 +640,32 @@ const ModalInputManager = (() => {
         TerminalUI.setCaretPosition(document.getElementById('editable-input'), start);
     }
 
+    // --- NEW FUNCTION TO HANDLE PASTING ---
+    function handlePaste(pastedText) {
+        if (!_isAwaitingInput || !_inputContext) return;
+
+        // This function is now called directly from the paste event listener in main.js
+        const selection = TerminalUI.getSelection();
+        let { start, end } = selection;
+
+        let inputArray = Array.from(_inputContext.currentInput);
+        inputArray.splice(start, end - start, pastedText);
+
+        _inputContext.currentInput = inputArray.join("");
+        const displayText = _inputContext.isObscured ? "*".repeat(_inputContext.currentInput.length) : _inputContext.currentInput;
+
+        TerminalUI.setCurrentInputValue(displayText, false);
+        TerminalUI.setCaretPosition(document.getElementById('editable-input'), start + pastedText.length);
+    }
+    // --- END NEW FUNCTION ---
+
     return {
         requestInput,
         handleInput,
         updateInput,
         isAwaiting: () => _isAwaitingInput,
         isObscured,
+        handlePaste, // --- EXPOSE NEW FUNCTION ---
     };
 })();
 
