@@ -1,6 +1,6 @@
 {
   "name": "oopisos-electron",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "OopisOS Standalone Application",
   "main": "electron.js",
   "author": "Andrew Edmark & Gemini",
@@ -23,7 +23,6 @@
     },
     "linux": {
       "target": [
-        "AppImage",
         "deb"
       ],
       "icon": "icons/"
