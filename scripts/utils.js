@@ -290,7 +290,7 @@ const Utils = (() => {
                 headers['x-goog-api-key'] = apiKey;
                 body = JSON.stringify({ contents: conversation });
                 break;
-            case 'ollama':
+            case 'ollama': // --- NEW CASE ---
                 const promptText = conversation.map(part => part.parts.map(p => p.text).join('\n')).join('\n');
                 body = JSON.stringify({ model: model || providerConfig.defaultModel, prompt: promptText, stream: false });
                 break;
@@ -320,7 +320,7 @@ const Utils = (() => {
             let finalAnswer;
             switch (provider) {
                 case 'gemini': finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text; break;
-                case 'ollama': finalAnswer = responseData.response; break;
+                case 'ollama': finalAnswer = responseData.response; break; // --- NEW CASE ---
                 case 'llm-studio': finalAnswer = responseData.choices?.[0]?.message?.content; break;
             }
 
@@ -328,6 +328,7 @@ const Utils = (() => {
         } catch (e) {
             return { success: false, error: `Network or fetch error: ${e.message}` };
         }
+
     }
 
     /**
