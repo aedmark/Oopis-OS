@@ -290,7 +290,7 @@ const Utils = (() => {
                 headers['x-goog-api-key'] = apiKey;
                 body = JSON.stringify({ contents: conversation });
                 break;
-            case 'ollama': // --- NEW CASE ---
+            case 'ollama':
                 const promptText = conversation.map(part => part.parts.map(p => p.text).join('\n')).join('\n');
                 body = JSON.stringify({ model: model || providerConfig.defaultModel, prompt: promptText, stream: false });
                 break;
@@ -320,15 +320,17 @@ const Utils = (() => {
             let finalAnswer;
             switch (provider) {
                 case 'gemini': finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text; break;
-                case 'ollama': finalAnswer = responseData.response; break; // --- NEW CASE ---
+                case 'ollama': finalAnswer = responseData.response; break;
                 case 'llm-studio': finalAnswer = responseData.choices?.[0]?.message?.content; break;
             }
 
             return finalAnswer ? { success: true, answer: finalAnswer } : { success: false, error: "AI failed to generate a valid response." };
         } catch (e) {
+            if (provider !== 'gemini' && e instanceof TypeError) {
+                return { success: false, error: `LOCAL_PROVIDER_UNAVAILABLE` };
+            }
             return { success: false, error: `Network or fetch error: ${e.message}` };
         }
-
     }
 
     /**

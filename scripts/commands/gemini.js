@@ -1,8 +1,6 @@
 /**
- * @file Defines the 'gemini' command, enabling interaction with the Google Gemini AI model
- * within the OopisOS terminal. This command supports conversational memory and tool use
- * (OopisOS shell commands) for file system awareness, using a sophisticated two-stage
- * "plan-then-synthesize" approach for enhanced accuracy and efficiency.
+ * @file Defines the 'gemini' command, enabling interaction with a configured AI model.
+ * This version supports tool use (shell commands), conversational memory, and a provider fallback mechanism.
  * @author Andrew Edmark
  * @author Gemini
  */
@@ -11,58 +9,28 @@
     "use strict";
 
     // --- STATE & CONFIGURATION ---
-    let geminiConversationHistory = [];
-    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail', 'csplit'];
+    let conversationHistory = [];
+    const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail', 'csplit', 'wc'];
 
-    const PLANNER_SYSTEM_PROMPT = `You are a helpful and witty digital archivist embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions about their file system, but you are also able to gather answers from outside sources when relevant.
-
-Your primary task is to analyze the user's prompt and the provided local file context.
+    const PLANNER_SYSTEM_PROMPT = `You are a helpful and witty digital archivist embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions about their file system, but you are also able to gather answers from outside sources when relevant. Your primary task is to analyze the user's prompt and the provided local file context, then devise a plan of OopisOS commands to execute to gather the necessary information.
 
 RULES:
 - Do not add any greetings.
-- Do not run any commands unless you are specifically asked about the files on the system. If no commands are needed (e.g., a general knowledge question), only give a general answer like you normally would without any specific context.
-- ONLY use the commands and flags explicitly listed in the "Tool Manifest" below, do not deviate or try weird tricks. Each command must be simple and stand-alone.
-- CRITICAL: You CANNOT use command substitution (e.g., \`$(...)\` or backticks) or other advanced shell syntax. Once again: Each command must be simple and stand-alone.
-- CRITICAL: When using a command with an argument that contains spaces (like a filename), you MUST enclose that argument in double quotes. For example: cat "My File.txt".
-- Do not hallucinate! OopisOS may LOOK like a UNIX shell, but it is not. Our commands have familiar names and flags, but they are not the same as the UNIX commands. Please refer to the "Tool Manifest" below for a complete list of commands and flags you are allowed to use.
+- If no commands are needed (e.g., a general knowledge question), respond with the direct answer. DO NOT generate a plan.
+- ONLY use the commands and flags explicitly listed in the "Tool Manifest" below. Do not deviate.
+- Each command must be simple and stand-alone. You CANNOT use command substitution or other advanced shell syntax.
+- When using a command with an argument that contains spaces (like a filename), you MUST enclose that argument in double quotes. For example: cat "My File.txt".
 
 --- TOOL MANIFEST ---
-1. ls [FLAGS]: Lists files.
-   -l: long format
-   -a: show all (including hidden)
-   -R: recursive
-2. cat [FILE]: Displays file content.
-3. grep [FLAGS] [PATTERN] [FILE]: Searches for patterns in files.
-   -i: ignore case
-   -v: invert match
-   -n: show line number
-   -R: recursive search
-4. find [PATH] [EXPRESSIONS]: Finds files based on criteria.
-   -name [PATTERN]: find by name (e.g., "*.txt")
-   -type [f|d]: find by type (file or directory)
-5. tree: Display directory contents as a tree.
-6. pwd: Show the current directory.
-7. head [FLAGS] [FILE]: Outputs the first part of files.
-   -n COUNT: output the first COUNT lines.
-8. shuf [FLAGS]: Randomly permute input.
-   -n COUNT: output at most COUNT lines.
-   -e [ARG]...: treat each ARG as an input line.
-9. tail [FLAGS] [FILE]: Outputs the last part of files.
-10. xargs [FLAGS] [COMMAND]: Runs a command for each input line.
-11. echo [ARG]...: Prints the arguments to the screen.
-12. wc [FLAGS] [FILE]: Counts the number of lines, words, and characters in files.
-13.
+ls [-l, -a, -R], cat, grep [-i, -v, -n, -R], find [path] -name [pattern] -type [f|d], tree, pwd, head [-n], tail [-n], wc
 --- END MANIFEST ---
 
-To process multiple files, you must first list them, and then process each file with a separate cat command in the plan. DO NOT TAKE SHORTCUTS.`;
+To process multiple files, you must first list them, and then process each file with a separate command in the plan.`;
 
-    const SYNTHESIZER_SYSTEM_PROMPT = `You are a helpful and witty digital librarian embedded in the OopisOS terminal environment.
-
-Your SECOND task is to synthesize a final answer for the user.
-You will be given the user's original prompt and the output from a series of commands that you previously planned.
+    const SYNTHESIZER_SYSTEM_PROMPT = `You are a helpful and witty digital librarian. Your task is to synthesize a final, natural-language answer for the user. You will be given the user's original prompt and the output from a series of commands that you previously planned.
 
 RULES:
-- Use the provided command outputs to formulate a comprehensive, natural language answer.
+- Use the provided command outputs to formulate a comprehensive answer.
 - Do not reference the commands themselves in your answer. Simply use the information they provided.
 - If the context from the tools is insufficient, state that you could not find the necessary information in the user's files.
 - Be friendly, conversational, and helpful in your final response.`;
@@ -83,97 +51,36 @@ RULES:
         coreLogic: async (context) => {
             const { args, options, flags } = context;
 
-            const provider = flags.provider || 'gemini';
+            let provider = flags.provider || 'gemini';
+            const originalProvider = provider;
             const model = flags.model || null;
+            let apiKey = null;
 
-            const _getApiKey = () => {
-                return new Promise((resolve) => {
-                    let apiKey = StorageManager.loadItem(
-                        Config.STORAGE_KEYS.GEMINI_API_KEY,
-                        "Gemini API Key"
-                    );
-                    if (apiKey) {
-                        resolve({ success: true, key: apiKey });
-                        return;
-                    }
-                    if (options.isInteractive) {
-                        ModalInputManager.requestInput(
-                            "Please enter your Gemini API key. It will be saved locally for future use.",
-                            (providedKey) => {
-                                if (!providedKey) {
-                                    resolve({
-                                        success: false,
-                                        error: "API key cannot be empty.",
-                                    });
-                                    return;
-                                }
-                                StorageManager.saveItem(
-                                    Config.STORAGE_KEYS.GEMINI_API_KEY,
-                                    providedKey,
-                                    "Gemini API Key"
-                                );
-                                OutputManager.appendToOutput(
-                                    "API Key saved to local storage.",
-                                    {
-                                        typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-                                    }
-                                );
+            // Only get API key if the provider is gemini
+            if (provider === 'gemini') {
+                const apiKeyResult = await new Promise(resolve => {
+                    let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                    if (key) resolve({ success: true, key });
+                    else ModalInputManager.requestInput(
+                        "Please enter your Gemini API key:",
+                        (providedKey) => {
+                            if (!providedKey) resolve({ success: false, error: "API key entry cancelled." });
+                            else {
+                                StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, providedKey);
                                 resolve({ success: true, key: providedKey });
-                            },
-                            () => {
-                                resolve({ success: false, error: "API key entry cancelled." });
-                            },
-                            false,
-                            options
-                        );
-                    } else {
-                        resolve({
-                            success: false,
-                            error: "API key not set. Please run interactively to set it.",
-                        });
-                    }
-                });
-            };
-
-            const _callGeminiApi = async (apiKey, conversation, systemPrompt) => {
-                const GEMINI_API_URL = Config.API.GEMINI_URL;
-                try {
-                    const response = await fetch(GEMINI_API_URL, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "x-goog-api-key": apiKey,
+                            }
                         },
-                        body: JSON.stringify({
-                            contents: conversation,
-                            system_instruction: { parts: [{ text: systemPrompt }] },
-                        }),
-                    });
+                        () => resolve({ success: false, error: "API key entry cancelled." }), true, options
+                    );
+                });
 
-                    if (!response.ok) {
-                        let errorBody = await response.json().catch(() => null);
-                        if (response.status === 400 && errorBody?.error?.message.includes("API key not valid")) {
-                            return { success: false, error: "INVALID_API_KEY" };
-                        }
-                        return { success: false, error: `API request failed: ${errorBody?.error?.message || response.statusText}` };
-                    }
-                    return { success: true, data: await response.json() };
-                } catch (e) {
-                    return { success: false, error: `Network or fetch error: ${e.message}` };
-                }
-            };
-
-            const apiKeyResult = await _getApiKey();
-            if (!apiKeyResult.success) {
-                return { success: false, error: `gemini: ${apiKeyResult.error}` };
+                if (!apiKeyResult.success) return { success: false, error: `gemini: ${apiKeyResult.error}` };
+                apiKey = apiKeyResult.key;
             }
-            const apiKey = apiKeyResult.key;
 
             if (flags.new) {
-                geminiConversationHistory = [];
-                if (options.isInteractive) {
-                    await OutputManager.appendToOutput("Starting a new conversation with Gemini.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                }
+                conversationHistory = [];
+                if (options.isInteractive) await OutputManager.appendToOutput("Starting a new conversation.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
 
             const userPrompt = args.join(" ");
@@ -181,16 +88,30 @@ RULES:
             const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
             const plannerPrompt = `User Prompt: "${userPrompt}"\n\n${localContext}`;
 
-            if (options.isInteractive) {
-                await OutputManager.appendToOutput("Gemini is thinking...", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+            if (options.isInteractive) await OutputManager.appendToOutput("AI is thinking...", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+
+            const plannerConversation = [...conversationHistory, { role: "user", parts: [{ text: plannerPrompt }] }];
+
+            // --- MODIFIED: Integrated Fallback Logic ---
+            let plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT);
+
+            if (!plannerResult.success && plannerResult.error === 'LOCAL_PROVIDER_UNAVAILABLE' && originalProvider !== 'gemini') {
+                if (options.isInteractive) {
+                    await OutputManager.appendToOutput(`gemini: Could not connect to '${originalProvider}'. Falling back to default 'gemini' provider.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                }
+                provider = 'gemini';
+                // Re-fetch API key for the fallback provider
+                const fallbackApiKeyResult = await new Promise(resolve => {
+                    let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                    if (key) resolve({ success: true, key: key });
+                    else resolve({ success: false, error: "Gemini API key not found for fallback." });
+                });
+                if (!fallbackApiKeyResult.success) return { success: false, error: `gemini: ${fallbackApiKeyResult.error}` };
+                apiKey = fallbackApiKeyResult.key;
+
+                plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT);
             }
-
-            const plannerConversation = [
-                ...geminiConversationHistory,
-                { role: "user", parts: [{ text: plannerPrompt }] }
-            ];
-            const plannerResult = await _callGeminiApi(apiKey, plannerConversation, PLANNER_SYSTEM_PROMPT);
-
+            // --- END MODIFICATION ---
 
             if (!plannerResult.success) {
                 if (plannerResult.error === "INVALID_API_KEY") {
@@ -200,29 +121,22 @@ RULES:
                 return { success: false, error: `gemini: Planner stage failed. ${plannerResult.error}` };
             }
 
-            const candidate = plannerResult.data.candidates?.[0];
-            const planText = candidate?.content?.parts?.[0]?.text?.trim();
+            const planText = plannerResult.answer?.trim();
+            if (!planText) return { success: false, error: "gemini: AI failed to generate a valid plan or response." };
 
-            if (!planText) {
-                return { success: false, error: "gemini: AI failed to generate a valid plan." };
-            }
-
-            // --- MODIFICATION START ---
-            // Check if the AI's response is a direct answer or a command plan.
+            // If the first word of the plan is not a whitelisted command, it's a direct answer.
             const firstWordOfPlan = planText.split(/\s+/)[0];
             if (!COMMAND_WHITELIST.includes(firstWordOfPlan)) {
-                // If the first word is not a whitelisted command, treat the whole response as the final answer.
-                geminiConversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
-                geminiConversationHistory.push({ role: "model", parts: [{ text: planText }] });
+                conversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+                conversationHistory.push({ role: "model", parts: [{ text: planText }] });
                 return { success: true, output: planText };
             }
-            // --- MODIFICATION END ---
 
-
+            // --- Tool Execution Stage ---
             let executedCommandsOutput = "";
             const commandsToExecute = planText.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
             if (flags.verbose && options.isInteractive) {
-                await OutputManager.appendToOutput(`Gemini's Plan:\n${commandsToExecute.map(c => `- ${c}`).join('\n')}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                await OutputManager.appendToOutput(`AI's Plan:\n${commandsToExecute.map(c => `- ${c}`).join('\n')}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
             }
 
             for (const commandStr of commandsToExecute) {
@@ -237,78 +151,62 @@ RULES:
                 }
                 const execResult = await CommandExecutor.processSingleCommand(commandStr, { suppressOutput: !flags.verbose });
                 const output = execResult.success ? execResult.output : `Error: ${execResult.error}`;
-
                 executedCommandsOutput += `--- Output of '${commandStr}' ---\n${output}\n\n`;
             }
 
+            // --- Synthesizer Stage ---
             const synthesizerPrompt = `Original user question: "${userPrompt}"\n\nContext from file system:\n${executedCommandsOutput || "No commands were run."}`;
-            const synthesizerResult = await _callGeminiApi(apiKey, [{ role: "user", parts: [{ text: synthesizerPrompt }] }], SYNTHESIZER_SYSTEM_PROMPT);
+            const synthesizerResult = await Utils.callLlmApi(provider, model, [{ role: "user", parts: [{ text: synthesizerPrompt }] }], apiKey, SYNTHESIZER_SYSTEM_PROMPT);
 
             if (!synthesizerResult.success) {
                 return { success: false, error: `gemini: Synthesizer stage failed. ${synthesizerResult.error}` };
             }
 
-            const finalAnswer = synthesizerResult.data.candidates?.[0]?.content?.parts?.[0]?.text;
-
+            const finalAnswer = synthesizerResult.answer;
             if (!finalAnswer) {
                 return { success: false, error: "gemini: AI failed to synthesize a final answer." };
             }
 
-            geminiConversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
-            geminiConversationHistory.push({ role: "model", parts: [{ text: finalAnswer }] });
+            conversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+            conversationHistory.push({ role: "model", parts: [{ text: finalAnswer }] });
 
             return { success: true, output: finalAnswer };
         },
     };
 
-    const geminiDescription = "Engages in a context-aware conversation with the Gemini AI.";
+    const geminiDescription = "Engages in a context-aware conversation with a configured AI model.";
 
-    const geminiHelpText = `Usage: gemini [-n|--new] [-v|--verbose]"
+    const geminiHelpText = `Usage: gemini [-n|--new] [-v|--verbose] [-p provider] [-m model] "<prompt>"
 
-Engage in a context-aware conversation with the Gemini AI.
+Engage in a context-aware conversation with an AI model.
 
 DESCRIPTION
-       The gemini command sends a prompt to the Google Gemini AI model.
-       It is a powerful assistant integrated directly into the OopisOS
-       shell, capable of both general conversation and tasks that require
-       awareness of the virtual file system.
+       The gemini command sends a prompt to a configured AI model. It is a powerful 
+       assistant integrated directly into the OopisOS shell, capable of using system
+       tools to answer questions about your files. If a local provider (like 'ollama')
+       is specified but unavailable, it will fall back to the default 'gemini' provider
+       and notify you.
 
-       The entire prompt, if it contains spaces, should be enclosed in
-       double quotes.
+       The entire prompt, if it contains spaces, must be enclosed in double quotes.
 
-CAPABILITIES
-       File System Awareness
-              Gemini can use OopisOS commands (ls, cat, find, tree, etc.)
-              to explore your file system, gather information, and provide
-              truly context-aware answers about your files and projects.
-
-       Conversational Memory
-              The command remembers the history of your current conversation,
-              allowing you to ask follow-up questions.
-
-API KEY
-       The first time you use the gemini command, you will be prompted
-       to enter a Google AI Studio API key. This key is stored locally
-       in your browser's storage and is required to make requests.
+PROVIDERS & MODELS
+       -p, --provider   Specify the provider (e.g., 'ollama', 'gemini').
+                        Defaults to 'gemini'.
+       -m, --model      Specify a model for the provider (e.g., 'llama3').
+                        Defaults to the provider's default model.
 
 OPTIONS
        -n, --new
               Starts a new, fresh conversation, clearing any previous
               conversational memory from the current session.
-
        -v, --verbose
           Enable verbose logging to see the AI's step-by-step plan
           and the output of the commands it executes.
 
 EXAMPLES
-       # Ask a question that requires finding and reading files
        gemini "Summarize my README.md and list any scripts in this directory"
-
-       # Ask a follow-up question
-       gemini "Now, what was the first script you listed?"
-
-       # Start a completely new conversation
-       gemini -n "What is the capital of Illinois?"`;
+       gemini -p ollama "Summarize my README.md"
+       gemini -p ollama -m codellama "Explain the script ./diag.sh"`;
 
     CommandRegistry.register("gemini", geminiCommandDefinition, geminiDescription, geminiHelpText);
 })();

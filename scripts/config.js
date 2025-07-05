@@ -169,7 +169,7 @@ const Config = (() => {
                 },
                 'ollama': {
                     url: "http://localhost:11434/api/generate",
-                    defaultModel: "llama3" // Or whatever model the user wants to default to
+                    defaultModel: "OLMo-7B-0424-hf-Q5_K_M:latest" // Or whatever model the user wants to default to
                 },
                 'llm-studio': {
                     url: "http://localhost:1234/v1/chat/completions",
