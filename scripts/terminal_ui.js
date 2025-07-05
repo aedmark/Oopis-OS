@@ -461,6 +461,26 @@ const TerminalUI = (() => {
         }
         return { start, end };
     }
+    /**
+     * Handles pasted text when an obscured input is active.
+     * @param {string} pastedText - The text copied from the clipboard.
+     */
+    function handlePaste(pastedText) {
+        if (!_isAwaitingInput || !_inputContext) return;
+
+        // Determine current cursor position to insert text correctly
+        const selection = TerminalUI.getSelection();
+        let { start, end } = selection;
+
+        let inputArray = Array.from(_inputContext.currentInput);
+        inputArray.splice(start, end - start, pastedText); // Replace selected text with pasted text
+
+        _inputContext.currentInput = inputArray.join("");
+        const displayText = _inputContext.isObscured ? "*".repeat(_inputContext.currentInput.length) : _inputContext.currentInput;
+
+        TerminalUI.setCurrentInputValue(displayText, false); // Set display value without moving caret
+        TerminalUI.setCaretPosition(document.getElementById('editable-input'), start + pastedText.length); // Reposition caret
+    }
 
     return {
         updatePrompt,
@@ -473,6 +493,7 @@ const TerminalUI = (() => {
         setCaretPosition,
         setInputState,
         getSelection,
+        handlePaste,
     };
 })();
 
