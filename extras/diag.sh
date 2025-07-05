@@ -1,3 +1,5 @@
+#!/bin/oopis_shell
+
 # OopisOS Core Test Suite v3.7 - "The Gauntlet, Now With More Gauntlet"
 echo "===== OopisOS Core Test Suite v3.7 Initializing ====="
 echo "This script tests all non-interactive core functionality, now with maximum paranoia."
@@ -75,9 +77,10 @@ echo "===== Phase 2: Testing Core FS Commands (Expanded) ====="
 delay 400
 echo "--- Test: diff, cp -p, mv ---"
 diff diff_a.txt diff_b.txt
-cp -p exec_test.sh exec_test_copy.sh
-ls -l exec_test.sh exec_test_copy.sh
-mv exec_test_copy.sh mv_test_dir/
+cp -p preserve_perms.txt preserve_copy.sh
+echo "Verifying preserved permissions:"
+ls -l preserve_perms.txt preserve_copy.sh
+mv exec_test.sh mv_test_dir/
 ls mv_test_dir/
 echo "--- Test: touch -d and -t ---"
 touch -d "1 day ago" old_file.txt
@@ -163,10 +166,26 @@ check_fail "sudo ls /home/root"
 login root mcgoopis
 removeuser -f sudouser
 grep -v "sudouser" /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
+echo "--- Test: Granular sudo permissions ---"
+useradd sudouser2
+testpass
+testpass
+echo "sudouser2 ls" >> /etc/sudoers
+login sudouser2 testpass
+echo "Attempting allowed specific command (ls)..."
+sudo ls /home/root
+testpass
+echo "Attempting disallowed specific command (rm)..."
+check_fail "sudo rm -f /home/Guest/README.md"
+login root mcgoopis
+removeuser -f sudouser2
+grep -v "sudouser2" /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
 login diagUser testpass
 cd /home/diagUser/diag_workspace
+echo "Granular sudo test complete."
 delay 700
 echo "---------------------------------------------------------------------"
+
 
 # --- Phase 5: Advanced Scripting & Process Management ---
 echo ""
@@ -227,19 +246,22 @@ echo "---------------------------------------------------------------------"
 
 # --- Phase 7.5: Pager and Calculator Tests ---
 echo ""
-echo "===== Phase 7.5: Testing Pager (more/less) and Calculator (bc) ====="
+echo "===== Phase 7.5: Testing Pager and Calculator Tests ====="
 delay 400
 echo "--- Test: bc command (pipe and argument) ---"
 echo "5 * (10 - 2) / 4" | bc
 bc "100 + 1"
 check_fail "bc '5 / 0'"
-echo "--- Test: Pager integration (non-interactive) ---"
-echo "This test verifies 'more' and 'less' pass data through in scripts."
+echo "--- Test: Pager integration (non-interactive pipe-through) ---"
 echo -e "Line 1\nLine 2\nLine 3" > pager_test.txt
 cat pager_test.txt | more | wc -l
 cat pager_test.txt | less | wc -l
 echo "Pager pass-through test complete."
-rm pager_test.txt
+echo "--- Test: Input Redirection (<) ---"
+echo "hello redirect" > input_redir.txt
+cat < input_redir.txt
+rm pager_test.txt input_redir.txt
+echo "Input redirection test complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
@@ -410,6 +432,16 @@ rm -r "your test dir"
 check_fail "ls 'my test dir'"
 echo "Space filename tests complete."
 delay 400
+
+echo "--- Test: xargs with quoted arguments and special characters ---"
+touch "a file with spaces.tmp" "!@#$%.tmp"
+ls *.tmp | xargs -I {} mv {} {}.bak
+check_fail "ls \"a file with spaces.tmp\"" # Should fail, as it was renamed
+ls "*.tmp.bak" # Should succeed, showing the renamed files
+rm *.tmp.bak # Cleanup
+echo "xargs with quoting and special characters test complete."
+delay 400
+
 
 echo "--- Test: Advanced find commands (-exec, -delete, operators) ---"
 mkdir -p find_exec_test/subdir
