@@ -57,25 +57,25 @@ RULES:
             let apiKey = null;
 
             // Only get API key if the provider is gemini
-            if (provider === 'gemini') {
+            if (provider === 'gemini') { //
                 const apiKeyResult = await new Promise(resolve => {
-                    let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-                    if (key) resolve({ success: true, key });
-                    else ModalInputManager.requestInput(
+                    let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY); //
+                    if (key) resolve({ success: true, key }); //
+                    else ModalInputManager.requestInput( //
                         "Please enter your Gemini API key:",
                         (providedKey) => {
-                            if (!providedKey) resolve({ success: false, error: "API key entry cancelled." });
+                            if (!providedKey) resolve({ success: false, error: "API key entry cancelled." }); //
                             else {
-                                StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, providedKey);
-                                resolve({ success: true, key: providedKey });
+                                StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, providedKey); //
+                                resolve({ success: true, key: providedKey }); //
                             }
                         },
-                        () => resolve({ success: false, error: "API key entry cancelled." }), true, options
+                        () => resolve({ success: false, error: "API key entry cancelled." }), true, options //
                     );
                 });
 
-                if (!apiKeyResult.success) return { success: false, error: `gemini: ${apiKeyResult.error}` };
-                apiKey = apiKeyResult.key;
+                if (!apiKeyResult.success) return { success: false, error: `gemini: ${apiKeyResult.error}` }; //
+                apiKey = apiKeyResult.key; //
             }
 
             if (flags.new) {
@@ -93,23 +93,23 @@ RULES:
             const plannerConversation = [...conversationHistory, { role: "user", parts: [{ text: plannerPrompt }] }];
 
             // --- MODIFIED: Integrated Fallback Logic ---
-            let plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT);
+            let plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT); //
 
-            if (!plannerResult.success && plannerResult.error === 'LOCAL_PROVIDER_UNAVAILABLE' && originalProvider !== 'gemini') {
-                if (options.isInteractive) {
-                    await OutputManager.appendToOutput(`gemini: Could not connect to '${originalProvider}'. Falling back to default 'gemini' provider.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+            if (!plannerResult.success && plannerResult.error === 'LOCAL_PROVIDER_UNAVAILABLE' && originalProvider !== 'gemini') { //
+                if (options.isInteractive) { //
+                    await OutputManager.appendToOutput(`gemini: Could not connect to '${originalProvider}'. Falling back to default 'gemini' provider.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG }); //
                 }
-                provider = 'gemini';
+                provider = 'gemini'; //
                 // Re-fetch API key for the fallback provider
                 const fallbackApiKeyResult = await new Promise(resolve => {
-                    let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-                    if (key) resolve({ success: true, key: key });
-                    else resolve({ success: false, error: "Gemini API key not found for fallback." });
+                    let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY); //
+                    if (key) resolve({ success: true, key: key }); //
+                    else resolve({ success: false, error: "Gemini API key not found for fallback." }); //
                 });
-                if (!fallbackApiKeyResult.success) return { success: false, error: `gemini: ${fallbackApiKeyResult.error}` };
-                apiKey = fallbackApiKeyResult.key;
+                if (!fallbackApiKeyResult.success) return { success: false, error: `gemini: ${fallbackApiKeyResult.error}` }; //
+                apiKey = fallbackApiKeyResult.key; //
 
-                plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT);
+                plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT); //
             }
             // --- END MODIFICATION ---
 
@@ -156,7 +156,7 @@ RULES:
 
             // --- Synthesizer Stage ---
             const synthesizerPrompt = `Original user question: "${userPrompt}"\n\nContext from file system:\n${executedCommandsOutput || "No commands were run."}`;
-            const synthesizerResult = await Utils.callLlmApi(provider, model, [{ role: "user", parts: [{ text: synthesizerPrompt }] }], apiKey, SYNTHESIZER_SYSTEM_PROMPT);
+            const synthesizerResult = await Utils.callLlmApi(provider, model, [{ role: "user", parts: [{ text: synthesizerPrompt }] }], apiKey, SYNTHESIZER_SYSTEM_PROMPT); //
 
             if (!synthesizerResult.success) {
                 return { success: false, error: `gemini: Synthesizer stage failed. ${synthesizerResult.error}` };

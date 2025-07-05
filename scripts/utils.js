@@ -50,7 +50,7 @@ const Utils = (() => {
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
         } catch (error) {
-            console.error("SHA-256 hashing failed:", error);
+            console.error("Password hashing failed:", error);
             return null;
         }
     }
@@ -273,17 +273,31 @@ const Utils = (() => {
      * @param {string} model - The specific model to use.
      * @param {Array<object>} conversation - The chat history/prompt.
      * @param {string} apiKey - The API key for the provider.
+     * @param {string} [systemPrompt=null] - An optional system prompt to prepend.
      * @returns {Promise<object>} A promise that resolves with the API response.
      */
-    async function callLlmApi(provider, model, conversation, apiKey) {
+    async function callLlmApi(provider, model, conversation, apiKey, systemPrompt = null) {
         const providerConfig = (typeof Config !== 'undefined') ? Config.API.LLM_PROVIDERS[provider] : null;
         if (!providerConfig) {
             return { success: false, error: `LLM provider '${provider}' not configured.` };
         }
 
-        const url = providerConfig.url;
+        let url = providerConfig.url;
         let headers = { 'Content-Type': 'application/json' };
         let body;
+
+        const chatMessages = [];
+        if (systemPrompt) {
+            chatMessages.push({ role: 'system', content: systemPrompt });
+        }
+        conversation.forEach(turn => {
+            if (turn.role === 'user' || turn.role === 'model' || turn.role === 'assistant') {
+                chatMessages.push({
+                    role: turn.role === 'model' ? 'assistant' : turn.role,
+                    content: turn.parts.map(p => p.text).join('\n')
+                });
+            }
+        });
 
         switch (provider) {
             case 'gemini':
@@ -291,16 +305,13 @@ const Utils = (() => {
                 body = JSON.stringify({ contents: conversation });
                 break;
             case 'ollama':
-                const promptText = conversation.map(part => part.parts.map(p => p.text).join('\n')).join('\n');
-                body = JSON.stringify({ model: model || providerConfig.defaultModel, prompt: promptText, stream: false });
+                url = url.replace('/generate', '/chat'); // Dynamically change to chat endpoint
+                body = JSON.stringify({ model: model || providerConfig.defaultModel, messages: chatMessages, stream: false });
                 break;
             case 'llm-studio':
                 body = JSON.stringify({
                     model: model || providerConfig.defaultModel,
-                    messages: conversation.map(turn => ({
-                        role: turn.role === 'model' ? 'assistant' : 'user',
-                        content: turn.parts.map(p => p.text).join('\n')
-                    })),
+                    messages: chatMessages,
                     temperature: 0.7,
                     stream: false
                 });
@@ -357,20 +368,23 @@ const Utils = (() => {
                         k++;
                     }
                     while (k < glob.length && glob[k] !== "]") {
-                        charClass += (/[.^${}()|[\]\\]/.test(glob[k])) ? "\\" + glob[k] : glob[k];
+                        // Escape characters that have special meaning in regex character classes
+                        charClass += (/[\\-]/).test(glob[k]) ? "\\\\" + glob[k] : glob[k];
                         k++;
                     }
                     if (k < glob.length && glob[k] === "]") {
                         charClass += "]";
                         i = k;
                     } else {
-                        regexStr += "\\[";
+                        // Unclosed bracket, treat as literal
+                        regexStr += "\\\\["; // Escaped for JS, then escaped for regex
                         continue;
                     }
                     regexStr += charClass;
                     break;
                 default:
-                    if (/[.^${}()|[\]\\]/.test(char)) regexStr += "\\";
+                    // Escape special regex characters outside of character classes
+                    if (/[.^$*+?()|{}\\]/.test(char)) regexStr += "\\\\"; // Escaped for JS, then escaped for regex
                     regexStr += char;
             }
         }
@@ -416,7 +430,7 @@ const TimestampParser = (() => {
         if (typeof dateStr !== "string") return null;
 
         const relativeMatch = dateStr.match(
-            /([-+]|ago$)?\s*(\d+)\s*(minute|hour|day|week|month|year)s?/i
+            /([-+]|ago$)?\\s*(\\d+)\\s*(minute|hour|day|week|month|year)s?/i
         );
         if (relativeMatch) {
             let sign = relativeMatch[1] === "-" ? -1 : 1;
@@ -490,12 +504,6 @@ const TimestampParser = (() => {
             day = parseInt(s.substring(4, 6), 10);
             hours = parseInt(s.substring(6, 8), 10);
             minutes = parseInt(s.substring(8, 10), 10);
-        } else if (s.length === 8) {
-            year = currentDate.getFullYear();
-            monthVal = parseInt(s.substring(0, 2), 10);
-            day = parseInt(s.substring(2, 4), 10);
-            hours = parseInt(s.substring(4, 6), 10);
-            minutes = parseInt(s.substring(6, 8), 10);
         } else return null;
         if (isNaN(year) || isNaN(monthVal) || isNaN(day) || isNaN(hours) || isNaN(minutes)) return null;
         if (monthVal < 1 || monthVal > 12 || day < 1 || day > 31 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
@@ -584,7 +592,8 @@ const DiffUtils = (() => {
                         let prev_k;
                         if (p_k === -td || (p_k !== td && prev_v[p_k - 1 + max] < prev_v[p_k + 1 + max])) {
                             prev_k = p_k + 1;
-                        } else {
+                        }
+                        else {
                             prev_k = p_k - 1;
                         }
                         let prev_x = prev_v[prev_k + max];
@@ -609,7 +618,7 @@ const DiffUtils = (() => {
                         px--;
                         py--;
                     }
-                    return diffOutput.join('\n');
+                    return diffOutput.join('');
                 }
             }
         }
