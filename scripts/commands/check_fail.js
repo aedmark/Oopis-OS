@@ -1,6 +1,6 @@
 /**
  * @file Defines the 'check_fail' command, a diagnostic tool used to verify that
- * other commands correctly produce an error when expected.
+ * other commands correctly produce an error or expected output states.
  * @author Andrew Edmark
  * @author Gemini
  */
@@ -8,87 +8,88 @@
 (() => {
     "use strict";
 
-    /**
-     * @const {object} check_failCommandDefinition
-     * @description The command definition for the 'check_fail' command.
-     * This command is designed for testing purposes within scripts, asserting
-     * that a given command string will fail its execution.
-     */
     const check_failCommandDefinition = {
         commandName: "check_fail",
-        argValidation: {
-            exact: 1,
-            error: "expects exactly one argument (a command string)",
-        },
-        /**
-         * The core logic for the 'check_fail' command.
-         * It executes a provided command string in a non-interactive mode.
-         * If the executed command fails (as expected), `check_fail` reports success.
-         * If the executed command unexpectedly succeeds, `check_fail` reports failure.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @param {string[]} context.args - The arguments provided to the command. Expected to contain a single command string to test.
-         * @returns {Promise<object>} A promise that resolves to a command result object, indicating
-         * whether the tested command failed as expected.
-         */
+        // No arg validation, we handle it manually due to the flag.
         coreLogic: async (context) => {
-            const { args } = context;
-            const commandToTest = args[0];
+            const { args, options } = context;
+            let commandToTest;
+            let checkEmptyOutput = false;
+
+            if (args[0] === '-z') {
+                checkEmptyOutput = true;
+                commandToTest = args.slice(1).join(' ');
+            } else {
+                commandToTest = args.join(' ');
+            }
+
             if (typeof commandToTest !== "string" || commandToTest.trim() === "") {
                 return {
                     success: false,
                     error: "check_fail: command string argument cannot be empty",
                 };
             }
+
+            // Pass down the options from the current context to preserve the scriptingContext
             const testResult = await CommandExecutor.processSingleCommand(
                 commandToTest,
-                { isInteractive: false }
+                { ...options, isInteractive: false }
             );
-            if (testResult.success) {
-                const failureMessage = `CHECK_FAIL: FAILURE - Command <${commandToTest}> unexpectedly SUCCEEDED.`;
-                return {
-                    success: false,
-                    error: failureMessage,
-                };
+
+            if (checkEmptyOutput) {
+                // In -z mode, we test for empty output.
+                const outputIsEmpty = !testResult.output || testResult.output.trim() === '';
+                if (outputIsEmpty) {
+                    return { success: true, output: `CHECK_FAIL: SUCCESS - Command <${commandToTest}> produced empty output as expected.` };
+                } else {
+                    return { success: false, error: `CHECK_FAIL: FAILURE - Command <${commandToTest}> did NOT produce empty output.` };
+                }
             } else {
-                const successMessage = `CHECK_FAIL: SUCCESS - Command <${commandToTest}> failed as expected. (Error: ${
-                    testResult.error || "N/A"
-                })`;
-                return {
-                    success: true,
-                    output: successMessage,
-                };
+                // Default mode: test for command failure.
+                if (testResult.success) {
+                    const failureMessage = `CHECK_FAIL: FAILURE - Command <${commandToTest}> unexpectedly SUCCEEDED.`;
+                    return {
+                        success: false,
+                        error: failureMessage,
+                    };
+                } else {
+                    const successMessage = `CHECK_FAIL: SUCCESS - Command <${commandToTest}> failed as expected. (Error: ${testResult.error || "N/A"
+                    })`;
+                    return {
+                        success: true,
+                        output: successMessage,
+                    };
+                }
             }
         },
     };
 
-    const check_failDescription = "Checks that a command fails as expected (for testing).";
+    const check_failDescription = "Checks command failure or empty output (for testing).";
+    const check_failHelpText = `Usage: check_fail [-z] "<command_string>"
 
-    const check_failHelpText = `Usage: check_fail "<command_string>"
-
-Checks that a command fails as expected, for testing purposes.
+Checks test conditions for a command, for testing purposes.
 
 DESCRIPTION
-       The check_fail command executes the <command_string> provided to it.
-       It is a specialized tool used almost exclusively within testing scripts
-       like 'diag.sh'.
+       The check_fail command executes the <command_string> and evaluates its result.
+       It is a specialized tool used almost exclusively within testing scripts like 'diag.sh'.
 
-       Its purpose is to verify that OopisOS commands correctly generate
-       errors under invalid conditions.
-
+MODES
+       Default Mode:
        - If the enclosed command SUCCEEDS, check_fail will report a FAILURE.
        - If the enclosed command FAILS, check_fail will report a SUCCESS.
+
+       -z Flag Mode:
+       - If the enclosed command produces EMPTY output, check_fail will report SUCCESS.
+       - If the enclosed command produces ANY output, check_fail will report FAILURE.
 
        The <command_string> must be enclosed in quotes if it contains spaces.
 
 EXAMPLES
        check_fail "mkdir /nonexistent_parent/new_dir"
-              This will succeed, because the 'mkdir' command is expected
-              to fail when its parent directory does not exist.
+              This will succeed, because 'mkdir' is expected to fail.
 
-       check_fail "echo 'this will succeed'"
-              This will fail, because the 'echo' command is expected
-              to succeed.`;
+       check_fail -z "echo $UNSET_VARIABLE"
+              This will succeed, because echoing an unset variable produces no output.`;
 
     CommandRegistry.register("check_fail", check_failCommandDefinition, check_failDescription, check_failHelpText);
 })();

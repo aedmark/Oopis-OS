@@ -473,7 +473,7 @@ echo "--- Test: Scripting scope (ensure child script cannot modify parent shell)
 echo 'set CHILD_VAR="i am from the child"' > set_var.sh
 chmod 700 ./set_var.sh
 run ./set_var.sh
-check_fail "echo $CHILD_VAR"
+check_fail -z "echo $CHILD_VAR"
 rm set_var.sh
 echo "Scripting scope test complete."
 delay 400

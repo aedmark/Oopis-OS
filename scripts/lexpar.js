@@ -228,7 +228,7 @@ class Parser {
     const terminators = [
       TokenType.EOF, TokenType.OPERATOR_PIPE, TokenType.OPERATOR_SEMICOLON,
       TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR,
-      TokenType.OPERATOR_GT, TokenType.OPERATOR_GTGT, TokenType.OPERATOR_LT // ADDED LT
+      TokenType.OPERATOR_GT, TokenType.OPERATOR_GTGT, TokenType.OPERATOR_LT
     ];
     if (terminators.includes(this._currentToken().type)) {
       return null;
@@ -267,11 +267,6 @@ class Parser {
     let currentSegment = this._parseSingleCommandSegment();
     if (currentSegment) {
       pipeline.segments.push(currentSegment);
-    } else if (!pipeline.inputRedirectFile) {
-      // If we don't have a command AND we don't have an input redirect, it might be an error or just empty.
-      if (![TokenType.EOF, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR].includes(this._currentToken().type)) {
-        throw new Error(`Parser Error: Expected command at start of pipeline, but found ${this._currentToken().type}.`);
-      }
     }
 
     while (this._currentToken().type === TokenType.OPERATOR_PIPE) {
@@ -296,6 +291,7 @@ class Parser {
       };
     }
 
+    // Only return a pipeline object if it's valid (has segments OR redirection)
     return pipeline.segments.length > 0 || pipeline.redirection || pipeline.inputRedirectFile ? pipeline : null;
   }
   // --- END REFACTORED/NEW LOGIC ---
@@ -304,11 +300,13 @@ class Parser {
     const commandSequence = [];
     while (this._currentToken().type !== TokenType.EOF) {
       const pipeline = this._parseSinglePipeline();
+
       if (!pipeline) {
-        if ([TokenType.OPERATOR_AND, TokenType.OPERATOR_OR, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG].includes(this._currentToken().type)) {
-          throw new Error(`Parser Error: Unexpected operator '${this._currentToken().value}' at start of command.`);
+        // If the pipeline is null, but we're not at a valid separator or EOF, it's a syntax error.
+        if (![TokenType.EOF, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR].includes(this._currentToken().type)) {
+          throw new Error(`Parser Error: Unexpected token '${this._currentToken().value}' at start of command.`);
         }
-        break;
+        break; // Likely end of input
       }
 
       let operator = null;
