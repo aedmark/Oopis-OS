@@ -2,27 +2,24 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// --- START: PORTABLE APP LOGIC ---
+// --- START: ENFORCED PORTABLE APP LOGIC ---
 
 // Determine if we are running in a packaged app or in development
-const ispackaged = app.ispackaged;
+// The 'isPackaged' property is the correct one, not 'ispackaged'.
+const isPackaged = app.isPackaged;
 
 // Define the root directory of the application
-const rootdir = ispackaged ? path.dirname(app.getPath('exe')) : app.getAppPath();
+const rootDir = isPackaged ? path.dirname(app.getPath('exe')) : app.getAppPath();
 
-// Define the path to our portable mode marker file
-const portablemarkpath = path.join(rootdir, '.portable');
+// Unconditionally set the user data path to be a 'data' folder
+// right next to our executable. This enforces portable mode.
+const portableDataPath = path.join(rootDir, 'data');
+app.setPath('userData', portableDataPath);
 
-// Check if the marker file exists
-if (fs.existsSync(portablemarkpath)) {
-    // If it exists, we set the user data path to be a 'data' folder
-    // right next to our executable.
-    const portabledatapath = path.join(rootdir, 'data');
-    app.setPath('userData', portabledatapath);
-    console.log("Running in Portable Mode. Data stored at:", portabledatapath);
-}
+// Log the enforced portable mode status.
+console.log("OopisOS is running in Portable Mode. Data will be stored at:", portableDataPath);
 
-// --- END: PORTABLE APP LOGIC ---
+// --- END: ENFORCED PORTABLE APP LOGIC ---
 
 
 let mainWindow;
@@ -31,8 +28,8 @@ function createWindow() {
     const mainWindow = new BrowserWindow({
         width: 1280,
         height: 960,
-        resizable: true, // This is correct, window remains resizable.
-        // The 'frame' and 'titleBarStyle' properties have been removed to restore native window controls.
+        resizable: true,
+        autoHideMenuBar: true, // This will hide the menu bar by default.
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
