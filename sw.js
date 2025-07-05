@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-cache-v13';
+const CACHE_NAME = 'oopis-cache-v1';
 const urlsToCache = [
     './',
     './index.html',
