@@ -70,9 +70,7 @@ const SudoManager = (() => {
      * @returns {object} The parsed sudoers configuration object.
      */
     function _getSudoersConfig() {
-        if (!sudoersConfig) {
-            _parseSudoers();
-        }
+        _parseSudoers(); // Always re-parse to get the latest rules.
         return sudoersConfig;
     }
 
