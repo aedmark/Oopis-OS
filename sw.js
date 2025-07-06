@@ -5,7 +5,6 @@ const urlsToCache = [
     './style.css',
     './manifest.json',
     './scripts/marked.min.js',
-    './scripts/codemirror.js',
     './scripts/main.js',
     './scripts/utils.js',
     './scripts/config.js',

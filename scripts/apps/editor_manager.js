@@ -1,7 +1,4 @@
-// At the top of editor_manager.js
 import CodeMirror from 'codemirror';
-
-// It looks like you might also need the CSS, so import that too.
 import 'codemirror/lib/codemirror.css';
 
 const EditorManager = (() => {
