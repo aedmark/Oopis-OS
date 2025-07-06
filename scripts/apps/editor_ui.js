@@ -20,9 +20,12 @@ const EditorUI = (() => {
 
     function applyTextareaWordWrap(isWordWrapActive) {
         if (elements.textarea && elements.highlighter) {
-            const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
-            elements.textarea.style.whiteSpace = whiteSpaceStyle;
-            elements.highlighter.style.whiteSpace = whiteSpaceStyle;
+            // Toggle the specific classes for wrapping behavior
+            elements.textarea.classList.toggle('editor__input--no-wrap', !isWordWrapActive);
+            elements.highlighter.classList.toggle('editor__highlighter--no-wrap', !isWordWrapActive);
+
+            // Also toggle the visibility of the line number gutter, which is hidden when wrapping
+            setGutterVisibility(!isWordWrapActive);
         }
     }
 
