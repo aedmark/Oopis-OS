@@ -282,6 +282,18 @@ const EditorUI = (() => {
         return elements.editorContainer;
     }
 
+    function renderHighlights(text, language) {
+        if (elements.highlighter) {
+            const grammar = Prism.languages[language];
+            if (grammar) {
+                elements.highlighter.innerHTML = Prism.highlight(text, grammar, language) + '<br>';
+            } else {
+                // If the language is not supported by Prism, just show the plain text.
+                elements.highlighter.textContent = text + '<br>';
+            }
+        }
+    }
+
     function setGutterVisibility(visible) {
         if (elements.lineGutter) {
             elements.lineGutter.classList.toggle("hidden", !visible);

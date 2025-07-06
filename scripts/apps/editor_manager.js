@@ -49,6 +49,8 @@ const EditorManager = (() => {
         }
         EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
         EditorUI.syncScrolls();
+        const language = currentFileMode; // 'javascript', 'html', 'css', etc.
+        EditorUI.renderHighlights(textContent, language);
     }
     function _handleEditorInput() {
         if (!isActiveState) return;
