@@ -8,6 +8,7 @@ const SyntaxHighlighter = (() => {
 
     // Utility to escape HTML special characters
     function escapeHtml(text) {
+        if (text === undefined || text === null) return '';
         return text.replace(/[&<>"']/g, (match) => {
             switch (match) {
                 case '&': return '&amp;';
@@ -22,81 +23,127 @@ const SyntaxHighlighter = (() => {
 
     const tokenPatterns = {
         javascript: [
-            { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/|\/\/.*)/g },
-            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/g },
-            { type: 'keyword', pattern: /\b(const|let|var|function|return|if|else|for|while|switch|case|break|new|try|catch|finally|class|extends|super|async|await|import|export|from|default|of|in|instanceof|typeof|void|delete)\b/g },
-            { type: 'number', pattern: /\b(\d+(\.\d*)?|\.\d+)\b/g },
-            { type: 'operator', pattern: /([+\-*/%<>=!&|?:]+|=>)/g },
-            { type: 'punctuation', pattern: /([;,{}()[\]])/g }
+            { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/|\/\/.*)/ },
+            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/ },
+            { type: 'keyword', pattern: /\b(const|let|var|function|return|if|else|for|while|switch|case|break|new|try|catch|finally|class|extends|super|async|await|import|export|from|default|of|in|instanceof|typeof|void|delete)\b/ },
+            { type: 'number', pattern: /\b(\d+(\.\d*)?|\.\d+)\b/ },
+            { type: 'operator', pattern: /([+\-*/%<>=!&|?:]+|=>)/ },
+            { type: 'punctuation', pattern: /([;,{}()[\]])/ }
         ],
         shell: [
-            { type: 'comment', pattern: /(#.*)/g },
-            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g },
-            { type: 'keyword', pattern: /\b(echo|cd|ls|rm|mv|cp|mkdir|grep|find|xargs|if|then|else|fi|for|while|do|done|case|esac)\b/g },
-            { type: 'operator', pattern: /([|&;><])/g },
-            { type: 'variable', pattern: /(\$[a-zA-Z_][a-zA-Z0-9_]*|\$\@|\$#|\$[0-9])/g }
+            { type: 'comment', pattern: /(#.*)/ },
+            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+            { type: 'keyword', pattern: /\b(echo|cd|ls|rm|mv|cp|mkdir|grep|find|xargs|if|then|else|fi|for|while|do|done|case|esac|function|return)\b/ },
+            { type: 'operator', pattern: /([|&;><])/ },
+            { type: 'variable', pattern: /(\$[a-zA-Z_][a-zA-Z0-9_]*|\$@|\$#|\$[0-9])/ }
         ],
         css: [
-            { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/)/g },
-            { type: 'selector', pattern: /(^|[\s,}{])([.#]?-?[_a-zA-Z]+[_a-zA-Z0-9-]*|\[[^\]]+\]|:+[:_a-zA-Z]+[_a-zA-Z0-9-]*)(?=[\s,{])/gm },
-            { type: 'property', pattern: /([a-zA-Z-]+)(?=\s*:)/g },
-            { type: 'value', pattern: /:\s*(.+?)(;|\})/g }, // Simplified
-            { type: 'number', pattern: /(-?\d*\.?\d+)(px|%|em|rem|vw|vh|s)?/g },
-            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g },
+            { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/)/ },
+            { type: 'selector', pattern: /(^|[\s,}{])([.#]?-?[_a-zA-Z]+[_a-zA-Z0-9-]*|\[[^\]]+\]|:+[:_a-zA-Z]+[_a-zA-Z0-9-]*)(?=[\s,{])/m },
+            { type: 'property', pattern: /([a-zA-Z-]+)(?=\s*:)/ },
+            { type: 'number', pattern: /(-?\d*\.?\d+)(px|%|em|rem|vw|vh|s)?/ },
+            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
         ],
         markdown: [
-            { type: 'markdown-heading', pattern: /^(#{1,6}\s+.+)/gm },
-            { type: 'markdown-bold', pattern: /(\*\*(.*?)\*\*|__(.*?)__)/g },
-            { type: 'markdown-italic', pattern: /(\*(.*?)\*|_(.*?)_)/g },
-            { type: 'markdown-list-marker', pattern: /^(\s*[-*+]\s|\s*\d+\.\s)/gm },
-            { type: 'string', pattern: /(`.+?`)/g }, // Inline code
-            { type: 'markdown-link-text', pattern: /(\[([^\]]+)\])(?=\()/g },
-            { type: 'markdown-link-url', pattern: /(\]\()([^)]+)(\))/g },
-            { type: 'comment', pattern: /(```[\s\S]*?```)/g }, // Code blocks
+            { type: 'markdown-heading', pattern: /^(#{1,6}\s+.+)/m },
+            { type: 'markdown-list-marker', pattern: /^(\s*[-*+]\s|\s*\d+\.\s)/m },
+            { type: 'comment', pattern: /(```[\s\S]*?```)/ },
+            { type: 'string', pattern: /(`[^`\n]+?`)/ }, // Inline code
+            { type: 'markdown-bold', pattern: /(\*\*(.*?)\*\*|__(.*?)__)/ },
+            { type: 'markdown-italic', pattern: /(\*(.*?)\*|_(.*?)_)/ },
+            { type: 'markdown-link-text', pattern: /(\[([^\]]+)\])(?=\()/ },
+            { type: 'markdown-link-url', pattern: /(\]\()([^)]+)(\))/ },
         ]
     };
 
-    function highlight(text, mode) {
+    /**
+     * The main highlighting function.
+     * @param {string} text - The plain text to highlight.
+     * @param {string} mode - The language mode ('javascript', 'markdown', etc.).
+     * @param {Array} findMatches - An array of match objects from the find-and-replace feature.
+     * @param {number} findActiveIndex - The index of the currently active find match.
+     * @returns {string} An HTML string with syntax and find/replace highlights.
+     */
+    function highlight(text, mode, findMatches = [], findActiveIndex = -1) {
         const patterns = tokenPatterns[mode] || [];
-        if (patterns.length === 0) {
-            return escapeHtml(text);
-        }
+        const baseTokens = _tokenize(text, patterns);
+        const mergedTokens = _mergeWithFindTokens(text, baseTokens, findMatches, findActiveIndex);
 
-        const tokens = [];
-        let lastIndex = 0;
-
-        // Create a combined regex to find all possible tokens
-        const allPatterns = patterns.map(p => `(${p.pattern.source})`).join('|');
-        const globalRegex = new RegExp(allPatterns, 'g');
-
-        text.replace(globalRegex, (match, ...args) => {
-            const offset = args[args.length - 2];
-            const tokenIndex = args.findIndex((arg, i) => i < args.length - 2 && arg === match);
-            const tokenType = patterns[tokenIndex].type;
-
-            // Add any text before this match as a plain token
-            if (offset > lastIndex) {
-                tokens.push({ type: 'plain', content: text.substring(lastIndex, offset) });
-            }
-
-            tokens.push({ type: tokenType, content: match });
-            lastIndex = offset + match.length;
-            return match; // necessary for .replace
-        });
-
-        // Add any remaining text after the last match
-        if (lastIndex < text.length) {
-            tokens.push({ type: 'plain', content: text.substring(lastIndex) });
-        }
-
-        // Build the final HTML string
-        return tokens.map(token => {
+        return mergedTokens.map(token => {
             const escapedContent = escapeHtml(token.content);
-            if (token.type === 'plain') {
-                return escapedContent;
-            }
-            return `<span class="sh sh-${token.type}">${escapedContent}</span>`;
+            return `<span class="${token.class}">${escapedContent}</span>`;
         }).join('');
+    }
+
+    function _tokenize(text, patterns) {
+        if (!patterns || patterns.length === 0) {
+            return [{ type: 'plain', content: text, start: 0, end: text.length }];
+        }
+
+        const combinedPattern = new RegExp(patterns.map(p => `(${p.pattern.source})`).join('|'), 'g');
+        let tokens = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = combinedPattern.exec(text)) !== null) {
+            const matchText = match[0];
+            const matchIndex = match.index;
+            const tokenGroupIndex = match.slice(1).findIndex(m => m !== undefined);
+            const tokenType = patterns[tokenGroupIndex].type;
+
+            if (matchIndex > lastIndex) {
+                tokens.push({ type: 'plain', content: text.substring(lastIndex, matchIndex), start: lastIndex, end: matchIndex });
+            }
+
+            tokens.push({ type: tokenType, content: matchText, start: matchIndex, end: matchIndex + matchText.length });
+            lastIndex = combinedPattern.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            tokens.push({ type: 'plain', content: text.substring(lastIndex), start: lastIndex, end: text.length });
+        }
+        return tokens;
+    }
+
+    function _mergeWithFindTokens(text, baseTokens, findMatches, findActiveIndex) {
+        if (findMatches.length === 0) {
+            return baseTokens.map(token => ({ ...token, class: token.type === 'plain' ? '' : `sh sh-${token.type}` }));
+        }
+
+        const findTokens = findMatches.map((match, index) => ({
+            type: 'find-match',
+            content: match[0],
+            start: match.index,
+            end: match.index + match[0].length,
+            class: index === findActiveIndex ? 'highlight-match--active' : 'highlight-match'
+        }));
+
+        const allTokens = [...baseTokens, ...findTokens].sort((a, b) => a.start - b.start || b.end - a.end);
+
+        const merged = [];
+        let lastEnd = 0;
+
+        for (const token of allTokens) {
+            if (token.start < lastEnd) continue; // Skip tokens that are inside already processed tokens
+
+            // Add plain text between tokens
+            if (token.start > lastEnd) {
+                merged.push({ class: '', content: text.substring(lastEnd, token.start) });
+            }
+
+            merged.push({
+                class: token.type === 'find-match' ? token.class : `sh sh-${token.type}`,
+                content: token.content
+            });
+            lastEnd = token.end;
+        }
+
+        // Add any remaining text
+        if (lastEnd < text.length) {
+            merged.push({ class: '', content: text.substring(lastEnd) });
+        }
+
+        return merged;
     }
 
     return {

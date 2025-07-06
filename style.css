@@ -30,6 +30,21 @@
   --color-border-primary: #52525b;     /* zinc-600 */
   --color-border-secondary: #3f3f46;   /* zinc-700 */
 
+  /* Syntax Highlighting Colors */
+  --sh-color-keyword: #ff79c6; /* Pink */
+  --sh-color-string: #f1fa8c;  /* Yellow */
+  --sh-color-comment: #6272a4; /* Grayish Blue */
+  --sh-color-number: #bd93f9;  /* Purple */
+  --sh-color-operator: #ffb86c;/* Orange */
+  --sh-color-punctuation: #a3a3a3; /* text-secondary */
+  --sh-color-variable: #8be9fd; /* Cyan */
+  --sh-color-tag: #ff79c6;     /* Pink */
+  --sh-color-attribute: #50fa7b; /* Green */
+  --sh-color-value: #f1fa8c;   /* Yellow */
+  --sh-color-selector: #50fa7b; /* Green */
+  --sh-color-property: #8be9fd; /* Cyan */
+
+
   /* Typography */
   --font-family-mono: 'VT323', monospace;
   --font-family-sans: 'Inter', sans-serif; /* A sensible default for UI elements */
@@ -454,37 +469,40 @@ body {
   min-width: 0;
 }
 
-.editor__highlighter, .editor__textarea {
+.editor__highlighter, .editor__input {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   white-space: pre;
-  overflow: hidden;
+  overflow: auto; /* Let the elements scroll */
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  background-color: transparent;
+  margin: 0;
 }
 
 .editor__highlighter {
-  color: transparent;
+  color: var(--color-text-primary);
   pointer-events: none;
   z-index: 1;
 }
 
-.editor__textarea {
-  background-color: transparent;
+/* CORE FIX: The selector is now .editor__input */
+.editor__input {
   color: transparent;
   caret-color: var(--color-text-primary);
   z-index: 2;
   resize: none;
+  outline: none;
 }
 
-
-.editor__textarea--no-wrap {
+/* CORE FIX: The selector is now .editor__input--no-wrap */
+.editor__input--no-wrap {
   white-space: pre !important;
   overflow-x: auto !important;
 }
@@ -720,41 +738,6 @@ body {
   border-left: var(--border-width) solid var(--color-border-primary);
 }
 
-/* Highlighter styles */
-.editor__textarea-wrapper {
-  position: relative; /* This is crucial for positioning children */
-}
-
-.editor__highlighter, .editor__textarea {
-  /* Both must share the exact same font, size, padding, and border settings */
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-terminal);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  white-space: pre;
-  overflow: hidden; /* Scroll is handled by the parent wrapper */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.editor__highlighter {
-  color: var(--color-text-primary); /* Default text color */
-  pointer-events: none;
-  z-index: 1;
-}
-
-.editor__textarea {
-  background-color: transparent;
-  color: transparent;
-  caret-color: var(--color-text-primary);
-  z-index: 2; /* Sits on top of the highlighter */
-  resize: none;
-}
-
 .highlight-match {
   background-color: rgba(251, 191, 36, 0.4); /* --color-accent-amber with alpha */
   border-radius: 2px;
@@ -771,7 +754,8 @@ body {
 .sh-string { color: var(--sh-color-string); }
 .sh-number { color: var(--sh-color-number); }
 .sh-operator { color: var(--sh-color-operator); }
-.sh-punctuation { color: var(--color-text-secondary); }
+.sh-punctuation { color: var(--sh-color-punctuation); }
+.sh-variable { color: var(--sh-color-variable); }
 .sh-tag { color: var(--sh-color-tag); }
 .sh-attribute { color: var(--sh-color-attribute); }
 .sh-value { color: var(--sh-color-value); }
@@ -1146,7 +1130,7 @@ body {
 
 #paint-canvas-wrapper {
   flex-grow: 1; /* This makes the canvas area fill available space */
-aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 3;
   background-color: var(--color-background-darkest);
   box-shadow: var(--shadow-inset-light); /* Apply inset shadow for screen effect */
   overflow: auto; /* Allow scrolling for zoomed canvas */

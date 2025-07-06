@@ -1,7 +1,7 @@
 const EditorAppConfig = {
     EDITOR: {
-        DEBOUNCE_DELAY_MS: 250,
-        FIND_DEBOUNCE_DELAY_MS: 150, // Added for find functionality
+        DEBOUNCE_DELAY_MS: 150,
+        FIND_DEBOUNCE_DELAY_MS: 150,
         TAB_REPLACEMENT: "    ",
         DEFAULT_MODE: "text",
         MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html", JAVASCRIPT: "javascript", CSS: "css", SHELL: "shell" },
@@ -13,7 +13,6 @@ const EditorAppConfig = {
         EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
     },
 };
-
 const EditorUtils = (() => {
     "use strict";
     function determineMode(filePath) {
@@ -67,77 +66,38 @@ const EditorUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let previewDebounceTimer = null;
-
     const iframeStyles = `
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        line-height: 1.5;
-        color: #e5e7eb;
-        background-color: #212121;
-        margin: 1rem;
-      }
-      h1, h2, h3, h4, h5, h6 {
-        color: #38bdf8;
-        border-bottom: 1px solid #52525b;
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-        padding-bottom: 0.25rem;
-      }
-      p { margin-bottom: 1rem; }
-      a { color: #2dd4bf; text-decoration: underline; }
-      a:hover { color: #5eead4; }
+      body { font-family: 'Inter', sans-serif; line-height: 1.5; color: #e5e7eb; background-color: #212121; margin: 1rem; }
+      h1, h2, h3, h4, h5, h6 { color: #38bdf8; border-bottom: 1px solid #52525b; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.25rem; }
+      p { margin-bottom: 1rem; } a { color: #2dd4bf; text-decoration: underline; } a:hover { color: #5eead4; }
       ul, ol { padding-left: 2rem; margin-bottom: 1rem; }
-      blockquote {
-        border-left: 4px solid #38bdf8;
-        padding-left: 1rem;
-        margin-left: 0;
-        font-style: italic;
-        color: #737373;
-      }
-      code:not(pre > code) {
-        background-color: #27272a;
-        color: #fde047;
-        padding: 0.2rem 0.4rem;
-        border-radius: 0.25rem;
-        font-family: 'VT323', monospace;
-        font-size: 0.9em;
-      }
-      pre {
-        background-color: #0a0a0a;
-        padding: 1rem;
-        border-radius: 0.25rem;
-        overflow-x: auto;
-        border: 1px solid #3f3f46;
-        font-family: 'VT323', monospace;
-        color: #e5e7eb;
-      }
-      pre > code {
-          padding: 0;
-          background-color: transparent;
-          color: inherit;
-          font-size: 1em;
-      }
-      table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 1rem;
-      }
-      img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
-    </style>
-  `;
-
-    function _updateFormattingToolbarVisibility(mode) {
-        if (elements.formattingToolbar) {
-            elements.formattingToolbar.classList.toggle('hidden', mode !== 'markdown');
-        }
-        if (elements.htmlFormattingToolbar) {
-            elements.htmlFormattingToolbar.classList.toggle('hidden', mode !== 'html');
-        }
-    }
+      blockquote { border-left: 4px solid #38bdf8; padding-left: 1rem; margin-left: 0; font-style: italic; color: #737373; }
+      code:not(pre > code) { background-color: #27272a; color: #fde047; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: 'VT323', monospace; font-size: 0.9em; }
+      pre { background-color: #0a0a0a; padding: 1rem; border-radius: 0.25rem; overflow-x: auto; border: 1px solid #3f3f46; font-family: 'VT323', monospace; color: #e5e7eb; }
+      pre > code { padding: 0; background-color: transparent; color: inherit; font-size: 1em; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+      th, td { border: 1px solid #52525b; padding: 0.5rem; text-align: left; }
+      th { background-color: #3f3f46; } img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
+    </style>`;
 
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
+
+        elements.input = Utils.createElement("div", {
+            id: "editor-input",
+            className: "editor__input",
+            contentEditable: "true",
+            spellcheck: "false",
+            autocapitalize: "none",
+            eventListeners: {
+                input: eventCallbacks.onInput,
+                scroll: eventCallbacks.onScroll,
+                click: eventCallbacks.onSelectionChange,
+                keyup: eventCallbacks.onSelectionChange,
+                keydown: eventCallbacks.onKeydown
+            }
+        });
 
         // --- Find & Replace Bar ---
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
@@ -251,7 +211,20 @@ const EditorUI = (() => {
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
-        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", autocapitalize: "none", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
+        elements.input = Utils.createElement("div", {
+            id: "editor-input",
+            className: "editor__input",
+            contentEditable: "true",
+            spellcheck: "false",
+            autocapitalize: "none",
+            eventListeners: {
+                input: eventCallbacks.onInput,
+                scroll: eventCallbacks.onScroll,
+                click: eventCallbacks.onSelectionChange,
+                keyup: eventCallbacks.onSelectionChange,
+                keydown: eventCallbacks.onKeydown // Need to capture keydown for tab
+            }
+        });
         elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
@@ -275,12 +248,6 @@ const EditorUI = (() => {
         );
 
         return elements.editorContainer;
-    }
-
-    function renderHighlights(htmlContent) {
-        if (elements.highlighter) {
-            elements.highlighter.innerHTML = htmlContent;
-        }
     }
 
     function setGutterVisibility(visible) {
@@ -319,184 +286,64 @@ const EditorUI = (() => {
     }
 
     function syncScrolls() {
-        if (elements.lineGutter && elements.textarea) {
-            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+        if (elements.lineGutter && elements.input) {
+            elements.lineGutter.scrollTop = elements.input.scrollTop;
         }
-        if (elements.highlighter && elements.textarea) {
-            elements.highlighter.scrollTop = elements.textarea.scrollTop;
-            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
-        }
-    }
-
-    function setTextareaContent(text) {
-        if (elements.textarea) elements.textarea.value = text;
-    }
-
-    function getTextareaContent() {
-        return elements.textarea ? elements.textarea.value : "";
-    }
-
-    function setEditorFocus() {
-        if (elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains("hidden")) {
-            elements.textarea.focus();
+        if (elements.highlighter && elements.input) {
+            elements.highlighter.scrollTop = elements.input.scrollTop;
+            elements.highlighter.scrollLeft = elements.input.scrollLeft;
         }
     }
 
-    function getTextareaSelection() {
-        if (elements.textarea) {
-            return { start: elements.textarea.selectionStart, end: elements.textarea.selectionEnd };
+    function getInputContent() {
+        // For contenteditable, we must account for how browsers add divs or br's for newlines.
+        if (!elements.input) return "";
+        return elements.input.innerText.replace(/\n$/, ""); // Use innerText and trim trailing newline
+    }
+
+    function setInputContent(text) {
+        if (elements.input) elements.input.textContent = text;
+    }
+
+    function setInputFocus() {
+        if (elements.input) elements.input.focus();
+    }
+
+    function getInputSelection() {
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0 && elements.input.contains(sel.anchorNode)) {
+            const range = sel.getRangeAt(0);
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(elements.input);
+            preCaretRange.setEnd(range.startContainer, range.startOffset);
+            const start = preCaretRange.toString().length;
+            const end = start + range.toString().length;
+            return { start, end };
         }
         return { start: 0, end: 0 };
     }
 
-    function setTextareaSelection(start, end) {
-        if (elements.textarea) {
-            elements.textarea.selectionStart = start;
-            elements.textarea.selectionEnd = end;
-        }
+    function setInputSelection(start, end) {
+        // This is a simplified implementation for setting selection in a contenteditable div.
+        if (!elements.input || elements.input.childNodes.length === 0) return;
+        const range = document.createRange();
+        const sel = window.getSelection();
+        const textNode = elements.input.firstChild;
+        const realEnd = Math.min(end, textNode.length);
+        const realStart = Math.min(start, realEnd);
+        range.setStart(textNode, realStart);
+        range.setEnd(textNode, realEnd);
+        sel.removeAllRanges();
+        sel.addRange(range);
     }
 
-    function applyTextareaWordWrap(isWordWrapActive) {
-        if (!elements.textarea) return;
-        if (isWordWrapActive) {
-            elements.textarea.setAttribute("wrap", "soft");
-            elements.textarea.classList.remove("editor__textarea--no-wrap");
-        } else {
-            elements.textarea.setAttribute("wrap", "off");
-            elements.textarea.classList.add("editor__textarea--no-wrap");
-        }
-    }
-
-    function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
-        if (!elements.previewPane) return;
-        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
-            elements.previewPane.classList.toggle("word-wrap-enabled", isWordWrapActive);
-        }
-    }
-
-    function updateWordWrapButtonText(isWordWrapActive) {
-        if (elements.wordWrapToggleButton) {
-            elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
-        }
-    }
-
-    function getPreviewPaneHTML() {
-        if (elements.previewPane) {
-            const iframe = elements.previewPane.querySelector("iframe");
-            if (iframe && iframe.srcdoc) {
-                const match = iframe.srcdoc.match(/<body>([\s\S]*)<\/body>/i);
-                if (match && match[1]) return match[1];
-                return iframe.srcdoc;
-            }
-            return elements.previewPane.innerHTML;
-        }
-        return "";
-    }
-
-    function renderPreview(content, currentFileMode) {
-        if (!elements.previewPane) return;
-        const isHtmlMode = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
-        const isMarkdownMode = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
-
-        if (!isHtmlMode && !isMarkdownMode) {
-            elements.previewPane.innerHTML = "";
-            return;
-        }
-
-        if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-
-        previewDebounceTimer = setTimeout(() => {
-            if (isMarkdownMode) {
-                if (typeof marked !== "undefined") {
-                    elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
-                } else {
-                    elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
-                }
-            } else if (isHtmlMode) {
-                let iframe = elements.previewPane.querySelector("iframe");
-                if (!iframe) {
-                    iframe = Utils.createElement("iframe", {
-                        style: { width: '100%', height: '100%', border: 'none' },
-                        sandbox: ""
-                    });
-                    elements.previewPane.innerHTML = "";
-                    elements.previewPane.appendChild(iframe);
-                }
-                iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head>${iframeStyles}</head><body>${content}</body></html>`;
-            }
-        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
-    }
-
-
-    function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
-        if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
-
-        elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
-
-        elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
-        elements.exportPreviewButton.classList.toggle("hidden", !isPreviewable);
-        elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
-
-        const viewConfigs = {
-            [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
-            [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: { text: "Preview", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" },
-            [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: { text: "Split", gutter: false, editor: false, editorFlex: "0", preview: true, previewFlex: "1" },
-            noPreview: { text: "Split View", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" }
-        };
-
-        const config = isPreviewable ? viewConfigs[viewMode] : viewConfigs.noPreview;
-        if (config) {
-            elements.viewToggleButton.textContent = config.text;
-            elements.lineGutter.classList.toggle("hidden", !config.gutter || (isWordWrapActive && config.gutter));
-            elements.textareaWrapper.classList.toggle("hidden", !config.editor);
-            elements.textareaWrapper.style.flex = config.editorFlex;
-            elements.previewWrapper.classList.toggle("hidden", !config.preview);
-            elements.previewWrapper.style.flex = config.previewFlex;
-        }
-    }
-
-    function updateFindBar(findState) {
-        if (!elements.findBar) return;
-        elements.findBar.classList.toggle('hidden', !findState.isOpen);
-        if (!findState.isOpen) return;
-
-        elements.replaceInput.classList.toggle('hidden', !findState.isReplace);
-        elements.replaceBtn.classList.toggle('hidden', !findState.isReplace);
-        elements.replaceAllBtn.classList.toggle('hidden', !findState.isReplace);
-
-        if (findState.query) {
-            const matchCount = findState.matches.length;
-            if (matchCount > 0) {
-                elements.findMatchesDisplay.textContent = `${findState.activeIndex + 1} of ${matchCount}`;
-            } else {
-                elements.findMatchesDisplay.textContent = "Not Found";
-            }
-        } else {
-            elements.findMatchesDisplay.textContent = "";
-        }
-    }
-
-    function getFindQuery() {
-        return elements.findInput ? elements.findInput.value : "";
-    }
-
-    function getReplaceQuery() {
-        return elements.replaceInput ? elements.replaceInput.value : "";
-    }
-
-    function renderHighlights(text, matches, activeIndex) {
+    function renderHighlights(htmlContent) {
         if (!elements.highlighter) return;
-        let highlightedHtml = '';
-        let lastIndex = 0;
-        matches.forEach((match, index) => {
-            highlightedHtml += text.substring(lastIndex, match.index);
-            const className = index === activeIndex ? 'highlight-match--active' : 'highlight-match';
-            highlightedHtml += `<span class="${className}">${match[0]}</span>`;
-            lastIndex = match.index + match[0].length;
-        });
-        highlightedHtml += text.substring(lastIndex);
-        elements.highlighter.innerHTML = highlightedHtml;
-        syncScrolls();
+        const scrollTop = elements.input.scrollTop;
+        const scrollLeft = elements.input.scrollLeft;
+        elements.highlighter.innerHTML = htmlContent + '<br>'; // Add trailing break for scrolling
+        elements.highlighter.scrollTop = scrollTop;
+        elements.highlighter.scrollLeft = scrollLeft;
     }
 
     return {
@@ -504,6 +351,6 @@ const EditorUI = (() => {
         setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
-        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights, renderHighlights
+        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
     };
 })();
