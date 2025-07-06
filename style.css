@@ -443,6 +443,11 @@ body {
 }
 
 .editor__gutter {
+  flex-shrink: 0;
+  width: 40px;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+  text-align: right;
+  color: var(--color-text-subtle);
   position: -webkit-sticky; /* For Safari */
   position: sticky;
   left: 0;

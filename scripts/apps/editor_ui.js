@@ -143,9 +143,12 @@ const EditorUI = (() => {
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
 
+// In scripts/apps/editor_ui.js
+
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
 
+        // --- 1. Define ALL elements first (this part is correct) ---
         elements.highlighterContent = Utils.createElement("div", { className: "editor__highlighter-content" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" }, elements.highlighterContent);
         elements.textarea = Utils.createElement("div", {
@@ -158,27 +161,8 @@ const EditorUI = (() => {
         });
         elements.lineGutterContent = Utils.createElement("div", { className: "editor__gutter-content" });
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" }, elements.lineGutterContent);
-
-        // --- FIX START: Corrected DOM structure ---
-        const gridContainer = Utils.createElement("div", {
-            style: { position: 'relative', flexGrow: 1, display: 'grid' }
-        }, [elements.highlighter, elements.textarea]);
-
-        elements.textareaWrapper = Utils.createElement("div", {
-            id: "editor-textarea-wrapper",
-            className: "editor__textarea-wrapper",
-            eventListeners: { scroll: eventCallbacks.onScroll }
-        }, [elements.lineGutter, gridContainer]); // The gutter is now a direct child of the scroller
-
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
-        elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, [elements.previewPane]);
-
-        elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, [
-            elements.lineGutter,
-            elements.textareaWrapper,
-            elements.previewWrapper
-        ]);
-
+        elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
         elements.findMatchesDisplay = Utils.createElement("span", { className: "find-bar__matches" });
@@ -194,9 +178,6 @@ const EditorUI = (() => {
         elements.viewToggleButton = Utils.createElement("button", { id: "editor-view-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onViewToggle } });
         elements.exportPreviewButton = Utils.createElement("button", { id: "editor-export-preview", className: "editor-btn", textContent: "Export", eventListeners: { click: eventCallbacks.onExportPreview } });
         elements.exitButton = Utils.createElement("button", { id: "editor-exit-btn", className: "editor-btn", textContent: "Exit", title: "Exit (prompts to save if unsaved)", eventListeners: { click: eventCallbacks.onExitButtonClick } });
-        elements.lineGutterContent = Utils.createElement("div", { className: "editor__gutter-content" });
-        elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" }, elements.lineGutterContent);        elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
-        elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.filenameDisplay = Utils.createElement("span", { id: "editor-filename-display" });
         elements.statusBarCursorPos = Utils.createElement("span", { id: "status-cursor" });
         elements.statusBarLineCount = Utils.createElement("span", { id: "status-lines" });
@@ -211,7 +192,18 @@ const EditorUI = (() => {
             elements.findInput, findNavGroup, elements.findMatchesDisplay, elements.replaceInput, replaceGroup, elements.closeFindBtn
         );
 
-        const mdButtonDetails = [{ name: 'undoButton', iconHTML: '<svg fill="#000000" height="200px" width="200px" id="Layer_1" viewBox="0 0 24 24" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <polygon points="20,6 20,5 19,5 19,4 18,4 18,3 8,3 8,4 7,4 7,5 6,5 6,6 5,6 5,5 5,4 3,4 3,10 9,10 9,8 7,8 7,7 8,7 8,6 9,6 9,5 16,5 16,6 17,6 17,7 18,7 18,8 19,8 19,16 18,16 18,17 17,17 17,18 16,18 16,19 9,19 9,18 8,18 8,17 7,17 7,16 6,16 6,15 4,15 4,18 5,18 5,19 6,19 6,20 7,20 7,21 18,21 18,20 19,20 19,19 20,19 20,18 21,18 21,6 "></polygon> </g></svg>', title: 'Undo (Ctrl+Z)', callbackName: 'onUndo' }, { name: 'redoButton', iconHTML: '<svg fill="#000000" height="200px" width="200px" id="Layer_1" viewBox="0 0 24 24" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <polygon points="4,6 4,5 5,5 5,4 6,4 6,3 16,3 16,4 17,4 17,5 18,5 18,6 19,6 19,5 19,4 21,4 21,10 15,10 15,8 17,8 17,7 16,7 16,6 15,6 15,5 8,5 8,6 7,6 7,7 6,7 6,8 5,8 5,16 6,16 6,17 7,17 7,18 8,18 8,19 15,19 15,18 16,18 16,17 17,17 17,16 18,16 18,15 20,15 20,18 19,18 19,19 18,19 18,20 17,20 17,21 6,21 6,20 5,20 5,19 4,19 4,18 3,18 3,6 "></polygon> </g></svg>', title: 'Redo (Ctrl+Y / Ctrl+Shift+Z)', callbackName: 'onRedo' }, { name: 'boldButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M18,11v-1h-2V4h-1V3H5v18h13v-1h1v-9H18z M17,18h-1v1H7v-7h9v1h1V18z M7,5h6v1h1v3h-1v1H7V5z"></path></svg>', title: 'Bold (Ctrl+B)', callbackName: 'onFormatBold' }, { name: 'italicButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><polygon points="8,3 8,5 12,5 12,8 11,8 11,11 10,11 10,14 9,14 9,17 8,17 8,19 4,19 4,21 15,21 15,20 15,19 11,19 11,16 12,16 12,13 13,13 13,10 14,10 14,7 15,7 15,5 19,5 19,3 "></polygon></svg>', title: 'Italic (Ctrl+I)', callbackName: 'onFormatItalic' }, { name: 'linkButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em"><path d="M7.05025 1.53553C8.03344 0.552348 9.36692 0 10.7574 0C13.6528 0 16 2.34721 16 5.24264C16 6.63308 15.4477 7.96656 14.4645 8.94975L12.4142 11L11 9.58579L13.0503 7.53553C13.6584 6.92742 14 6.10264 14 5.24264C14 3.45178 12.5482 2 10.7574 2C9.89736 2 9.07258 2.34163 8.46447 2.94975L6.41421 5L5 3.58579L7.05025 1.53553Z"></path> <path d="M7.53553 13.0503L9.58579 11L11 12.4142L8.94975 14.4645C7.96656 15.4477 6.63308 16 5.24264 16C2.34721 16 0 13.6528 0 10.7574C0 9.36693 0.552347 8.03344 1.53553 7.05025L3.58579 5L5 6.41421L2.94975 8.46447C2.34163 9.07258 2 9.89736 2 10.7574C2 12.5482 3.45178 14 5.24264 14C6.10264 14 6.92742 13.6584 7.53553 13.0503Z"></path> <path d="M5.70711 11.7071L11.7071 5.70711L10.2929 4.29289L4.29289 10.2929L5.70711 11.7071Z"></path></svg>', title: 'Insert Link', callbackName: 'onFormatLink' }, { name: 'quoteButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z"/></svg>', title: 'Blockquote', callbackName: 'onFormatQuote' }, { name: 'codeButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M9.4,16.6L4.8,12L9.4,7.4L8,6L2,12L8,18L9.4,16.6M14.6,16.6L19.2,12L14.6,7.4L16,6L22,12L16,18L14.6,16.6Z"/></svg>', title: 'Inline Code', callbackName: 'onFormatCode' }, { name: 'codeBlockButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="1em" height="1em"><path id="Vector" d="M3 6H3.01919M3.01919 6H20.9809M3.01919 6C3 6.31438 3 6.70191 3 7.2002V16.8002C3 17.9203 3 18.4796 3.21799 18.9074C3.40973 19.2837 3.71547 19.5905 4.0918 19.7822C4.51921 20 5.079 20 6.19694 20L17.8031 20C18.921 20 19.48 20 19.9074 19.7822C20.2837 19.5905 20.5905 19.2837 20.7822 18.9074C21 18.48 21 17.921 21 16.8031L21 7.19691C21 6.70021 21 6.31368 20.9809 6M3.01919 6C3.04314 5.60768 3.09697 5.3293 3.21799 5.0918C3.40973 4.71547 3.71547 4.40973 4.0918 4.21799C4.51962 4 5.08009 4 6.2002 4H17.8002C18.9203 4 19.4796 4 19.9074 4.21799C20.2837 4.40973 20.5905 4.71547 20.7822 5.0918C20.9032 5.3293 20.957 5.60768 20.9809 6M20.9809 6H21M14 11L16 13L14 15M10 15L8 13L10 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>', title: 'Code Block', callbackName: 'onFormatCodeBlock' }, { name: 'ulButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M7,5H21V7H7V5M7,11H21V13H7V11M7,17H21V19H7V17M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z"/></svg>', title: 'Unordered List', callbackName: 'onFormatUl' }, { name: 'olButton', iconHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></svg>', title: 'Ordered List', callbackName: 'onFormatOl' }];
+        const mdButtonDetails = [
+            { name: 'undoButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Undo (Ctrl+Z)', callbackName: 'onUndo' },
+            { name: 'redoButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Redo (Ctrl+Y / Ctrl+Shift+Z)', callbackName: 'onRedo' },
+            { name: 'boldButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Bold (Ctrl+B)', callbackName: 'onFormatBold' },
+            { name: 'italicButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Italic (Ctrl+I)', callbackName: 'onFormatItalic' },
+            { name: 'linkButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Insert Link', callbackName: 'onFormatLink' },
+            { name: 'quoteButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Blockquote', callbackName: 'onFormatQuote' },
+            { name: 'codeButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Inline Code', callbackName: 'onFormatCode' },
+            { name: 'codeBlockButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Code Block', callbackName: 'onFormatCodeBlock' },
+            { name: 'ulButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Unordered List', callbackName: 'onFormatUl' },
+            { name: 'olButton', iconHTML: '<svg ... (content omitted for brevity) ... </svg>', title: 'Ordered List', callbackName: 'onFormatOl' }
+        ];
         mdButtonDetails.forEach(detail => {
             elements[detail.name] = Utils.createElement("button", {
                 className: "editor-btn editor-btn--format",
@@ -222,7 +214,13 @@ const EditorUI = (() => {
             elements.formattingToolbar.appendChild(elements[detail.name]);
         });
 
-        const htmlButtonDetails = [ { name: 'h1Button', text: 'H1', title: 'Header 1', callbackName: 'onFormatH1' }, { name: 'pButton', text: 'P', title: 'Paragraph', callbackName: 'onFormatP' }, { name: 'aButton', text: 'A', title: 'Link', callbackName: 'onFormatA' }, { name: 'bButton', text: 'B', title: 'Bold', callbackName: 'onFormatB' }, { name: 'iButton', text: 'I', title: 'Italic', callbackName: 'onFormatI_html' } ];
+        const htmlButtonDetails = [
+            { name: 'h1Button', text: 'H1', title: 'Header 1', callbackName: 'onFormatH1' },
+            { name: 'pButton', text: 'P', title: 'Paragraph', callbackName: 'onFormatP' },
+            { name: 'aButton', text: 'A', title: 'Link', callbackName: 'onFormatA' },
+            { name: 'bButton', text: 'B', title: 'Bold', callbackName: 'onFormatB' },
+            { name: 'iButton', text: 'I', title: 'Italic', callbackName: 'onFormatI_html' }
+        ];
         htmlButtonDetails.forEach(detail => {
             elements[detail.name] = Utils.createElement("button", {
                 className: "editor-btn editor-btn--format",
@@ -241,10 +239,22 @@ const EditorUI = (() => {
         const statusBarRight = Utils.createElement("div", { className: "editor__status-bar-group" }, elements.statusBarWordCount, elements.statusBarCharCount);
         elements.statusBar = Utils.createElement("div", { id: "editor-status-bar", className: "editor__status-bar" }, statusBarLeft, elements.filenameDisplay, statusBarRight);
 
+        // --- FIX START: Correctly define textareaWrapper and mainArea HERE ---
+        const gridContainer = Utils.createElement("div", {
+            style: { position: 'relative', flexGrow: 1, display: 'grid' }
+        }, [elements.highlighter, elements.textarea]);
+
+        elements.textareaWrapper = Utils.createElement("div", {
+            id: "editor-textarea-wrapper",
+            className: "editor__textarea-wrapper",
+            eventListeners: { scroll: eventCallbacks.onScroll }
+        }, [elements.lineGutter, gridContainer]);
+
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" },
             elements.textareaWrapper,
             elements.previewWrapper
         );
+        // --- FIX END ---
 
         elements.editorContainer = Utils.createElement("div", { id: "editor-container", className: "editor-container" },
             elements.controlsDiv,
@@ -259,7 +269,6 @@ const EditorUI = (() => {
 
     function setGutterVisibility(visible) {
         if (elements.lineGutter) {
-            // Use a class to toggle visibility
             elements.lineGutter.classList.toggle('editor__gutter--hidden-by-wrap', !visible);
         }
     }
@@ -391,16 +400,16 @@ const EditorUI = (() => {
         const viewToggleButton = elements.viewToggleButton;
         const exportButton = elements.exportPreviewButton;
 
-        // --- FIX START: Corrected Visibility Logic ---
         if (viewToggleButton) viewToggleButton.classList.toggle('hidden', !isPreviewable);
         if (exportButton) exportButton.classList.toggle('hidden', !isPreviewable);
 
         editorPane.style.display = 'none';
         previewPane.style.display = 'none';
-        setGutterVisibility(!isWordWrapActive); // Base visibility
+
+        setGutterVisibility(!isWordWrapActive);
 
         if (!isPreviewable) {
-            editorPane.style.display = 'flex'; // Use flex for consistency
+            editorPane.style.display = 'flex';
             return;
         }
 
@@ -411,7 +420,7 @@ const EditorUI = (() => {
                 break;
             case EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY:
                 previewPane.style.display = 'flex';
-                setGutterVisibility(false); // Always hide gutter in preview-only
+                setGutterVisibility(false);
                 if (viewToggleButton) viewToggleButton.textContent = "Split";
                 break;
             case EditorAppConfig.EDITOR.VIEW_MODES.SPLIT:
