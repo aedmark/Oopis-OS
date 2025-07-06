@@ -56,21 +56,15 @@ const EditorManager = (() => {
         if (!isActiveState) return;
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
-
-        // This part is the same
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
         }
-        EditorUI.updateWordWrapButtonText(isWordWrapActive);
 
-        // --- ADD THIS LOGIC ---
-        // Toggle the new classes on both the input and the highlighter
+        EditorUI.updateWordWrapButtonText(isWordWrapActive);
         EditorUI.elements.input.classList.toggle('editor__input--no-wrap', !isWordWrapActive);
         EditorUI.elements.highlighter.classList.toggle('editor__highlighter--no-wrap', !isWordWrapActive);
-        // --- END ADDITION ---
-
         EditorUI.setEditorFocus();
         EditorUI.setGutterVisibility(!isWordWrapActive);
     }
@@ -172,30 +166,22 @@ const EditorManager = (() => {
 
     function _syncScrolls() {
         if (!isActiveState) return;
-
         // A minimal debounce prevents performance issues on some systems.
         if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
         scrollDebounceTimer = setTimeout(() => {
-            // The WRAPPER is now the source of truth for scrolling
             const wrapper = EditorUI.elements.textareaWrapper;
             const highlighter = EditorUI.elements.highlighter;
             const gutter = EditorUI.elements.lineGutter;
             const textarea = EditorUI.elements.textarea;
-
             if (!wrapper || !highlighter || !gutter || !textarea) return;
-
             // Force the children to match the wrapper's scroll position
             const scrollTop = wrapper.scrollTop;
             const scrollLeft = wrapper.scrollLeft;
-
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
             gutter.scrollTop = scrollTop;
-
             // Also sync the textarea's scrollLeft for horizontal scrolling
             textarea.scrollLeft = scrollLeft;
-
-
         }, 1); // 1ms is enough to batch rapid scroll events
     }
 

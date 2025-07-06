@@ -521,7 +521,19 @@ body {
   width: fit-content;
   min-width: 100%;
 }
+.editor__highlighter--no-wrap {
+  /* This makes it expand as wide as its content */
+  width: fit-content;
+  min-width: 100%;
+}
 
+.editor__input--no-wrap {
+  /* Use !important to override inline styles if necessary */
+  white-space: pre !important;
+  /* Make it expand as wide as its content */
+  width: fit-content;
+  min-width: 100%;
+}
 .editor__preview-wrapper {
   flex: 1;
   display: flex;
