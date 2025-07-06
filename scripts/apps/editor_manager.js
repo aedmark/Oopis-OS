@@ -1,6 +1,3 @@
-import CodeMirror from 'codemirror';
-import 'codemirror/lib/codemirror.css';
-
 const EditorManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
