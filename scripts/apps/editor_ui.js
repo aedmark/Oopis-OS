@@ -353,13 +353,22 @@ const EditorUI = (() => {
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
 
-        // ***************** FIX START *****************
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" },
             elements.lineGutter,
             elements.textareaWrapper,
             elements.previewWrapper
         );
-        // ***************** FIX END *******************
+
+        elements.editorContainer = Utils.createElement("div", { /* ... */ },
+            elements.controlsDiv,
+            elements.findBar,
+            elements.mainArea,
+            elements.statusBar,
+            elements.instructionsFooter
+        );
+
+        return elements.editorContainer;
+    }
 
         elements.filenameDisplay = Utils.createElement("span", { id: "editor-filename-display" });
         elements.statusBarCursorPos = Utils.createElement("span", { id: "status-cursor" });
@@ -370,14 +379,6 @@ const EditorUI = (() => {
         const statusBarRight = Utils.createElement("div", { className: "editor__status-bar-group" }, elements.statusBarWordCount, elements.statusBarCharCount);
         elements.statusBar = Utils.createElement("div", { id: "editor-status-bar", className: "editor__status-bar" }, statusBarLeft, elements.filenameDisplay, statusBarRight);
         elements.instructionsFooter = Utils.createElement("div", { id: "editor-instructions-footer", className: "editor__footer", textContent: `Ctrl+S: Save | Ctrl+O: Exit | Ctrl+P: Preview | Ctrl+F: Find | Ctrl+H: Replace` });
-
-        elements.editorContainer = Utils.createElement("div", { id: "editor-container", className: "editor-container" },
-            elements.controlsDiv,
-            elements.findBar,
-            elements.mainArea,
-            elements.statusBar,
-            elements.instructionsFooter
-        );
 
         return elements.editorContainer;
     }
@@ -410,11 +411,15 @@ const EditorUI = (() => {
         if (elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col} `;
     }
 
-    function updateLineNumbers(text) {
+    function updateLineNumbers(text, startLine, paddingTop, totalHeight) {
         if (!elements.textarea || !elements.lineGutter) return;
-        const numbersArray = EditorUtils.generateLineNumbersArray(text);
-        elements.lineGutter.textContent = numbersArray.join("\n");
-        elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+
+        const totalLines = text.split('\n').length;
+        const numbersToRender = Array.from({ length: (endLine - startLine) }, (_, i) => startLine + i + 1);
+
+        elements.lineGutter.textContent = numbersToRender.join('\n');
+        elements.lineGutter.style.paddingTop = `${paddingTop}px`;
+        elements.lineGutter.style.height = `${totalHeight}px`;
     }
 
     function syncScrolls() {
