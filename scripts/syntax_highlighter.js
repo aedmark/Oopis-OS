@@ -58,8 +58,8 @@ const SyntaxHighlighter = (() => {
             { type: 'markdown-link-url', pattern: /(?:\]\()(?:[^)]+)(?:\))/ },
         ],
         html: [
-            { type: 'comment', pattern: /<!--[\s\S]*?-->/ },
-            { type: 'tag', pattern: /<\/?([a-zA-Z0-9\-]+)/ },
+            { type: 'comment', pattern: // },
+                    { type: 'tag', pattern: /<\/?([a-zA-Z0-9\-]+)/ },
             { type: 'tag', pattern: />/ },
             { type: 'attribute', pattern: /\b([a-zA-Z\-]+)(?=\s*=)/ },
             { type: 'value', pattern: /"([^"]*)"|'([^']*)'/ },
@@ -141,8 +141,9 @@ const SyntaxHighlighter = (() => {
             return `<div>${renderedTokens || '&nbsp;'}</div>`;
         });
 
-// The lines are now joined directly, as the <div>s handle the line breaks.
-        return htmlLines.join('');
+        // The lines are now joined with a newline character. The container's CSS
+        // (`white-space: pre-wrap`) will render this correctly, matching the textarea.
+        return htmlLines.join('\n');
     }
 
     function highlight(text, mode, findMatches = [], findActiveIndex = -1) {
