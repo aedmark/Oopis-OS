@@ -1,28 +1,62 @@
+const PaintAppConfig = {
+    CANVAS: {
+        DEFAULT_WIDTH: 80,
+        DEFAULT_HEIGHT: 24,
+        BASE_FONT_SIZE_PX: 18, // Base font size for zoom calculations
+    },
+    BRUSH: {
+        DEFAULT_SIZE: 1,
+        MIN_SIZE: 1,
+        MAX_SIZE: 5,
+    },
+    ZOOM: {
+        MIN_ZOOM: 25,
+        MAX_ZOOM: 400,
+        ZOOM_STEP: 25,
+        DEFAULT_ZOOM: 100,
+    },
+    DEFAULT_CHAR: '#',
+    DEFAULT_FG_COLOR: 'rgb(34, 197, 94)',
+    DEFAULT_BG_COLOR: 'bg-transparent',
+    ERASER_CHAR: ' ',
+    ERASER_BG_COLOR: 'bg-transparent',
+    FILE_EXTENSION: 'oopic',
+    ASCII_CHAR_RANGE: { START: 32, END: 126 },
+    CSS_CLASSES: {
+        MODAL_HIDDEN: 'hidden',
+        ACTIVE_TOOL: 'active', // Standardized active class
+        GRID_ACTIVE: 'grid-active', // Class for the canvas wrapper
+        DROPDOWN_ACTIVE: 'paint-dropdown-active',
+    },
+    PALETTE: [
+        { name: 'green',   class: 'text-green-500',   value: 'rgb(34, 197, 94)' },
+        { name: 'red',     class: 'text-red-500',     value: 'rgb(239, 68, 68)' },
+        { name: 'sky',     class: 'text-sky-400',     value: 'rgb(56, 189, 248)' },
+        { name: 'amber',   class: 'text-amber-400',   value: 'rgb(251, 191, 36)' },
+        { name: 'lime',    class: 'text-lime-400',    value: 'rgb(163, 230, 53)' },
+        { name: 'neutral', class: 'text-neutral-300', value: 'rgb(212, 212, 212)' }
+    ],
+    EDITOR: {
+        DEBOUNCE_DELAY_MS: 300,
+        MAX_UNDO_STATES: 50,
+    },
+    CUSTOM_COLOR_GRID: [
+        '#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3', '#ffffff',
+        '#ff4500', '#ffa500', '#ffd700', '#adff2f', '#00ffff', '#1e90ff', '#8a2be2', '#f5f5f5',
+        '#dc143c', '#ff8c00', '#ffebcd', '#7cfc00', '#7fffd4', '#4169e1', '#9932cc', '#e0e0e0',
+        '#c71585', '#ff6347', '#f0e68c', '#32cd32', '#40e0d0', '#6495ed', '#dda0dd', '#c0c0c0',
+        '#d02090', '#ff69b4', '#eee8aa', '#98fb98', '#afeeee', '#87cefa', '#d8bfd8', '#a9a9a9',
+        '#ff1493', '#ffb6c1', '#fffacd', '#90ee90', '#b0e0e6', '#add8e6', '#e6e6fa', '#808080',
+        '#c71585', '#ffc0cb', '#fafad2', '#9acd32', '#b0c4de', '#b0c4de', '#d8bfd8', '#696969',
+        '#ff00ff', '#f08080', '#fff8dc', '#3cb371', '#00ced1', '#00bfff', '#ba55d3', '#404040'
+    ]
+};
 const PaintUI = (() => {
     "use strict";
     let elements = {};
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
     let gridDimensions = { width: 0, height: 0 };
-
-    // Defensive initialization of PaintAppConfig.
-    // This ensures it's always defined, even if Config.PaintAppConfig is not yet fully populated.
-    const PaintAppConfig = window.Config && window.Config.PaintAppConfig ? window.Config.PaintAppConfig : {
-        // Minimal fallback structure to prevent errors if CSS_CLASSES or other properties are accessed early
-        CSS_CLASSES: { GRID_ACTIVE: "grid-active", ACTIVE_TOOL: "active" },
-        PALETTE: [{ value: "#00ff5b" }],
-        CANVAS: { DEFAULT_WIDTH: 80, DEFAULT_HEIGHT: 24, BASE_FONT_SIZE_PX: 16 },
-        BRUSH: { MIN_SIZE: 1, MAX_SIZE: 5 },
-        ZOOM: { DEFAULT_ZOOM: 100, MIN_ZOOM: 50, MAX_ZOOM: 400, ZOOM_STEP: 25 },
-        ASCII_CHAR_RANGE: { START: 32, END: 126 },
-        DEFAULT_CHAR: ' ',
-        ERASER_CHAR: ' ',
-        DEFAULT_FG_COLOR: '#00ff5b',
-        ERASER_BG_COLOR: 'bg-black',
-        DEFAULT_BG_COLOR: 'bg-transparent',
-        FILE_EXTENSION: 'oopic',
-        EDITOR: { MAX_UNDO_STATES: 100, DEBOUNCE_DELAY_MS: 300 }
-    };
 
     // SVGs are defined once and reused
     const pencilSVG = '<svg fill="currentColor" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
@@ -35,7 +69,6 @@ const PaintUI = (() => {
     const gridSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 9.33333V6C20 4.89543 19.1046 4 18 4H14.6667M20 9.33333H14.6667M20 9.33333V14.6667M4 9.33333V6C4 4.89543 4.89543 4 6 4H9.33333M4 9.33333H9.33333M4 9.33333V14.6667M14.6667 9.33333H9.33333M14.6667 9.33333V4M14.6667 9.33333V14.6667M9.33333 9.33333V4M9.33333 9.33333V14.6667M20 14.6667V18C20 19.1046 19.1046 20 18 20H14.6667M20 14.6667H14.6667M4 14.6667V18C4 19.1046 4.89543 20 6 20H9.33333M4 14.6667H9.33333M14.6667 14.6667H9.33333M14.6667 14.6667V20M9.33333 14.6667V20M9.33333 4H14.6667M9.33333 20H14.6667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
     const charSelectSVG = '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 197.974 197.974" xml:space="preserve" fill="currentColor" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M1.64,0l21.735,197.974l53.912-67.637l85.473-13.261L1.64,0z M69.205,116.411l-34.889,43.771L20.25,32.064l104.267,75.766 L69.205,116.411z M131.334,136.462h65v17.541h-15v-2.541h-10v28.82h7.334v15H149v-15h7.334v-28.82h-10v2.541h-15V136.462z"></path> </g></svg>';
     const colorPaletteSVG = '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 297 297" xml:space="preserve" fill="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M254.141,53.244C224.508,18.909,185.299,0,143.736,0c-35.062,0-68.197,13.458-93.302,37.9 C10.383,76.892-2.822,123.282,14.207,165.178c13.868,34.122,45.625,57.954,77.227,57.954c0.841,0,1.671-0.016,2.508-0.053 c4.705-0.194,9.249-0.586,13.646-0.966c5.309-0.462,10.325-0.895,14.77-0.895c10.54,0,19.645,0,19.645,26.846 c0,28.811,17.538,48.934,42.65,48.936c0.002,0,0.002,0,0.004,0c17.864,0,37.651-10.342,57.215-29.903 c25.882-25.88,43.099-62.198,47.234-99.64C293.762,125.326,281.343,84.763,254.141,53.244z M227.315,252.54 c-15.397,15.398-30.55,23.877-42.66,23.875c-16.288,0-22.064-15.274-22.064-28.352c0-32.357-12.786-47.43-40.232-47.43 c-5.333,0-10.778,0.472-16.545,0.969c-4.169,0.359-8.481,0.733-12.724,0.909c-0.553,0.024-1.102,0.034-1.655,0.034 c-23.07,0-47.529-18.975-58.156-45.118c-13.714-33.738-2.225-71.927,31.519-104.779c21.239-20.676,49.272-32.063,78.939-32.063 c35.485,0,69.159,16.373,94.82,46.107C289.187,125.359,272.6,207.256,227.315,252.54z"></path> <path d="M192.654,165.877c0,17.213,13.918,31.217,31.026,31.217c17.107,0,31.025-14.004,31.025-31.217 c0-17.215-13.918-31.219-31.025-31.219C206.572,134.658,192.654,148.662,192.654,165.877z M234.118,165.877 c0,5.861-4.682,10.633-10.438,10.633c-5.756,0-10.438-4.771-10.438-10.633c0-5.863,4.683-10.633,10.438-10.633 C229.436,155.244,234.118,160.014,234.118,165.877z"></path> <path d="M226.914,93.489c0-17.215-13.917-31.219-31.025-31.219c-17.107,0-31.025,14.004-31.025,31.219 c0,17.211,13.918,31.218,31.025,31.218C212.997,124.707,226.914,110.7,226.914,93.489z M185.45,93.489 c0-5.865,4.684-10.632,10.439-10.632c5.756,0,10.438,4.767,10.438,10.632c0,5.86-4.683,10.633-10.438,10.633 C190.133,104.122,185.45,99.35,185.45,93.489z"></path> <path d="M124.863,39.627c-17.107,0-31.025,14.004-31.025,31.217c0,17.213,13.918,31.217,31.025,31.217s31.025-14.004,31.025-31.217 C155.888,53.631,141.97,39.627,124.863,39.627z M124.863,81.478c-5.756,0-10.438-4.771-10.438-10.634 c0-5.863,4.682-10.633,10.438-10.633c5.756,0,10.438,4.77,10.438,10.633C135.3,76.707,130.619,81.478,124.863,81.478z"></path> <path d="M70.821,92.809c-17.107,0-31.026,14.004-31.026,31.217c0,17.214,13.919,31.219,31.026,31.219s31.024-14.005,31.024-31.219 C101.845,106.813,87.928,92.809,70.821,92.809z M70.821,134.658c-5.757,0-10.439-4.77-10.439-10.633 c0-5.861,4.683-10.63,10.439-10.63c5.755,0,10.438,4.769,10.438,10.63C81.259,129.889,76.576,134.658,70.821,134.658z"></path> </g> </g></svg>';
-
 
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
@@ -58,7 +91,7 @@ const PaintUI = (() => {
             Utils.createElement('button', { className: 'btn', innerHTML: ellipseSVG, title: 'Ellipse', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } })
         );
         elements.shapeToolBtn.addEventListener('click', () => {
-            elements.shapeDropdown.classList.toggle(Config.CSS_CLASSES.DROPDOWN_ACTIVE);
+            elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
         });
         elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' }, elements.shapeToolBtn, elements.shapeDropdown);
 
@@ -135,6 +168,7 @@ const PaintUI = (() => {
 
     function toggleGrid(isActive) {
         if (!elements.canvasWrapper) return;
+        // Use the new standard class for the grid
         elements.canvasWrapper.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
     }
 
@@ -267,13 +301,13 @@ const PaintUI = (() => {
         elements.brushSizeUpBtn.disabled = brushSize >= PaintAppConfig.BRUSH.MAX_SIZE;
 
         let isCustomColorActive = true;
-        PaintAppConfig.PALETTE.forEach((btnConfig, index) => { // Use btnConfig to avoid name conflict with 'color' parameter in outer scope
-            const colorValue = btnConfig.value;
+        elements.colorButtons.forEach((btn, index) => {
+            const colorValue = PaintAppConfig.PALETTE[index].value;
             const isActive = colorValue === activeColor;
             if (isActive) {
                 isCustomColorActive = false;
             }
-            elements.colorButtons[index].classList.toggle(activeClass, isActive);
+            btn.classList.toggle(activeClass, isActive);
         });
         if (isCustomColorActive && activeColor) {
             elements.customColorSwatch.style.backgroundColor = activeColor;

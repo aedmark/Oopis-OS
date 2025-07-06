@@ -1,12 +1,7 @@
-// scripts/apps/editor_manager.js
-/**
- * @file Manages the main controller for the editor. Manages state, user interactions, and coordinates between the UI and file system.
- */
-/* global Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager, PatchUtils, EditorUI, EditorUtils, marked */
 const EditorManager = (() => {
     "use strict";
-    let isActiveState = false, currentFilePath = null, currentFileMode = Config.EditorAppConfig.EDITOR.DEFAULT_MODE,
-        currentViewMode = Config.EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = Config.EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
+    let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
+        currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
         saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
     const MAX_UNDO_STATES = 100;
@@ -22,11 +17,11 @@ const EditorManager = (() => {
     let findDebounceTimer = null; // Debounce timer for find input
 
     function _loadWordWrapSetting() {
-        const savedSetting = StorageManager.loadItem(Config.EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
-        isWordWrapActive = savedSetting !== null ? savedSetting : Config.EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
+        const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
+        isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
     }
     function _saveWordWrapSetting() {
-        StorageManager.saveItem(Config.EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, isWordWrapActive, "Editor word wrap setting");
+        StorageManager.saveItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, isWordWrapActive, "Editor word wrap setting");
     }
     function _toggleWordWrap() {
         if (!isActiveState) return;
@@ -34,7 +29,7 @@ const EditorManager = (() => {
         _saveWordWrapSetting();
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
-        if (currentFileMode === Config.EditorAppConfig.EDITOR.MODES.HTML) {
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
         }
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
@@ -49,7 +44,7 @@ const EditorManager = (() => {
         EditorUI.updateLineNumbers(textContent);
         const selection = EditorUI.getTextareaSelection();
         EditorUI.updateStatusBar(textContent, selection.start);
-        if (currentFileMode === Config.EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === Config.EditorAppConfig.EDITOR.MODES.HTML) {
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
         EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
@@ -62,7 +57,7 @@ const EditorManager = (() => {
         saveUndoStateTimeout = setTimeout(() => {
             _saveUndoState(currentContent);
             saveUndoStateTimeout = null;
-        }, Config.EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
+        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
         isDirty = currentContent !== _getPatchedContent();
         _updateFullEditorUI();
         _debouncedFind();
@@ -80,13 +75,23 @@ const EditorManager = (() => {
         let blob;
         let fileName;
 
-        if (currentFileMode === Config.EditorAppConfig.EDITOR.MODES.TEXT) {
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.TEXT) {
             const rawContent = EditorUI.getTextareaContent();
             blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
             fileName = `${baseName}.txt`;
         } else { // Handles 'markdown' and 'html'
             const renderedContent = EditorUI.getPreviewPaneHTML();
-            const fullHtml = '<!DOCTYPE html>\\n<html lang="en">\\n<head>\\n    <meta charset="UTF-8">\\n    <title>Exported: ' + baseName + '</title>\\n    ' + EditorUI.iframeStyles + '\\n</head>\\n<body>\\n    ' + renderedContent + '\\n</body>\\n</html>';
+            const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Exported: ${baseName}</title>
+    ${EditorUI.iframeStyles}
+</head>
+<body>
+    ${renderedContent}
+</body>
+</html>`;
             blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
             fileName = `${baseName}.html`;
         }
@@ -206,7 +211,7 @@ const EditorManager = (() => {
                     newEnd = start + manipulatedText.length;
                     break;
                 case 'codeblock':
-                    manipulatedText = '```\n' + selectedText + '\n```';
+                    manipulatedText = `\`\`\`\n${selectedText}\n\`\`\``;
                     newStart = start + 3;
                     newEnd = start + 3 + selectedText.length;
                     break;
@@ -322,7 +327,7 @@ const EditorManager = (() => {
         findDebounceTimer = setTimeout(() => {
             _find();
             findDebounceTimer = null;
-        }, Config.EditorAppConfig.EDITOR.FIND_DEBOUNCE_DELAY_MS);
+        }, EditorAppConfig.EDITOR.FIND_DEBOUNCE_DELAY_MS);
     }
 
     function _find() {
@@ -334,7 +339,7 @@ const EditorManager = (() => {
             findState.activeIndex = -1;
         } else {
             const text = EditorUI.getTextareaContent();
-            const regex = new RegExp(query.replace(/[-\/\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+            const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
             findState.matches = [...text.matchAll(regex)];
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
         }
@@ -390,7 +395,7 @@ const EditorManager = (() => {
     function _replaceAll() {
         if (findState.matches.length === 0 || !findState.isReplace) return;
         const replaceText = EditorUI.getReplaceQuery();
-        const regex = new RegExp(findState.query.replace(/[-\/\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+        const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
         const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
 
         EditorUI.setTextareaContent(newText);
@@ -398,11 +403,11 @@ const EditorManager = (() => {
     }
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
-        const isPreviewable = currentFileMode === Config.EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === Config.EditorAppConfig.EDITOR.MODES.HTML;
+        const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
         if (!isPreviewable) return;
-        if (currentViewMode === Config.EditorAppConfig.EDITOR.VIEW_MODES.SPLIT) currentViewMode = Config.EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
-        else if (currentViewMode === Config.EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY) currentViewMode = Config.EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY;
-        else currentViewMode = Config.EditorAppConfig.EDITOR.VIEW_MODES.SPLIT;
+        if (currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
+        else if (currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY;
+        else currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT;
         EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
         EditorUI.setEditorFocus();
     }
@@ -424,7 +429,7 @@ const EditorManager = (() => {
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
-            const isPreviewable = currentFileMode === Config.EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === Config.EditorAppConfig.EDITOR.MODES.HTML;
+            const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
             document.addEventListener('keydown', handleKeyDown);
             const editorCallbacks = {
                 onInput: _handleEditorInput.bind(this),
@@ -464,7 +469,7 @@ const EditorManager = (() => {
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
             EditorUI.setGutterVisibility(!isWordWrapActive);
-            currentViewMode = Config.EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
+            currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
             EditorUI.applyTextareaWordWrap(isWordWrapActive);
             EditorUI.updateWordWrapButtonText(isWordWrapActive);
@@ -480,7 +485,7 @@ const EditorManager = (() => {
         document.removeEventListener('keydown', handleKeyDown);
         AppLayerManager.hide();
         EditorUI.destroyLayout();
-        isActiveState = false; currentFilePath = null; currentFileMode = Config.EditorAppConfig.EDITOR.DEFAULT_MODE;
+        isActiveState = false; currentFilePath = null; currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
         isDirty = false; originalContent = ""; onSaveCallback = null; undoStack = []; redoStack = []; saveUndoStateTimeout = null;
     }
     async function exit(saveChanges = false) {
@@ -560,8 +565,8 @@ const EditorManager = (() => {
             event.preventDefault();
             const selection = EditorUI.getTextareaSelection();
             const content = EditorUI.getTextareaContent();
-            EditorUI.setTextareaContent(content.substring(0, selection.start) + Config.EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
-            EditorUI.setTextareaSelection(selection.start + Config.EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + Config.EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
+            EditorUI.setTextareaContent(content.substring(0, selection.start) + EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
+            EditorUI.setTextareaSelection(selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
             _handleEditorInput();
             return;
         }

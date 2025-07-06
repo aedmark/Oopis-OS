@@ -1,15 +1,10 @@
-// scripts/apps/paint_manager.js
-/**
- * @file Manages the main controller for the paint application.
- */
-/* global Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager, PaintUI */
 const PaintManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
-    let isDrawing = false, currentTool = 'pencil', drawChar; // Initialized below
-    let fgColor, lastCoords = { x: -1, y: -1 }; // Initialized below
-    let currentBrushSize; // Initialized below
-    let zoomLevel; // Initialized below
+    let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
+    let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 };
+    let currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
+    let zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
     let isGridVisible = false;
     let shapeStartCoords = null;
@@ -22,32 +17,6 @@ const PaintManager = (() => {
 
     let currentCanvasWidth = 0;
     let currentCanvasHeight = 0;
-
-    // Defensive initialization of PaintAppConfig.
-    // This ensures it's always defined, even if Config.PaintAppConfig is not yet fully populated.
-    const PaintAppConfig = window.Config && window.Config.PaintAppConfig ? window.Config.PaintAppConfig : {
-        // Minimal fallback structure to prevent errors if CSS_CLASSES or other properties are accessed early
-        CSS_CLASSES: { ACTIVE_TOOL: "active", GRID_ACTIVE: "grid-active" },
-        PALETTE: [{ value: "#00ff5b" }],
-        CANVAS: { DEFAULT_WIDTH: 80, DEFAULT_HEIGHT: 24, BASE_FONT_SIZE_PX: 16 },
-        BRUSH: { MIN_SIZE: 1, MAX_SIZE: 5 },
-        ZOOM: { DEFAULT_ZOOM: 100, MIN_ZOOM: 50, MAX_ZOOM: 400, ZOOM_STEP: 25 },
-        ASCII_CHAR_RANGE: { START: 32, END: 126 },
-        DEFAULT_CHAR: ' ',
-        ERASER_CHAR: ' ',
-        DEFAULT_FG_COLOR: '#00ff5b',
-        ERASER_BG_COLOR: 'bg-black',
-        DEFAULT_BG_COLOR: 'bg-transparent',
-        FILE_EXTENSION: 'oopic',
-        EDITOR: { MAX_UNDO_STATES: 100, DEBOUNCE_DELAY_MS: 300 }
-    };
-
-    // Initialize these global-like variables using the local alias
-    drawChar = PaintAppConfig.DEFAULT_CHAR;
-    fgColor = PaintAppConfig.PALETTE[0].value;
-    currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
-    zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
-
 
     const paintEventCallbacks = {
         onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
@@ -165,7 +134,6 @@ const PaintManager = (() => {
         // The function is left as a placeholder for the event listener but does nothing.
     }
 
-
     function _updateToolbarState() { PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible, currentBrushSize); }
     function _saveUndoState() {
         redoStack = [];
@@ -262,7 +230,6 @@ const PaintManager = (() => {
             const halfBrush = Math.floor(currentBrushSize / 2);
             for (let dy = 0; dy < currentBrushSize; dy++) {
                 for (let dx = 0; dx < currentBrushSize; dx++) {
-                    // FIX: Call drawLogic directly instead of _drawOnCanvas recursively
                     if (drawLogic(x - halfBrush + dx, y - halfBrush + dy)) {
                         anyCellChanged = true;
                     }
@@ -279,7 +246,6 @@ const PaintManager = (() => {
         }
         return anyCellChanged;
     }
-
 
     function drawScheduledPoints() {
         if (!isDrawing || pointsToDraw.length < 2) {
@@ -386,7 +352,7 @@ const PaintManager = (() => {
         currentTool = toolName;
         _updateToolbarState();
         const dropdown = document.querySelector('.paint-dropdown-content');
-        if (dropdown) { dropdown.classList.remove(Config.CSS_CLASSES.DROPDOWN_ACTIVE); }
+        if (dropdown) { dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE); }
     }
     function _setColor(colorValue) { fgColor = colorValue; _updateToolbarState(); PaintUI.hideColorSelect(); }
     function _resetState() {
@@ -415,7 +381,7 @@ const PaintManager = (() => {
         const currentUser = UserManager.getCurrentUser().name;
         const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
         if (!primaryGroup) {
-            await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for user. Save failed.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+            await OutputManager.appendToOutput(`Critical Error: Cannot determine primary group for user. Save failed.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
             return false;
         }
         const saveResult = await FileSystemManager.createOrUpdateFile(filePath, jsonContent, { currentUser, primaryGroup });
@@ -537,7 +503,7 @@ const PaintManager = (() => {
                 const dropdown = paintContainerElement.querySelector('.paint-dropdown-content');
                 const shapeContainer = paintContainerElement.querySelector('.paint-tool-dropdown');
                 if (dropdown && shapeContainer && !shapeContainer.contains(e.target)) {
-                    dropdown.classList.remove(Config.CSS_CLASSES.DROPDOWN_ACTIVE);
+                    dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
                 }
             }
         };
@@ -621,6 +587,3 @@ const PaintManager = (() => {
 
     return { enter, exit, isActive: () => isActiveState };
 })();
-
-// Expose PaintManager globally for main.js and other modules
-window.PaintManager = PaintManager;
