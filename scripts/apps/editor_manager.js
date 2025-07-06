@@ -1,12 +1,97 @@
+/**
+ * @file Manages the OopisOS full-screen text editor application.
+ * This file contains the core logic for the editor, including state management,
+ * event handling, text manipulation, and interaction with other OS managers.
+ * @module EditorManager
+ * @author Andrew Edmark, Gemini, and The Architect
+ */
+
+/**
+ * Configuration object specifically for the Editor application.
+ * Placing it here ensures it's defined before the EditorManager module uses it.
+ */
+const EditorAppConfig = {
+    EDITOR: {
+        DEFAULT_MODE: 'text',
+        MODES: {
+            TEXT: 'text',
+            MARKDOWN: 'markdown',
+            HTML: 'html',
+            JAVASCRIPT: 'javascript',
+            SHELL: 'shell',
+            CSS: 'css',
+        },
+        VIEW_MODES: {
+            EDIT_ONLY: 'edit_only',
+            PREVIEW_ONLY: 'preview_only',
+            SPLIT: 'split',
+        },
+        WORD_WRAP_DEFAULT_ENABLED: false,
+        TAB_REPLACEMENT: '  ', // 2 spaces
+        DEBOUNCE_DELAY_MS: 150,
+        MAX_UNDO_STATES: 100,
+    },
+    STORAGE_KEYS: {
+        EDITOR_WORD_WRAP_ENABLED: 'oopisOsEditorWordWrapEnabled',
+        EDITOR_HIGHLIGHT_ENABLED: 'oopisOsEditorHighlightEnabled',
+    },
+};
+
+const EditorUtils = {
+    determineMode: (filePath) => {
+        const extension = Utils.getFileExtension(filePath);
+        switch (extension) {
+            case 'md': return EditorAppConfig.EDITOR.MODES.MARKDOWN;
+            case 'html': return EditorAppConfig.EDITOR.MODES.HTML;
+            case 'js': return EditorAppConfig.EDITOR.MODES.JAVASCRIPT;
+            case 'css': return EditorAppConfig.EDITOR.MODES.CSS;
+            case 'sh': return EditorAppConfig.EDITOR.MODES.SHELL;
+            default: return EditorAppConfig.EDITOR.MODES.TEXT;
+        }
+    },
+    calculateStatusBarInfo: (text, selectionStart) => {
+        const lines = text.split('\n');
+        const totalLines = lines.length;
+        const words = text.trim().length > 0 ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+
+        let lineNum = 1;
+        let colNum = 1;
+        let charCount = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const lineLength = lines[i].length + 1; // +1 for the newline char
+            if (charCount + lineLength > selectionStart) {
+                lineNum = i + 1;
+                colNum = selectionStart - charCount + 1;
+                break;
+            }
+            charCount += lineLength;
+        }
+        return { lines: totalLines, words, chars, cursor: { line: lineNum, col: colNum } };
+    }
+};
+
+
+/**
+ * The EditorManager module, encapsulating all logic for the text editor.
+ */
 const EditorManager = (() => {
     "use strict";
+
+    // --- Module State ---
     let isHighlightingActive = true;
-    let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
-        currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
-        originalContent = "", isDirty = false, undoStack = [], redoStack = [],
-        saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
-    const MAX_UNDO_STATES = 100;
-    let scrollDebounceTimer = null;
+    let isActiveState = false,
+        currentFilePath = null,
+        currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
+        currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT,
+        isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
+        originalContent = "",
+        isDirty = false,
+        undoStack = [],
+        redoStack = [],
+        saveUndoStateTimeout = null,
+        onSaveCallback = null,
+        _exitPromiseResolve = null;
 
     let findState = {
         isOpen: false,
@@ -17,41 +102,54 @@ const EditorManager = (() => {
     };
 
     let highlightDebounceTimer = null;
+    let scrollDebounceTimer = null;
 
+
+    // --- Private Functions ---
+
+    /**
+     * Handles the virtual rendering of the editor's content on scroll.
+     * Only renders the visible portion of the text to maintain performance.
+     */
     function _handleEditorScroll() {
         if (!isActiveState) return;
 
-        // Use requestAnimationFrame for smoother rendering during scroll events
         requestAnimationFrame(() => {
             if (!EditorUI.elements.textarea) return;
 
-            // Calculate the visible portion of the text area
             const { startLine, endLine, paddingTop } = EditorUI.calculateVisibleRange();
             const lineCount = SyntaxHighlighter.getLineCount();
             const lineHeight = (Utils.getCharacterDimensions(getComputedStyle(EditorUI.elements.textarea).font).height || 16);
             const totalHeight = lineCount * lineHeight;
 
-            // Get the highlighted HTML only for the visible lines
-            const visibleHtml = isHighlightingActive
-                ? SyntaxHighlighter.getRenderedLinesHTML(startLine, Math.min(endLine, lineCount), findState.matches, findState.activeIndex)
-                : EditorUI.getTextareaContent().split('\n').slice(startLine, Math.min(endLine, lineCount)).join('\n'); // Fallback to plain text
+            const visibleHtml = isHighlightingActive ?
+                SyntaxHighlighter.getRenderedLinesHTML(startLine, Math.min(endLine, lineCount), findState.matches, findState.activeIndex) :
+                EditorUI.getTextareaContent().split('\n').slice(startLine, Math.min(endLine, lineCount)).map(line => line.replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[match])).join('\n');
 
-            // Update the UI with the visible content
             EditorUI.renderVisibleContent(visibleHtml, paddingTop, totalHeight);
             EditorUI.updateVisibleLineNumbers(startLine, Math.min(endLine, lineCount), paddingTop, totalHeight);
-            _syncScrolls(); // Ensure raw scroll positions are perfectly synced
+            _syncScrolls();
         });
     }
 
+    /**
+     * Loads the user's word wrap preference from storage.
+     */
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
         isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
     }
 
+    /**
+     * Saves the user's current word wrap preference.
+     */
     function _saveWordWrapSetting() {
         StorageManager.saveItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, isWordWrapActive, "Editor word wrap setting");
     }
 
+    /**
+     * Toggles the word wrap setting on and off.
+     */
     function _toggleWordWrap() {
         if (!isActiveState) return;
         isWordWrapActive = !isWordWrapActive;
@@ -59,37 +157,42 @@ const EditorManager = (() => {
 
         const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
 
-        // 1. Re-apply the view mode, which has the correct logic for all component visibility.
         EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
-
-        // 2. Apply the direct style change for text wrapping.
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
-
-        // 3. Update the button's text to reflect the new state.
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
-
-        // 4. Set focus back to the editor.
         EditorUI.setEditorFocus();
     }
 
+    /**
+     * Loads the user's syntax highlighting preference from storage.
+     */
     function _loadHighlightingSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_HIGHLIGHT_ENABLED, "Editor highlight setting");
         isHighlightingActive = savedSetting !== null ? savedSetting : true;
     }
 
+    /**
+     * Saves the user's current syntax highlighting preference.
+     */
     function _saveHighlightingSetting() {
         StorageManager.saveItem(EditorAppConfig.STORAGE_KEYS.EDITOR_HIGHLIGHT_ENABLED, isHighlightingActive, "Editor highlight setting");
     }
 
+    /**
+     * Toggles syntax highlighting on and off.
+     */
     function _toggleHighlighting() {
         if (!isActiveState) return;
         isHighlightingActive = !isHighlightingActive;
         _saveHighlightingSetting();
         EditorUI.updateHighlightButtonText(isHighlightingActive);
-        _updateHighlighting(); // Force a re-render
+        _updateHighlighting();
         EditorUI.setEditorFocus();
     }
 
+    /**
+     * Updates the highlighted HTML overlay based on the current text and mode.
+     */
     function _updateHighlighting() {
         if (!isActiveState) return;
         const text = EditorUI.getTextareaContent();
@@ -100,9 +203,8 @@ const EditorManager = (() => {
             const mode = EditorUtils.determineMode(currentFilePath);
             highlightedHtml = SyntaxHighlighter.highlight(text, mode, findState.matches, findState.activeIndex);
         } else {
-            // Fallback to plain, escaped text when highlighting is off
             const escapeHtml = (textToEscape) => {
-                return textToEscape.replace(/[&<>"']/g, (match) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match]);
+                return textToEscape.replace(/[&<>"']/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[match]);
             }
             highlightedHtml = escapeHtml(text);
         }
@@ -111,56 +213,51 @@ const EditorManager = (() => {
         EditorUI.setTextareaSelection(selection.start, selection.end);
     }
 
-    function _debouncedHighlight() {
-        if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
-        highlightDebounceTimer = setTimeout(() => {
-            _updateHighlighting(); // The only thing that should be here.
-        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
-    }
-
+    /**
+     * Synchronizes the width of the textarea and highlighter when word wrap is off.
+     */
     function _synchronizeWidths() {
         if (!isWordWrapActive && EditorUI.elements.textarea && EditorUI.elements.highlighter) {
-            // Measure the true width from the div that has all the text
             const trueWidth = EditorUI.elements.textarea.scrollWidth;
-            // Apply this width to both layers to ensure the grid cell expands correctly
             EditorUI.elements.highlighter.style.minWidth = `${trueWidth}px`;
             EditorUI.elements.textarea.style.minWidth = `${trueWidth}px`;
         } else if (EditorUI.elements.textarea && EditorUI.elements.highlighter) {
-            // When word wrap is active, reset the min-width
             EditorUI.elements.highlighter.style.minWidth = '100%';
             EditorUI.elements.textarea.style.minWidth = '100%';
         }
     }
 
+    /**
+     * Updates UI elements like the status bar and filename display.
+     */
     function _updateAndRedraw() {
         if (!isActiveState) return;
 
-        // This is now lightweight, just updating UI text, not re-rendering content
         const textContent = EditorUI.getTextareaContent();
         isDirty = textContent !== originalContent;
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         const selection = EditorUI.getTextareaSelection();
         EditorUI.updateStatusBar(textContent, selection.start);
 
-        // Preview rendering can still be debounced as before
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
     }
 
+    /**
+     * Handles the editor's main input event, triggering UI updates and undo state saves.
+     */
     function _handleEditorInput() {
         if (!isActiveState) return;
-        _updateAndRedraw(); // Update status bar etc.
+        _updateAndRedraw();
 
-        // Debounce the width synchronization
         if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
         highlightDebounceTimer = setTimeout(() => {
             SyntaxHighlighter.tokenizeDocument(EditorUI.getTextareaContent(), currentFileMode);
-            _synchronizeWidths(); // Synchronize widths after tokenizing
-            _handleEditorScroll(); // Then handle virtual scroll
-        }, 10); // A small delay is sufficient
+            _synchronizeWidths();
+            _handleEditorScroll();
+        }, 10);
 
-        // Undo state logic remains the same
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
             _saveUndoState(EditorUI.getTextareaContent());
@@ -168,6 +265,10 @@ const EditorManager = (() => {
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
     }
 
+    /**
+     * Overrides the default Tab key behavior to insert spaces.
+     * @param {KeyboardEvent} event
+     */
     function handleEditorKeyDown(event) {
         if (!isActiveState) return;
         if (event.key === "Tab") {
@@ -176,30 +277,50 @@ const EditorManager = (() => {
         }
     }
 
+    /**
+     * Synchronizes the scroll position of the textarea, highlighter, and gutter.
+     */
     function _syncScrolls() {
         if (!isActiveState) return;
-        if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
-        scrollDebounceTimer = setTimeout(() => {
+        if (scrollDebounceTimer) return; // Prevent re-entry if already scheduled
+
+        scrollDebounceTimer = requestAnimationFrame(() => {
             const wrapper = EditorUI.elements.textareaWrapper;
             const highlighter = EditorUI.elements.highlighter;
-            const textarea = EditorUI.elements.textarea;
-            if (!wrapper || !highlighter || !textarea) return; // Gutter no longer needed here
+            const gutter = EditorUI.elements.lineGutter;
+
+            if (!wrapper || !highlighter || !gutter) {
+                scrollDebounceTimer = null;
+                return;
+            }
 
             const scrollTop = wrapper.scrollTop;
             const scrollLeft = wrapper.scrollLeft;
 
-            // The gutter is now handled by CSS, we only need to sync the highlighter
+            // --- FIX: Sync gutter and highlighter scroll positions ---
+            gutter.scrollTop = scrollTop;
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
-            textarea.scrollLeft = scrollLeft;
-        }, 1);
+            // The actual textarea is inside the grid, so it scrolls with its container
+            // We only need to ensure the highlighter matches its horizontal scroll.
+            EditorUI.elements.textarea.scrollLeft = scrollLeft;
+            // --- END FIX ---
+
+            scrollDebounceTimer = null;
+        });
     }
 
+    /**
+     * Handles selection changes to update the status bar.
+     */
     function _handleEditorSelectionChange() {
         if (!isActiveState) return;
         _updateAndRedraw();
     }
 
+    /**
+     * Exports the current preview pane as an HTML file.
+     */
     async function exportPreviewAsHtml() {
         if (!isActiveState) return;
         const baseName = (currentFilePath || "untitled").split('/').pop().split('.').slice(0, -1).join('.') || "export";
@@ -237,32 +358,26 @@ const EditorManager = (() => {
         await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'.`, { typeClass: 'text-success' });
     }
 
-    function _getPatchedContent() {
-        if (undoStack.length === 0) return "";
-        let content = undoStack[0];
-        for (let i = 1; i < undoStack.length; i++) {
-            content = PatchUtils.applyPatch(content, undoStack[i]);
-        }
-        return content;
-    }
-
+    /**
+     * Saves the current editor state to the undo stack using a patch-based approach.
+     */
     function _saveUndoState(currentContent) {
-        const lastKnownState = _getPatchedContent();
+        const lastKnownState = (undoStack.length > 0) ? PatchUtils.applyPatch(undoStack[0], undoStack.slice(1).join('')) : "";
         const patch = PatchUtils.createPatch(lastKnownState, currentContent);
 
         if (patch) {
             undoStack.push(patch);
-            if (undoStack.length > MAX_UNDO_STATES + 1) {
+            if (undoStack.length > EditorAppConfig.EDITOR.MAX_UNDO_STATES + 1) {
                 undoStack.shift();
-                undoStack[0] = _getPatchedContent();
-                const rebasePatches = undoStack.slice(1);
-                undoStack = [undoStack[0], ...rebasePatches];
             }
             redoStack = [];
             _updateUndoRedoButtonStates();
         }
     }
 
+    /**
+     * Reverts the editor to the previous state in the undo stack.
+     */
     function _performUndo() {
         if (undoStack.length <= 1) return;
         const patchToUndo = undoStack.pop();
@@ -272,12 +387,15 @@ const EditorManager = (() => {
         const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
 
         EditorUI.setTextareaContent(previousContent);
-        _updateAndRedraw();
+        _handleEditorInput();
         _updateUndoRedoButtonStates();
         EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
         EditorUI.setEditorFocus();
     }
 
+    /**
+     * Re-applies a state from the redo stack.
+     */
     function _performRedo() {
         if (redoStack.length === 0) return;
         const patchToRedo = redoStack.pop();
@@ -287,17 +405,23 @@ const EditorManager = (() => {
         const nextContent = PatchUtils.applyPatch(currentContent, patchToRedo);
 
         EditorUI.setTextareaContent(nextContent);
-        _updateAndRedraw();
+        _handleEditorInput();
         _updateUndoRedoButtonStates();
         EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
         EditorUI.setEditorFocus();
     }
 
+    /**
+     * Updates the enabled/disabled state of the undo and redo buttons.
+     */
     function _updateUndoRedoButtonStates() {
         if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
         if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
     }
 
+    /**
+     * Applies markdown or HTML formatting to the selected text.
+     */
     async function _applyTextManipulation(type) {
         if (!isActiveState || !EditorUI.elements.textarea) return;
         const textarea = EditorUI.elements.textarea;
@@ -428,6 +552,7 @@ const EditorManager = (() => {
         await manipulate();
     }
 
+    // --- Find and Replace Functions ---
     function _openFindBar(isReplace = false) {
         findState.isOpen = true;
         findState.isReplace = isReplace;
@@ -442,7 +567,7 @@ const EditorManager = (() => {
         findState.matches = [];
         findState.activeIndex = -1;
         EditorUI.updateFindBar(findState);
-        _updateAndRedraw(); // Re-render without find highlights
+        _updateHighlighting();
         EditorUI.setEditorFocus();
     }
 
@@ -502,7 +627,7 @@ const EditorManager = (() => {
         const originalText = EditorUI.getTextareaContent();
         const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
         EditorUI.setTextareaContent(newText);
-        _handleEditorInput(); // This will re-run find and update highlights
+        _handleEditorInput();
     }
 
     function _replaceAll() {
@@ -514,6 +639,9 @@ const EditorManager = (() => {
         _handleEditorInput();
     }
 
+    /**
+     * Toggles the view mode between editor, preview, and split screen.
+     */
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
         const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
@@ -525,6 +653,106 @@ const EditorManager = (() => {
         EditorUI.setEditorFocus();
     }
 
+    /**
+     * Finishes exit procedures after confirmation.
+     */
+    async function _performExitActions() {
+        document.removeEventListener('keydown', handleKeyDown);
+        AppLayerManager.hide();
+        EditorUI.destroyLayout();
+        isActiveState = false;
+        currentFilePath = null;
+        currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
+        isDirty = false;
+        originalContent = "";
+        onSaveCallback = null;
+        undoStack = [];
+        redoStack = [];
+        saveUndoStateTimeout = null;
+    }
+
+    /**
+     * Exits the editor, prompting to save if there are unsaved changes.
+     */
+    async function exit(saveChanges = false) {
+        let proceedToExit = true;
+        let saveSuccess = true;
+        const currentUser = UserManager.getCurrentUser().name;
+        let terminalMessage = null;
+        let terminalMessageClass = null;
+
+        if (!saveChanges && isDirty) {
+            const userConfirmedDiscard = await new Promise(resolve => {
+                ModalManager.request({
+                    context: 'graphical',
+                    messageLines: [Config.MESSAGES.EDITOR_DISCARD_CONFIRM],
+                    confirmText: "Discard Changes",
+                    cancelText: "Keep Editing",
+                    onConfirm: () => resolve(true),
+                    onCancel: () => resolve(false)
+                });
+            });
+            if (userConfirmedDiscard) {
+                terminalMessage = `Editor closed for '${currentFilePath || "Untitled"}' without saving. Changes discarded.`;
+                terminalMessageClass = 'text-warning';
+            } else {
+                await OutputManager.appendToOutput("Exit cancelled. Continue editing.", { typeClass: 'text-info' });
+                EditorUI.setEditorFocus();
+                proceedToExit = false;
+            }
+        } else if (!saveChanges && !isDirty) {
+            terminalMessage = `Editor closed for '${currentFilePath || "Untitled"}'. No changes were made.`;
+            terminalMessageClass = 'text-subtle';
+        }
+
+        if (!proceedToExit) return false;
+
+        if (saveChanges && currentFilePath) {
+            const newContent = EditorUI.getTextareaContent();
+            const existingNode = FileSystemManager.getNodeByPath(currentFilePath);
+            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+            if (!primaryGroup) {
+                await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, { typeClass: 'text-error' });
+                saveSuccess = false;
+            } else {
+                const saveResult = await FileSystemManager.createOrUpdateFile(currentFilePath, newContent, { currentUser, primaryGroup, existingNode });
+                if (!saveResult.success) {
+                    await OutputManager.appendToOutput(`Error saving '${currentFilePath}': ${saveResult.error}`, { typeClass: 'text-error' });
+                    saveSuccess = false;
+                }
+            }
+            if (saveSuccess) {
+                if (!(await FileSystemManager.save())) {
+                    await OutputManager.appendToOutput(`Error saving file system changes for '${currentFilePath}'. Changes might be lost.`, { typeClass: 'text-error' });
+                    saveSuccess = false;
+                } else {
+                    if (onSaveCallback) await onSaveCallback(currentFilePath);
+                    terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
+                    terminalMessageClass = 'text-success';
+                    originalContent = newContent;
+                    isDirty = false;
+                    EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
+                }
+            }
+        }
+
+        if (proceedToExit && saveSuccess) {
+            if (terminalMessage) await OutputManager.appendToOutput(terminalMessage, { typeClass: terminalMessageClass });
+            await _performExitActions();
+            if (_exitPromiseResolve) {
+                _exitPromiseResolve();
+                _exitPromiseResolve = null;
+            }
+            return true;
+        } else {
+            EditorUI.setEditorFocus();
+            return false;
+        }
+    }
+
+    /**
+     * Main entry point to launch the editor.
+     */
     function enter(filePath, content, callback = null) {
         if (isActiveState) {
             void OutputManager.appendToOutput("Editor already active.", { typeClass: 'text-info' });
@@ -544,8 +772,8 @@ const EditorManager = (() => {
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
-            const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
             document.addEventListener('keydown', handleKeyDown);
+
             const editorCallbacks = {
                 onInput: _handleEditorInput.bind(this),
                 onScroll: _handleEditorScroll.bind(this),
@@ -586,28 +814,26 @@ const EditorManager = (() => {
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
 
-            // Defer the rest of the setup to ensure the DOM is painted and styled.
             setTimeout(() => {
-                if (!isActiveState) return; // Check if exit was called before timeout
+                if (!isActiveState) return;
+
+                const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
 
                 currentFileMode = EditorUtils.determineMode(filePath);
                 EditorUI.updateWordWrapButtonText(isWordWrapActive);
                 EditorUI.updateHighlightButtonText(isHighlightingActive);
                 EditorUI._updateFormattingToolbarVisibility(currentFileMode);
-
                 EditorUI.setTextareaContent(content);
-                // Initial tokenization and render
                 SyntaxHighlighter.tokenizeDocument(content, currentFileMode);
-                _handleEditorScroll(); // Trigger initial render of the viewport
+                _handleEditorScroll();
                 EditorUI.setEditorFocus();
                 EditorUI.setGutterVisibility(!isWordWrapActive);
                 currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
                 EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
                 EditorUI.applyTextareaWordWrap(isWordWrapActive);
-
                 EditorUI.setTextareaSelection(0, 0);
                 EditorUI._updateFormattingToolbarVisibility(currentFileMode);
-                _updateAndRedraw(); // Now this will work correctly
+                _updateAndRedraw();
                 EditorUI.setEditorFocus();
                 _updateUndoRedoButtonStates();
                 _updateHighlighting();
@@ -616,81 +842,9 @@ const EditorManager = (() => {
         });
     }
 
-    async function _performExitActions() {
-        document.removeEventListener('keydown', handleKeyDown);
-        AppLayerManager.hide();
-        EditorUI.destroyLayout();
-        isActiveState = false; currentFilePath = null; currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
-        isDirty = false; originalContent = ""; onSaveCallback = null; undoStack = []; redoStack = []; saveUndoStateTimeout = null;
-    }
-
-    async function exit(saveChanges = false) {
-        let proceedToExit = true;
-        let saveSuccess = true;
-        const currentUser = UserManager.getCurrentUser().name;
-        let terminalMessage = null;
-        let terminalMessageClass = null;
-        if (!saveChanges && isDirty) {
-            const userConfirmedDiscard = await new Promise(resolve => {
-                ModalManager.request({
-                    context: 'graphical',
-                    messageLines: [Config.MESSAGES.EDITOR_DISCARD_CONFIRM],
-                    confirmText: "Discard Changes", cancelText: "Keep Editing",
-                    onConfirm: () => resolve(true), onCancel: () => resolve(false)
-                });
-            });
-            if (userConfirmedDiscard) {
-                terminalMessage = `Editor closed for '${currentFilePath || "Untitled"}' without saving. Changes discarded.`;
-                terminalMessageClass = 'text-warning';
-            } else {
-                await OutputManager.appendToOutput("Exit cancelled. Continue editing.", { typeClass: 'text-info' });
-                EditorUI.setEditorFocus();
-                proceedToExit = false;
-            }
-        } else if (!saveChanges && !isDirty) {
-            terminalMessage = `Editor closed for '${currentFilePath || "Untitled"}'. No changes were made.`;
-            terminalMessageClass = 'text-subtle';
-        }
-        if (!proceedToExit) return false;
-        if (saveChanges && currentFilePath) {
-            const newContent = EditorUI.getTextareaContent();
-            const existingNode = FileSystemManager.getNodeByPath(currentFilePath);
-            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-            if (!primaryGroup) {
-                await OutputManager.appendToOutput(`Critical Error: Could not determine primary group for '${currentUser}'. Cannot save file.`, { typeClass: 'text-error' });
-                saveSuccess = false;
-            } else {
-                const saveResult = await FileSystemManager.createOrUpdateFile(currentFilePath, newContent, { currentUser, primaryGroup, existingNode });
-                if (!saveResult.success) {
-                    await OutputManager.appendToOutput(`Error saving '${currentFilePath}': ${saveResult.error}`, { typeClass: 'text-error' });
-                    saveSuccess = false;
-                }
-            }
-            if (saveSuccess) {
-                if (!(await FileSystemManager.save())) {
-                    await OutputManager.appendToOutput(`Error saving file system changes for '${currentFilePath}'. Changes might be lost.`, { typeClass: 'text-error' });
-                    saveSuccess = false;
-                } else {
-                    if (onSaveCallback) await onSaveCallback(currentFilePath);
-                    terminalMessage = `File '${currentFilePath}' saved. Editor closed.`;
-                    terminalMessageClass = 'text-success';
-                    originalContent = newContent;
-                    isDirty = false;
-                    EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
-                }
-            }
-        }
-        if (proceedToExit && saveSuccess) {
-            if (terminalMessage) await OutputManager.appendToOutput(terminalMessage, { typeClass: terminalMessageClass });
-            await _performExitActions();
-            if (_exitPromiseResolve) { _exitPromiseResolve(); _exitPromiseResolve = null; }
-            return true;
-        } else {
-            EditorUI.setEditorFocus();
-            return false;
-        }
-    }
-
+    /**
+     * Global key handler for editor shortcuts.
+     */
     async function handleKeyDown(event) {
         if (!isActiveState) return;
         if (findState.isOpen && event.key === 'Escape') {
@@ -709,19 +863,55 @@ const EditorManager = (() => {
         }
         if (event.ctrlKey || event.metaKey) {
             switch (event.key.toLowerCase()) {
-                case "s": event.preventDefault(); await exit(true); break;
-                case "o": event.preventDefault(); await exit(false); break;
-                case "p": event.preventDefault(); _toggleViewModeHandler(); break;
-                case "f": event.preventDefault(); _openFindBar(false); break;
-                case "h": event.preventDefault(); _openFindBar(true); break;
-                case "b": if (currentFileMode !== 'text') { event.preventDefault(); _applyTextManipulation('bold'); } break;
-                case "i": if (!event.shiftKey && currentFileMode !== 'text') { event.preventDefault(); _applyTextManipulation('italic'); } break;
-                case "z": event.preventDefault(); event.shiftKey ? _performRedo() : _performUndo(); break;
-                case "y": event.preventDefault(); _performRedo(); break;
+                case "s":
+                    event.preventDefault();
+                    await exit(true);
+                    break;
+                case "o":
+                    event.preventDefault();
+                    await exit(false);
+                    break;
+                case "p":
+                    event.preventDefault();
+                    _toggleViewModeHandler();
+                    break;
+                case "f":
+                    event.preventDefault();
+                    _openFindBar(false);
+                    break;
+                case "h":
+                    event.preventDefault();
+                    _openFindBar(true);
+                    break;
+                case "b":
+                    if (currentFileMode !== 'text') {
+                        event.preventDefault();
+                        _applyTextManipulation('bold');
+                    }
+                    break;
+                case "i":
+                    if (!event.shiftKey && currentFileMode !== 'text') {
+                        event.preventDefault();
+                        _applyTextManipulation('italic');
+                    }
+                    break;
+                case "z":
+                    event.preventDefault();
+                    event.shiftKey ? _performRedo() : _performUndo();
+                    break;
+                case "y":
+                    event.preventDefault();
+                    _performRedo();
+                    break;
             }
         }
         setTimeout(_handleEditorSelectionChange, 0);
     }
 
-    return { isActive: () => isActiveState, enter, exit };
- })();
+    // --- Public Interface ---
+    return {
+        isActive: () => isActiveState,
+        enter,
+        exit,
+    };
+})();

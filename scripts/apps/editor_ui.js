@@ -2,6 +2,7 @@ const EditorUI = (() => {
     "use strict";
     let elements = {};
     let eventCallbacks = {};
+    let previewDebounceTimer;
     const iframeStyles = `
     <style>
       body { font-family: 'Inter', sans-serif; line-height: 1.5; color: #e5e7eb; background-color: #212121; margin: 1rem; }
@@ -18,10 +19,10 @@ const EditorUI = (() => {
     </style>`;
 
     function applyTextareaWordWrap(isWordWrapActive) {
-        if (elements.textarea && elements.highlighter) { // Target elements.highlighter
+        if (elements.textarea && elements.highlighter) {
             const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
             elements.textarea.style.whiteSpace = whiteSpaceStyle;
-            elements.highlighter.style.whiteSpace = whiteSpaceStyle; // Apply to the main highlighter div
+            elements.highlighter.style.whiteSpace = whiteSpaceStyle;
         }
     }
 
@@ -36,9 +37,11 @@ const EditorUI = (() => {
             elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
         }
     }
+
     function getPreviewPaneHTML() {
         return elements.previewPane ? elements.previewPane.innerHTML : "";
     }
+
     function _updateFormattingToolbarVisibility(mode) {
         const isMarkdown = mode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
         const isHtml = mode === EditorAppConfig.EDITOR.MODES.HTML;
@@ -49,16 +52,17 @@ const EditorUI = (() => {
             elements.htmlFormattingToolbar.classList.toggle('hidden', !isHtml);
         }
     }
+
     function calculateVisibleRange() {
-        if (!elements.textareaWrapper) { // Check for the wrapper now
+        if (!elements.textareaWrapper) {
             return { startLine: 0, endLine: 25, visibleLines: 25, paddingTop: 0 };
         }
         const lineHeight = Utils.getCharacterDimensions(getComputedStyle(elements.textarea).font).height || 16;
-        const scrollTop = elements.textareaWrapper.scrollTop; // <-- CORRECTED
-        const clientHeight = elements.textareaWrapper.clientHeight; // <-- CORRECTED
+        const scrollTop = elements.textareaWrapper.scrollTop;
+        const clientHeight = elements.textareaWrapper.clientHeight;
         const startLine = Math.floor(scrollTop / lineHeight);
         const visibleLines = Math.ceil(clientHeight / lineHeight);
-        const endLine = startLine + visibleLines + 1; // +1 for buffer
+        const endLine = startLine + visibleLines + 2; // +2 for buffer
 
         return {
             startLine,
@@ -80,12 +84,9 @@ const EditorUI = (() => {
 
     function updateVisibleLineNumbers(start, end, paddingTop, totalHeight) {
         if (elements.lineGutterContent) {
-            const numbers = Array.from({ length: end - start }, (_, i) => start + i + 1).join('\n');
+            const numbers = Array.from({ length: (end - start) + 1 }, (_, i) => start + i + 1).join('\n');
             elements.lineGutterContent.textContent = numbers;
-            elements.lineGutterContent.style.paddingTop = `${paddingTop}px`;
-        }
-        if (elements.lineGutter) {
-            elements.lineGutter.style.height = `${totalHeight}px`;
+            // No longer need to set paddingTop and height here, it's handled by scroll sync
         }
     }
 
@@ -98,22 +99,26 @@ const EditorUI = (() => {
         elements.replaceBtn.classList.toggle('hidden', !findState.isReplace);
         elements.replaceAllBtn.classList.toggle('hidden', !findState.isReplace);
 
-        if (findState.query) {
+        if (findState.query && findState.matches.length > 0) {
             elements.findMatchesDisplay.textContent = `${findState.activeIndex + 1} / ${findState.matches.length}`;
-        } else {
+        } else if (findState.query) {
+            elements.findMatchesDisplay.textContent = '0 / 0';
+        }
+        else {
             elements.findMatchesDisplay.textContent = '';
         }
     }
+
     function getFindQuery() {
         return elements.findInput ? elements.findInput.value : "";
     }
+
     function getReplaceQuery() {
         return elements.replaceInput ? elements.replaceInput.value : "";
     }
 
     function renderPreview(text, mode, isWordWrapActive) {
         if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-        let previewDebounceTimer;
         previewDebounceTimer = setTimeout(() => {
             if (!elements.previewPane) return;
             try {
@@ -141,49 +146,38 @@ const EditorUI = (() => {
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
 
-        // --- 1. Define All Element Properties First ---
         elements.highlighterContent = Utils.createElement("div", { className: "editor__highlighter-content" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" }, elements.highlighterContent);
         elements.textarea = Utils.createElement("div", {
-            id: "editor-textarea",
-            className: "editor__input",
-            contenteditable: "true",
-            spellcheck: "false",
-            autocapitalize: "none",
+            id: "editor-textarea", className: "editor__input", contenteditable: "true", spellcheck: "false", autocapitalize: "none",
             eventListeners: {
-                input: eventCallbacks.onInput,
-                click: eventCallbacks.onSelectionChange,
-                keyup: eventCallbacks.onSelectionChange,
-                keydown: eventCallbacks.onKeydown,
-                dragstart: (e) => { e.preventDefault(); },
-                drag: (e) => { e.preventDefault(); },
-                dragend: (e) => { e.preventDefault(); },
-                dragenter: (e) => { e.preventDefault(); },
-                dragleave: (e) => { e.preventDefault(); },
-                dragover: (e) => { e.preventDefault(); },
-                drop: (e) => { e.preventDefault(); }
+                input: eventCallbacks.onInput, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange, keydown: eventCallbacks.onKeydown,
+                dragstart: (e) => e.preventDefault(), drag: (e) => e.preventDefault(), dragend: (e) => e.preventDefault(),
+                dragenter: (e) => e.preventDefault(), dragleave: (e) => e.preventDefault(), dragover: (e) => e.preventDefault(), drop: (e) => e.preventDefault()
             }
         });
+        elements.lineGutterContent = Utils.createElement("div", { className: "editor__gutter-content" });
+        elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" }, elements.lineGutterContent);
 
-        // --- START FIX ---
-        // Add a new grid container specifically for the highlighter and the textarea
+        // --- FIX START: Corrected DOM structure ---
         const gridContainer = Utils.createElement("div", {
-            style: {
-                position: 'relative',
-                flexGrow: 1,
-                display: 'grid'
-            }
-        }, elements.highlighter, elements.textarea);
+            style: { position: 'relative', flexGrow: 1, display: 'grid' }
+        }, [elements.highlighter, elements.textarea]);
 
-        // Put the line gutter and the new grid container into the main wrapper
         elements.textareaWrapper = Utils.createElement("div", {
             id: "editor-textarea-wrapper",
             className: "editor__textarea-wrapper",
-            eventListeners: {
-                scroll: eventCallbacks.onScroll
-            }
-        }, elements.lineGutter, gridContainer);
-        // --- END FIX ---
+            eventListeners: { scroll: eventCallbacks.onScroll }
+        }, [gridContainer]);
+
+        elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
+        elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, [elements.previewPane]);
+
+        elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, [
+            elements.lineGutter,
+            elements.textareaWrapper,
+            elements.previewWrapper
+        ]);
 
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
@@ -265,7 +259,7 @@ const EditorUI = (() => {
 
     function setGutterVisibility(visible) {
         if (elements.lineGutter) {
-            elements.lineGutter.classList.toggle("hidden", !visible);
+            elements.lineGutter.classList.toggle('editor__gutter--hidden-by-wrap', !visible);
         }
     }
 
@@ -396,42 +390,33 @@ const EditorUI = (() => {
         const viewToggleButton = elements.viewToggleButton;
         const exportButton = elements.exportPreviewButton;
 
-        if (viewToggleButton) {
-            viewToggleButton.classList.toggle('hidden', !isPreviewable);
-        }
-        if (exportButton) {
-            exportButton.classList.toggle('hidden', !isPreviewable);
-        }
+        // --- FIX START: Corrected Visibility Logic ---
+        if (viewToggleButton) viewToggleButton.classList.toggle('hidden', !isPreviewable);
+        if (exportButton) exportButton.classList.toggle('hidden', !isPreviewable);
 
-        editorPane.classList.add('hidden');
-        previewPane.classList.add('hidden');
-
-        setGutterVisibility(!isWordWrapActive);
+        editorPane.style.display = 'none';
+        previewPane.style.display = 'none';
+        setGutterVisibility(!isWordWrapActive); // Base visibility
 
         if (!isPreviewable) {
-            editorPane.classList.remove('hidden');
-            editorPane.style.width = '100%';
+            editorPane.style.display = 'flex'; // Use flex for consistency
             return;
         }
 
         switch (viewMode) {
             case EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY:
-                editorPane.classList.remove('hidden');
-                editorPane.style.width = '100%';
+                editorPane.style.display = 'flex';
                 if (viewToggleButton) viewToggleButton.textContent = "Preview";
                 break;
             case EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY:
-                previewPane.classList.remove('hidden');
-                setGutterVisibility(false);
-                previewPane.style.width = '100%';
+                previewPane.style.display = 'flex';
+                setGutterVisibility(false); // Always hide gutter in preview-only
                 if (viewToggleButton) viewToggleButton.textContent = "Split";
                 break;
             case EditorAppConfig.EDITOR.VIEW_MODES.SPLIT:
             default:
-                editorPane.classList.remove('hidden');
-                previewPane.classList.remove('hidden');
-                editorPane.style.width = '50%';
-                previewPane.style.width = '50%';
+                editorPane.style.display = 'flex';
+                previewPane.style.display = 'flex';
                 if (viewToggleButton) viewToggleButton.textContent = "Editor";
                 break;
         }
