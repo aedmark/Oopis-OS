@@ -1,21 +1,9 @@
-import { EditorState } from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
-import { defaultKeymap } from '@codemirror/commands';
-import { javascript } from '@codemirror/lang-javascript';
-import { html } from '@codemirror/lang-html';
-import { json } from '@codemirror/lang-json';
-import { markdown, markdownLanguage } from './lang-markdown.js'; // Assuming you have this file locally
-import { StreamLanguage } from '@codemirror/language';
-import { shell, basic } from '@codemirror/legacy-modes/mode';
-
 const EditorManager = (() => {
     "use strict";
-
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
         currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
         saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
-    codeMirrorView = null;
     const MAX_UNDO_STATES = 100;
 
     let findState = {
@@ -478,44 +466,8 @@ const EditorManager = (() => {
                     else if (e.key === 'Escape') { e.preventDefault(); _closeFindBar(); }
                 }
             };
-            let languageExtension;
-            const mode = EditorUtils.determineMode(filePath);
-            switch (mode) {
-                case 'markdown':
-                    languageExtension = markdown({ base: markdownLanguage });
-                    break;
-                case 'html':
-                    languageExtension = html();
-                    break;
-                case 'javascript':
-                    languageExtension = javascript();
-                    break;
-                case 'json':
-                    languageExtension = json();
-                    break;
-                case 'shell':
-                    languageExtension = StreamLanguage.define(shell);
-                    break;
-                case 'basic':
-                    languageExtension = StreamLanguage.define(basic);
-                    break;
-                default:
-                    languageExtension = [];
-            }
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
-            const startState = EditorState.create({
-                doc: content,
-                extensions: [
-                    EditorView.lineWrapping,
-                    keymap.of(defaultKeymap),
-                    languageExtension
-                ]
-            });
-            codeMirrorView = new EditorView({
-                state: startState,
-                parent: elements.textareaWrapper
-            });
             EditorUI.setGutterVisibility(!isWordWrapActive);
             currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
