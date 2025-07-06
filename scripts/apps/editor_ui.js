@@ -228,15 +228,13 @@ const EditorUI = (() => {
             }
         });
 
-        // For elements.textareaWrapper:
         elements.textareaWrapper = Utils.createElement("div", {
             id: "editor-textarea-wrapper",
             className: "editor__textarea-wrapper",
             eventListeners: {
                 scroll: eventCallbacks.onScroll
             }
-            // END: Added block
-        }, elements.highlighter, elements.textarea);
+        }, elements.lineGutter, elements.highlighter, elements.textarea);
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
         elements.findMatchesDisplay = Utils.createElement("span", { className: "find-bar__matches" });
@@ -300,8 +298,7 @@ const EditorUI = (() => {
         elements.statusBar = Utils.createElement("div", { id: "editor-status-bar", className: "editor__status-bar" }, statusBarLeft, elements.filenameDisplay, statusBarRight);
 
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" },
-            elements.lineGutter,
-            elements.textareaWrapper,
+            elements.textareaWrapper, // <-- Corrected structure
             elements.previewWrapper
         );
 
@@ -499,6 +496,23 @@ const EditorUI = (() => {
         if (elements.highlightToggleButton) {
             elements.highlightToggleButton.textContent = isHighlightingActive ? "Syntax: On" : "Syntax: Off";
         }
+        // Add a new grid container for the text and highlighter
+        const gridContainer = Utils.createElement("div", {
+            style: {
+                position: 'relative',
+                flexGrow: 1,
+                display: 'grid'
+            }
+        }, elements.highlighter, elements.textarea);
+
+// Put the gutter and the new grid container into the wrapper
+        elements.textareaWrapper = Utils.createElement("div", {
+            id: "editor-textarea-wrapper",
+            className: "editor__textarea-wrapper",
+            eventListeners: {
+                scroll: eventCallbacks.onScroll
+            }
+        }, elements.lineGutter, gridContainer);
     }
 
     return {

@@ -182,18 +182,15 @@ const EditorManager = (() => {
         scrollDebounceTimer = setTimeout(() => {
             const wrapper = EditorUI.elements.textareaWrapper;
             const highlighter = EditorUI.elements.highlighter;
-            const gutter = EditorUI.elements.lineGutter; // Make sure you have this element
             const textarea = EditorUI.elements.textarea;
-            if (!wrapper || !highlighter || !gutter || !textarea) return;
+            if (!wrapper || !highlighter || !textarea) return; // Gutter no longer needed here
 
-            // This is the source of truth for the scroll position
             const scrollTop = wrapper.scrollTop;
             const scrollLeft = wrapper.scrollLeft;
 
-            // Synchronize the highlighter layer and the line gutter
+            // The gutter is now handled by CSS, we only need to sync the highlighter
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
-            gutter.scrollTop = scrollTop; // This is the essential fix**
             textarea.scrollLeft = scrollLeft;
         }, 1);
     }

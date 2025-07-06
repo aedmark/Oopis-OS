@@ -455,6 +455,13 @@ body {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   white-space: pre;
+  position: -webkit-sticky; /* For Safari */
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 5; /* Ensures it stays on top of the highlighter's background */
+  height: 100%; /* Make it take the full height of the flex container */
+  overflow: hidden; /* It should not scroll itself */
 }
 
 .editor__gutter::-webkit-scrollbar {
@@ -471,7 +478,7 @@ body {
   overflow: auto;
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
-  display: grid;
+  display: flex;
 }
 
 .editor__highlighter, .editor__input {
