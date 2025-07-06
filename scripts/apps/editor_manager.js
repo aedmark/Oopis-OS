@@ -187,13 +187,15 @@ const EditorManager = (() => {
             const gutter = EditorUI.elements.lineGutter;
             const textarea = EditorUI.elements.textarea;
             if (!wrapper || !highlighter || !gutter || !textarea) return;
+
             // Force the children to match the wrapper's scroll position
             const scrollTop = wrapper.scrollTop;
             const scrollLeft = wrapper.scrollLeft;
+
+            // Sync all three elements simultaneously
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
-            // gutter.scrollTop should NOT be set here.
-            // Also sync the textarea's scrollLeft for horizontal scrolling
+            gutter.scrollTop = scrollTop;
             textarea.scrollLeft = scrollLeft;
         }, 1); // 1ms is enough to batch rapid scroll events
     }

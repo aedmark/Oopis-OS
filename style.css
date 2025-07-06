@@ -449,12 +449,19 @@ body {
   text-align: right;
   color: var(--color-text-subtle);
   background-color: #171717;
-  overflow-y: hidden;
+  overflow-y: auto; /* Allow scrolling */
   user-select: none;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   white-space: pre;
+  /* Hide the scrollbar for a cleaner look */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.editor__gutter::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
 .editor__gutter--hidden-by-wrap {
