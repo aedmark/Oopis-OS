@@ -266,7 +266,6 @@ const EditorUI = (() => {
         const statusBarRight = Utils.createElement("div", { className: "editor__status-bar-group" }, elements.statusBarWordCount, elements.statusBarCharCount);
         elements.statusBar = Utils.createElement("div", { id: "editor-status-bar", className: "editor__status-bar" }, statusBarLeft, elements.filenameDisplay, statusBarRight);
 
-        // --- FIX START: Correctly define textareaWrapper and mainArea HERE ---
         const gridContainer = Utils.createElement("div", {
             style: { position: 'relative', flexGrow: 1, display: 'grid' }
         }, [elements.highlighter, elements.textarea]);
@@ -281,7 +280,6 @@ const EditorUI = (() => {
             elements.textareaWrapper,
             elements.previewWrapper
         );
-        // --- FIX END ---
 
         elements.editorContainer = Utils.createElement("div", { id: "editor-container", className: "editor-container" },
             elements.controlsDiv,

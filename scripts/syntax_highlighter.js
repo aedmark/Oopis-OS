@@ -58,11 +58,13 @@ const SyntaxHighlighter = (() => {
             { type: 'markdown-link-url', pattern: /(?:\]\()(?:[^)]+)(?:\))/ },
         ],
         html: [
-            { type: 'comment', pattern: /()/ },
-            { type: 'tag', pattern: /(<\/?[\w\d]+)/ }, // Catches opening and closing tags like <div or </p>
-            { type: 'attribute', pattern: /\b([a-zA-Z\-]+)(?=\s*=)/ }, // Catches attribute names like class or id
-            { type: 'value', pattern: /"([^"]*)"/ } // Catches attribute values in double quotes
-        ]
+            { type: 'comment', pattern: `//` },
+                    { type: 'tag', pattern: /<\/?([a-zA-Z0-9\-]+)/ },
+            { type: 'tag', pattern: />/ }, // Matches closing > of a tag
+            { type: 'attribute', pattern: /\b([a-zA-Z\-]+)(?=\s*=)/ }, // Matches attribute names
+            { type: 'value', pattern: /"([^"]*)"|'([^']*)'/ }, // Matches attribute values in quotes
+            { type: 'operator', pattern: /=/ }
+        ],
     };
 
     /**

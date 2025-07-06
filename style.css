@@ -491,16 +491,19 @@ body {
   line-height: var(--line-height-terminal);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
-  white-space: pre;
+  /* Use pre-wrap to respect whitespace but wrap lines */
+  white-space: pre-wrap;
+  word-break: break-all; /* Ensure long strings without spaces also wrap */
   overflow: hidden;
+  /* This is the key to the CSS Grid overlay */
   grid-area: 1 / 1 / 2 / 2;
   background-color: transparent;
   margin: 0;
   letter-spacing: normal;
   word-spacing: normal;
-  -moz-tab-size: 4;
-  -o-tab-size: 4;
-  tab-size: 4;
+  -moz-tab-size: 2; /* Match TAB_REPLACEMENT */
+  -o-tab-size: 2;
+  tab-size: 2;
 }
 
 .editor__highlighter {
