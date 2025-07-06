@@ -45,8 +45,6 @@ const Config = (() => {
             USER_CREDENTIALS: "oopisOsUserCredentials",
             USER_TERMINAL_STATE_PREFIX: "oopisOsUserTerminalState_",
             MANUAL_TERMINAL_STATE_PREFIX: "oopisOsManualUserTerminalState_",
-            EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
-            EDITOR_HIGHLIGHT_ENABLED: "oopisOsEditorHighlightEnabled",
             ALIAS_DEFINITIONS: "oopisOsAliasDefinitions",
             GEMINI_API_KEY: "oopisGeminiApiKey",
             USER_GROUPS: "oopisOsUserGroups",
@@ -186,20 +184,31 @@ const Config = (() => {
         ],
     };
 
-    /**
-     * The active configuration object, initialized with defaults and potentially
-     * overridden by values from `/etc/oopis.conf`.
-     * @private
-     * @type {object}
-     */
+    const EditorAppConfig = {
+        EDITOR: {
+            DEFAULT_MODE: 'text',
+            MODES: {
+                TEXT: 'text',
+                MARKDOWN: 'markdown',
+                HTML: 'html',
+            },
+            VIEW_MODES: {
+                EDIT_ONLY: 'edit_only',
+                PREVIEW_ONLY: 'preview_only',
+                SPLIT: 'split',
+            },
+            WORD_WRAP_DEFAULT_ENABLED: false,
+            TAB_REPLACEMENT: '  ', // 2 spaces
+            DEBOUNCE_DELAY_MS: 250,
+        },
+        STORAGE_KEYS: {
+            EDITOR_WORD_WRAP_ENABLED: 'oopisOsEditorWordWrapEnabled',
+            EDITOR_HIGHLIGHT_ENABLED: 'oopisOsEditorHighlightEnabled',
+        },
+    };
+
     let currentConfig = Utils.deepCopyNode(defaultConfig);
 
-    /**
-     * Parses a string value from the config file into a boolean, number, or string.
-     * @private
-     * @param {string} valueStr - The string value to parse.
-     * @returns {boolean|number|string} The parsed value.
-     */
     function parseConfigValue(valueStr) {
         if (typeof valueStr !== "string") return valueStr;
 
@@ -214,13 +223,6 @@ const Config = (() => {
         return valueStr;
     }
 
-    /**
-     * Sets a property on a nested object using a dot-separated path string.
-     * @private
-     * @param {object} obj - The object to modify.
-     * @param {string} path - The dot-separated path (e.g., "TERMINAL.PROMPT_CHAR").
-     * @param {*} value - The value to set at the specified path.
-     */
     function setNestedProperty(obj, path, value) {
         const parts = path.split(".");
         let current = obj;
@@ -233,11 +235,6 @@ const Config = (() => {
         current[parts.length - 1] = parseConfigValue(value);
     }
 
-    /**
-     * Asynchronously loads and applies configuration settings from the `/etc/oopis.conf`
-     * file within the virtual file system, overriding the default values.
-     * @async
-     */
     async function loadFromFile() {
         const configFilePath = "/etc/oopis.conf";
         try {
@@ -305,20 +302,6 @@ const Config = (() => {
         }
     }
 
-    /**
-     * The public interface for the Config module.
-     * @property {function} loadFromFile - Function to load config from the VFS.
-     * @property {object} DATABASE - Database configuration.
-     * @property {object} OS - OS metadata.
-     * @property {object} USER - User-related constants.
-     * @property {object} TERMINAL - Terminal behavior settings.
-     * @property {object} STORAGE_KEYS - Keys for localStorage.
-     * @property {object} CSS_CLASSES - CSS classes for styling.
-     * @property {object} FILESYSTEM - File system constants.
-     * @property {object} MESSAGES - Predefined system messages.
-     * @property {object} INTERNAL_ERRORS - Internal error messages.
-     * @property {object} API - API endpoint configuration.
-     */
     return {
         ...currentConfig,
         loadFromFile,
