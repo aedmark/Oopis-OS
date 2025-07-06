@@ -509,6 +509,11 @@ body {
   min-width: 100%;
 }
 
+.editor__highlighter--no-wrap {
+  width: fit-content;
+  min-width: 100%;
+}
+
 .editor__preview-wrapper {
   flex: 1;
   display: flex;
