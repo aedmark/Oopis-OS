@@ -181,7 +181,7 @@ const EditorUI = (() => {
             if (!elements.previewPane) return;
             try {
                 if (mode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
-                    elements.previewPane.innerHTML = marked.parse(text);
+                    elements.previewPane.innerHTML = `<div class="markdown-preview">${marked.parse(text)}</div>`;
                 } else if (mode === EditorAppConfig.EDITOR.MODES.HTML) {
                     const iframe = Utils.createElement("iframe", {
                         style: { width: "100%", height: "100%", border: "none" },

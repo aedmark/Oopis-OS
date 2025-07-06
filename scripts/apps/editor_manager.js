@@ -18,6 +18,31 @@ const EditorManager = (() => {
 
     let highlightDebounceTimer = null;
 
+    function _handleEditorScroll() {
+        if (!isActiveState) return;
+
+        // Use requestAnimationFrame for smoother rendering during scroll events
+        requestAnimationFrame(() => {
+            if (!EditorUI.elements.textarea) return;
+
+            // Calculate the visible portion of the text area
+            const { startLine, endLine, paddingTop } = EditorUI.calculateVisibleRange();
+            const lineCount = SyntaxHighlighter.getLineCount();
+            const lineHeight = (Utils.getCharacterDimensions(getComputedStyle(EditorUI.elements.textarea).font).height || 16);
+            const totalHeight = lineCount * lineHeight;
+
+            // Get the highlighted HTML only for the visible lines
+            const visibleHtml = isHighlightingActive
+                ? SyntaxHighlighter.getRenderedLinesHTML(startLine, Math.min(endLine, lineCount), findState.matches, findState.activeIndex)
+                : EditorUI.getTextareaContent().split('\n').slice(startLine, Math.min(endLine, lineCount)).join('\n'); // Fallback to plain text
+
+            // Update the UI with the visible content
+            EditorUI.renderVisibleContent(visibleHtml, paddingTop, totalHeight);
+            EditorUI.updateVisibleLineNumbers(startLine, Math.min(endLine, lineCount), paddingTop, totalHeight);
+            _syncScrolls(); // Ensure raw scroll positions are perfectly synced
+        });
+    }
+
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
         isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
@@ -509,7 +534,7 @@ const EditorManager = (() => {
             document.addEventListener('keydown', handleKeyDown);
             const editorCallbacks = {
                 onInput: _handleEditorInput.bind(this),
-                onScroll: _syncScrolls.bind(this),
+                onScroll: _handleEditorScroll.bind(this),
                 onSelectionChange: _handleEditorSelectionChange.bind(this),
                 onViewToggle: _toggleViewModeHandler.bind(this),
                 onExportPreview: exportPreviewAsHtml.bind(this),
@@ -572,6 +597,7 @@ const EditorManager = (() => {
                 _updateAndRedraw(); // Now this will work correctly
                 EditorUI.setEditorFocus();
                 _updateUndoRedoButtonStates();
+                _updateHighlighting();
             }, 0);
             // --- FIX END ---
         });

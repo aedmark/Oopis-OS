@@ -122,12 +122,13 @@ const SyntaxHighlighter = (() => {
                 // This logic can be expanded later to include find/replace markers.
                 return `<span class="sh-${token.type}">${escapedContent}</span>`;
             }).join('');
-            return renderedTokens;
+            // FIX: Wrap each line in a div to ensure consistent block-level layout
+            // and add a non-breaking space for empty lines to preserve their height.
+            return `<div>${renderedTokens || '&nbsp;'}</div>`;
         });
 
-        // Join all the HTML line strings with a newline. This preserves the exact
-        // structure of the original text, fixing the alignment issue.
-        return htmlLines.join('\n');
+        // Join without any separator, as the <div>s handle the line breaks.
+        return htmlLines.join('');
     }
 
     function highlight(text, mode, findMatches = [], findActiveIndex = -1) {

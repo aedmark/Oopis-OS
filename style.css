@@ -484,8 +484,11 @@ body {
   height: 100%;
   background-color: transparent;
   margin: 0;
-  letter-spacing: normal; /* Add this */
-  word-spacing: normal;   /* Add this */
+  letter-spacing: normal;
+  word-spacing: normal;
+  -moz-tab-size: 4; /* ADD THIS */
+  -o-tab-size: 4;   /* ADD THIS */
+  tab-size: 4;      /* ADD THIS */
 }
 
 .editor__highlighter {
