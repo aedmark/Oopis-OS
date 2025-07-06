@@ -1,7 +1,7 @@
 const EditorAppConfig = {
     EDITOR: {
-        DEBOUNCE_DELAY_MS: 150,
-        FIND_DEBOUNCE_DELAY_MS: 150,
+        DEBOUNCE_DELAY_MS: 450,
+        FIND_DEBOUNCE_DELAY_MS: 250,
         TAB_REPLACEMENT: "    ",
         DEFAULT_MODE: "text",
         MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html", JAVASCRIPT: "javascript", CSS: "css", SHELL: "shell" },
