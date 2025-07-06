@@ -82,12 +82,11 @@ const EditorUI = (() => {
     </style>`;
     // --- ADDED DEFINITION: applyTextareaWordWrap ---
     function applyTextareaWordWrap(isWordWrapActive) {
-        if (elements.input && elements.highlighter) {
+        if (elements.textarea && elements.highlighterContent) { // Target highlighterContent now
             const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
-            elements.input.style.whiteSpace = whiteSpaceStyle;
-            elements.highlighter.style.whiteSpace = whiteSpaceStyle;
-            elements.input.style.overflowX = isWordWrapActive ? "hidden" : "auto";
-            elements.highlighter.style.overflowX = isWordWrapActive ? "hidden" : "auto";
+            elements.textarea.style.whiteSpace = whiteSpaceStyle;
+            elements.highlighterContent.style.whiteSpace = whiteSpaceStyle; // Apply to content div
+            elements.textarea.style.overflowX = isWordWrapActive ? "hidden" : "auto";
         }
     }
 
@@ -119,6 +118,46 @@ const EditorUI = (() => {
             elements.htmlFormattingToolbar.classList.toggle('hidden', !isHtml);
         }
     }
+    function calculateVisibleRange() {
+        if (!elements.textarea) {
+            return { startLine: 0, endLine: 25, visibleLines: 25, paddingTop: 0 };
+        }
+        const lineHeight = Utils.getCharacterDimensions(getComputedStyle(elements.textarea).font).height || 16;
+        const scrollTop = elements.textarea.scrollTop;
+        const clientHeight = elements.textarea.clientHeight;
+
+        const startLine = Math.floor(scrollTop / lineHeight);
+        const visibleLines = Math.ceil(clientHeight / lineHeight);
+        const endLine = startLine + visibleLines + 1; // +1 for buffer
+
+        return {
+            startLine,
+            endLine,
+            visibleLines,
+            paddingTop: startLine * lineHeight
+        };
+    }
+
+    // New: Render only the visible part of the highlighter
+    function renderVisibleContent(html, paddingTop, totalHeight) {
+        if (elements.highlighterContent) {
+            elements.highlighterContent.innerHTML = html;
+            elements.highlighterContent.style.paddingTop = `${paddingTop}px`;
+        }
+        if (elements.highlighter) {
+            elements.highlighter.style.height = `${totalHeight}px`;
+        }
+    }
+
+    function updateVisibleLineNumbers(start, end, paddingTop, totalHeight) {
+        if (elements.lineGutter) {
+            const numbers = Array.from({ length: end - start }, (_, i) => start + i + 1).join('\n');
+            elements.lineGutter.textContent = numbers;
+            elements.lineGutter.style.paddingTop = `${paddingTop}px`;
+            elements.lineGutter.style.height = `${totalHeight}px`;
+        }
+    }
+
     function updateFindBar(findState) {
         if (!elements.findBar) return;
         elements.findBar.classList.toggle('hidden', !findState.isOpen);
@@ -168,6 +207,22 @@ const EditorUI = (() => {
     }
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
+
+        // --- NEW DOM STRUCTURE FOR HIGHLIGHTER ---
+        elements.highlighterContent = Utils.createElement("div", {
+            className: "editor__highlighter-content"
+        });
+        elements.highlighter = Utils.createElement("div", {
+            id: "editor-highlighter",
+            className: "editor__highlighter"
+        }, elements.highlighterContent);
+
+        elements.textarea = Utils.createElement("textarea", { /* ... keep existing textarea setup ... */ });
+
+        elements.textareaWrapper = Utils.createElement("div", {
+            id: "editor-textarea-wrapper",
+            className: "editor__textarea-wrapper"
+        }, elements.highlighter, elements.textarea);
 
         elements.input = Utils.createElement("div", {
             id: "editor-input",
@@ -317,7 +372,10 @@ const EditorUI = (() => {
         elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
-        elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.textareaWrapper, elements.previewWrapper);
+        elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" },
+            elements.lineGutter, // Line gutter is now a sibling
+            elements.textareaWrapper,
+            elements.previewWrapper,
         elements.filenameDisplay = Utils.createElement("span", { id: "editor-filename-display" });
         elements.statusBarCursorPos = Utils.createElement("span", { id: "status-cursor" });
         elements.statusBarLineCount = Utils.createElement("span", { id: "status-lines" });
@@ -375,12 +433,10 @@ const EditorUI = (() => {
     }
 
     function syncScrolls() {
-        if (elements.lineGutter && elements.textarea) {
-            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
-        }
-        if (elements.highlighter && elements.textarea) {
-            elements.highlighter.scrollTop = elements.textarea.scrollTop;
-            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
+        if (elements.textarea && elements.highlighter) {
+            // The highlighter div itself doesn't scroll, its content is positioned.
+            // The textarea is the source of truth for scroll position.
+            eventCallbacks.onScroll(); // Trigger the main scroll handler to re-render the viewport
         }
     }
 
@@ -472,14 +528,34 @@ const EditorUI = (() => {
     }
 
     return {
-        buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
+        buildLayout,
+        destroyLayout,
+        updateFilenameDisplay,
+        updateStatusBar,
+        updateLineNumbers,
+        calculateVisibleRange,
+        renderVisibleContent,
+        updateVisibleLineNumbers,
+        syncScrolls,
         setTextareaContent: setInputContent,
         getTextareaContent: getInputContent,
         setEditorFocus: setInputFocus,
         getTextareaSelection: getInputSelection,
         setTextareaSelection: setInputSelection,
-        applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
-        getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
-        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights, updateHighlightButtonText
+        applyTextareaWordWrap,
+        applyPreviewWordWrap,
+        updateWordWrapButtonText,
+        renderPreview,
+        setViewMode,
+        getPreviewPaneHTML,
+        setGutterVisibility,
+        elements,
+        _updateFormattingToolbarVisibility,
+        iframeStyles,
+        updateFindBar,
+        getFindQuery,
+        getReplaceQuery,
+        renderHighlights,
+        updateHighlightButtonText
     };
 })();

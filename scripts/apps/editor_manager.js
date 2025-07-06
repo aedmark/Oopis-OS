@@ -6,6 +6,7 @@ const EditorManager = (() => {
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
         saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
     const MAX_UNDO_STATES = 100;
+    let scrollDebounceTimer = null;
 
     let findState = {
         isOpen: false,
@@ -88,31 +89,42 @@ const EditorManager = (() => {
 
     function _updateAndRedraw() {
         if (!isActiveState) return;
+
+        // This is now lightweight, just updating UI text, not re-rendering content
         const textContent = EditorUI.getTextareaContent();
         isDirty = textContent !== originalContent;
-
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
-        EditorUI.updateLineNumbers(textContent);
         const selection = EditorUI.getTextareaSelection();
         EditorUI.updateStatusBar(textContent, selection.start);
 
+        // Preview rendering can still be debounced as before
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
-
-        _debouncedHighlight();
     }
 
     function _handleEditorInput() {
         if (!isActiveState) return;
-        const currentContent = EditorUI.getTextareaContent();
+        _updateAndRedraw(); // Update status bar etc.
+
+        // More efficient update
+        const text = EditorUI.getTextareaContent();
+        const lines = text.split('\n');
+
+        // A simple approach: re-tokenize the whole document on input.
+        // A more complex (but faster) approach would find the changed line and call updateLine.
+        // For this refactor, full re-tokenization is a huge improvement and sufficient.
+        SyntaxHighlighter.tokenizeDocument(text, currentFileMode);
+
+        // Re-render the visible portion of the highlighter and line numbers
+        _handleEditorScroll();
+
+        // Undo state logic remains the same
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
-            _saveUndoState(currentContent);
+            _saveUndoState(text);
             saveUndoStateTimeout = null;
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
-
-        _updateAndRedraw();
     }
 
     function handleEditorKeyDown(event) {
@@ -123,8 +135,24 @@ const EditorManager = (() => {
         }
     }
 
-    function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
+    function _handleEditorScroll() {
+        if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
+        scrollDebounceTimer = setTimeout(() => {
+            if (!isActiveState) return;
+            const range = EditorUI.calculateVisibleRange();
+            const totalLines = SyntaxHighlighter.getLineCount();
+            const lineHeight = Utils.getCharacterDimensions(getComputedStyle(EditorUI.elements.textarea).font).height || 16;
+            const totalHeight = totalLines * lineHeight;
 
+            // Fetch and render only the visible HTML
+            const html = SyntaxHighlighter.getRenderedLinesHTML(range.startLine, range.endLine);
+            EditorUI.renderVisibleContent(html, range.paddingTop, totalHeight);
+
+            // Update line numbers virtually
+            EditorUI.updateVisibleLineNumbers(range.startLine, range.endLine, range.paddingTop, totalHeight);
+
+        }, 10); // A short debounce is fine for scrolling
+    }
     function _handleEditorSelectionChange() {
         if (!isActiveState) return;
         _updateAndRedraw();
@@ -517,13 +545,18 @@ const EditorManager = (() => {
             };
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
+            currentFileMode = EditorUtils.determineMode(filePath);
+            EditorUI.setTextareaContent(content);
+            // Initial tokenization and render
+            SyntaxHighlighter.tokenizeDocument(content, currentFileMode);
+            _handleEditorScroll(); // Trigger initial render of the viewport
+            EditorUI.setEditorFocus();
             EditorUI.setGutterVisibility(!isWordWrapActive);
             currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
             EditorUI.applyTextareaWordWrap(isWordWrapActive);
             EditorUI.updateWordWrapButtonText(isWordWrapActive);
             EditorUI.updateHighlightButtonText(isHighlightingActive);
-            EditorUI.setTextareaContent(content);
             EditorUI.setTextareaSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);
             _updateAndRedraw();
@@ -640,4 +673,4 @@ const EditorManager = (() => {
     }
 
     return { isActive: () => isActiveState, enter, exit };
-})();
+ })();
