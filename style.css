@@ -1677,13 +1677,11 @@ aspect-ratio: 4 / 3;
 
 
 .editor__textarea {
-  background-color: transparent;
-  color: transparent; /* Makes the actual textarea text invisible */
-  caret-color: white; /* Ensures the caret is visible */
+  background: transparent;
+  color: var(--color-text-primary); /* Text is now visible */
+  caret-color: white;
   z-index: 2;
-  resize: none;
-  outline: none;
-}
+  resize: none;}
 
 .editor__textarea--no-wrap {
   white-space: pre !important;
@@ -1695,3 +1693,12 @@ aspect-ratio: 4 / 3;
   overflow-x: auto !important;
 }
 /* END: SYNTAX HIGHLIGHTING STYLES */
+/* Add this rule to force alignment */
+.editor__highlighter[class*="language-"] {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: #272822; /* Keep the theme background */
+  border: none;
+  box-shadow: none;
+  line-height: var(--line-height-terminal); /* Crucial for alignment */
+}
