@@ -179,7 +179,6 @@ const EditorManager = (() => {
 
     function _syncScrolls() {
         if (!isActiveState) return;
-        // A minimal debounce prevents performance issues on some systems.
         if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
         scrollDebounceTimer = setTimeout(() => {
             const wrapper = EditorUI.elements.textareaWrapper;
@@ -188,16 +187,16 @@ const EditorManager = (() => {
             const textarea = EditorUI.elements.textarea;
             if (!wrapper || !highlighter || !gutter || !textarea) return;
 
-            // Force the children to match the wrapper's scroll position
+            // This is the source of truth for the scroll position
             const scrollTop = wrapper.scrollTop;
             const scrollLeft = wrapper.scrollLeft;
 
-            // Sync all three elements simultaneously
+            // Synchronize the highlighter layer and the line gutter
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
-            gutter.scrollTop = scrollTop;
+            gutter.scrollTop = scrollTop; // This is the essential fix
             textarea.scrollLeft = scrollLeft;
-        }, 1); // 1ms is enough to batch rapid scroll events
+        }, 1);
     }
 
     function _handleEditorSelectionChange() {
