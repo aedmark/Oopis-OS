@@ -1,9 +1,22 @@
+const { EditorState } = CodeMirror;
+const { EditorView, keymap } = CodeMirror;
+const { defaultKeymap } = CodeMirror.commands;
+const { javascript } = CodeMirror.lang_javascript;
+const { html } = CodeMirror.lang_html;
+const { json } = CodeMirror.lang_json;
+const { markdown, markdownLanguage } = CodeMirror.lang_markdown;
+const { StreamLanguage } = CodeMirror.language;
+const { shell } = CodeMirror.legacy_modes;
+const { basic } = CodeMirror.legacy_modes;
+
 const EditorManager = (() => {
     "use strict";
+
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
         currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
         saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
+    codeMirrorView = null;
     const MAX_UNDO_STATES = 100;
 
     let findState = {
@@ -466,8 +479,44 @@ const EditorManager = (() => {
                     else if (e.key === 'Escape') { e.preventDefault(); _closeFindBar(); }
                 }
             };
+            let languageExtension;
+            const mode = EditorUtils.determineMode(filePath);
+            switch (mode) {
+                case 'markdown':
+                    languageExtension = markdown({ base: markdownLanguage });
+                    break;
+                case 'html':
+                    languageExtension = html();
+                    break;
+                case 'javascript':
+                    languageExtension = javascript();
+                    break;
+                case 'json':
+                    languageExtension = json();
+                    break;
+                case 'shell':
+                    languageExtension = StreamLanguage.define(shell);
+                    break;
+                case 'basic':
+                    languageExtension = StreamLanguage.define(basic);
+                    break;
+                default:
+                    languageExtension = [];
+            }
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
+            const startState = EditorState.create({
+                doc: content,
+                extensions: [
+                    EditorView.lineWrapping,
+                    keymap.of(defaultKeymap),
+                    languageExtension
+                ]
+            });
+            codeMirrorView = new EditorView({
+                state: startState,
+                parent: elements.textareaWrapper
+            });
             EditorUI.setGutterVisibility(!isWordWrapActive);
             currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
