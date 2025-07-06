@@ -1,3 +1,4 @@
+// scripts/apps/editor_ui.js
 /**
  * @file Manages all DOM manipulations for the editor.
  */
@@ -306,7 +307,7 @@ const EditorUI = (() => {
 
     function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
         if (!elements.previewPane) return;
-        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+        if (currentFileMode === Config.EditorAppConfig.EDITOR.MODES.MARKDOWN) {
             elements.previewPane.classList.toggle("word-wrap-enabled", isWordWrapActive);
         }
     }
@@ -332,8 +333,8 @@ const EditorUI = (() => {
 
     function renderPreview(content, currentFileMode) {
         if (!elements.previewPane) return;
-        const isHtmlMode = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
-        const isMarkdownMode = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
+        const isHtmlMode = currentFileMode === Config.EditorAppConfig.EDITOR.MODES.HTML;
+        const isMarkdownMode = currentFileMode === Config.EditorAppConfig.EDITOR.MODES.MARKDOWN;
 
         if (!isHtmlMode && !isMarkdownMode) {
             elements.previewPane.innerHTML = "";
@@ -361,23 +362,23 @@ const EditorUI = (() => {
                 }
                 iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head>${iframeStyles}</head><body>${content}</body></html>`;
             }
-        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
+        }, Config.EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
 
 
     function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
         if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
 
-        elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
+        elements.previewPane.classList.toggle("markdown-preview", currentFileMode === Config.EditorAppConfig.EDITOR.MODES.MARKDOWN);
 
         elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
         elements.exportPreviewButton.classList.toggle("hidden", !isPreviewable);
-        elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
+        elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === Config.EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
 
         const viewConfigs = {
-            [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
-            [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: { text: "Preview", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" },
-            [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: { text: "Split", gutter: false, editor: false, editorFlex: "0", preview: true, previewFlex: "1" },
+            [Config.EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
+            [Config.EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: { text: "Preview", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" },
+            [Config.EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: { text: "Split", gutter: false, editor: false, editorFlex: "0", preview: true, previewFlex: "1" },
             noPreview: { text: "Split View", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" }
         };
 
@@ -444,4 +445,3 @@ const EditorUI = (() => {
         updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
     };
 })();
-`

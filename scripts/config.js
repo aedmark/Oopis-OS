@@ -1,3 +1,4 @@
+// scripts/config.js
 /**
  * @file Manages all static and dynamic configuration for OopisOS.
  * @module Config
@@ -69,6 +70,11 @@ const Config = (() => {
             FILE_ITEM: "text-file",
             OUTPUT_LINE: "terminal__output-line",
             HIDDEN: "hidden",
+            // Paint App specific classes
+            ACTIVE_TOOL: "active",
+            GRID_ACTIVE: "grid-active",
+            // Chidi App specific classes
+            DROPDOWN_ACTIVE: "paint-dropdown-active" // Reused for Chidi dropdown
         },
         /** File system constants and default values. */
         FILESYSTEM: {
@@ -200,6 +206,87 @@ const Config = (() => {
      * @type {object}
      */
     let currentConfig = Utils.deepCopyNode(defaultConfig);
+
+    // --- NEW: Editor App Configuration ---
+    // Moved outside defaultConfig but still part of Config module
+    Config.EditorAppConfig = {
+        EDITOR: {
+            DEFAULT_MODE: "text",
+            MODES: {
+                TEXT: "text",
+                MARKDOWN: "markdown",
+                HTML: "html",
+            },
+            VIEW_MODES: {
+                SPLIT: "split",
+                EDIT_ONLY: "edit-only",
+                PREVIEW_ONLY: "preview-only",
+            },
+            WORD_WRAP_DEFAULT_ENABLED: true,
+            DEBOUNCE_DELAY_MS: 300,
+            MAX_UNDO_STATES: 100,
+            TAB_REPLACEMENT: "  ", // 2 spaces for tab
+            FIND_DEBOUNCE_DELAY_MS: 150,
+        },
+        STORAGE_KEYS: {
+            EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
+        },
+    };
+    // --- END NEW ---
+
+    // --- NEW: Paint App Configuration ---
+    // Moved outside defaultConfig but still part of Config module
+    Config.PaintAppConfig = {
+        CANVAS: {
+            DEFAULT_WIDTH: 80,
+            DEFAULT_HEIGHT: 24,
+            BASE_FONT_SIZE_PX: 16,
+        },
+        BRUSH: {
+            DEFAULT_SIZE: 1,
+            MIN_SIZE: 1,
+            MAX_SIZE: 5,
+        },
+        ZOOM: {
+            DEFAULT_ZOOM: 100,
+            MIN_ZOOM: 50,
+            MAX_ZOOM: 400,
+            ZOOM_STEP: 25,
+        },
+        PALETTE: [
+            { name: "Green", value: "#00ff5b" },
+            { name: "White", value: "#ffffff" },
+            { name: "Light Gray", value: "#a3a3a3" },
+            { name: "Dark Gray", value: "#737373" },
+            { name: "Black", value: "#0a0a0a" },
+            { name: "Red", value: "#ef4444" },
+            { name: "Blue", value: "#38bdf8" },
+            { name: "Yellow", value: "#fbbF24" },
+            { name: "Lime", value: "#a3e635" },
+        ],
+        CUSTOM_COLOR_GRID: [
+            "#FF0000", "#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#ADFF2F", "#00FF00", "#32CD32", "#008000",
+            "#00FF7F", "#00FFFF", "#00CED1", "#4682B4", "#1E90FF", "#0000FF", "#8A2BE2", "#9400D3", "#FF00FF",
+            "#FF1493", "#FF69B4", "#FA8072", "#F0E68C", "#FFFACD", "#DDA0DD", "#ADD8E6", "#F5DEB3", "#D2B48C",
+            "#C0C0C0", "#808080", "#000000"
+        ],
+        DEFAULT_CHAR: ' ',
+        ERASER_CHAR: ' ',
+        DEFAULT_FG_COLOR: '#00ff5b',
+        DEFAULT_BG_COLOR: 'bg-transparent',
+        ERASER_BG_COLOR: 'bg-black',
+        FILE_EXTENSION: 'oopic',
+        EDITOR: { // Reusing some editor config for consistency, though not strictly needed here
+            MAX_UNDO_STATES: 100,
+            DEBOUNCE_DELAY_MS: 300,
+        },
+        ASCII_CHAR_RANGE: {
+            START: 32, // Space
+            END: 126   // Tilde
+        }
+    };
+    // --- END NEW ---
+
 
     /**
      * Parses a string value from the config file into a boolean, number, or string.
