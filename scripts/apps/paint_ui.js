@@ -1,0 +1,343 @@
+/**
+ * @file Manages all DOM manipulations for the paint editor.
+ */
+/* global Utils, PaintAppConfig */
+const PaintUI = (() => {
+    "use strict";
+    let elements = {};
+    let eventCallbacks = {};
+    let cellDimensions = { width: 0, height: 0 };
+    let gridDimensions = { width: 0, height: 0 };
+
+    // SVGs are defined once and reused
+    const pencilSVG = '<svg fill="currentColor" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
+    const eraserSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M17.9995 13L10.9995 6.00004M20.9995 21H7.99955M10.9368 20.0628L19.6054 11.3941C20.7935 10.2061 21.3875 9.61207 21.6101 8.92709C21.8058 8.32456 21.8058 7.67551 21.6101 7.07298C21.3875 6.388 20.7935 5.79397 19.6054 4.60592L19.3937 4.39415C18.2056 3.2061 17.6116 2.61207 16.9266 2.38951C16.3241 2.19373 15.675 2.19373 15.0725 2.38951C14.3875 2.61207 13.7935 3.2061 12.6054 4.39415L4.39366 12.6059C3.20561 13.794 2.61158 14.388 2.38902 15.073C2.19324 15.6755 2.19324 16.3246 2.38902 16.9271C2.61158 17.6121 3.20561 18.2061 4.39366 19.3941L5.06229 20.0628C5.40819 20.4087 5.58114 20.5816 5.78298 20.7053C5.96192 20.815 6.15701 20.8958 6.36108 20.9448C6.59126 21 6.83585 21 7.32503 21H8.67406C9.16324 21 9.40784 21 9.63801 20.9448C9.84208 20.8958 10.0372 20.815 10.2161 20.7053C10.418 20.5816 10.5909 20.4087 10.9368 20.0628Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>';
+    const lineSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const ellipseSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21C16.9706 21 21 16.4183 21 12C21 7.58172 16.9706 4 12 4C7.02944 4 3 7.58172 3 12C3 16.4183 7.02944 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const quadSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const undoSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 8H5V3M5.29102 16.3569C6.22284 17.7918 7.59014 18.8902 9.19218 19.4907C10.7942 20.0913 12.547 20.1624 14.1925 19.6937C15.8379 19.225 17.2893 18.2413 18.3344 16.8867C19.3795 15.5321 19.963 13.878 19.9989 12.1675C20.0347 10.4569 19.5211 8.78001 18.5337 7.38281C17.5462 5.98561 16.1366 4.942 14.5122 4.40479C12.8878 3.86757 11.1341 3.86499 9.5083 4.39795C7.88252 4.93091 6.47059 5.97095 5.47949 7.36556" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+    const redoSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.9998 8H18.9998V3M18.7091 16.3569C17.7772 17.7918 16.4099 18.8902 14.8079 19.4907C13.2059 20.0913 11.4534 20.1624 9.80791 19.6937C8.16246 19.225 6.71091 18.2413 5.66582 16.8867C4.62073 15.5321 4.03759 13.878 4.00176 12.1675C3.96593 10.4569 4.47903 8.78001 5.46648 7.38281C6.45392 5.98561 7.86334 4.942 9.48772 4.40479C11.1121 3.86757 12.8661 3.86499 14.4919 4.39795C16.1177 4.93091 17.5298 5.97095 18.5209 7.36556" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+    const gridSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 9.33333V6C20 4.89543 19.1046 4 18 4H14.6667M20 9.33333H14.6667M20 9.33333V14.6667M4 9.33333V6C4 4.89543 4.89543 4 6 4H9.33333M4 9.33333H9.33333M4 9.33333V14.6667M14.6667 9.33333H9.33333M14.6667 9.33333V4M14.6667 9.33333V14.6667M9.33333 9.33333V4M9.33333 9.33333V14.6667M20 14.6667V18C20 19.1046 19.1046 20 18 20H14.6667M20 14.6667H14.6667M4 14.6667V18C4 19.1046 4.89543 20 6 20H9.33333M4 14.6667H9.33333M14.6667 14.6667H9.33333M14.6667 14.6667V20M9.33333 14.6667V20M9.33333 4H14.6667M9.33333 20H14.6667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+    const charSelectSVG = '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 197.974 197.974" xml:space="preserve" fill="currentColor" stroke="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M1.64,0l21.735,197.974l53.912-67.637l85.473-13.261L1.64,0z M69.205,116.411l-34.889,43.771L20.25,32.064l104.267,75.766 L69.205,116.411z M131.334,136.462h65v17.541h-15v-2.541h-10v28.82h7.334v15H149v-15h7.334v-28.82h-10v2.541h-15V136.462z"></path> </g></svg>';
+    const colorPaletteSVG = '<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 297 297" xml:space="preserve" fill="currentColor"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M254.141,53.244C224.508,18.909,185.299,0,143.736,0c-35.062,0-68.197,13.458-93.302,37.9 C10.383,76.892-2.822,123.282,14.207,165.178c13.868,34.122,45.625,57.954,77.227,57.954c0.841,0,1.671-0.016,2.508-0.053 c4.705-0.194,9.249-0.586,13.646-0.966c5.309-0.462,10.325-0.895,14.77-0.895c10.54,0,19.645,0,19.645,26.846 c0,28.811,17.538,48.934,42.65,48.936c0.002,0,0.002,0,0.004,0c17.864,0,37.651-10.342,57.215-29.903 c25.882-25.88,43.099-62.198,47.234-99.64C293.762,125.326,281.343,84.763,254.141,53.244z M227.315,252.54 c-15.397,15.398-30.55,23.877-42.66,23.875c-16.288,0-22.064-15.274-22.064-28.352c0-32.357-12.786-47.43-40.232-47.43 c-5.333,0-10.778,0.472-16.545,0.969c-4.169,0.359-8.481,0.733-12.724,0.909c-0.553,0.024-1.102,0.034-1.655,0.034 c-23.07,0-47.529-18.975-58.156-45.118c-13.714-33.738-2.225-71.927,31.519-104.779c21.239-20.676,49.272-32.063,78.939-32.063 c35.485,0,69.159,16.373,94.82,46.107C289.187,125.359,272.6,207.256,227.315,252.54z"></path> <path d="M192.654,165.877c0,17.213,13.918,31.217,31.026,31.217c17.107,0,31.025-14.004,31.025-31.217 c0-17.215-13.918-31.219-31.025-31.219C206.572,134.658,192.654,148.662,192.654,165.877z M234.118,165.877 c0,5.861-4.682,10.633-10.438,10.633c-5.756,0-10.438-4.771-10.438-10.633c0-5.863,4.683-10.633,10.438-10.633 C229.436,155.244,234.118,160.014,234.118,165.877z"></path> <path d="M226.914,93.489c0-17.215-13.917-31.219-31.025-31.219c-17.107,0-31.025,14.004-31.025,31.219 c0,17.211,13.918,31.218,31.025,31.218C212.997,124.707,226.914,110.7,226.914,93.489z M185.45,93.489 c0-5.865,4.684-10.632,10.439-10.632c5.756,0,10.438,4.767,10.438,10.632c0,5.86-4.683,10.633-10.438,10.633 C190.133,104.122,185.45,99.35,185.45,93.489z"></path> <path d="M124.863,39.627c-17.107,0-31.025,14.004-31.025,31.217c0,17.213,13.918,31.217,31.025,31.217s31.025-14.004,31.025-31.217 C155.888,53.631,141.97,39.627,124.863,39.627z M124.863,81.478c-5.756,0-10.438-4.771-10.438-10.634 c0-5.863,4.682-10.633,10.438-10.633c5.756,0,10.438,4.77,10.438,10.633C135.3,76.707,130.619,81.478,124.863,81.478z"></path> <path d="M70.821,92.809c-17.107,0-31.026,14.004-31.026,31.217c0,17.214,13.919,31.219,31.026,31.219s31.024-14.005,31.024-31.219 C101.845,106.813,87.928,92.809,70.821,92.809z M70.821,134.658c-5.757,0-10.439-4.77-10.439-10.633 c0-5.861,4.683-10.63,10.439-10.63c5.755,0,10.438,4.769,10.438,10.63C81.259,129.889,76.576,134.658,70.821,134.658z"></path> </g> </g></svg>';
+
+
+    function buildLayout(callbacks) {
+        eventCallbacks = callbacks;
+
+        // Create all tools using the standard .btn class
+        elements.undoBtn = Utils.createElement('button', { className: 'btn', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
+        elements.redoBtn = Utils.createElement('button', { className: 'btn', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() }});
+        elements.pencilBtn = Utils.createElement('button', { className: 'btn', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
+        elements.eraserBtn = Utils.createElement('button', { className: 'btn', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
+
+        elements.brushSizeDownBtn = Utils.createElement('button', { className: 'btn', textContent: '-', title: 'Decrease Brush Size', eventListeners: { click: () => eventCallbacks.onBrushSizeDown() }});
+        elements.brushSizeDisplay = Utils.createElement('span', { className: 'paint-size-display', textContent: '1' });
+        elements.brushSizeUpBtn = Utils.createElement('button', { className: 'btn', textContent: '+', title: 'Increase Brush Size', eventListeners: { click: () => eventCallbacks.onBrushSizeUp() }});
+        const brushSizeContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.brushSizeDownBtn, elements.brushSizeDisplay, elements.brushSizeUpBtn);
+
+        elements.shapeToolBtn = Utils.createElement('button', { className: 'btn', innerHTML: lineSVG, title: 'Shape Tool (L)' });
+        elements.shapeDropdown = Utils.createElement('div', { className: 'paint-dropdown-content' },
+            Utils.createElement('button', { className: 'btn', innerHTML: lineSVG, title: 'Line', eventListeners: { click: () => eventCallbacks.onToolChange('line') } }),
+            Utils.createElement('button', { className: 'btn', innerHTML: quadSVG, title: 'Rectangle', eventListeners: { click: () => eventCallbacks.onToolChange('quad') } }),
+            Utils.createElement('button', { className: 'btn', innerHTML: ellipseSVG, title: 'Ellipse', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } })
+        );
+        elements.shapeToolBtn.addEventListener('click', () => {
+            elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+        });
+        elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' }, elements.shapeToolBtn, elements.shapeDropdown);
+
+        elements.gridBtn = Utils.createElement('button', { className: 'btn', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
+        elements.zoomOutBtn = Utils.createElement('button', { className: 'btn', textContent: '-', title: 'Zoom Out (Ctrl+-)', eventListeners: { click: () => eventCallbacks.onZoomOut() }});
+        elements.zoomResetBtn = Utils.createElement('button', { className: 'btn paint-zoom-display', textContent: '100%', title: 'Reset Zoom (Ctrl+0)', eventListeners: { click: () => eventCallbacks.onZoomReset() }});
+        elements.zoomInBtn = Utils.createElement('button', { className: 'btn', textContent: '+', title: 'Zoom In (Ctrl++)', eventListeners: { click: () => eventCallbacks.onZoomIn() }});
+        const zoomContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.zoomOutBtn, elements.zoomResetBtn, elements.zoomInBtn);
+
+        elements.charSelectBtn = Utils.createElement('button', { className: 'btn', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
+
+        elements.colorButtons = [];
+        const colorPaletteContainer = Utils.createElement('div', { className: 'paint-palette' });
+        PaintAppConfig.PALETTE.forEach((color, index) => {
+            const colorBtn = Utils.createElement('button', {
+                className: `paint-color-swatch`,
+                style: { backgroundColor: color.value },
+                title: `Color ${index + 1} (${color.name}) (${index + 1})`,
+                eventListeners: { click: () => eventCallbacks.onColorChange(color.value) }
+            });
+            elements.colorButtons.push(colorBtn);
+            colorPaletteContainer.appendChild(colorBtn);
+        });
+        elements.customColorSwatch = Utils.createElement('button', {
+            className: 'paint-color-swatch',
+            title: 'Your Custom Color',
+            style: { backgroundColor: PaintAppConfig.PALETTE[0].value },
+            eventListeners: { click: () => eventCallbacks.onCustomSwatchClick() }
+        });
+        colorPaletteContainer.insertBefore(elements.customColorSwatch, colorPaletteContainer.firstChild);
+        elements.colorPalleteBtn = Utils.createElement('button', {
+            className: 'btn',
+            innerHTML: colorPaletteSVG,
+            title: 'Select Custom Color',
+            eventListeners: { click: () => eventCallbacks.onColorSelectOpen() }
+        });
+
+        elements.saveBtn = Utils.createElement('button', { className: 'btn btn--confirm', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
+        elements.exitBtn = Utils.createElement('button', { className: 'btn btn--cancel', textContent: 'Exit', title: 'Exit Application (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
+
+        // Assemble toolbar
+        const leftGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, zoomContainer, elements.charSelectBtn);
+        const rightGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.colorPalleteBtn, colorPaletteContainer);
+        elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, rightGroup);
+
+        // Assemble status bar / footer
+        elements.statusBarText = Utils.createElement('span', { id: 'paint-status-text' });
+        const footerButtonGroup = Utils.createElement('div', { className: 'paint-toolbar-group'}, elements.saveBtn, elements.exitBtn);
+        elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' }, elements.statusBarText, footerButtonGroup);
+
+        // Assemble canvas
+        elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
+        elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
+
+        // Add event listeners to canvas
+        elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
+        elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
+        elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
+        elements.canvas.addEventListener('touchcancel', eventCallbacks.onMouseLeave, { passive: false });
+        document.addEventListener('mousemove', eventCallbacks.onMouseMove);
+        document.addEventListener('touchmove', eventCallbacks.onMouseMove, { passive: false });
+        document.addEventListener('mouseup', eventCallbacks.onMouseUp);
+        document.addEventListener('touchend', eventCallbacks.onMouseUp, { passive: false });
+
+        // Assemble the final container
+        elements.container = Utils.createElement('div', { id: 'paint-container' },
+            elements.toolbar,
+            elements.canvasWrapper,
+            elements.statusBar
+        );
+
+        return elements.container;
+    }
+
+    function toggleGrid(isActive) {
+        if (!elements.canvasWrapper) return;
+        // Use the new standard class for the grid
+        elements.canvasWrapper.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
+    }
+
+    function populateAndShowCharSelect(onSelectCallback) {
+        const charGrid = Utils.createElement('div', { id: 'paint-char-select-grid' });
+        const { START, END } = PaintAppConfig.ASCII_CHAR_RANGE;
+        for (let i = START; i <= END; i++) {
+            const char = String.fromCharCode(i);
+            const btn = Utils.createElement('button', {
+                className: 'btn paint-char-btn',
+                textContent: char,
+                eventListeners: { click: () => {
+                        onSelectCallback(char);
+                        const modal = document.getElementById('paint-char-select-modal');
+                        if (modal) modal.remove();
+                    }}
+            });
+            charGrid.appendChild(btn);
+        }
+
+        // Use the global modal structure
+        const modalDialog = Utils.createElement('div', { className: 'modal-dialog modal-dialog--wide' },
+            Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Character' }),
+            Utils.createElement('div', { className: 'paint-modal-body' }, charGrid)
+        );
+        const modalOverlay = Utils.createElement('div', {
+            id: 'paint-char-select-modal',
+            className: 'modal-overlay',
+            eventListeners: { click: (e) => { if (e.target.id === 'paint-char-select-modal') e.target.remove(); } }
+        }, modalDialog);
+
+        document.getElementById('app-layer').appendChild(modalOverlay);
+    }
+
+    function populateAndShowColorSelect(onSelectCallback, onCustomHexSet) {
+        const colorGrid = Utils.createElement('div', { id: 'paint-color-select-grid' });
+        PaintAppConfig.CUSTOM_COLOR_GRID.forEach(colorValue => {
+            const btn = Utils.createElement('button', {
+                className: 'paint-color-swatch',
+                style: { backgroundColor: colorValue },
+                title: colorValue,
+                eventListeners: { click: () => {
+                        onSelectCallback(colorValue);
+                        const modal = document.getElementById('paint-color-select-modal');
+                        if (modal) modal.remove();
+                    }}
+            });
+            colorGrid.appendChild(btn);
+        });
+
+        const hexInput = Utils.createElement('input', { className: 'paint-hex-input', placeholder: '#RRGGBB', maxLength: 7 });
+        const hexSetBtn = Utils.createElement('button', { className: 'btn', textContent: 'Set' });
+        hexSetBtn.addEventListener('click', () => {
+            onCustomHexSet(hexInput.value);
+            const modal = document.getElementById('paint-color-select-modal');
+            if (modal) modal.remove();
+        });
+        const hexInputContainer = Utils.createElement('div', { className: 'paint-custom-hex-container' }, hexInput, hexSetBtn);
+
+        const modalDialog = Utils.createElement('div', { className: 'modal-dialog modal-dialog--wide' },
+            Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Color' }),
+            Utils.createElement('div', { className: 'paint-modal-body' }, colorGrid, hexInputContainer)
+        );
+        const modalOverlay = Utils.createElement('div', {
+            id: 'paint-color-select-modal',
+            className: 'modal-overlay',
+            eventListeners: { click: (e) => { if (e.target.id === 'paint-color-select-modal') e.target.remove(); } }
+        }, modalDialog);
+        document.getElementById('app-layer').appendChild(modalOverlay);
+    }
+
+    function hideCharSelect() {
+        const modal = document.getElementById('paint-char-select-modal');
+        if (modal) modal.remove();
+    }
+
+    function hideColorSelect() {
+        const modal = document.getElementById('paint-color-select-modal');
+        if (modal) modal.remove();
+    }
+
+    function getGridCoordinates(pixelX, pixelY, gridWidth, gridHeight) {
+        if (!elements.canvas || cellDimensions.width === 0) return null;
+        const rect = elements.canvas.getBoundingClientRect();
+        const x = pixelX - rect.left;
+        const y = pixelY - rect.top;
+
+        const gridX = Math.floor(x / cellDimensions.width);
+        const gridY = Math.floor(y / cellDimensions.height);
+
+        if (gridX < 0 || gridX >= gridWidth || gridY < 0 || gridY >= gridHeight) {
+            return null;
+        }
+        return { x: gridX, y: gridY };
+    }
+
+    function updateStatusBar(status) {
+        if (!elements.statusBarText) return;
+        const paletteEntry = PaintAppConfig.PALETTE.find(p => p.value === status.fg);
+        const colorName = paletteEntry ? paletteEntry.name : (status.fg.startsWith('rgb') ? 'custom' : status.fg);
+        elements.statusBarText.textContent = `Tool: ${status.tool} | Char: '${status.char}' | Color: ${colorName} | Brush: ${status.brushSize} | Coords: ${status.coords.x},${status.coords.y} | Zoom: ${status.zoomLevel}%`;
+
+        if (elements.zoomResetBtn) {
+            elements.zoomResetBtn.textContent = `${status.zoomLevel}%`;
+        }
+    }
+
+    function updateToolbar(activeTool, activeColor, undoPossible, redoPossible, isGridActive, brushSize) {
+        if (!elements.pencilBtn) return;
+        const activeClass = PaintAppConfig.CSS_CLASSES.ACTIVE_TOOL;
+        elements.pencilBtn.classList.toggle(activeClass, activeTool === 'pencil');
+        elements.eraserBtn.classList.toggle(activeClass, activeTool === 'eraser');
+        const shapeTools = ['line', 'quad', 'ellipse'];
+        elements.shapeToolBtn.classList.toggle(activeClass, shapeTools.includes(activeTool));
+
+        if (activeTool === 'line') {
+            elements.shapeToolBtn.innerHTML = lineSVG;
+        } else if (activeTool === 'quad') {
+            elements.shapeToolBtn.innerHTML = quadSVG;
+        } else if (activeTool === 'ellipse') {
+            elements.shapeToolBtn.innerHTML = ellipseSVG;
+        }
+
+        elements.undoBtn.disabled = !undoPossible;
+        elements.redoBtn.disabled = !redoPossible;
+        elements.gridBtn.classList.toggle(activeClass, isGridActive);
+
+        elements.brushSizeDisplay.textContent = brushSize;
+        elements.brushSizeDownBtn.disabled = brushSize <= PaintAppConfig.BRUSH.MIN_SIZE;
+        elements.brushSizeUpBtn.disabled = brushSize >= PaintAppConfig.BRUSH.MAX_SIZE;
+
+        let isCustomColorActive = true;
+        elements.colorButtons.forEach((btn, index) => {
+            const colorValue = PaintAppConfig.PALETTE[index].value;
+            const isActive = colorValue === activeColor;
+            if (isActive) {
+                isCustomColorActive = false;
+            }
+            btn.classList.toggle(activeClass, isActive);
+        });
+        if (isCustomColorActive && activeColor) {
+            elements.customColorSwatch.style.backgroundColor = activeColor;
+            elements.customColorSwatch.classList.add(activeClass);
+        } else {
+            elements.customColorSwatch.classList.remove(activeClass);
+        }
+    }
+
+    function renderCanvas(canvasData, zoomLevel) {
+        if (!elements.canvas) return;
+
+        const newFontSize = PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX * (zoomLevel / 100);
+        elements.canvas.style.fontSize = `${newFontSize}px`;
+
+        // CORRECTED LOGIC: Get the *actual* computed font style after setting the size.
+        const computedFontStyle = window.getComputedStyle(elements.canvas).font;
+        cellDimensions = Utils.getCharacterDimensions(computedFontStyle);
+
+        // Now, this line will work correctly with accurate dimensions.
+        elements.canvas.style.backgroundSize = `${cellDimensions.width}px ${cellDimensions.height}px`;
+
+        elements.canvas.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        gridDimensions.width = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+        gridDimensions.height = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+
+        const totalWidth = cellDimensions.width * gridDimensions.width;
+        const totalHeight = cellDimensions.height * gridDimensions.height;
+        elements.canvas.style.width = totalWidth + 'px';
+        elements.canvas.style.height = totalHeight + 'px';
+        elements.canvas.style.gridTemplateColumns = `repeat(${gridDimensions.width}, ${cellDimensions.width}px)`;
+        elements.canvas.style.gridTemplateRows = `repeat(${gridDimensions.height}, ${cellDimensions.height}px)`;
+
+        for (let y = 0; y < gridDimensions.height; y++) {
+            for (let x = 0; x < gridDimensions.width; x++) {
+                const cell = canvasData[y]?.[x] || { char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR };
+                const span = Utils.createElement('span', { textContent: cell.char });
+                span.style.color = cell.fg;
+                if (cell.bg !== 'bg-transparent') {
+                    span.classList.add(cell.bg);
+                }
+                fragment.appendChild(span);
+            }
+        }
+        elements.canvas.appendChild(fragment);
+    }
+
+    function updateCell(x, y, cell) {
+        if (!elements.canvas || gridDimensions.width === 0) return;
+        const index = y * gridDimensions.width + x;
+        const span = elements.canvas.children[index];
+
+        if (span) {
+            if (span.textContent !== cell.char) {
+                span.textContent = cell.char;
+            }
+            if (span.style.color !== cell.fg) {
+                span.style.color = cell.fg;
+            }
+            const currentBg = span.className;
+            const newBg = cell.bg;
+            if (currentBg !== newBg) {
+                span.className = newBg;
+            }
+        }
+    }
+
+    function handleResize() {
+        if (eventCallbacks.onResize) {
+            eventCallbacks.onResize();
+        }
+    }
+
+    function reset() {
+        elements = {};
+        gridDimensions = { width: 0, height: 0 };
+    }
+
+    return { buildLayout, reset, getGridCoordinates, updateStatusBar, updateToolbar, toggleGrid, populateAndShowCharSelect, hideCharSelect, populateAndShowColorSelect, hideColorSelect, renderCanvas, updateCell, handleResize };
+})();
