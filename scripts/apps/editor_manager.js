@@ -547,6 +547,10 @@ const EditorManager = (() => {
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
             currentFileMode = EditorUtils.determineMode(filePath);
+            EditorUI.updateWordWrapButtonText(isWordWrapActive);
+            EditorUI.updateHighlightButtonText(isHighlightingActive);
+            EditorUI._updateFormattingToolbarVisibility(currentFileMode);
+            _updateHighlighting(); // Force an initial render with the correct highlighting state
             EditorUI.setTextareaContent(content);
             // Initial tokenization and render
             SyntaxHighlighter.tokenizeDocument(content, currentFileMode);

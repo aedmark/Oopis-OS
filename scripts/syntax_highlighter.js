@@ -115,30 +115,21 @@ const SyntaxHighlighter = (() => {
     function getRenderedLinesHTML(startLine, endLine, findMatches = [], findActiveIndex = -1) {
         const visibleLines = tokenizedLines.slice(startLine, endLine);
 
-        let html = '';
-        visibleLines.forEach((lineTokens, index) => {
-            const currentLineNumber = startLine + index;
-            let lineHtml = '';
-            let lineCursor = 0;
-
-            // Simple approach: Render tokens, then overlay find matches. A more robust solution
-            // would merge token streams, but this is sufficient for non-overlapping highlights.
+        // Map each line of tokens to a string of HTML spans.
+        const htmlLines = visibleLines.map((lineTokens, index) => {
             const renderedTokens = lineTokens.map(token => {
                 const escapedContent = escapeHtml(token.content);
+                // This logic can be expanded later to include find/replace markers.
                 return `<span class="sh-${token.type}">${escapedContent}</span>`;
             }).join('');
-
-            lineHtml = renderedTokens;
-
-            // This part is complex. For now, we will simplify and not merge with find tokens,
-            // as that requires a more advanced token merging strategy than is feasible here.
-            // The existing find/replace will be visually degraded but functionally acceptable for this refactor.
-
-            html += lineHtml + '\n';
+            return renderedTokens;
         });
 
-        return html;
+        // Join all the HTML line strings with a newline. This preserves the exact
+        // structure of the original text, fixing the alignment issue.
+        return htmlLines.join('\n');
     }
+
     function highlight(text, mode, findMatches = [], findActiveIndex = -1) {
         tokenizeDocument(text, mode);
         const lineCount = getLineCount();
