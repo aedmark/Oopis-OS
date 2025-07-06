@@ -5,20 +5,41 @@
  * @module SessionManagement
  */
 
+/**
+ * @module EnvironmentManager
+ * @description Manages session-specific environment variables using a stack for proper scoping.
+ */
 const EnvironmentManager = (() => {
     "use strict";
-
+    /**
+     * A stack to manage environment scopes. Each script execution pushes a new scope.
+     * @private
+     * @type {Array<Object.<string, string>>}
+     */
     let envStack = [{}];
 
+    /**
+     * Gets the currently active environment from the top of the stack.
+     * @private
+     * @returns {Object.<string, string>}
+     */
     function _getActiveEnv() {
         return envStack[envStack.length - 1];
     }
 
+    /**
+     * Pushes a new, sandboxed environment scope onto the stack.
+     * This is used when entering a new execution context, like a script.
+     */
     function push() {
         // Push a clone of the current environment to create a new scope
         envStack.push(JSON.parse(JSON.stringify(_getActiveEnv())));
     }
 
+    /**
+     * Pops the current environment scope from the stack, restoring the previous one.
+     * This is used when exiting an execution context.
+     */
     function pop() {
         if (envStack.length > 1) {
             envStack.pop();
@@ -27,6 +48,9 @@ const EnvironmentManager = (() => {
         }
     }
 
+    /**
+     * Initializes the base environment for a new session.
+     */
     function initialize() {
         const baseEnv = {};
         const currentUser = UserManager.getCurrentUser().name;
@@ -38,10 +62,21 @@ const EnvironmentManager = (() => {
         envStack = [baseEnv];
     }
 
+    /**
+     * Gets the value of a specific environment variable from the current scope.
+     * @param {string} varName - The name of the variable to retrieve.
+     * @returns {string} The value of the variable, or an empty string if not found.
+     */
     function get(varName) {
         return _getActiveEnv()[varName] || '';
     }
 
+    /**
+     * Sets the value of an environment variable in the current scope.
+     * @param {string} varName - The name of the variable to set.
+     * @param {string} value - The value to assign to the variable.
+     * @returns {{success: boolean, error?: string}} A result object.
+     */
     function set(varName, value) {
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(varName)) {
             return { success: false, error: `Invalid variable name: '${varName}'. Must start with a letter or underscore, followed by letters, numbers, or underscores.` };
@@ -50,18 +85,33 @@ const EnvironmentManager = (() => {
         return { success: true };
     }
 
+    /**
+     * Deletes an environment variable from the current scope.
+     * @param {string} varName - The name of the variable to unset.
+     */
     function unset(varName) {
         delete _getActiveEnv()[varName];
     }
 
+    /**
+     * Gets a copy of all variables in the current environment scope.
+     * @returns {Object.<string, string>} An object containing all variables.
+     */
     function getAll() {
         return { ..._getActiveEnv() };
     }
 
+    /**
+     * Loads a new set of environment variables into the current scope, replacing existing ones.
+     * @param {Object.<string, string>} vars - The new set of variables.
+     */
     function load(vars) {
         envStack[envStack.length - 1] = { ...(vars || {}) };
     }
 
+    /**
+     * Clears all variables from the current environment scope.
+     */
     function clear() {
         envStack[envStack.length - 1] = {};
     }
@@ -79,11 +129,22 @@ const EnvironmentManager = (() => {
     };
 })();
 
+
+/**
+ * @module HistoryManager
+ * @description Manages the command history for the current session.
+ */
 const HistoryManager = (() => {
     "use strict";
+    /** @private @type {string[]} */
     let commandHistory = [];
+    /** @private @type {number} */
     let historyIndex = 0;
 
+    /**
+     * Adds a command to the history.
+     * @param {string} command - The command string to add.
+     */
     function add(command) {
         const trimmedCommand = command.trim();
         if (
@@ -98,6 +159,10 @@ const HistoryManager = (() => {
         historyIndex = commandHistory.length;
     }
 
+    /**
+     * Retrieves the previous command from history for arrow-up navigation.
+     * @returns {string|null} The command string, or null if at the beginning of history.
+     */
     function getPrevious() {
         if (commandHistory.length > 0 && historyIndex > 0) {
             historyIndex--;
@@ -106,6 +171,10 @@ const HistoryManager = (() => {
         return null;
     }
 
+    /**
+     * Retrieves the next command from history for arrow-down navigation.
+     * @returns {string|null} The command string, or an empty string if at the end of history.
+     */
     function getNext() {
         if (historyIndex < commandHistory.length - 1) {
             historyIndex++;
@@ -117,19 +186,33 @@ const HistoryManager = (() => {
         return null;
     }
 
+    /**
+     * Resets the history navigation index, typically after a new command is entered.
+     */
     function resetIndex() {
         historyIndex = commandHistory.length;
     }
 
+    /**
+     * Returns a copy of the entire command history array.
+     * @returns {string[]}
+     */
     function getFullHistory() {
         return [...commandHistory];
     }
 
+    /**
+     * Clears the command history for the current session.
+     */
     function clearHistory() {
         commandHistory = [];
         historyIndex = 0;
     }
 
+    /**
+     * Sets the command history to a new array, used for session restoration.
+     * @param {string[]} newHistory - The array of commands to set as the new history.
+     */
     function setHistory(newHistory) {
         commandHistory = Array.isArray(newHistory) ? [...newHistory] : [];
         if (commandHistory.length > Config.TERMINAL.MAX_HISTORY_SIZE)
@@ -149,10 +232,18 @@ const HistoryManager = (() => {
     };
 })();
 
+/**
+ * @module AliasManager
+ * @description Manages user-defined command aliases, including persistence.
+ */
 const AliasManager = (() => {
     "use strict";
+    /** @private @type {Object.<string, string>} */
     let aliases = {};
 
+    /**
+     * Initializes the manager by loading aliases from localStorage.
+     */
     function initialize() {
         aliases = StorageManager.loadItem(
             Config.STORAGE_KEYS.ALIAS_DEFINITIONS,
@@ -161,6 +252,10 @@ const AliasManager = (() => {
         );
     }
 
+    /**
+     * Saves the current aliases to localStorage.
+     * @private
+     */
     function _save() {
         StorageManager.saveItem(
             Config.STORAGE_KEYS.ALIAS_DEFINITIONS,
@@ -169,6 +264,12 @@ const AliasManager = (() => {
         );
     }
 
+    /**
+     * Creates or updates an alias.
+     * @param {string} name - The name of the alias.
+     * @param {string} value - The command string the alias should expand to.
+     * @returns {boolean} True on success.
+     */
     function setAlias(name, value) {
         if (!name || typeof value !== "string") return false;
         aliases[name] = value;
@@ -176,6 +277,11 @@ const AliasManager = (() => {
         return true;
     }
 
+    /**
+     * Removes a defined alias.
+     * @param {string} name - The name of the alias to remove.
+     * @returns {boolean} True if the alias was found and removed.
+     */
     function removeAlias(name) {
         if (!aliases[name]) return false;
         delete aliases[name];
@@ -183,14 +289,28 @@ const AliasManager = (() => {
         return true;
     }
 
+    /**
+     * Retrieves the definition of a single alias.
+     * @param {string} name - The name of the alias to get.
+     * @returns {string|null} The alias definition, or null if not found.
+     */
     function getAlias(name) {
         return aliases[name] || null;
     }
 
+    /**
+     * Returns a copy of all defined aliases.
+     * @returns {Object.<string, string>}
+     */
     function getAllAliases() {
         return { ...aliases };
     }
 
+    /**
+     * Expands an alias in a command string, handling recursive expansion up to a limit.
+     * @param {string} commandString - The initial command string to resolve.
+     * @returns {{newCommand: string, error?: string}} An object with the resolved command or an error.
+     */
     function resolveAlias(commandString) {
         const parts = commandString.split(/\s+/);
         let commandName = parts[0];
@@ -224,22 +344,43 @@ const AliasManager = (() => {
     };
 })();
 
+/**
+ * @module SessionManager
+ * @description Orchestrates user sessions, including the user stack for `su`/`logout`
+ * and the automatic/manual saving and loading of terminal states.
+ */
 const SessionManager = (() => {
     "use strict";
+    /** @private @type {string[]} */
     let userSessionStack = [];
 
+    /**
+     * Initializes the user session stack with the default user.
+     */
     function initializeStack() {
         userSessionStack = [Config.USER.DEFAULT_NAME];
     }
 
+    /**
+     * Gets the current user session stack.
+     * @returns {string[]}
+     */
     function getStack() {
         return userSessionStack;
     }
 
+    /**
+     * Pushes a new user onto the session stack (used for `su`).
+     * @param {string} username - The username to push.
+     */
     function pushUserToStack(username) {
         userSessionStack.push(username);
     }
 
+    /**
+     * Pops the current user from the session stack (used for `logout`).
+     * @returns {string|null} The username that was popped, or null if it's the last user.
+     */
     function popUserFromStack() {
         if (userSessionStack.length > 1) {
             return userSessionStack.pop();
@@ -247,20 +388,40 @@ const SessionManager = (() => {
         return null;
     }
 
+    /**
+     * Gets the current user from the top of the session stack.
+     * @returns {string} The current active username.
+     */
     function getCurrentUserFromStack() {
         return userSessionStack.length > 0
             ? userSessionStack[userSessionStack.length - 1]
             : Config.USER.DEFAULT_NAME;
     }
 
+    /**
+     * Clears the session stack and starts a new one with the given user (used for `login`).
+     * @param {string} username - The username to start the new stack with.
+     */
     function clearUserStack(username) {
         userSessionStack = [username];
     }
 
+    /**
+     * Generates the localStorage key for a user's automatic session state.
+     * @private
+     * @param {string} user - The username.
+     * @returns {string} The storage key.
+     */
     function _getAutomaticSessionStateKey(user) {
         return `${Config.STORAGE_KEYS.USER_TERMINAL_STATE_PREFIX}${user}`;
     }
 
+    /**
+     * Generates the localStorage key for a user's manual session state.
+     * @private
+     * @param {string|{name: string}} user - The username or user object.
+     * @returns {string} The storage key.
+     */
     function _getManualUserTerminalStateKey(user) {
         const userName =
             typeof user === "object" && user !== null && user.name
@@ -269,6 +430,11 @@ const SessionManager = (() => {
         return `${Config.STORAGE_KEYS.MANUAL_TERMINAL_STATE_PREFIX}${userName}`;
     }
 
+    /**
+     * Saves the current terminal state automatically for a user.
+     * This is typically called before switching users.
+     * @param {string} username - The user whose state is being saved.
+     */
     function saveAutomaticState(username) {
         if (!username) {
             console.warn(
@@ -291,6 +457,11 @@ const SessionManager = (() => {
         );
     }
 
+    /**
+     * Loads a user's automatic session state from localStorage.
+     * @param {string} username - The user whose state is being loaded.
+     * @returns {boolean} True if a state was found and loaded, false otherwise.
+     */
     function loadAutomaticState(username) {
         if (!username) {
             console.warn(
@@ -355,6 +526,11 @@ const SessionManager = (() => {
         return !!autoState;
     }
 
+    /**
+     * Saves a complete snapshot of the current session and file system manually.
+     * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+     * @async
+     */
     async function saveManualState() {
         const currentUser = UserManager.getCurrentUser();
         const currentInput = TerminalUI.getCurrentInputValue();
@@ -386,6 +562,11 @@ const SessionManager = (() => {
             };
     }
 
+    /**
+     * Loads a manually saved session state, including the file system.
+     * @returns {Promise<{success: boolean, message: string}>}
+     * @async
+     */
     async function loadManualState() {
         const currentUser = UserManager.getCurrentUser();
         const manualStateData = StorageManager.loadItem(
@@ -461,6 +642,11 @@ const SessionManager = (() => {
             };
     }
 
+    /**
+     * Clears all saved session data for a specific user from localStorage.
+     * @param {string} username - The user whose data should be cleared.
+     * @returns {boolean} True on success.
+     */
     function clearUserSessionStates(username) {
         if (!username || typeof username !== "string") {
             console.warn(
@@ -492,13 +678,23 @@ const SessionManager = (() => {
         }
     }
 
+    /**
+     * Performs a full "factory reset" of the entire OS, clearing all data from
+     * localStorage and IndexedDB, then triggering a page reload.
+     * @async
+     */
     async function performFullReset() {
         OutputManager.clearOutput();
         TerminalUI.clearInput();
         const allKeys = StorageManager.getAllLocalStorageKeys();
+
+        // DEFINITIVE FIX: Use a prefix to robustly identify all OS-related keys.
         const OS_KEY_PREFIX = 'oopisOs';
 
         allKeys.forEach((key) => {
+            // Remove any key that starts with our OS prefix.
+            // This is more robust than a hardcoded list.
+            // The Gemini API key ("oopisGeminiApiKey") does not match and will be preserved.
             if (key.startsWith(OS_KEY_PREFIX)) {
                 StorageManager.removeItem(key);
             }

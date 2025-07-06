@@ -1,18 +1,25 @@
-/**
- * @file Defines the 'reset' command, a powerful and destructive command that resets the entire OopisOS system
- * to its factory default state, deleting all user data, configurations, and cached files.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
+    /**
+     * @file Defines the 'reset' command, a powerful and destructive command that resets the entire OopisOS system
+     * to its factory default state, deleting all user data, configurations, and cached files.
+     * @author Andrew Edmark
+     * @author Gemini
+     */
 
     const resetCommandDefinition = {
         commandName: "reset",
         argValidation: {
             exact: 0, // This command takes no arguments.
         },
+        /**
+         * The core logic for the 'reset' command.
+         * It confirms the user's intent in an interactive session, then proceeds to
+         * clear cache storage and perform a full session reset.
+         * @async
+         * @param {object} context - The context object from the command executor.
+         * @returns {Promise<object>} A command result object.
+         */
         coreLogic: async (context) => {
             const { options } = context;
             // This command is too destructive for non-interactive scripts.

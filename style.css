@@ -30,21 +30,6 @@
   --color-border-primary: #52525b;     /* zinc-600 */
   --color-border-secondary: #3f3f46;   /* zinc-700 */
 
-  /* Syntax Highlighting Colors */
-  --sh-color-keyword: #ff79c6; /* Pink */
-  --sh-color-string: #f1fa8c;  /* Yellow */
-  --sh-color-comment: #6272a4; /* Grayish Blue */
-  --sh-color-number: #bd93f9;  /* Purple */
-  --sh-color-operator: #ffb86c;/* Orange */
-  --sh-color-punctuation: #a3a3a3; /* text-secondary */
-  --sh-color-variable: #8be9fd; /* Cyan */
-  --sh-color-tag: #ff79c6;     /* Pink */
-  --sh-color-attribute: #50fa7b; /* Green */
-  --sh-color-value: #f1fa8c;   /* Yellow */
-  --sh-color-selector: #50fa7b; /* Green */
-  --sh-color-property: #8be9fd; /* Cyan */
-
-
   /* Typography */
   --font-family-mono: 'VT323', monospace;
   --font-family-sans: 'Inter', sans-serif; /* A sensible default for UI elements */
@@ -448,31 +433,15 @@ body {
   padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
   text-align: right;
   color: var(--color-text-subtle);
-  position: -webkit-sticky; /* For Safari */
-  position: sticky;
-  left: 0;
-  z-index: 5; /* Keep it on top */
   background-color: #171717;
-  overflow-y: hidden; /* This is the key change */
+  overflow-y: hidden;
   user-select: none;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   white-space: pre;
-  position: -webkit-sticky; /* For Safari */
-  position: sticky;
-  left: 0;
-  top: 0;
-  z-index: 5; /* Ensures it stays on top of the highlighter's background */
-  height: 100%; /* Make it take the full height of the flex container */
-  overflow: hidden; /* It should not scroll itself */
 }
 
-.editor__gutter::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, and Opera */
-}
-
-/* In style.css */
 .editor__gutter--hidden-by-wrap {
   display: none !important;
 }
@@ -480,61 +449,30 @@ body {
 .editor__textarea-wrapper {
   flex: 1;
   position: relative;
-  overflow: auto; /* This should handle both vertical and horizontal scroll */
-  display: flex; /* This makes its direct children (gutter, gridContainer) line up */
+  overflow: hidden;
+  border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
 }
 
-.editor__highlighter, .editor__input {
+.editor__textarea {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-background-darkest);
+  color: var(--color-text-primary);
+  border: none;
+  resize: none;
+  outline: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  /* Use pre-wrap to respect whitespace but wrap lines */
-  white-space: pre-wrap;
-  word-break: break-all; /* Ensure long strings without spaces also wrap */
-  overflow: hidden;
-  /* This is the key to the CSS Grid overlay */
-  grid-area: 1 / 1 / 2 / 2;
-  background-color: transparent;
-  margin: 0;
-  letter-spacing: normal;
-  word-spacing: normal;
-  -moz-tab-size: 2; /* Match TAB_REPLACEMENT */
-  -o-tab-size: 2;
-  tab-size: 2;
 }
 
-.editor__highlighter {
-  color: var(--color-text-primary);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.editor__input {
-  color: transparent; /* Kept for fallback */
-  -webkit-text-fill-color: transparent !important;/* The fix: Explicitly makes the text fill transparent */
-  caret-color: var(--color-text-primary);
-  z-index: 2;
-  resize: none;
-  outline: none;
-}
-
-.editor__input--no-wrap {
+.editor__textarea--no-wrap {
   white-space: pre !important;
-  width: fit-content;
-  min-width: 100%;
+  overflow-x: auto !important;
 }
 
-.editor__highlighter--no-wrap {
-  width: fit-content;
-  min-width: 100%;
-}
-.editor__gutter-content {
-  /* This class doesn't need much, just default positioning */
-  position: relative;
-}
 .editor__preview-wrapper {
   flex: 1;
   display: flex;
@@ -766,6 +704,40 @@ body {
   border-left: var(--border-width) solid var(--color-border-primary);
 }
 
+/* Highlighter styles */
+.editor__textarea-wrapper {
+  position: relative; /* This is crucial for positioning children */
+}
+
+.editor__highlighter, .editor__textarea {
+  /* Both must share the exact same font, size, padding, and border settings */
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  white-space: pre;
+  overflow: hidden; /* Scroll is handled by the parent wrapper */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.editor__highlighter {
+  color: transparent; /* Makes the underlying text invisible */
+  pointer-events: none; /* Allows clicks to pass through to the textarea */
+  z-index: 1;
+}
+
+.editor__textarea {
+  background-color: transparent; /* THE CRITICAL CHANGE */
+  color: var(--color-text-primary);
+  z-index: 2; /* Sits on top of the highlighter */
+  resize: none;
+}
+
 .highlight-match {
   background-color: rgba(251, 191, 36, 0.4); /* --color-accent-amber with alpha */
   border-radius: 2px;
@@ -775,26 +747,6 @@ body {
   background-color: rgba(56, 189, 248, 0.6); /* --color-info with alpha */
   border-radius: 2px;
 }
-
-/* Syntax Highlighting Span Styles */
-.sh-comment { color: var(--sh-color-comment); font-style: italic; }
-.sh-keyword { color: var(--sh-color-keyword); font-weight: bold; }
-.sh-string { color: var(--sh-color-string); }
-.sh-number { color: var(--sh-color-number); }
-.sh-operator { color: var(--sh-color-operator); }
-.sh-punctuation { color: var(--sh-color-punctuation); }
-.sh-variable { color: var(--sh-color-variable); }
-.sh-tag { color: var(--sh-color-tag); }
-.sh-attribute { color: var(--sh-color-attribute); }
-.sh-value { color: var(--sh-color-value); }
-.sh-selector { color: var(--sh-color-selector); }
-.sh-property { color: var(--sh-color-property); }
-.sh-markdown-heading { color: var(--sh-color-keyword); font-weight: bold; }
-.sh-markdown-bold { font-weight: bold; }
-.sh-markdown-italic { font-style: italic; }
-.sh-markdown-link-text { color: var(--sh-color-property); }
-.sh-markdown-link-url { color: var(--sh-color-string); text-decoration: underline; }
-.sh-markdown-list-marker { color: var(--sh-color-operator); }
 
 /* 8. Explorer Component
 /* ========================================================================== */
@@ -1158,7 +1110,7 @@ body {
 
 #paint-canvas-wrapper {
   flex-grow: 1; /* This makes the canvas area fill available space */
-  aspect-ratio: 4 / 3;
+aspect-ratio: 4 / 3;
   background-color: var(--color-background-darkest);
   box-shadow: var(--shadow-inset-light); /* Apply inset shadow for screen effect */
   overflow: auto; /* Allow scrolling for zoomed canvas */
