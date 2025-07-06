@@ -467,6 +467,7 @@ body {
   overflow: auto;
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
+  display: grid;
 }
 
 .editor__highlighter, .editor__input {
@@ -477,18 +478,14 @@ body {
   border: none;
   white-space: pre;
   overflow: hidden;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  grid-area: 1 / 1 / 2 / 2;
   background-color: transparent;
   margin: 0;
   letter-spacing: normal;
   word-spacing: normal;
-  -moz-tab-size: 4; /* ADD THIS */
-  -o-tab-size: 4;   /* ADD THIS */
-  tab-size: 4;      /* ADD THIS */
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
 }
 
 .editor__highlighter {
@@ -499,41 +496,19 @@ body {
 
 .editor__input {
   color: transparent; /* Kept for fallback */
-  -webkit-text-fill-color: transparent; !important;/* The fix: Explicitly makes the text fill transparent */
+  -webkit-text-fill-color: transparent !important;/* The fix: Explicitly makes the text fill transparent */
   caret-color: var(--color-text-primary);
   z-index: 2;
   resize: none;
   outline: none;
 }
 
-.editor__highlighter--no-wrap {
-  /* This makes it expand as wide as its content */
+.editor__input--no-wrap {
+  white-space: pre !important;
   width: fit-content;
   min-width: 100%;
 }
 
-/* This rule should already exist, just modify it */
-.editor__input--no-wrap {
-  white-space: pre !important;
-  /* CHANGE THIS: Don't make it scroll, make it grow */
-  overflow-x: visible !important;
-  /* ADD THIS: Make it expand as wide as its content */
-  width: fit-content;
-  min-width: 100%;
-}
-.editor__highlighter--no-wrap {
-  /* This makes it expand as wide as its content */
-  width: fit-content;
-  min-width: 100%;
-}
-
-.editor__input--no-wrap {
-  /* Use !important to override inline styles if necessary */
-  white-space: pre !important;
-  /* Make it expand as wide as its content */
-  width: fit-content;
-  min-width: 100%;
-}
 .editor__preview-wrapper {
   flex: 1;
   display: flex;
