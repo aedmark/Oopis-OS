@@ -476,7 +476,7 @@ body {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   white-space: pre;
-  overflow: auto; /* Let the elements scroll */
+  overflow: auto;
   position: absolute;
   top: 0;
   left: 0;
@@ -484,6 +484,8 @@ body {
   height: 100%;
   background-color: transparent;
   margin: 0;
+  letter-spacing: normal; /* Add this */
+  word-spacing: normal;   /* Add this */
 }
 
 .editor__highlighter {

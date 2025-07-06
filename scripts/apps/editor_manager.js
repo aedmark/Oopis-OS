@@ -135,23 +135,24 @@ const EditorManager = (() => {
         }
     }
 
-    function _handleEditorScroll() {
+    function _syncScrolls() {
+        if (!isActiveState) return;
+
+        // A minimal debounce prevents performance issues on some systems.
         if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
         scrollDebounceTimer = setTimeout(() => {
-            if (!isActiveState) return;
-            const range = EditorUI.calculateVisibleRange();
-            const totalLines = SyntaxHighlighter.getLineCount();
-            const lineHeight = Utils.getCharacterDimensions(getComputedStyle(EditorUI.elements.textarea).font).height || 16;
-            const totalHeight = totalLines * lineHeight;
+            const textarea = EditorUI.elements.textarea; // This is our contenteditable div
+            const highlighter = EditorUI.elements.highlighter;
+            const gutter = EditorUI.elements.lineGutter;
 
-            // Fetch and render only the visible HTML
-            const html = SyntaxHighlighter.getRenderedLinesHTML(range.startLine, range.endLine);
-            EditorUI.renderVisibleContent(html, range.paddingTop, totalHeight);
+            if (!textarea || !highlighter || !gutter) return;
 
-            // Update line numbers virtually
-            EditorUI.updateVisibleLineNumbers(range.startLine, range.endLine, range.paddingTop, totalHeight);
+            // Force the highlighter and gutter to match the textarea's scroll position
+            highlighter.scrollTop = textarea.scrollTop;
+            highlighter.scrollLeft = textarea.scrollLeft;
+            gutter.scrollTop = textarea.scrollTop;
 
-        }, 10); // A short debounce is fine for scrolling
+        }, 1); // 1ms is enough to batch rapid scroll events
     }
     function _handleEditorSelectionChange() {
         if (!isActiveState) return;
@@ -508,7 +509,7 @@ const EditorManager = (() => {
             document.addEventListener('keydown', handleKeyDown);
             const editorCallbacks = {
                 onInput: _handleEditorInput.bind(this),
-                onScroll: _handleEditorScroll.bind(this),
+                onScroll: _syncScrolls.bind(this),
                 onSelectionChange: _handleEditorSelectionChange.bind(this),
                 onViewToggle: _toggleViewModeHandler.bind(this),
                 onExportPreview: exportPreviewAsHtml.bind(this),
