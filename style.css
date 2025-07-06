@@ -1643,3 +1643,55 @@ aspect-ratio: 4 / 3;
   font-size: inherit;
   caret-color: #AAFFEE; /* Match new text color */
 }
+/* START: SYNTAX HIGHLIGHTING STYLES */
+.editor__highlighter, .editor__textarea {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: auto; /* Changed from hidden to handle internal scroll */
+  white-space: pre;
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
+.editor__highlighter {
+  pointer-events: none;
+  z-index: 1;
+  background-color: #272822; /* Set background color for the highlighter */
+}
+
+/* The code element inside the pre */
+.editor__highlighter > code {
+  font: inherit;
+  display: block;
+  color: var(--color-text-primary);
+}
+
+
+.editor__textarea {
+  background-color: transparent;
+  color: transparent; /* Makes the actual textarea text invisible */
+  caret-color: white; /* Ensures the caret is visible */
+  z-index: 2;
+  resize: none;
+  outline: none;
+}
+
+.editor__textarea--no-wrap {
+  white-space: pre !important;
+  overflow-x: auto !important;
+}
+
+.editor__highlighter--no-wrap {
+  white-space: pre !important;
+  overflow-x: auto !important;
+}
+/* END: SYNTAX HIGHLIGHTING STYLES */

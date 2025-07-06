@@ -5,7 +5,20 @@ const EditorAppConfig = {
         TAB_REPLACEMENT: "    ",
         DEFAULT_MODE: "text",
         MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html" },
-        EXTENSIONS_MAP: { md: "markdown", html: "html", htm: "html", sh: "text", js: "text", css: "text" },
+        // UPDATED: More specific language mapping for Prism.js
+        EXTENSIONS_MAP: {
+            md: "markdown",
+            html: "html",
+            htm: "html",
+            css: "css",
+            js: "javascript",
+            py: "python",
+            rb: "ruby",
+            sh: "bash",
+            json: "json",
+            yaml: "yaml",
+            yml: "yaml"
+        },
         VIEW_MODES: { SPLIT: "split", EDIT_ONLY: "edit", PREVIEW_ONLY: "preview" },
         WORD_WRAP_DEFAULT_ENABLED: false,
     },
@@ -17,6 +30,7 @@ const EditorAppConfig = {
 const EditorUtils = (() => {
     "use strict";
     function determineMode(filePath) {
+        if (!filePath) return EditorAppConfig.EDITOR.DEFAULT_MODE;
         const extension = Utils.getFileExtension(filePath);
         return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
     }
@@ -255,9 +269,14 @@ const EditorUI = (() => {
         const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
-        elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
+
+        // PHASE 2: RESTRUCTURE FOR PHANTOM SCRIBE
+        elements.highlighterCode = Utils.createElement('code', { id: 'editor-highlighter-code' });
+        elements.highlighter = Utils.createElement('pre', { id: 'editor-highlighter', className: 'editor__highlighter' }, elements.highlighterCode);
+
         elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
         elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
+
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.textareaWrapper, elements.previewWrapper);
@@ -280,6 +299,30 @@ const EditorUI = (() => {
         );
 
         return elements.editorContainer;
+    }
+
+    // This is the new function that replaces the old renderHighlights
+    function renderSyntaxHighlighting(text, language) {
+        if (!elements.highlighterCode || !elements.highlighter) return;
+
+        // Use Prism to highlight the code
+        let highlightedHtml = '';
+        if (Prism.languages[language]) {
+            highlightedHtml = Prism.highlight(text, Prism.languages[language], language);
+        } else {
+            // Fallback for plain text: just escape HTML entities to prevent injection
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = text;
+            highlightedHtml = tempDiv.innerHTML;
+        }
+
+        // Set the class on the parent <pre> element for Prism themes to work
+        elements.highlighter.className = `editor__highlighter language-${language || 'none'}`;
+
+        // Add a trailing newline to ensure the last line is visible and scroll height is correct
+        elements.highlighterCode.innerHTML = highlightedHtml + '<br>';
+
+        syncScrolls();
     }
 
     function setGutterVisibility(visible) {
@@ -360,9 +403,11 @@ const EditorUI = (() => {
         if (isWordWrapActive) {
             elements.textarea.setAttribute("wrap", "soft");
             elements.textarea.classList.remove("editor__textarea--no-wrap");
+            if (elements.highlighter) elements.highlighter.classList.remove("editor__textarea--no-wrap");
         } else {
             elements.textarea.setAttribute("wrap", "off");
             elements.textarea.classList.add("editor__textarea--no-wrap");
+            if (elements.highlighter) elements.highlighter.classList.add("editor__textarea--no-wrap");
         }
     }
 
@@ -483,6 +528,7 @@ const EditorUI = (() => {
         return elements.replaceInput ? elements.replaceInput.value : "";
     }
 
+    // This function is now superseded by renderSyntaxHighlighting
     function renderHighlights(text, matches, activeIndex) {
         if (!elements.highlighter) return;
         let highlightedHtml = '';
@@ -503,6 +549,6 @@ const EditorUI = (() => {
         setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
-        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
+        updateFindBar, getFindQuery, getReplaceQuery, renderSyntaxHighlighting
     };
 })();
