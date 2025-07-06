@@ -31,7 +31,7 @@ Beyond standard command-line utilities, OopisOS includes several applications:
 
 - **chidi_app.js**: A Markdown file reader and analyzer, capable of viewing and interacting with .md files, even processing them from piped input. It supports Markdown previewing and syntax highlighting.
 
-- **editor.js**: A text editor, presumably for creating and modifying files.
+- **editor.js.bak**: A text editor, presumably for creating and modifying files.
 
 - **explorer.js**: A file explorer for navigating the file system.
 
