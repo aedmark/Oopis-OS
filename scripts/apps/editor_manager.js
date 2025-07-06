@@ -1,3 +1,7 @@
+/**
+ * @file Manages the main controller for the editor. Manages state, user interactions, and coordinates between the UI and file system.
+ */
+/* global Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager, PatchUtils, EditorUI, EditorUtils, EditorAppConfig, marked */
 const EditorManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
@@ -14,7 +18,7 @@ const EditorManager = (() => {
         activeIndex: -1,
     };
 
-    let findDebounceTimer = null;
+    let findDebounceTimer = null; // Debounce timer for find input
 
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
@@ -39,23 +43,15 @@ const EditorManager = (() => {
     function _updateFullEditorUI() {
         if (!isActiveState) return;
         const textContent = EditorUI.getTextareaContent();
-        isDirty = textContent !== _getPatchedContent();
+        isDirty = textContent !== _getPatchedContent(); // Updated isDirty check
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         EditorUI.updateLineNumbers(textContent);
         const selection = EditorUI.getTextareaSelection();
         EditorUI.updateStatusBar(textContent, selection.start);
-
-        // PHASE 3: AWAKEN THE SCRIBE
-        const language = EditorUtils.determineMode(currentFilePath);
-        // The new UI function handles syntax highlighting.
-        // We pass the plain text and the determined language.
-        EditorUI.renderSyntaxHighlighting(textContent, language);
-
-        // This part remains for markdown/html preview functionality
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
-
+        EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
         EditorUI.syncScrolls();
     }
     function _handleEditorInput() {
@@ -89,17 +85,7 @@ const EditorManager = (() => {
             fileName = `${baseName}.txt`;
         } else { // Handles 'markdown' and 'html'
             const renderedContent = EditorUI.getPreviewPaneHTML();
-            const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Exported: ${baseName}</title>
-    ${EditorUI.iframeStyles}
-</head>
-<body>
-    ${renderedContent}
-</body>
-</html>`;
+            const fullHtml = '<!DOCTYPE html>\\n<html lang="en">\\n<head>\\n    <meta charset="UTF-8">\\n    <title>Exported: ' + baseName + '</title>\\n    ' + EditorUI.iframeStyles + '\\n</head>\\n<body>\\n    ' + renderedContent + '\\n</body>\\n</html>';
             blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
             fileName = `${baseName}.html`;
         }
@@ -113,6 +99,8 @@ const EditorManager = (() => {
 
         await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
     }
+
+    // --- REFACTORED UNDO/REDO LOGIC ---
 
     function _getPatchedContent() {
         if (undoStack.length === 0) return "";
@@ -129,9 +117,11 @@ const EditorManager = (() => {
 
         if (patch) {
             undoStack.push(patch);
-            if (undoStack.length > MAX_UNDO_STATES + 1) {
+            if (undoStack.length > MAX_UNDO_STATES + 1) { // +1 for original content
+                // To keep memory usage down, we'd need to occasionally re-base
+                // For now, just cap the stack
                 undoStack.shift();
-                undoStack[0] = _getPatchedContent();
+                undoStack[0] = _getPatchedContent(); // Re-base
                 const rebasePatches = undoStack.slice(1);
                 undoStack = [undoStack[0], ...rebasePatches];
             }
@@ -149,7 +139,7 @@ const EditorManager = (() => {
         const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
 
         EditorUI.setTextareaContent(previousContent);
-        isDirty = (previousContent !== originalContent);
+        isDirty = (previousContent !== originalContent); // Simple check is okay here because we reverted to a known state
         _updateFullEditorUI();
         _updateUndoRedoButtonStates();
         EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
@@ -171,6 +161,8 @@ const EditorManager = (() => {
         EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
         EditorUI.setEditorFocus();
     }
+
+    // --- END REFACTORED LOGIC ---
 
     function _updateUndoRedoButtonStates() {
         if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
@@ -213,7 +205,7 @@ const EditorManager = (() => {
                     newEnd = start + manipulatedText.length;
                     break;
                 case 'codeblock':
-                    manipulatedText = `\`\`\`\n${selectedText}\n\`\`\``;
+                    manipulatedText = '```\n' + selectedText + '\n```';
                     newStart = start + 3;
                     newEnd = start + 3 + selectedText.length;
                     break;
@@ -320,7 +312,7 @@ const EditorManager = (() => {
         findState.matches = [];
         findState.activeIndex = -1;
         EditorUI.updateFindBar(findState);
-        _updateFullEditorUI(); // Re-render syntax highlighting
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), [], -1); // Clear highlights
         EditorUI.setEditorFocus();
     }
 
@@ -341,37 +333,37 @@ const EditorManager = (() => {
             findState.activeIndex = -1;
         } else {
             const text = EditorUI.getTextareaContent();
-            const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+            const regex = new RegExp(query.replace(/[-\/\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
             findState.matches = [...text.matchAll(regex)];
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
         }
         EditorUI.updateFindBar(findState);
-        _updateFullEditorUI();
-        _scrollToMatch(findState.activeIndex, false);
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+        _scrollToMatch(findState.activeIndex, false); // FIX: Do not focus textarea on find
     }
 
     function _goToNextMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
         EditorUI.updateFindBar(findState);
-        _updateFullEditorUI();
-        _scrollToMatch(findState.activeIndex, true);
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
     }
 
     function _goToPrevMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
         EditorUI.updateFindBar(findState);
-        _updateFullEditorUI();
-        _scrollToMatch(findState.activeIndex, true);
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
     }
 
-    function _scrollToMatch(index, shouldFocusTextarea = true) {
+    function _scrollToMatch(index, shouldFocusTextarea = true) { // FIX: Added parameter
         if (index === -1) return;
         const match = findState.matches[index];
         const textarea = EditorUI.elements.textarea;
 
-        if (shouldFocusTextarea) {
+        if (shouldFocusTextarea) { // FIX: Conditional focus
             textarea.focus();
         }
 
@@ -397,7 +389,7 @@ const EditorManager = (() => {
     function _replaceAll() {
         if (findState.matches.length === 0 || !findState.isReplace) return;
         const replaceText = EditorUI.getReplaceQuery();
-        const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+        const regex = new RegExp(findState.query.replace(/[-\/\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
         const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
 
         EditorUI.setTextareaContent(newText);
@@ -427,7 +419,7 @@ const EditorManager = (() => {
             originalContent = content;
             isDirty = false;
             onSaveCallback = callback;
-            undoStack = [content];
+            undoStack = [content]; // Start with the full original content
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
