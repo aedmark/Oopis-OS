@@ -114,8 +114,7 @@ const EditorManager = (() => {
     function _debouncedHighlight() {
         if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
         highlightDebounceTimer = setTimeout(() => {
-            _updateHighlighting();
-            EditorUI.syncScrolls();
+            _updateHighlighting(); // The only thing that should be here.
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
 
@@ -183,7 +182,7 @@ const EditorManager = (() => {
         scrollDebounceTimer = setTimeout(() => {
             const wrapper = EditorUI.elements.textareaWrapper;
             const highlighter = EditorUI.elements.highlighter;
-            const gutter = EditorUI.elements.lineGutter;
+            const gutter = EditorUI.elements.lineGutter; // Make sure you have this element
             const textarea = EditorUI.elements.textarea;
             if (!wrapper || !highlighter || !gutter || !textarea) return;
 
@@ -194,7 +193,7 @@ const EditorManager = (() => {
             // Synchronize the highlighter layer and the line gutter
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
-            gutter.scrollTop = scrollTop; // This is the essential fix
+            gutter.scrollTop = scrollTop; // This is the essential fix**
             textarea.scrollLeft = scrollLeft;
         }, 1);
     }
@@ -548,7 +547,7 @@ const EditorManager = (() => {
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
-            const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppCofig.EDITOR.MODES.HTML;
+            const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
             document.addEventListener('keydown', handleKeyDown);
             const editorCallbacks = {
                 onInput: _handleEditorInput.bind(this),
