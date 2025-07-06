@@ -166,19 +166,29 @@ const EditorManager = (() => {
         // A minimal debounce prevents performance issues on some systems.
         if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
         scrollDebounceTimer = setTimeout(() => {
-            const textarea = EditorUI.elements.textarea; // This is our contenteditable div
+            // The WRAPPER is now the source of truth for scrolling
+            const wrapper = EditorUI.elements.textareaWrapper;
             const highlighter = EditorUI.elements.highlighter;
             const gutter = EditorUI.elements.lineGutter;
+            const textarea = EditorUI.elements.textarea;
 
-            if (!textarea || !highlighter || !gutter) return;
+            if (!wrapper || !highlighter || !gutter || !textarea) return;
 
-            // Force the highlighter and gutter to match the textarea's scroll position
-            highlighter.scrollTop = textarea.scrollTop;
-            highlighter.scrollLeft = textarea.scrollLeft;
-            gutter.scrollTop = textarea.scrollTop;
+            // Force the children to match the wrapper's scroll position
+            const scrollTop = wrapper.scrollTop;
+            const scrollLeft = wrapper.scrollLeft;
+
+            highlighter.scrollTop = scrollTop;
+            highlighter.scrollLeft = scrollLeft;
+            gutter.scrollTop = scrollTop;
+
+            // Also sync the textarea's scrollLeft for horizontal scrolling
+            textarea.scrollLeft = scrollLeft;
+
 
         }, 1); // 1ms is enough to batch rapid scroll events
     }
+
     function _handleEditorSelectionChange() {
         if (!isActiveState) return;
         _updateAndRedraw();

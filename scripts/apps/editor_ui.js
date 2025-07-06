@@ -215,13 +215,21 @@ const EditorUI = (() => {
             autocapitalize: "none",
             eventListeners: {
                 input: eventCallbacks.onInput,
-                scroll: eventCallbacks.onScroll,
                 click: eventCallbacks.onSelectionChange,
                 keyup: eventCallbacks.onSelectionChange,
                 keydown: eventCallbacks.onKeydown
             }
         });
-        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
+
+        // For elements.textareaWrapper:
+        elements.textareaWrapper = Utils.createElement("div", {
+            id: "editor-textarea-wrapper",
+            className: "editor__textarea-wrapper",
+            // ADD THE SCROLL LISTENER HERE
+            eventListeners: {
+                scroll: eventCallbacks.onScroll
+            }
+        }, elements.highlighter, elements.textarea);
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
         elements.findMatchesDisplay = Utils.createElement("span", { className: "find-bar__matches" });

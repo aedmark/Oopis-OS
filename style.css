@@ -464,7 +464,7 @@ body {
 .editor__textarea-wrapper {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow: auto;
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
 }
@@ -476,7 +476,7 @@ body {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   white-space: pre;
-  overflow: auto;
+  overflow: hidden;
   position: absolute;
   top: 0;
   left: 0;
