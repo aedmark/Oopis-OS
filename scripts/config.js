@@ -6,14 +6,6 @@
 const Config = (() => {
     "use strict";
 
-    /**
-     * The default configuration object for the entire OS.
-     * Contains settings for the database, OS metadata, user constraints,
-     * terminal behavior, storage keys, CSS classes, file system parameters,
-     * and predefined messages.
-     * @private
-     * @type {object}
-     */
     const defaultConfig = {
         /** Database settings for IndexedDB. */
         DATABASE: {

@@ -215,7 +215,14 @@ const EditorUI = (() => {
                 input: eventCallbacks.onInput,
                 click: eventCallbacks.onSelectionChange,
                 keyup: eventCallbacks.onSelectionChange,
-                keydown: eventCallbacks.onKeydown
+                keydown: eventCallbacks.onKeydown,
+                dragstart: (e) => { e.preventDefault(); },
+                drag: (e) => { e.preventDefault(); },
+                dragend: (e) => { e.preventDefault(); },
+                dragenter: (e) => { e.preventDefault(); },
+                dragleave: (e) => { e.preventDefault(); },
+                dragover: (e) => { e.preventDefault(); },
+                drop: (e) => { e.preventDefault(); }
             }
         });
 
@@ -223,10 +230,10 @@ const EditorUI = (() => {
         elements.textareaWrapper = Utils.createElement("div", {
             id: "editor-textarea-wrapper",
             className: "editor__textarea-wrapper",
-            // ADD THE SCROLL LISTENER HERE
             eventListeners: {
                 scroll: eventCallbacks.onScroll
             }
+            // END: Added block
         }, elements.highlighter, elements.textarea);
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
