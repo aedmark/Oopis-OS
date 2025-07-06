@@ -1,13 +1,4 @@
-/**
- * @fileoverview Core application logic for Chidi.md, a modal Markdown reader and analyzer for OopisOS.
- * This file handles the UI creation, state management, Markdown rendering, and interaction with the Gemini API.
- * @module ChidiApp
- */
-
 const ChidiApp = {
-    /**
-     * @property {object} state - The current state of the Chidi application.
-     */
     state: {
         loadedFiles: [],
         currentIndex: -1,
@@ -15,26 +6,13 @@ const ChidiApp = {
         isAskingMode: false,
         isVerbose: false,
     },
-
-    /**
-     * @property {Object.<string, HTMLElement>} elements - A cache of frequently accessed DOM elements.
-     */
     elements: {},
     callbacks: {},
 
-    /**
-     * Checks if the Chidi modal is currently open and active.
-     * @returns {boolean} True if the modal is open, false otherwise.
-     */
     isActive() {
         return this.state.isModalOpen;
     },
 
-    /**
-     * Launches the Chidi.md application in a modal window.
-     * @param {Array<object>} files - An array of file objects ({ name, path, content }) to be loaded.
-     * @param {object} callbacks - An object containing onExit and onSaveSession callbacks.
-     */
     launch(files, callbacks) {
         if (this.state.isModalOpen) {
             console.warn("ChidiApp is already open.");
@@ -62,9 +40,6 @@ const ChidiApp = {
         }
     },
 
-    /**
-     * Closes the application, removes UI elements and styles, and calls the exit callback.
-     */
     close() {
         if (!this.state.isModalOpen) return;
 
@@ -84,10 +59,6 @@ const ChidiApp = {
         }
     },
 
-    /**
-     * Creates the main modal element containing the application's UI.
-     * @returns {HTMLElement} The root element of the Chidi application.
-     */
     createModal() {
         const appContainer = document.createElement('div');
         appContainer.id = 'chidi-console-panel';
@@ -95,9 +66,6 @@ const ChidiApp = {
         return appContainer;
     },
 
-    /**
-     * Caches references to frequently used DOM elements for performance.
-     */
     cacheDOMElements() {
         const get = (id) => document.getElementById(id);
         this.elements = {
@@ -122,9 +90,6 @@ const ChidiApp = {
         };
     },
 
-    /**
-     * Updates the entire UI based on the current application state.
-     */
     updateUI() {
         if (!this.state.isModalOpen) return;
 
