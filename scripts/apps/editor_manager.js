@@ -42,7 +42,7 @@ const EditorUtils = {
         const extension = Utils.getFileExtension(filePath);
         switch (extension) {
             case 'md': return EditorAppConfig.EDITOR.MODES.MARKDOWN;
-            case 'html': return EditorAppConfig.EDITOR.MODES.HTML;
+            case 'html': return EditorAppConfig.EDITOR.MODES.TEXT;
             case 'js': return EditorAppConfig.EDITOR.MODES.JAVASCRIPT;
             case 'css': return EditorAppConfig.EDITOR.MODES.CSS;
             case 'sh': return EditorAppConfig.EDITOR.MODES.SHELL;
@@ -155,7 +155,7 @@ const EditorManager = (() => {
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
 
-        const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+        const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN
 
         EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
@@ -239,7 +239,7 @@ const EditorManager = (() => {
         const selection = EditorUI.getTextareaSelection();
         EditorUI.updateStatusBar(textContent, selection.start);
 
-        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
     }
@@ -644,7 +644,7 @@ const EditorManager = (() => {
      */
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
-        const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+        const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
         if (!isPreviewable) return;
         if (currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
         else if (currentViewMode === EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY) currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY;
@@ -817,7 +817,7 @@ const EditorManager = (() => {
             setTimeout(() => {
                 if (!isActiveState) return;
 
-                const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+                const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
 
                 currentFileMode = EditorUtils.determineMode(filePath);
                 EditorUI.updateWordWrapButtonText(isWordWrapActive);

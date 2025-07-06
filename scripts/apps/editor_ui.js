@@ -47,7 +47,7 @@ const EditorUI = (() => {
 
     function _updateFormattingToolbarVisibility(mode) {
         const isMarkdown = mode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
-        const isHtml = mode === EditorAppConfig.EDITOR.MODES.HTML;
+        const isHtml = mode === EditorAppConfig.EDITOR.MODES.TEXT;
         if (elements.formattingToolbar) {
             elements.formattingToolbar.classList.toggle('hidden', !isMarkdown);
         }
@@ -146,7 +146,7 @@ const EditorUI = (() => {
             try {
                 if (mode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
                     elements.previewPane.innerHTML = `<div class="markdown-preview">${marked.parse(text)}</div>`;
-                } else if (mode === EditorAppConfig.EDITOR.MODES.HTML) {
+                } else if (mode === EditorAppConfig.EDITOR.MODES.TEXT) {
                     // 1. Sanitize the user's HTML to remove unsafe tags
                     const sanitizedUserHtml = _sanitizeHtml(text);
 

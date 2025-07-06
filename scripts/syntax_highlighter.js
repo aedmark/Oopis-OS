@@ -57,14 +57,6 @@ const SyntaxHighlighter = (() => {
             { type: 'markdown-link-text', pattern: /(?:\[[^\]]+\])(?=\()/ },
             { type: 'markdown-link-url', pattern: /(?:\]\()(?:[^)]+)(?:\))/ },
         ],
-        html: [
-            { type: 'comment', pattern: // },
-                    { type: 'tag', pattern: /<\/?([a-zA-Z0-9\-]+)/ },
-            { type: 'tag', pattern: />/ },
-            { type: 'attribute', pattern: /\b([a-zA-Z\-]+)(?=\s*=)/ },
-            { type: 'value', pattern: /"([^"]*)"|'([^']*)'/ },
-            { type: 'operator', pattern: /=/ }
-        ]
     };
 
     /**
