@@ -1,14 +1,4 @@
-# OopisOS v3.5 Command Reference
-
-- [OopisOS v3.5 Command Reference](#oopisos-v35-command-reference)
-  + [A Note on the Structure of This Document](#a-note-on-the-structure-of-this-document)
-  * [1. Core Concepts: Observation & Security](#1-core-concepts-observation--security)
-  * [2. The Social Fabric: User & Group Management](#2-the-social-fabric-user--group-management)
-  * [3. The Workshop: Fundamental File Operations](#3-the-workshop-fundamental-file-operations)
-  * [4. The Assembly Line: Text Processing & Automation](#4-the-assembly-line-text-processing--automation)
-  * [5. The Bridge: Networking & System Integrity](#5-the-bridge-networking--system-integrity)
-  * [6. The Cockpit: High-Level Applications](#6-the-cockpit-high-level-applications)
-  * [7. The Environment: Shell & Session Control](#7-the-environment-shell--session-control)
+# OopisOS v3.7 Command Reference
 
 ### A Note on the Structure of This Document
 
@@ -45,6 +35,8 @@ The commands in this reference are presented in a deliberate order designed to b
 |`find`|Searches for files based on criteria like name (`-name`), type (`-type`), or permissions (`-perm`).|
 |`cksum`|Print checksum and byte counts of files.|
 
+Export to Sheets
+
 ---
 
 ## 2. The Social Fabric: User & Group Management
@@ -68,6 +60,8 @@ The commands in this reference are presented in a deliberate order designed to b
 |`groups`|Displays the group memberships for a specified user.|
 |`listusers`|Lists all registered user accounts on the system.|
 
+Export to Sheets
+
 ---
 
 ## 3. The Workshop: Fundamental File Operations
@@ -89,6 +83,8 @@ The commands in this reference are presented in a deliberate order designed to b
 |`upload`|Opens a dialog to upload files from your local machine into the OopisOS file system.|
 |`export`|Opens a dialog to download a file from the OopisOS file system to your local machine.|
 
+Export to Sheets
+
 ---
 
 ## 4. The Assembly Line: Text Processing & Automation
@@ -100,6 +96,9 @@ The commands in this reference are presented in a deliberate order designed to b
 |`uniq`|Reports or filters out adjacent repeated lines (`-c` to count, `-d` for duplicates).|
 |`wc`|Counts lines (`-l`), words (`-w`), and bytes (`-c`) in files or standard input.|
 |`awk`|A powerful pattern-scanning and text-processing language for complex data extraction.|
+|`more`|Displays content one screen at a time.|
+|`less`|An improved pager for displaying content.|
+|`bc`|An arbitrary-precision calculator language.|
 |`csplit`|Splits a file into sections determined by context lines.|
 |`shuf`|Generates a random permutation of its input lines.|
 |`xargs`|Builds and executes command lines from standard input, connecting commands.|
@@ -107,6 +106,8 @@ The commands in this reference are presented in a deliberate order designed to b
 |`delay`|Pauses execution for a specified number of milliseconds. Essential for scripts.|
 |`printscreen`|Captures all visible text in the terminal and saves it to a file.|
 |`base64`|Encodes or decodes data to standard output.|
+
+Export to Sheets
 
 ---
 
@@ -128,6 +129,8 @@ The commands in this reference are presented in a deliberate order designed to b
 |`reboot`|Reboots the OopisOS virtual machine by reloading the page, preserving all data.|
 |`reset`|Wipes ALL OopisOS data (users, files, settings) and performs a factory reset.|
 
+Export to Sheets
+
 ---
 
 ## 6. The Cockpit: High-Level Applications
@@ -136,11 +139,14 @@ The commands in this reference are presented in a deliberate order designed to b
 |---|---|
 |`edit`|Opens a powerful, full-screen text editor with live Markdown/HTML preview.|
 |`paint`|Launches a graphical, character-based art studio for creating ASCII and ANSI art.|
-|`explore`|Opens a graphical, two-pane file explorer for intuitive navigation.|
+|`explore`|Opens the graphical file explorer.|
 |`chidi`|The "AI Librarian." Launches a modal application to read and analyze Markdown files with AI.|
 |`gemini`|Interacts with a tool-using Gemini AI model that can execute commands to answer questions.|
 |`adventure`|Starts the interactive text adventure game engine.|
 |`basic`|Launches the Oopis Basic IDE for creating and running `.bas` files.|
+|`log`|A personal, timestamped journal and log application.|
+
+Export to Sheets
 
 ---
 

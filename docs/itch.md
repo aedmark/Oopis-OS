@@ -1,32 +1,26 @@
-## OopisOS v3.6: Your World, Anywhere
+## OopisOS v3.7: Your Friendly Neighborhood LLM Edition
 
-A persistent, in-browser, retro-futuristic Operating System. Hack the system, build your own tools, or create entire narrative games. With the introduction of **Portable Mode**, your entire digital world is no longer tethered to a single machine; it can live on a USB drive and travel with you. This isn't just a simulation; it's a complete, self-reliant ecosystem for work, creativity, and play.
+A persistent, retro-futuristic Operating System where you don't just use the computer—you talk to it. Hack the system, build your own tools, or create entire narrative games with your new AI copilot. With enforced **Portable Mode**, your entire digital world, now with its own resident intelligence, can live on a USB drive and travel with you. This isn't just a simulation; it's a complete, self-reliant ecosystem for work, creativity, and play.
 
 ### What is this place?
 
-You've discovered OopisOS, a sophisticated operating system simulation that is radically self-reliant, running as a standalone desktop application or entirely within your web browser. It's a persistent, self-contained world built on the core principles of privacy, security, and exploration. Thanks to a robust Virtual File System (VFS) powered by IndexedDB, everything you do—every file you create, every user you add, every command you type—will be here waiting for you the next time you boot up.
+You've discovered OopisOS, a sophisticated operating system simulation that is radically self-reliant, running as a standalone desktop application. It's a persistent, self-contained world built on the core principles of privacy, security, and exploration. Thanks to a robust Virtual File System (VFS) powered by IndexedDB, everything you do—every file you create, every user you add, every command you type—will be here waiting for you the next time you boot up.
 
 It's a love letter to the command-line interfaces of yore, but with a modern, modular twist perfect for creating your own fun. Lovingly crafted by a human (Andrew Edmark) and his trusty AI sidekick (Gemini), OopisOS is an ode to the joy of computing.
 
-### Major Strides Since v3.0
+### Major Strides in v3.7
 
 The OS has evolved significantly, becoming a more powerful and versatile creative suite.
 
-- **True Portability:** With **Portable Mode**, OopisOS can now run entirely from a USB drive. Your files, users, and settings travel with you, creating a truly personal and machine-independent computing environment.
+- **Your AI Copilot, On Your Terms**: The `gemini` command is now a versatile AI gateway. Chat directly with your own local models via Ollama or LM Studio, or use the default provider for powerful, file-system-aware tool use.
 
-- **Enhanced Application Suite:** The original set of tools has been expanded with powerful new applications:
+- **The AI Librarian**: The `chidi` application now accepts piped input from `find`, allowing you to create dynamic document sets for analysis on the fly.
 
-  - **`explore`**: A graphical, two-pane file explorer for intuitive navigation.
+- **Creative Suite Expansion**: Now includes a full `BASIC` IDE (`basic`) for retro programming and a personal journaling system (`log`).
 
-  - **`basic`**: A complete, integrated IDE for writing, running, and debugging programs in the classic BASIC language.
+- **Enforced Portability**: Portable mode is now standard. OopisOS runs entirely from its own folder, storing all user data in a `data` subdirectory. No installation, no traces left behind.
 
-  - **`log`**: A personal, timestamped journaling system for securely logging your thoughts and activities.
-
-- **Advanced Data Processing:** The shell is now equipped with a suite of data-wrangling utilities, including `sort`, `uniq`, `awk`, `diff`, and `wc`, turning it into a capable environment for text processing and analysis.
-
-- **Hardened Security Model:** The security policy has been formalized, relying on secure password hashing (SHA-256), a centralized permission gatekeeper, and controlled privilege escalation with `sudo` and `visudo`.
-
-- **Robust System Integrity:** New commands like `backup`, `restore`, `sync`, and `cksum` provide a complete toolkit for creating verifiable backups, restoring the system state, and ensuring data integrity.
+- **Hardened Security & System Integrity**: A formalized security policy, `sudo`/`visudo` for privilege escalation, and a full suite of `backup`, `restore`, and `cksum` tools ensure your world is secure and verifiable.
 
 
 ### The Core Experience (The Gameplay)
@@ -86,10 +80,9 @@ Ready to dive in? Here's how to get started:
 
 What will you create?
 
-
 ### How to Run OopisOS
 
-Welcome to OopisOS v3.6, "The Portable Edition". As a standalone desktop application, getting started is easier than ever. There is no installation or local server required.
+Welcome to OopisOS v3.7, "Your Friendly Neighborhood LLM Edition". As a standalone desktop application, getting started is easier than ever. There is no installation or local server required.
 
 **1. Unzip the Application**
 
@@ -103,6 +96,4 @@ That's it. You're ready to explore.
 
 ### Your World, Anywhere: Portable Mode
 
-The defining feature of this version is true portability.
-
-By default, OopisOS will store all your data—users, files, and settings—in a `data` folder created right next to the application executable. This means you can keep the entire OopisOS folder on a USB drive, take it to another computer, and launch it with your complete world intact. Your digital environment is no longer tied to a single machine.
+OopisOS is portable by design. All your data—users, files, and settings—is automatically stored in a `data` folder created right next to the application executable. This means you can keep the entire OopisOS folder on a USB drive, take it to another computer, and launch it with your complete world intact. Your digital environment is never tied to a single machine.
