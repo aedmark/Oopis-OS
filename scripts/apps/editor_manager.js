@@ -1,13 +1,12 @@
-const { EditorState } = CodeMirror;
-const { EditorView, keymap } = CodeMirror;
-const { defaultKeymap } = CodeMirror.commands;
-const { javascript } = CodeMirror.lang_javascript;
-const { html } = CodeMirror.lang_html;
-const { json } = CodeMirror.lang_json;
-const { markdown, markdownLanguage } = CodeMirror.lang_markdown;
-const { StreamLanguage } = CodeMirror.language;
-const { shell } = CodeMirror.legacy_modes;
-const { basic } = CodeMirror.legacy_modes;
+import { EditorState } from '@codemirror/state';
+import { EditorView, keymap } from '@codemirror/view';
+import { defaultKeymap } from '@codemirror/commands';
+import { javascript } from '@codemirror/lang-javascript';
+import { html } from '@codemirror/lang-html';
+import { json } from '@codemirror/lang-json';
+import { markdown, markdownLanguage } from './lang-markdown.js'; // Assuming you have this file locally
+import { StreamLanguage } from '@codemirror/language';
+import { shell, basic } from '@codemirror/legacy-modes/mode';
 
 const EditorManager = (() => {
     "use strict";
