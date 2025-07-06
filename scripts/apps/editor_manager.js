@@ -1,5 +1,6 @@
 const EditorManager = (() => {
     "use strict";
+    let isHighlightingActive = true;
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
         currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
@@ -38,17 +39,42 @@ const EditorManager = (() => {
         EditorUI.setEditorFocus();
         EditorUI.setGutterVisibility(!isWordWrapActive);
     }
+    function _loadHighlightingSetting() {
+        const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_HIGHLIGHT_ENABLED, "Editor highlight setting");
+        isHighlightingActive = savedSetting !== null ? savedSetting : true;
+    }
+
+    function _saveHighlightingSetting() {
+        StorageManager.saveItem(EditorAppConfig.STORAGE_KEYS.EDITOR_HIGHLIGHT_ENABLED, isHighlightingActive, "Editor highlight setting");
+    }
+
+    function _toggleHighlighting() {
+        if (!isActiveState) return;
+        isHighlightingActive = !isHighlightingActive;
+        _saveHighlightingSetting();
+        EditorUI.updateHighlightButtonText(isHighlightingActive);
+        _updateHighlighting(); // Force a re-render
+        EditorUI.setEditorFocus();
+    }
 
     function _updateHighlighting() {
-        if (!isActiveState || typeof SyntaxHighlighter === 'undefined') return;
+        if (!isActiveState) return;
         const text = EditorUI.getTextareaContent();
-        const mode = EditorUtils.determineMode(currentFilePath);
-        const selection = EditorUI.getTextareaSelection(); // Get selection before re-render
+        const selection = EditorUI.getTextareaSelection();
+        let highlightedHtml;
 
-        const highlightedHtml = SyntaxHighlighter.highlight(text, mode, findState.matches, findState.activeIndex);
+        if (isHighlightingActive && typeof SyntaxHighlighter !== 'undefined') {
+            const mode = EditorUtils.determineMode(currentFilePath);
+            highlightedHtml = SyntaxHighlighter.highlight(text, mode, findState.matches, findState.activeIndex);
+        } else {
+            // Fallback to plain, escaped text when highlighting is off
+            const escapeHtml = (textToEscape) => {
+                return textToEscape.replace(/[&<>"']/g, (match) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match]);
+            }
+            highlightedHtml = escapeHtml(text);
+        }
+
         EditorUI.renderHighlights(highlightedHtml);
-
-        // Restore selection which might be lost after innerHTML update
         EditorUI.setTextareaSelection(selection.start, selection.end);
     }
 
@@ -439,6 +465,7 @@ const EditorManager = (() => {
         return new Promise(resolve => {
             _exitPromiseResolve = resolve;
             _loadWordWrapSetting();
+            _loadHighlightingSetting();
             isActiveState = true;
             currentFilePath = filePath;
             currentFileMode = EditorUtils.determineMode(filePath);
@@ -458,6 +485,7 @@ const EditorManager = (() => {
                 onViewToggle: _toggleViewModeHandler.bind(this),
                 onExportPreview: exportPreviewAsHtml.bind(this),
                 onWordWrapToggle: _toggleWordWrap.bind(this),
+                onHighlightToggle: _toggleHighlighting.bind(this),
                 onExitButtonClick: () => exit(false),
                 onFormatBold: () => _applyTextManipulation('bold'),
                 onFormatItalic: () => _applyTextManipulation('italic'),
@@ -494,6 +522,7 @@ const EditorManager = (() => {
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
             EditorUI.applyTextareaWordWrap(isWordWrapActive);
             EditorUI.updateWordWrapButtonText(isWordWrapActive);
+            EditorUI.updateHighlightButtonText(isHighlightingActive);
             EditorUI.setTextareaContent(content);
             EditorUI.setTextareaSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);

@@ -286,13 +286,18 @@ const EditorUI = (() => {
 
         // --- Control Buttons ---
         elements.wordWrapToggleButton = Utils.createElement("button", { id: "editor-word-wrap-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onWordWrapToggle } });
+        elements.highlightToggleButton = Utils.createElement("button", { // <-- ADDED
+            id: "editor-highlight-toggle",
+            className: "editor-btn",
+            eventListeners: { click: eventCallbacks.onHighlightToggle }
+        });
         elements.viewToggleButton = Utils.createElement("button", { id: "editor-view-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onViewToggle } });
         elements.exportPreviewButton = Utils.createElement("button", { id: "editor-export-preview", className: "editor-btn", textContent: "Export", eventListeners: { click: eventCallbacks.onExportPreview } });
         elements.exitButton = Utils.createElement("button", { id: "editor-exit-btn", className: "editor-btn", textContent: "Exit", title: "Exit (prompts to save if unsaved)", eventListeners: { click: eventCallbacks.onExitButtonClick } });
 
         // --- Layout Structure ---
         const controlsLeftGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.formattingToolbar, elements.htmlFormattingToolbar);
-        const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
+        const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.highlightToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton); // <-- ADDED BUTTON HERE
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
@@ -415,11 +420,20 @@ const EditorUI = (() => {
         const editorPane = elements.textareaWrapper;
         const previewPane = elements.previewWrapper;
         const viewToggleButton = elements.viewToggleButton;
+        const exportButton = elements.exportPreviewButton; // Get the export button
 
-        // Hide both panes initially to reset the state
+        // Hide or show buttons based on whether the file type is previewable
+        if (viewToggleButton) {
+            viewToggleButton.classList.toggle('hidden', !isPreviewable);
+        }
+        if (exportButton) {
+            // The export button is also only useful for previewable types
+            exportButton.classList.toggle('hidden', !isPreviewable);
+        }
+
+        // Hide both content panes initially to reset the state
         editorPane.classList.add('hidden');
         previewPane.classList.add('hidden');
-        viewToggleButton.disabled = !isPreviewable; // Disable toggle if not previewable
 
         if (!isPreviewable) {
             // If the file type isn't previewable, always show only the editor
@@ -428,7 +442,7 @@ const EditorUI = (() => {
             return;
         }
 
-        // Set the view mode
+        // Set the view mode for previewable files
         switch (viewMode) {
             case EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY:
                 editorPane.classList.remove('hidden');
@@ -451,6 +465,11 @@ const EditorUI = (() => {
         }
         applyPreviewWordWrap(isWordWrapActive, fileMode);
     }
+    function updateHighlightButtonText(isHighlightingActive) {
+        if (elements.highlightToggleButton) {
+            elements.highlightToggleButton.textContent = isHighlightingActive ? "Syntax: On" : "Syntax: Off";
+        }
+    }
 
     return {
         buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
@@ -461,6 +480,6 @@ const EditorUI = (() => {
         setTextareaSelection: setInputSelection,
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
-        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
+        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights, updateHighlightButtonText
     };
 })();

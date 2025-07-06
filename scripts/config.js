@@ -54,6 +54,7 @@ const Config = (() => {
             USER_TERMINAL_STATE_PREFIX: "oopisOsUserTerminalState_",
             MANUAL_TERMINAL_STATE_PREFIX: "oopisOsManualUserTerminalState_",
             EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
+            EDITOR_HIGHLIGHT_ENABLED: "oopisOsEditorHighlightEnabled",
             ALIAS_DEFINITIONS: "oopisOsAliasDefinitions",
             GEMINI_API_KEY: "oopisGeminiApiKey",
             USER_GROUPS: "oopisOsUserGroups",
