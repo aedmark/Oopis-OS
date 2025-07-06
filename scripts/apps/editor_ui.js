@@ -53,6 +53,25 @@ const EditorUI = (() => {
         }
     }
 
+    /**
+     * Parses a string of HTML, removes potentially harmful elements like <script>
+     * and <style>, and returns the sanitized HTML string.
+     * @private
+     * @param {string} dirtyHtml - The potentially unsafe HTML content from the user.
+     * @returns {string} The sanitized HTML string.
+     */
+    function _sanitizeHtml(dirtyHtml) {
+        // Use the browser's built-in parser to create a document fragment
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(dirtyHtml, 'text/html');
+
+        // Find and remove all script and style tags
+        doc.querySelectorAll('script, style').forEach(el => el.remove());
+
+        // Return the inner HTML of the sanitized body
+        return doc.body.innerHTML;
+    }
+
     function calculateVisibleRange() {
         if (!elements.textareaWrapper) {
             return { startLine: 0, endLine: 25, visibleLines: 25, paddingTop: 0 };
@@ -125,16 +144,21 @@ const EditorUI = (() => {
                 if (mode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
                     elements.previewPane.innerHTML = `<div class="markdown-preview">${marked.parse(text)}</div>`;
                 } else if (mode === EditorAppConfig.EDITOR.MODES.HTML) {
+                    // 1. Sanitize the user's HTML to remove unsafe tags
+                    const sanitizedUserHtml = _sanitizeHtml(text);
+
+                    // 2. Combine our safe styles with the user's sanitized content
+                    const fullHtml = iframeStyles + sanitizedUserHtml;
+
+                    // 3. Create the iframe and set its srcdoc attribute
                     const iframe = Utils.createElement("iframe", {
                         style: { width: "100%", height: "100%", border: "none" },
-                        sandbox: "allow-scripts"
+                        sandbox: "allow-scripts", // Keep sandbox for an extra layer of security
+                        srcdoc: fullHtml // Use srcdoc to safely render the content
                     });
-                    elements.previewPane.innerHTML = '';
-                    elements.previewPane.appendChild(iframe);
-                    const iframeDoc = iframe.contentWindow.document;
-                    iframeDoc.open();
-                    iframeDoc.write(iframeStyles + text);
-                    iframeDoc.close();
+
+                    elements.previewPane.innerHTML = ''; // Clear the preview pane
+                    elements.previewPane.appendChild(iframe); // Add our new iframe
                 }
             } catch (e) {
                 elements.previewPane.textContent = `Preview failed: ${e.message}`;
