@@ -47,10 +47,17 @@ const EditorManager = (() => {
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
-        EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
+        // --- START FIX ---
+        // First, apply syntax highlighting based on the file type.
+        const language = currentFileMode;
+        EditorUI.renderSyntaxHighlights(textContent, language);
+
+        // Then, layer search highlighting on top if there are active matches.
+        if (findState.matches.length > 0) {
+            EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
+        }
+        // --- END FIX ---
         EditorUI.syncScrolls();
-        const language = currentFileMode; // 'javascript', 'html', 'css', etc.
-        EditorUI.renderHighlights(textContent, language);
     }
     function _handleEditorInput() {
         if (!isActiveState) return;
