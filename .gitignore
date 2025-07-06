@@ -1,0 +1,13 @@
+/node_modules/
+/favicon.ico
+*.zip
+*.yaml
+*.bak
+*.rar
+/dist/
+*.7z
+*.deb
+*.appimage
+*.exe
+/docs/*.html
+/release/
