@@ -58,13 +58,13 @@ const SyntaxHighlighter = (() => {
             { type: 'markdown-link-url', pattern: /(?:\]\()(?:[^)]+)(?:\))/ },
         ],
         html: [
-            { type: 'comment', pattern: `//` },
-                    { type: 'tag', pattern: /<\/?([a-zA-Z0-9\-]+)/ },
-            { type: 'tag', pattern: />/ }, // Matches closing > of a tag
-            { type: 'attribute', pattern: /\b([a-zA-Z\-]+)(?=\s*=)/ }, // Matches attribute names
-            { type: 'value', pattern: /"([^"]*)"|'([^']*)'/ }, // Matches attribute values in quotes
+            { type: 'comment', pattern: /<!--[\s\S]*?-->/ },
+            { type: 'tag', pattern: /<\/?([a-zA-Z0-9\-]+)/ },
+            { type: 'tag', pattern: />/ },
+            { type: 'attribute', pattern: /\b([a-zA-Z\-]+)(?=\s*=)/ },
+            { type: 'value', pattern: /"([^"]*)"|'([^']*)'/ },
             { type: 'operator', pattern: /=/ }
-        ],
+        ]
     };
 
     /**
@@ -134,15 +134,14 @@ const SyntaxHighlighter = (() => {
         const htmlLines = visibleLines.map((lineTokens, index) => {
             const renderedTokens = lineTokens.map(token => {
                 const escapedContent = escapeHtml(token.content);
-                // This logic can be expanded later to include find/replace markers.
                 return `<span class="sh-${token.type}">${escapedContent}</span>`;
             }).join('');
-            // FIX: Wrap each line in a div to ensure consistent block-level layout
-            // and add a non-breaking space for empty lines to preserve their height.
+            // Each line is now wrapped in a <div>.
+            // An empty line gets a non-breaking space (&nbsp;) to maintain its height.
             return `<div>${renderedTokens || '&nbsp;'}</div>`;
         });
 
-        // Join without any separator, as the <div>s handle the line breaks.
+// The lines are now joined directly, as the <div>s handle the line breaks.
         return htmlLines.join('');
     }
 
