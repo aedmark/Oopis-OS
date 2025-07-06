@@ -76,11 +76,18 @@ const SyntaxHighlighter = (() => {
         }
 
         const combinedPattern = new RegExp(patterns.map(p => `(${p.pattern.source})`).join('|'), 'g');
-        let tokens = [];
+        const tokens = [];
         let lastIndex = 0;
         let match;
 
         while ((match = combinedPattern.exec(line)) !== null) {
+            // *** FIX STARTS HERE ***
+            // If we have a zero-length match, manually advance the index to avoid an infinite loop.
+            if (match.index === combinedPattern.lastIndex) {
+                combinedPattern.lastIndex++;
+            }
+            // *** FIX ENDS HERE ***
+
             const matchIndex = match.index;
             if (matchIndex > lastIndex) {
                 tokens.push({ type: 'plain', content: line.substring(lastIndex, matchIndex) });
