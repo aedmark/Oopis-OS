@@ -1,6 +1,6 @@
 {
   "name": "oopisos-electron",
-  "version": "3.7.0",
+  "version": "4.0.0",
   "description": "OopisOS Standalone Application",
   "main": "electron.js",
   "author": "Andrew Edmark & Gemini <oopismcgoopis@gmail.com> (https://oopisos.com/)",
@@ -22,7 +22,13 @@
       "style.css",
       "electron.js",
       "preload.js",
+      "package.json",
+      "package-lock.json",
+      "developer.md",
+      "README.md",
+      "security.md",
       "manifest.json",
+      "sw.js",
       "LICENSE.txt",
       "scripts/",
       "icons/"

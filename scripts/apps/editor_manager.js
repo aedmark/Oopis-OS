@@ -505,7 +505,7 @@ const EditorManager = (() => {
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
-            const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+            const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppCofig.EDITOR.MODES.HTML;
             document.addEventListener('keydown', handleKeyDown);
             const editorCallbacks = {
                 onInput: _handleEditorInput.bind(this),
@@ -546,27 +546,34 @@ const EditorManager = (() => {
             };
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
-            currentFileMode = EditorUtils.determineMode(filePath);
-            EditorUI.updateWordWrapButtonText(isWordWrapActive);
-            EditorUI.updateHighlightButtonText(isHighlightingActive);
-            EditorUI._updateFormattingToolbarVisibility(currentFileMode);
-            _updateHighlighting(); // Force an initial render with the correct highlighting state
-            EditorUI.setTextareaContent(content);
-            // Initial tokenization and render
-            SyntaxHighlighter.tokenizeDocument(content, currentFileMode);
-            _handleEditorScroll(); // Trigger initial render of the viewport
-            EditorUI.setEditorFocus();
-            EditorUI.setGutterVisibility(!isWordWrapActive);
-            currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
-            EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
-            EditorUI.applyTextareaWordWrap(isWordWrapActive);
-            EditorUI.updateWordWrapButtonText(isWordWrapActive);
-            EditorUI.updateHighlightButtonText(isHighlightingActive);
-            EditorUI.setTextareaSelection(0, 0);
-            EditorUI._updateFormattingToolbarVisibility(currentFileMode);
-            _updateAndRedraw();
-            EditorUI.setEditorFocus();
-            _updateUndoRedoButtonStates();
+
+            // --- FIX START ---
+            // Defer the rest of the setup to ensure the DOM is painted and styled.
+            setTimeout(() => {
+                if (!isActiveState) return; // Check if exit was called before timeout
+
+                currentFileMode = EditorUtils.determineMode(filePath);
+                EditorUI.updateWordWrapButtonText(isWordWrapActive);
+                EditorUI.updateHighlightButtonText(isHighlightingActive);
+                EditorUI._updateFormattingToolbarVisibility(currentFileMode);
+
+                EditorUI.setTextareaContent(content);
+                // Initial tokenization and render
+                SyntaxHighlighter.tokenizeDocument(content, currentFileMode);
+                _handleEditorScroll(); // Trigger initial render of the viewport
+                EditorUI.setEditorFocus();
+                EditorUI.setGutterVisibility(!isWordWrapActive);
+                currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
+                EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
+                EditorUI.applyTextareaWordWrap(isWordWrapActive);
+
+                EditorUI.setTextareaSelection(0, 0);
+                EditorUI._updateFormattingToolbarVisibility(currentFileMode);
+                _updateAndRedraw(); // Now this will work correctly
+                EditorUI.setEditorFocus();
+                _updateUndoRedoButtonStates();
+            }, 0);
+            // --- FIX END ---
         });
     }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oopis-cache-v37';
+const CACHE_NAME = 'oopis-cache-v40';
 const urlsToCache = [
     './',
     './index.html',
@@ -14,8 +14,11 @@ const urlsToCache = [
     './scripts/fs_manager.js',
     './scripts/session_manager.js',
     './scripts/terminal_ui.js',
-    './scripts/apps/editor.js',
-    './scripts/apps/oopis_paint.js',
+    './scripts/syntax_highlighter.js',
+    './scripts/apps/editor_ui.js',
+    './scripts/apps/editor_manager.js',
+    './scripts/apps/paint_ui.js',
+    './scripts/apps/paint_manager.js',
     './scripts/apps/chidi_app.js',
     './scripts/apps/text_adventure.js',
     './scripts/apps/log_app.js',
