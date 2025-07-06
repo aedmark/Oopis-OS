@@ -368,15 +368,11 @@ const EditorUI = (() => {
     }
 
     function renderHighlights(htmlContent) {
-        if (!elements.highlighter) return;
-
-        function renderVisibleContent(html, paddingTop, totalHeight) {
-            if (elements.highlighterContent) {
-                elements.highlighterContent.innerHTML = html;
-                elements.highlighterContent.style.transform = `translateY(${paddingTop}px)`;
-            }
-            if (elements.highlighter) {
-                elements.highlighter.style.height = `${totalHeight}px`;
+        if (elements.highlighterContent) {
+            elements.highlighterContent.innerHTML = htmlContent;
+            // Synchronize scroll positions as a fallback for full updates
+            if (elements.textarea && elements.highlighter) {
+                elements.highlighter.scrollTop = elements.textarea.scrollTop;
             }
         }
     }

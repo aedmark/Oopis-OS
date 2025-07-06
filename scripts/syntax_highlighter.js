@@ -110,15 +110,6 @@ const SyntaxHighlighter = (() => {
     }
 
     /**
-     * Re-tokenizes a single line and updates the state.
-     */
-    function updateLine(lineNumber, lineText, mode) {
-        if (lineNumber >= 0 && lineNumber < tokenizedLines.length) {
-            tokenizedLines[lineNumber] = _tokenizeLine(lineText, mode);
-        }
-    }
-
-    /**
      * Renders a range of lines into an HTML string, incorporating find/replace highlights.
      */
     function getRenderedLinesHTML(startLine, endLine, findMatches = [], findActiveIndex = -1) {
@@ -148,12 +139,18 @@ const SyntaxHighlighter = (() => {
 
         return html;
     }
+    function highlight(text, mode, findMatches = [], findActiveIndex = -1) {
+        tokenizeDocument(text, mode);
+        const lineCount = getLineCount();
+        // This is a full-document render, used for non-scrolling updates like toggling syntax on/off.
+        return getRenderedLinesHTML(0, lineCount, findMatches, findActiveIndex);
+    }
 
     // Public API
     return {
         tokenizeDocument,
-        updateLine,
         getRenderedLinesHTML,
+        highlight,
         getLineCount
     };
 })();
