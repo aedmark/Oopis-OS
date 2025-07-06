@@ -86,7 +86,6 @@ const EditorUI = (() => {
             const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
             elements.textarea.style.whiteSpace = whiteSpaceStyle;
             elements.highlighterContent.style.whiteSpace = whiteSpaceStyle;
-            elements.textarea.style.overflowX = isWordWrapActive ? "hidden" : "auto";
         }
     }
 
