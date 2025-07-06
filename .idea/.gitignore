@@ -1,8 +1,8 @@
 ../favicon.ico
 *.zip
 *.yaml
-/.idea/
-/node_modules/
+../.idea/
+../node_modules/
 *.bak
 *.rar
 .ftpquota
