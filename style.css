@@ -492,16 +492,15 @@ body {
   z-index: 1;
 }
 
-/* CORE FIX: The selector is now .editor__input */
 .editor__input {
-  color: transparent;
+  color: transparent; /* Kept for fallback */
+  -webkit-text-fill-color: transparent; !important;/* The fix: Explicitly makes the text fill transparent */
   caret-color: var(--color-text-primary);
   z-index: 2;
   resize: none;
   outline: none;
 }
 
-/* CORE FIX: The selector is now .editor__input--no-wrap */
 .editor__input--no-wrap {
   white-space: pre !important;
   overflow-x: auto !important;

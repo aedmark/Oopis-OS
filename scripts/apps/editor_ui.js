@@ -207,9 +207,10 @@ const EditorUI = (() => {
         // --- 1. Define All Element Properties First ---
         elements.highlighterContent = Utils.createElement("div", { className: "editor__highlighter-content" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" }, elements.highlighterContent);
-        elements.textarea = Utils.createElement("textarea", {
+        elements.textarea = Utils.createElement("div", {
             id: "editor-textarea",
             className: "editor__input",
+            contenteditable: "true", // The key change to make it an editable div
             spellcheck: "false",
             autocapitalize: "none",
             eventListeners: {
@@ -346,11 +347,11 @@ const EditorUI = (() => {
     }
 
     function getInputContent() {
-        return elements.textarea ? elements.textarea.value : "";
+        return elements.textarea ? elements.textarea.textContent : "";
     }
 
     function setInputContent(text) {
-        if (elements.textarea) elements.textarea.value = text;
+        if (elements.textarea) elements.textarea.textContent = text;
     }
 
     function setInputFocus() {
@@ -358,13 +359,64 @@ const EditorUI = (() => {
     }
 
     function getInputSelection() {
-        if(!elements.textarea) return {start: 0, end: 0};
-        return { start: elements.textarea.selectionStart, end: elements.textarea.selectionEnd};
+        const sel = window.getSelection();
+        const editorInput = elements.textarea;
+        if (!editorInput || !sel.rangeCount || !editorInput.contains(sel.anchorNode)) {
+            const len = editorInput.textContent.length;
+            return { start: len, end: len };
+        }
+        const range = sel.getRangeAt(0);
+        const preSelectionRange = range.cloneRange();
+        preSelectionRange.selectNodeContents(editorInput);
+        preSelectionRange.setEnd(range.startContainer, range.startOffset);
+        const start = preSelectionRange.toString().length;
+        return { start: start, end: start + range.toString().length };
     }
 
     function setInputSelection(start, end) {
-        if(!elements.textarea) return;
-        elements.textarea.setSelectionRange(start, end);
+        const editorInput = elements.textarea;
+        if (!editorInput || typeof start !== 'number' || typeof end !== 'number') return;
+        const range = document.createRange();
+        const sel = window.getSelection();
+        let charCount = 0;
+        let startNode, startOffset, endNode, endOffset;
+
+        // Helper to traverse text nodes and find the correct character offsets
+        function findNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const nextCharCount = charCount + node.length;
+                if (!startNode && start >= charCount && start <= nextCharCount) {
+                    startNode = node;
+                    startOffset = start - charCount;
+                }
+                if (!endNode && end >= charCount && end <= nextCharCount) {
+                    endNode = node;
+                    endOffset = end - charCount;
+                }
+                charCount = nextCharCount;
+            } else {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    if (findNode(node.childNodes[i])) return true; // Stop if both found
+                }
+            }
+            return startNode && endNode;
+        }
+
+        findNode(editorInput);
+
+        // Fallback to end of content if nodes aren't found (e.g., empty div)
+        if (!startNode || !endNode) {
+            range.selectNodeContents(editorInput);
+            range.collapse(false);
+        } else {
+            range.setStart(startNode, startOffset);
+            range.setEnd(endNode, endOffset);
+        }
+
+        if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
     }
 
     function renderHighlights(htmlContent) {
