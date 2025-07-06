@@ -168,7 +168,7 @@ const EditorUI = (() => {
             id: "editor-textarea-wrapper",
             className: "editor__textarea-wrapper",
             eventListeners: { scroll: eventCallbacks.onScroll }
-        }, [gridContainer]);
+        }, [elements.lineGutter, gridContainer]); // The gutter is now a direct child of the scroller
 
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, [elements.previewPane]);
@@ -259,6 +259,7 @@ const EditorUI = (() => {
 
     function setGutterVisibility(visible) {
         if (elements.lineGutter) {
+            // Use a class to toggle visibility
             elements.lineGutter.classList.toggle('editor__gutter--hidden-by-wrap', !visible);
         }
     }

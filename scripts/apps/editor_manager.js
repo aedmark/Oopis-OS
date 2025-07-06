@@ -282,7 +282,7 @@ const EditorManager = (() => {
      */
     function _syncScrolls() {
         if (!isActiveState) return;
-        if (scrollDebounceTimer) return; // Prevent re-entry if already scheduled
+        if (scrollDebounceTimer) return;
 
         scrollDebounceTimer = requestAnimationFrame(() => {
             const wrapper = EditorUI.elements.textareaWrapper;

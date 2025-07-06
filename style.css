@@ -443,11 +443,10 @@ body {
 }
 
 .editor__gutter {
-  flex-shrink: 0;
-  width: 40px;
-  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
-  text-align: right;
-  color: var(--color-text-subtle);
+  position: -webkit-sticky; /* For Safari */
+  position: sticky;
+  left: 0;
+  z-index: 5; /* Keep it on top */
   background-color: #171717;
   overflow-y: hidden; /* This is the key change */
   user-select: none;
@@ -468,6 +467,7 @@ body {
   display: none; /* Chrome, Safari, and Opera */
 }
 
+/* In style.css */
 .editor__gutter--hidden-by-wrap {
   display: none !important;
 }
@@ -475,10 +475,9 @@ body {
 .editor__textarea-wrapper {
   flex: 1;
   position: relative;
-  overflow: auto;
-  border-right: var(--border-width) solid var(--color-border-secondary);
+  overflow: auto; /* This should handle both vertical and horizontal scroll */
+  display: flex; /* This makes its direct children (gutter, gridContainer) line up */
   min-width: 0;
-  display: flex;
 }
 
 .editor__highlighter, .editor__input {
