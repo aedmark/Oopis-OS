@@ -1,10 +1,11 @@
-const CACHE_NAME = 'oopis-cache-v41';
+const CACHE_NAME = 'oopis-cache-v42';
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
     './manifest.json',
     './scripts/marked.min.js',
+    './scripts/codemirror.js',
     './scripts/main.js',
     './scripts/utils.js',
     './scripts/config.js',
