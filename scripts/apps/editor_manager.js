@@ -56,15 +56,20 @@ const EditorManager = (() => {
         if (!isActiveState) return;
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
-        EditorUI.applyTextareaWordWrap(isWordWrapActive);
-        if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
-            EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
-        }
 
+        const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+
+        // 1. Re-apply the view mode, which has the correct logic for all component visibility.
+        EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
+
+        // 2. Apply the direct style change for text wrapping.
+        EditorUI.applyTextareaWordWrap(isWordWrapActive);
+
+        // 3. Update the button's text to reflect the new state.
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
-        _synchronizeWidths();
+
+        // 4. Set focus back to the editor.
         EditorUI.setEditorFocus();
-        EditorUI.setGutterVisibility(!isWordWrapActive);
     }
 
     function _loadHighlightingSetting() {
@@ -297,15 +302,13 @@ const EditorManager = (() => {
     }
 
     async function _applyTextManipulation(type) {
-        if (!isActiveState || !EditorUI.elements.input) return;
-
-        const textarea = EditorUI.elements.input;
+        if (!isActiveState || !EditorUI.elements.textarea) return;
+        const textarea = EditorUI.elements.textarea;
         const selection = EditorUI.getTextareaSelection();
         const start = selection.start;
         const end = selection.end;
         const text = EditorUI.getTextareaContent();
         const selectedText = text.substring(start, end);
-
         let manipulatedText = '';
         let newStart = start;
         let newEnd = end;

@@ -453,6 +453,10 @@ const EditorUI = (() => {
         editorPane.classList.add('hidden');
         previewPane.classList.add('hidden');
 
+        // Default gutter visibility depends on word-wrap. It will be shown or hidden
+        // alongside the editor pane below.
+        setGutterVisibility(!isWordWrapActive);
+
         if (!isPreviewable) {
             editorPane.classList.remove('hidden');
             editorPane.style.width = '100%';
@@ -467,6 +471,7 @@ const EditorUI = (() => {
                 break;
             case EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY:
                 previewPane.classList.remove('hidden');
+                setGutterVisibility(false); // <-- THE FIX: Explicitly hide gutter in full preview mode.
                 previewPane.style.width = '100%';
                 if (viewToggleButton) viewToggleButton.textContent = "Split";
                 break;
@@ -479,9 +484,9 @@ const EditorUI = (() => {
                 if (viewToggleButton) viewToggleButton.textContent = "Editor";
                 break;
         }
-        applyPreviewWordWrap(isWordWrapActive, fileMode);
-    }
-    function updateHighlightButtonText(isHighlightingActive) {
+        // As identified previously, this incorrect call can be removed.
+        // applyPreviewWordWrap(isWordWrapActive, fileMode);
+    }    function updateHighlightButtonText(isHighlightingActive) {
         if (elements.highlightToggleButton) {
             elements.highlightToggleButton.textContent = isHighlightingActive ? "Syntax: On" : "Syntax: Off";
         }
