@@ -15,7 +15,7 @@
             { name: "invertMatch", short: "-v", long: "--invert-match" },
             { name: "lineNumber", short: "-n", long: "--line-number" },
             { name: "count", short: "-c", long: "--count" },
-            { name: "recursive", short: "-R", long: "--recursive" }, // Corrected long flag
+            { name: "recursive", short: "-R", long: "--recursive" },
         ],
         coreLogic: async (context) => {
             const { args, flags, currentUser } = context;
@@ -52,7 +52,7 @@
                         fileMatchCount++;
                         if (!flags.count) {
                             let outputLine = "";
-                            if (filePathsArgs.length > 1 || flags.recursive) {
+                            if (filePathForDisplay && (filePathsArgs.length > 1 || flags.recursive)) {
                                 outputLine += `${filePathForDisplay}:`;
                             }
                             if (flags.lineNumber) {
@@ -66,7 +66,7 @@
 
                 if (flags.count) {
                     let countOutput = "";
-                    if (filePathsArgs.length > 1 || flags.recursive) {
+                    if (filePathForDisplay) {
                         countOutput += `${filePathForDisplay}:`;
                     }
                     countOutput += fileMatchCount;
@@ -104,15 +104,21 @@
                 for (const pathArg of filePathsArgs) {
                     await searchRecursively(FileSystemManager.getAbsolutePath(pathArg, FileSystemManager.getCurrentPath()));
                 }
-
             } else {
-                for await (const item of Utils.generateInputContent(context)) {
+                // Create a new context for the generator with only file paths as arguments.
+                const generatorContext = {
+                    ...context,
+                    args: filePathsArgs
+                };
+
+                for await (const item of Utils.generateInputContent(generatorContext)) {
                     if (!item.success) {
                         await OutputManager.appendToOutput(item.error, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
                         hadError = true;
                         continue;
                     }
-                    processContent(item.content, item.sourceName === 'stdin' ? null : item.sourceName);
+                    const displayPath = item.sourceName === 'stdin' ? null : item.sourceName;
+                    processContent(item.content, displayPath);
                 }
             }
 
