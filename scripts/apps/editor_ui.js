@@ -345,10 +345,56 @@ const EditorUI = (() => {
         elements.highlighter.scrollTop = scrollTop;
         elements.highlighter.scrollLeft = scrollLeft;
     }
+    function setViewMode(viewMode, fileMode, isPreviewable, isWordWrapActive) {
+        if (!elements.mainArea || !elements.textareaWrapper || !elements.previewWrapper) return;
+
+        const editorPane = elements.textareaWrapper;
+        const previewPane = elements.previewWrapper;
+        const viewToggleButton = elements.viewToggleButton;
+
+        // Hide both panes initially to reset the state
+        editorPane.classList.add('hidden');
+        previewPane.classList.add('hidden');
+        viewToggleButton.disabled = !isPreviewable; // Disable toggle if not previewable
+
+        if (!isPreviewable) {
+            // If the file type isn't previewable, always show only the editor
+            editorPane.classList.remove('hidden');
+            editorPane.style.width = '100%';
+            return;
+        }
+
+        // Set the view mode
+        switch (viewMode) {
+            case EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY:
+                editorPane.classList.remove('hidden');
+                editorPane.style.width = '100%';
+                if (viewToggleButton) viewToggleButton.textContent = "Preview";
+                break;
+            case EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY:
+                previewPane.classList.remove('hidden');
+                previewPane.style.width = '100%';
+                if (viewToggleButton) viewToggleButton.textContent = "Split";
+                break;
+            case EditorAppConfig.EDITOR.VIEW_MODES.SPLIT:
+            default:
+                editorPane.classList.remove('hidden');
+                previewPane.classList.remove('hidden');
+                editorPane.style.width = '50%';
+                previewPane.style.width = '50%';
+                if (viewToggleButton) viewToggleButton.textContent = "Editor";
+                break;
+        }
+        applyPreviewWordWrap(isWordWrapActive, fileMode);
+    }
 
     return {
         buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
-        setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
+        setTextareaContent: setInputContent, // Corrected alias
+        getTextareaContent: getInputContent, // Corrected alias
+        setEditorFocus: setInputFocus, // Corrected alias
+        getTextareaSelection: getInputSelection, // Corrected alias
+        setTextareaSelection: setInputSelection, // Corrected alias
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
         updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
