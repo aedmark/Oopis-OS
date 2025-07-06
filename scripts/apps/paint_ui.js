@@ -1,13 +1,28 @@
-/**
- * @file Manages all DOM manipulations for the paint editor.
- */
-/* global Utils, PaintAppConfig */
 const PaintUI = (() => {
     "use strict";
     let elements = {};
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
     let gridDimensions = { width: 0, height: 0 };
+
+    // Defensive initialization of PaintAppConfig.
+    // This ensures it's always defined, even if Config.PaintAppConfig is not yet fully populated.
+    const PaintAppConfig = window.Config && window.Config.PaintAppConfig ? window.Config.PaintAppConfig : {
+        // Minimal fallback structure to prevent errors if CSS_CLASSES or other properties are accessed early
+        CSS_CLASSES: { GRID_ACTIVE: "grid-active", ACTIVE_TOOL: "active" },
+        PALETTE: [{ value: "#00ff5b" }],
+        CANVAS: { DEFAULT_WIDTH: 80, DEFAULT_HEIGHT: 24, BASE_FONT_SIZE_PX: 16 },
+        BRUSH: { MIN_SIZE: 1, MAX_SIZE: 5 },
+        ZOOM: { DEFAULT_ZOOM: 100, MIN_ZOOM: 50, MAX_ZOOM: 400, ZOOM_STEP: 25 },
+        ASCII_CHAR_RANGE: { START: 32, END: 126 },
+        DEFAULT_CHAR: ' ',
+        ERASER_CHAR: ' ',
+        DEFAULT_FG_COLOR: '#00ff5b',
+        ERASER_BG_COLOR: 'bg-black',
+        DEFAULT_BG_COLOR: 'bg-transparent',
+        FILE_EXTENSION: 'oopic',
+        EDITOR: { MAX_UNDO_STATES: 100, DEBOUNCE_DELAY_MS: 300 }
+    };
 
     // SVGs are defined once and reused
     const pencilSVG = '<svg fill="currentColor" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
@@ -43,7 +58,7 @@ const PaintUI = (() => {
             Utils.createElement('button', { className: 'btn', innerHTML: ellipseSVG, title: 'Ellipse', eventListeners: { click: () => eventCallbacks.onToolChange('ellipse') } })
         );
         elements.shapeToolBtn.addEventListener('click', () => {
-            elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
+            elements.shapeDropdown.classList.toggle(Config.CSS_CLASSES.DROPDOWN_ACTIVE);
         });
         elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' }, elements.shapeToolBtn, elements.shapeDropdown);
 
@@ -120,7 +135,6 @@ const PaintUI = (() => {
 
     function toggleGrid(isActive) {
         if (!elements.canvasWrapper) return;
-        // Use the new standard class for the grid
         elements.canvasWrapper.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
     }
 
@@ -253,13 +267,13 @@ const PaintUI = (() => {
         elements.brushSizeUpBtn.disabled = brushSize >= PaintAppConfig.BRUSH.MAX_SIZE;
 
         let isCustomColorActive = true;
-        elements.colorButtons.forEach((btn, index) => {
-            const colorValue = PaintAppConfig.PALETTE[index].value;
+        PaintAppConfig.PALETTE.forEach((btnConfig, index) => { // Use btnConfig to avoid name conflict with 'color' parameter in outer scope
+            const colorValue = btnConfig.value;
             const isActive = colorValue === activeColor;
             if (isActive) {
                 isCustomColorActive = false;
             }
-            btn.classList.toggle(activeClass, isActive);
+            elements.colorButtons[index].classList.toggle(activeClass, isActive);
         });
         if (isCustomColorActive && activeColor) {
             elements.customColorSwatch.style.backgroundColor = activeColor;

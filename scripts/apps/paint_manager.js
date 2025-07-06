@@ -6,10 +6,10 @@
 const PaintManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
-    let isDrawing = false, currentTool = 'pencil', drawChar = Config.PaintAppConfig.DEFAULT_CHAR;
-    let fgColor = Config.PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 };
-    let currentBrushSize = Config.PaintAppConfig.BRUSH.DEFAULT_SIZE;
-    let zoomLevel = Config.PaintAppConfig.ZOOM.DEFAULT_ZOOM;
+    let isDrawing = false, currentTool = 'pencil', drawChar; // Initialized below
+    let fgColor, lastCoords = { x: -1, y: -1 }; // Initialized below
+    let currentBrushSize; // Initialized below
+    let zoomLevel; // Initialized below
     let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
     let isGridVisible = false;
     let shapeStartCoords = null;
@@ -22,6 +22,32 @@ const PaintManager = (() => {
 
     let currentCanvasWidth = 0;
     let currentCanvasHeight = 0;
+
+    // Defensive initialization of PaintAppConfig.
+    // This ensures it's always defined, even if Config.PaintAppConfig is not yet fully populated.
+    const PaintAppConfig = window.Config && window.Config.PaintAppConfig ? window.Config.PaintAppConfig : {
+        // Minimal fallback structure to prevent errors if CSS_CLASSES or other properties are accessed early
+        CSS_CLASSES: { ACTIVE_TOOL: "active", GRID_ACTIVE: "grid-active" },
+        PALETTE: [{ value: "#00ff5b" }],
+        CANVAS: { DEFAULT_WIDTH: 80, DEFAULT_HEIGHT: 24, BASE_FONT_SIZE_PX: 16 },
+        BRUSH: { MIN_SIZE: 1, MAX_SIZE: 5 },
+        ZOOM: { DEFAULT_ZOOM: 100, MIN_ZOOM: 50, MAX_ZOOM: 400, ZOOM_STEP: 25 },
+        ASCII_CHAR_RANGE: { START: 32, END: 126 },
+        DEFAULT_CHAR: ' ',
+        ERASER_CHAR: ' ',
+        DEFAULT_FG_COLOR: '#00ff5b',
+        ERASER_BG_COLOR: 'bg-black',
+        DEFAULT_BG_COLOR: 'bg-transparent',
+        FILE_EXTENSION: 'oopic',
+        EDITOR: { MAX_UNDO_STATES: 100, DEBOUNCE_DELAY_MS: 300 }
+    };
+
+    // Initialize these global-like variables using the local alias
+    drawChar = PaintAppConfig.DEFAULT_CHAR;
+    fgColor = PaintAppConfig.PALETTE[0].value;
+    currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
+    zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
+
 
     const paintEventCallbacks = {
         onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
@@ -88,7 +114,7 @@ const PaintManager = (() => {
     function _createBlankCanvas(w, h) {
         let data = [];
         for (let y = 0; y < h; y++) {
-            data.push(Array.from({ length: w }, () => ({ char: ' ', fg: Config.PaintAppConfig.DEFAULT_FG_COLOR, bg: Config.PaintAppConfig.ERASER_BG_COLOR })));
+            data.push(Array.from({ length: w }, () => ({ char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR })));
         }
         return data;
     }
@@ -98,18 +124,18 @@ const PaintManager = (() => {
         const canvasEl = document.getElementById('paint-canvas');
 
         if (!wrapper || !canvasEl) {
-            currentCanvasWidth = Config.PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-            currentCanvasHeight = Config.PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+            currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+            currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
             canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
             return;
         }
 
-        canvasEl.style.fontSize = `${Config.PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX}px`;
+        canvasEl.style.fontSize = `${PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX}px`;
         const charDims = Utils.getCharacterDimensions(canvasEl.style.font);
 
         if (charDims.width <= 0 || charDims.height <= 0) {
-            currentCanvasWidth = Config.PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-            currentCanvasHeight = Config.PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
+            currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
+            currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
         } else {
             const availableWidth = wrapper.clientWidth;
             const availableHeight = wrapper.clientHeight;
@@ -144,12 +170,12 @@ const PaintManager = (() => {
     function _saveUndoState() {
         redoStack = [];
         undoStack.push(JSON.parse(JSON.stringify(canvasData)));
-        if (undoStack.length > Config.PaintAppConfig.EDITOR.MAX_UNDO_STATES) { undoStack.shift(); }
+        if (undoStack.length > PaintAppConfig.EDITOR.MAX_UNDO_STATES) { undoStack.shift(); }
         _updateToolbarState();
     }
     function _triggerSaveUndoState() {
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
-        saveUndoStateTimeout = setTimeout(_saveUndoState, Config.PaintAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
+        saveUndoStateTimeout = setTimeout(_saveUndoState, PaintAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
     function _performUndo() {
         if (undoStack.length <= 1) return;
@@ -187,23 +213,23 @@ const PaintManager = (() => {
 
     function _setBrushSize(delta) {
         const newSize = currentBrushSize + delta;
-        currentBrushSize = Math.max(Config.PaintAppConfig.BRUSH.MIN_SIZE, Math.min(newSize, Config.PaintAppConfig.BRUSH.MAX_SIZE));
+        currentBrushSize = Math.max(PaintAppConfig.BRUSH.MIN_SIZE, Math.min(newSize, PaintAppConfig.BRUSH.MAX_SIZE));
         _updateToolbarState();
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
 
     function _handleZoomIn() {
-        zoomLevel = Math.min(zoomLevel + Config.PaintAppConfig.ZOOM.ZOOM_STEP, Config.PaintAppConfig.ZOOM.MAX_ZOOM);
+        zoomLevel = Math.min(zoomLevel + PaintAppConfig.ZOOM.ZOOM_STEP, PaintAppConfig.ZOOM.MAX_ZOOM);
         PaintUI.renderCanvas(canvasData, zoomLevel);
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
     function _handleZoomOut() {
-        zoomLevel = Math.max(zoomLevel - Config.PaintAppConfig.ZOOM.ZOOM_STEP, Config.PaintAppConfig.ZOOM.MIN_ZOOM);
+        zoomLevel = Math.max(zoomLevel - PaintAppConfig.ZOOM.ZOOM_STEP, PaintAppConfig.ZOOM.MIN_ZOOM);
         PaintUI.renderCanvas(canvasData, zoomLevel);
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
     function _resetZoom() {
-        zoomLevel = Config.PaintAppConfig.ZOOM.DEFAULT_ZOOM;
+        zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
         PaintUI.renderCanvas(canvasData, zoomLevel);
         PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
     }
@@ -215,13 +241,13 @@ const PaintManager = (() => {
             const cell = canvas[cy][cx];
             let changed = false;
             if (currentTool !== 'eraser') {
-                if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== Config.PaintAppConfig.DEFAULT_BG_COLOR) {
-                    cell.char = drawChar; cell.fg = fgColor; cell.bg = Config.PaintAppConfig.DEFAULT_BG_COLOR;
+                if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== PaintAppConfig.DEFAULT_BG_COLOR) {
+                    cell.char = drawChar; cell.fg = fgColor; cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
                     changed = true;
                 }
             } else {
-                if (cell.char !== Config.PaintAppConfig.ERASER_CHAR || cell.bg !== Config.PaintAppConfig.ERASER_BG_COLOR) {
-                    cell.char = Config.PaintAppConfig.ERASER_CHAR; cell.fg = Config.PaintAppConfig.DEFAULT_FG_COLOR; cell.bg = Config.PaintAppConfig.ERASER_BG_COLOR;
+                if (cell.char !== PaintAppConfig.ERASER_CHAR || cell.bg !== PaintAppConfig.ERASER_BG_COLOR) {
+                    cell.char = PaintAppConfig.ERASER_CHAR; cell.fg = PaintAppConfig.DEFAULT_FG_COLOR; cell.bg = PaintAppConfig.ERASER_BG_COLOR;
                     changed = true;
                 }
             }
@@ -236,7 +262,8 @@ const PaintManager = (() => {
             const halfBrush = Math.floor(currentBrushSize / 2);
             for (let dy = 0; dy < currentBrushSize; dy++) {
                 for (let dx = 0; dx < currentBrushSize; dx++) {
-                    if (_drawOnCanvas(x - halfBrush + dx, y - halfBrush + dy, canvas)) { // Pass canvas to inner drawLogic
+                    // FIX: Call drawLogic directly instead of _drawOnCanvas recursively
+                    if (drawLogic(x - halfBrush + dx, y - halfBrush + dy)) {
                         anyCellChanged = true;
                     }
                 }
@@ -364,10 +391,10 @@ const PaintManager = (() => {
     function _setColor(colorValue) { fgColor = colorValue; _updateToolbarState(); PaintUI.hideColorSelect(); }
     function _resetState() {
         isActiveState = false; currentFilePath = null; canvasData = []; isDirty = false;
-        isDrawing = false; currentTool = 'pencil'; drawChar = Config.PaintAppConfig.DEFAULT_CHAR;
-        fgColor = Config.PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
-        currentBrushSize = Config.PaintAppConfig.BRUSH.DEFAULT_SIZE;
-        zoomLevel = Config.PaintAppConfig.ZOOM.DEFAULT_ZOOM;
+        isDrawing = false; currentTool = 'pencil'; drawChar = PaintAppConfig.DEFAULT_CHAR;
+        fgColor = PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
+        currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
+        zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
         undoStack = []; redoStack = []; isGridVisible = false;
         shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
         customColorValue = null;
@@ -419,8 +446,8 @@ const PaintManager = (() => {
                         if (!filename || filename.trim() === "") {
                             resolve({ path: null, reason: "Save cancelled. No filename provided." });
                         } else {
-                            if (!filename.endsWith(`.${Config.PaintAppConfig.FILE_EXTENSION}`)) {
-                                filename += `.${Config.PaintAppConfig.FILE_EXTENSION}`;
+                            if (!filename.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
+                                filename += `.${PaintAppConfig.FILE_EXTENSION}`;
                             }
                             resolve({ path: FileSystemManager.getAbsolutePath(filename, FileSystemManager.getCurrentPath()), reason: null });
                         }
@@ -581,8 +608,8 @@ const PaintManager = (() => {
             else if (key === 'c') { _openCharSelect(); }
             else {
                 const colorIndex = parseInt(key, 10) - 1;
-                if (colorIndex >= 0 && colorIndex < Config.PaintAppConfig.PALETTE.length) {
-                    _setColor(Config.PaintAppConfig.PALETTE[colorIndex].value);
+                if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
+                    _setColor(PaintAppConfig.PALETTE[colorIndex].value);
                 }
             }
         } else if (isCharKey) {
