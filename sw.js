@@ -14,7 +14,6 @@ const urlsToCache = [
     './scripts/fs_manager.js',
     './scripts/session_manager.js',
     './scripts/terminal_ui.js',
-    './scripts/syntax_highlighter.js',
     './scripts/apps/editor_ui.js',
     './scripts/apps/editor_manager.js',
     './scripts/apps/paint_ui.js',
