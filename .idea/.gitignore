@@ -1,8 +1,6 @@
 ../favicon.ico
 *.zip
 *.yaml
-../.idea/
-*.xml
 ../node_modules/
 *.bak
 *.rar
