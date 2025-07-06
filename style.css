@@ -513,7 +513,10 @@ body {
   width: fit-content;
   min-width: 100%;
 }
-
+.editor__gutter-content {
+  /* This class doesn't need much, just default positioning */
+  position: relative;
+}
 .editor__preview-wrapper {
   flex: 1;
   display: flex;

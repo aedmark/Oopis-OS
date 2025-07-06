@@ -143,10 +143,12 @@ const EditorUI = (() => {
     }
 
     function updateVisibleLineNumbers(start, end, paddingTop, totalHeight) {
-        if (elements.lineGutter) {
+        if (elements.lineGutterContent) {
             const numbers = Array.from({ length: end - start }, (_, i) => start + i + 1).join('\n');
-            elements.lineGutter.textContent = numbers;
-            elements.lineGutter.style.paddingTop = `${paddingTop}px`;
+            elements.lineGutterContent.textContent = numbers;
+            elements.lineGutterContent.style.paddingTop = `${paddingTop}px`;
+        }
+        if (elements.lineGutter) {
             elements.lineGutter.style.height = `${totalHeight}px`;
         }
     }
@@ -250,8 +252,8 @@ const EditorUI = (() => {
         elements.viewToggleButton = Utils.createElement("button", { id: "editor-view-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onViewToggle } });
         elements.exportPreviewButton = Utils.createElement("button", { id: "editor-export-preview", className: "editor-btn", textContent: "Export", eventListeners: { click: eventCallbacks.onExportPreview } });
         elements.exitButton = Utils.createElement("button", { id: "editor-exit-btn", className: "editor-btn", textContent: "Exit", title: "Exit (prompts to save if unsaved)", eventListeners: { click: eventCallbacks.onExitButtonClick } });
-        elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
-        elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
+        elements.lineGutterContent = Utils.createElement("div", { className: "editor__gutter-content" });
+        elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" }, elements.lineGutterContent);        elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.filenameDisplay = Utils.createElement("span", { id: "editor-filename-display" });
         elements.statusBarCursorPos = Utils.createElement("span", { id: "status-cursor" });

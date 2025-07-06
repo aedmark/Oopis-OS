@@ -192,7 +192,7 @@ const EditorManager = (() => {
             const scrollLeft = wrapper.scrollLeft;
             highlighter.scrollTop = scrollTop;
             highlighter.scrollLeft = scrollLeft;
-            gutter.scrollTop = scrollTop;
+            // gutter.scrollTop should NOT be set here.
             // Also sync the textarea's scrollLeft for horizontal scrolling
             textarea.scrollLeft = scrollLeft;
         }, 1); // 1ms is enough to batch rapid scroll events
