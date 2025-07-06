@@ -56,15 +56,25 @@ const EditorManager = (() => {
         if (!isActiveState) return;
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
+
+        // This part is the same
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
         }
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
+
+        // --- ADD THIS LOGIC ---
+        // Toggle the new classes on both the input and the highlighter
+        EditorUI.elements.input.classList.toggle('editor__input--no-wrap', !isWordWrapActive);
+        EditorUI.elements.highlighter.classList.toggle('editor__highlighter--no-wrap', !isWordWrapActive);
+        // --- END ADDITION ---
+
         EditorUI.setEditorFocus();
         EditorUI.setGutterVisibility(!isWordWrapActive);
     }
+
     function _loadHighlightingSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_HIGHLIGHT_ENABLED, "Editor highlight setting");
         isHighlightingActive = savedSetting !== null ? savedSetting : true;

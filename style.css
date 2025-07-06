@@ -506,9 +506,20 @@ body {
   outline: none;
 }
 
+.editor__highlighter--no-wrap {
+  /* This makes it expand as wide as its content */
+  width: fit-content;
+  min-width: 100%;
+}
+
+/* This rule should already exist, just modify it */
 .editor__input--no-wrap {
   white-space: pre !important;
-  overflow-x: auto !important;
+  /* CHANGE THIS: Don't make it scroll, make it grow */
+  overflow-x: visible !important;
+  /* ADD THIS: Make it expand as wide as its content */
+  width: fit-content;
+  min-width: 100%;
 }
 
 .editor__preview-wrapper {
