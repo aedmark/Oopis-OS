@@ -82,10 +82,10 @@ const EditorUI = (() => {
     </style>`;
 
     function applyTextareaWordWrap(isWordWrapActive) {
-        if (elements.textarea && elements.highlighterContent) {
+        if (elements.textarea && elements.highlighter) { // Target elements.highlighter
             const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
             elements.textarea.style.whiteSpace = whiteSpaceStyle;
-            elements.highlighterContent.style.whiteSpace = whiteSpaceStyle;
+            elements.highlighter.style.whiteSpace = whiteSpaceStyle; // Apply to the main highlighter div
         }
     }
 
@@ -114,13 +114,12 @@ const EditorUI = (() => {
         }
     }
     function calculateVisibleRange() {
-        if (!elements.textarea) {
+        if (!elements.textareaWrapper) { // Check for the wrapper now
             return { startLine: 0, endLine: 25, visibleLines: 25, paddingTop: 0 };
         }
         const lineHeight = Utils.getCharacterDimensions(getComputedStyle(elements.textarea).font).height || 16;
-        const scrollTop = elements.textarea.scrollTop;
-        const clientHeight = elements.textarea.clientHeight;
-
+        const scrollTop = elements.textareaWrapper.scrollTop; // <-- CORRECTED
+        const clientHeight = elements.textareaWrapper.clientHeight; // <-- CORRECTED
         const startLine = Math.floor(scrollTop / lineHeight);
         const visibleLines = Math.ceil(clientHeight / lineHeight);
         const endLine = startLine + visibleLines + 1; // +1 for buffer

@@ -57,14 +57,12 @@ const EditorManager = (() => {
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
-        EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
         }
 
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
-        EditorUI.elements.input.classList.toggle('editor__input--no-wrap', !isWordWrapActive);
-        EditorUI.elements.highlighter.classList.toggle('editor__highlighter--no-wrap', !isWordWrapActive);
+        _synchronizeWidths();
         EditorUI.setEditorFocus();
         EditorUI.setGutterVisibility(!isWordWrapActive);
     }
@@ -116,6 +114,20 @@ const EditorManager = (() => {
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
 
+    function _synchronizeWidths() {
+        if (!isWordWrapActive && EditorUI.elements.textarea && EditorUI.elements.highlighter) {
+            // Measure the true width from the div that has all the text
+            const trueWidth = EditorUI.elements.textarea.scrollWidth;
+            // Apply this width to both layers to ensure the grid cell expands correctly
+            EditorUI.elements.highlighter.style.minWidth = `${trueWidth}px`;
+            EditorUI.elements.textarea.style.minWidth = `${trueWidth}px`;
+        } else if (EditorUI.elements.textarea && EditorUI.elements.highlighter) {
+            // When word wrap is active, reset the min-width
+            EditorUI.elements.highlighter.style.minWidth = '100%';
+            EditorUI.elements.textarea.style.minWidth = '100%';
+        }
+    }
+
     function _updateAndRedraw() {
         if (!isActiveState) return;
 
@@ -136,22 +148,18 @@ const EditorManager = (() => {
         if (!isActiveState) return;
         _updateAndRedraw(); // Update status bar etc.
 
-        // More efficient update
-        const text = EditorUI.getTextareaContent();
-        const lines = text.split('\n');
-
-        // A simple approach: re-tokenize the whole document on input.
-        // A more complex (but faster) approach would find the changed line and call updateLine.
-        // For this refactor, full re-tokenization is a huge improvement and sufficient.
-        SyntaxHighlighter.tokenizeDocument(text, currentFileMode);
-
-        // Re-render the visible portion of the highlighter and line numbers
-        _handleEditorScroll();
+        // Debounce the width synchronization
+        if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
+        highlightDebounceTimer = setTimeout(() => {
+            SyntaxHighlighter.tokenizeDocument(EditorUI.getTextareaContent(), currentFileMode);
+            _synchronizeWidths(); // Synchronize widths after tokenizing
+            _handleEditorScroll(); // Then handle virtual scroll
+        }, 10); // A small delay is sufficient
 
         // Undo state logic remains the same
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
-            _saveUndoState(text);
+            _saveUndoState(EditorUI.getTextareaContent());
             saveUndoStateTimeout = null;
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
     }
@@ -578,7 +586,6 @@ const EditorManager = (() => {
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
 
-            // --- FIX START ---
             // Defer the rest of the setup to ensure the DOM is painted and styled.
             setTimeout(() => {
                 if (!isActiveState) return; // Check if exit was called before timeout
@@ -604,8 +611,8 @@ const EditorManager = (() => {
                 EditorUI.setEditorFocus();
                 _updateUndoRedoButtonStates();
                 _updateHighlighting();
+                _synchronizeWidths();
             }, 0);
-            // --- FIX END ---
         });
     }
 
