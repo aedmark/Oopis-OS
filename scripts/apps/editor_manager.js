@@ -1,5 +1,6 @@
 const EditorManager = (() => {
     "use strict";
+    let cmView = null;
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
         currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
@@ -468,6 +469,28 @@ const EditorManager = (() => {
             };
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
+            const parentElement = document.getElementById('editor-textarea-wrapper'); // Use the wrapper div
+
+            // Define the extensions for CodeMirror
+            let extensions = [
+                CodeMirror.basicSetup // from codemirror.js
+            ];
+
+            // Conditionally add the Markdown language extension
+            if (EditorUtils.determineMode(filePath) === 'markdown') {
+                extensions.push(CodeMirror.markdown()); // from lang-markdown.js
+            }
+
+            // Create the CodeMirror state and view
+            const state = CodeMirror.EditorState.create({
+                doc: content,
+                extensions: extensions
+            });
+
+            cmView = new CodeMirror.EditorView({
+                state: state,
+                parent: parentElement
+            });
             EditorUI.setGutterVisibility(!isWordWrapActive);
             currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY;
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
