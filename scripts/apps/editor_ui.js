@@ -1,6 +1,67 @@
-/**
- * @file Manages all DOM manipulations for the editor.
- */
+const EditorAppConfig = {
+    EDITOR: {
+        DEBOUNCE_DELAY_MS: 250,
+        FIND_DEBOUNCE_DELAY_MS: 150, // Added for find functionality
+        TAB_REPLACEMENT: "    ",
+        DEFAULT_MODE: "text",
+        MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html" },
+        EXTENSIONS_MAP: { md: "markdown", html: "html", htm: "html", sh: "text", js: "text", css: "text" },
+        VIEW_MODES: { SPLIT: "split", EDIT_ONLY: "edit", PREVIEW_ONLY: "preview" },
+        WORD_WRAP_DEFAULT_ENABLED: false,
+    },
+    STORAGE_KEYS: {
+        EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
+    },
+};
+
+const EditorUtils = (() => {
+    "use strict";
+    function determineMode(filePath) {
+        const extension = Utils.getFileExtension(filePath);
+        return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
+    }
+
+    function calculateStatusBarInfo(text, selectionStart) {
+        const lines = text.split("\n");
+        const lineCount = lines.length;
+        const charCount = text.length;
+        const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+        let currentLineNum = 0;
+        let currentColNum = 0;
+        let charCounter = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const lineLengthWithNewline = lines[i].length + 1;
+            if (selectionStart >= charCounter && selectionStart < charCounter + lineLengthWithNewline) {
+                currentLineNum = i;
+                currentColNum = selectionStart - charCounter;
+                break;
+            }
+            charCounter += lineLengthWithNewline;
+        }
+        if (selectionStart === text.length && !text.endsWith("\n")) {
+            currentLineNum = lines.length - 1;
+            currentColNum = lines[lines.length - 1].length;
+        } else if (selectionStart === text.length && text.endsWith("\n")) {
+            currentLineNum = lines.length - 1;
+            currentColNum = 0;
+        }
+        return {
+            lines: lineCount,
+            words: wordCount,
+            chars: charCount,
+            cursor: {
+                line: currentLineNum + 1,
+                col: currentColNum + 1
+            },
+        };
+    }
+    function generateLineNumbersArray(text) {
+        const lines = text.split("\n").length;
+        return Array.from({ length: lines }, (_, i) => i + 1);
+    }
+    return { determineMode, calculateStatusBarInfo, generateLineNumbersArray };
+})();
+
 const EditorUI = (() => {
     "use strict";
     let elements = {};
@@ -231,6 +292,7 @@ const EditorUI = (() => {
         if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
         previewDebounceTimer = null;
         elements = {};
+        eventCallbacks = {};
     }
 
     function updateFilenameDisplay(filePath, isDirty) {

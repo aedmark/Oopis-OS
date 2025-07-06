@@ -1,7 +1,3 @@
-/**
- * @file Manages the main controller for the editor. Manages state, user interactions, and coordinates between the UI and file system.
- */
-/* global Utils, DOM, Config, FileSystemManager, OutputManager, TerminalUI, UserManager, ModalManager, AppLayerManager, PatchUtils, EditorUI, EditorUtils, EditorAppConfig, marked */
 const EditorManager = (() => {
     "use strict";
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
@@ -85,7 +81,17 @@ const EditorManager = (() => {
             fileName = `${baseName}.txt`;
         } else { // Handles 'markdown' and 'html'
             const renderedContent = EditorUI.getPreviewPaneHTML();
-            const fullHtml = '<!DOCTYPE html>\\n<html lang="en">\\n<head>\\n    <meta charset="UTF-8">\\n    <title>Exported: ' + baseName + '</title>\\n    ' + EditorUI.iframeStyles + '\\n</head>\\n<body>\\n    ' + renderedContent + '\\n</body>\\n</html>';
+            const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Exported: ${baseName}</title>
+    ${EditorUI.iframeStyles}
+</head>
+<body>
+    ${renderedContent}
+</body>
+</html>`;
             blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
             fileName = `${baseName}.html`;
         }
@@ -205,7 +211,7 @@ const EditorManager = (() => {
                     newEnd = start + manipulatedText.length;
                     break;
                 case 'codeblock':
-                    manipulatedText = '```\n' + selectedText + '\n```';
+                    manipulatedText = `\`\`\`\n${selectedText}\n\`\`\``;
                     newStart = start + 3;
                     newEnd = start + 3 + selectedText.length;
                     break;
@@ -333,7 +339,7 @@ const EditorManager = (() => {
             findState.activeIndex = -1;
         } else {
             const text = EditorUI.getTextareaContent();
-            const regex = new RegExp(query.replace(/[-\/\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+            const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
             findState.matches = [...text.matchAll(regex)];
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
         }
@@ -389,7 +395,7 @@ const EditorManager = (() => {
     function _replaceAll() {
         if (findState.matches.length === 0 || !findState.isReplace) return;
         const replaceText = EditorUI.getReplaceQuery();
-        const regex = new RegExp(findState.query.replace(/[-\/\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+        const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
         const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
 
         EditorUI.setTextareaContent(newText);
