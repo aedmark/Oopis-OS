@@ -24,13 +24,14 @@
       "preload.js",
       "package.json",
       "package-lock.json",
-      "developer.md",
+      "codemirror.min.js",
       "README.md",
-      "security.md",
+      "codemirror.min.css",
       "manifest.json",
       "sw.js",
       "LICENSE.txt",
       "scripts/",
+      "docs/",
       "icons/"
     ],
     "win": {
