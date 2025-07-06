@@ -23,41 +23,36 @@ const SyntaxHighlighter = (() => {
 
     const tokenPatterns = {
         javascript: [
-            { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/|\/\/.*)/ },
-            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/ },
-            { type: 'keyword', pattern: /\b(const|let|var|function|return|if|else|for|while|switch|case|break|new|try|catch|finally|class|extends|super|async|await|import|export|from|default|of|in|instanceof|typeof|void|delete)\b/ },
-            // FIX: Inner group for decimal part is now non-capturing
-            { type: 'number', pattern: /\b(\d+(?:\.\d*)?|\.\d+)\b/ },
-            { type: 'operator', pattern: /([+\-*/%<>=!&|?:]+|=>)/ },
-            { type: 'punctuation', pattern: /([;,{}()[\]])/ }
+            { type: 'comment', pattern: /(?:\/\*[\s\S]*?\*\/|\/\/.*)/ },
+            { type: 'string', pattern: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/ },
+            { type: 'keyword', pattern: /\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|new|try|catch|finally|class|extends|super|async|await|import|export|from|default|of|in|instanceof|typeof|void|delete)\b/ },
+            { type: 'number', pattern: /\b(?:\d+(?:\.\d*)?|\.\d+)\b/ },
+            { type: 'operator', pattern: /(?:[+\-*/%<>=!&|?:]+|=>)/ },
+            { type: 'punctuation', pattern: /(?:[;,{}()[\]])/ }
         ],
         shell: [
-            { type: 'comment', pattern: /(#.*)/ },
-            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
-            { type: 'keyword', pattern: /\b(echo|cd|ls|rm|mv|cp|mkdir|grep|find|xargs|if|then|else|fi|for|while|do|done|case|esac|function|return)\b/ },
-            { type: 'operator', pattern: /([|&;><])/ },
-            { type: 'variable', pattern: /(\$[a-zA-Z_][a-zA-Z0-9_]*|\$@|\$#|\$[0-9])/ }
+            { type: 'comment', pattern: /(?:#.*)/ },
+            { type: 'string', pattern: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+            { type: 'keyword', pattern: /\b(?:echo|cd|ls|rm|mv|cp|mkdir|grep|find|xargs|if|then|else|fi|for|while|do|done|case|esac|function|return)\b/ },
+            { type: 'operator', pattern: /(?:[|&;><])/ },
+            { type: 'variable', pattern: /(?:\$[a-zA-Z_][a-zA-Z0-9_]*|\$@|\$#|\$[0-9])/ }
         ],
         css: [
-            { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/)/ },
-            // FIX: Changed leading group to be non-capturing
-            { type: 'selector', pattern: /(?:^|[\s,}{])([.#]?-?[_a-zA-Z]+[_a-zA-Z0-9-]*|\[[^\]]+\]|:+[:_a-zA-Z]+[_a-zA-Z0-9-]*)(?=[\s,{])/m },
-            { type: 'property', pattern: /([a-zA-Z-]+)(?=\s*:)/ },
-            // FIX: Changed unit group to be non-capturing
-            { type: 'number', pattern: /(-?\d*\.?\d+)(?:px|%|em|rem|vw|vh|s)?/ },
-            { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+            { type: 'comment', pattern: /(?:\/\*[\s\S]*?\*\/)/ },
+            { type: 'selector', pattern: /(?:(?:^|[\s,}{])(?:[.#]?-?[_a-zA-Z]+[_a-zA-Z0-9-]*|\[[^\]]+\]|:+[:_a-zA-Z]+[_a-zA-Z0-9-]*)(?=[\s,{]))/m },
+            { type: 'property', pattern: /(?:[a-zA-Z-]+)(?=\s*:)/ },
+            { type: 'number', pattern: /(?:-?\d*\.?\d+(?:px|%|em|rem|vw|vh|s)?)/ },
+            { type: 'string', pattern: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
         ],
         markdown: [
-            { type: 'markdown-heading', pattern: /^(#{1,6}\s+.+)/m },
-            { type: 'markdown-list-marker', pattern: /^(\s*(?:[-*+]|\d+\.)\s)/m },
-            { type: 'comment', pattern: /(```[\s\S]*?```)/ },
-            { type: 'string', pattern: /(`[^`\n]+?`)/ },
-            { type: 'markdown-bold', pattern: /(\*\*(?:.*?)\*\*|__(?:.*?)__)/ },
-            { type: 'markdown-italic', pattern: /(\*(?:.*?)\*|_(?:.*?)_)/ },
-            // --- CORRECTED PATTERN ---
-            { type: 'markdown-link-text', pattern: /(\[[^\]]+\])(?=\()/ },
-            // --- CORRECTED PATTERN ---
-            { type: 'markdown-link-url', pattern: /(?:\]\()([^)]+)(?:\))/ },
+            { type: 'markdown-heading', pattern: /^(?:#{1,6}\s+.+)/m },
+            { type: 'markdown-list-marker', pattern: /^(?:\s*(?:[-*+]|\d+\.)\s)/m },
+            { type: 'comment', pattern: /(?:```[\s\S]*?```)/ },
+            { type: 'string', pattern: /(?:`[^`\n]+?`)/ },
+            { type: 'markdown-bold', pattern: /(?:\*\*(?:.*?)\*\*|__(?:.*?)__)/ },
+            { type: 'markdown-italic', pattern: /(?:\*(?:.*?)\*|_(?:.*?)_)/ },
+            { type: 'markdown-link-text', pattern: /(?:\[[^\]]+\])(?=\()/ },
+            { type: 'markdown-link-url', pattern: /(?:\]\()(?:[^)]+)(?:\))/ },
         ]
     };
 
@@ -97,7 +92,7 @@ const SyntaxHighlighter = (() => {
 
             if (tokenGroupIndex === -1) {
                 if (matchText.length > 0) {
-                    if (match.Index > lastIndex) {
+                    if (match.index > lastIndex) {
                         tokens.push({ type: 'plain', content: text.substring(lastIndex, matchIndex), start: lastIndex, end: matchIndex });
                     }
                     tokens.push({ type: 'plain', content: matchText, start: matchIndex, end: matchIndex + matchText.length });
