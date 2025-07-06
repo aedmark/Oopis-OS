@@ -18,14 +18,14 @@ const Config = (() => {
         /** Database settings for IndexedDB. */
         DATABASE: {
             NAME: "OopisOsDB",
-            VERSION: 20,
+            VERSION: 40,
             FS_STORE_NAME: "FileSystemsStore",
             UNIFIED_FS_KEY: "OopisOS_SharedFS",
         },
         /** Core OS metadata. */
         OS: {
             NAME: "OopisOs",
-            VERSION: "3.7",
+            VERSION: "4.0",
             DEFAULT_HOST_NAME: "OopisOs",
         },
         /** User-related constants and constraints. */
