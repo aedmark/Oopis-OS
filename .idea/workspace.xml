@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="3a18268e-a7b5-4c7d-9067-c1ae6db1f62d" name="Changes" comment="4.0">
       <changelist_data name="aedmark" email="a.edmark@gmail.com" automatic="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/apps/paint_manager.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/apps/paint_ui.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +22,18 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="SIGN_OFF_COMMIT" value="true" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "aedmark"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/aedmark/oopis-os",
+    "accountId": "7c7b72a1-fc09-4558-9bb9-c1bc05e4725d"
+  }
+}]]></component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 2
 }]]></component>
@@ -70,7 +79,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1751762350706</updated>
-      <workItem from="1751762351755" duration="999000" />
+      <workItem from="1751762351755" duration="1285000" />
     </task>
     <task id="LOCAL-00001" summary="4.0">
       <option name="closed" value="true" />
