@@ -26,7 +26,7 @@ const SyntaxHighlighter = (() => {
             { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/|\/\/.*)/ },
             { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/ },
             { type: 'keyword', pattern: /\b(const|let|var|function|return|if|else|for|while|switch|case|break|new|try|catch|finally|class|extends|super|async|await|import|export|from|default|of|in|instanceof|typeof|void|delete)\b/ },
-            { type: 'number', pattern: /\b(\d+(\.\d*)?|\.\d+)\b/ },
+            { type: 'number', pattern: /\b(\d+(?:\.\d*)?|\.\d+)\b/ },
             { type: 'operator', pattern: /([+\-*/%<>=!&|?:]+|=>)/ },
             { type: 'punctuation', pattern: /([;,{}()[\]])/ }
         ],
@@ -39,20 +39,24 @@ const SyntaxHighlighter = (() => {
         ],
         css: [
             { type: 'comment', pattern: /(\/\*[\s\S]*?\*\/)/ },
-            { type: 'selector', pattern: /(^|[\s,}{])([.#]?-?[_a-zA-Z]+[_a-zA-Z0-9-]*|\[[^\]]+\]|:+[:_a-zA-Z]+[_a-zA-Z0-9-]*)(?=[\s,{])/m },
+            // FIX: Changed first group to be non-capturing
+            { type: 'selector', pattern: /(?:^|[\s,}{])([.#]?-?[_a-zA-Z]+[_a-zA-Z0-9-]*|\[[^\]]+\]|:+[:_a-zA-Z]+[_a-zA-Z0-9-]*)(?=[\s,{])/m },
             { type: 'property', pattern: /([a-zA-Z-]+)(?=\s*:)/ },
-            { type: 'number', pattern: /(-?\d*\.?\d+)(px|%|em|rem|vw|vh|s)?/ },
+            // FIX: Changed group to be non-capturing
+            { type: 'number', pattern: /(-?\d*\.?\d+)(?:px|%|em|rem|vw|vh|s)?/ },
             { type: 'string', pattern: /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
         ],
         markdown: [
             { type: 'markdown-heading', pattern: /^(#{1,6}\s+.+)/m },
-            { type: 'markdown-list-marker', pattern: /^(\s*[-*+]\s|\s*\d+\.\s)/m },
+            { type: 'markdown-list-marker', pattern: /^(\s*(?:[-*+]|\d+\.)\s)/m }, // FIX: Non-capturing group for list types
             { type: 'comment', pattern: /(```[\s\S]*?```)/ },
-            { type: 'string', pattern: /(`[^`\n]+?`)/ }, // Inline code
-            { type: 'markdown-bold', pattern: /(\*\*(.*?)\*\*|__(.*?)__)/ },
-            { type: 'markdown-italic', pattern: /(\*(.*?)\*|_(.*?)_)/ },
-            { type: 'markdown-link-text', pattern: /(\[([^\]]+)\])(?=\()/ },
-            { type: 'markdown-link-url', pattern: /(\]\()([^)]+)(\))/ },
+            { type: 'string', pattern: /(`[^`\n]+?`)/ },
+            // FIX: Changed inner groups to be non-capturing
+            { type: 'markdown-bold', pattern: /(\*\*(?:.*?)\*\*|__(?:.*?)__)/ },
+            { type: 'markdown-italic', pattern: /(\*(?:.*?)\*|_(?:.*?)_)/ },
+            // FIX: Changed inner groups to be non-capturing
+            { type: 'markdown-link-text', pattern: /(\[((?:[^\]])+)\])(?=\()/ },
+            { type: 'markdown-link-url', pattern: /(?:\]\()((?:[^)]+))(?:\))/ },
         ]
     };
 
@@ -88,7 +92,24 @@ const SyntaxHighlighter = (() => {
         while ((match = combinedPattern.exec(text)) !== null) {
             const matchText = match[0];
             const matchIndex = match.index;
+            // This is the line that was causing the error.
             const tokenGroupIndex = match.slice(1).findIndex(m => m !== undefined);
+
+            if (tokenGroupIndex === -1) {
+                // This is a safeguard, but the regex fixes should prevent it from being hit.
+                if (matchText.length > 0) {
+                    if (matchIndex > lastIndex) {
+                        tokens.push({ type: 'plain', content: text.substring(lastIndex, matchIndex), start: lastIndex, end: matchIndex });
+                    }
+                    tokens.push({ type: 'plain', content: matchText, start: matchIndex, end: matchIndex + matchText.length });
+                    lastIndex = matchIndex + matchText.length;
+                } else {
+                    // Avoid infinite loops on zero-length matches
+                    combinedPattern.lastIndex++;
+                }
+                continue;
+            }
+
             const tokenType = patterns[tokenGroupIndex].type;
 
             if (matchIndex > lastIndex) {

@@ -32,7 +32,7 @@ const EditorManager = (() => {
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
-            EditorUI.renderPreview(EditorUI.getInputContent(), currentFileMode, isWordWrapActive);
+            EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
         }
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
         EditorUI.setEditorFocus();
@@ -41,15 +41,15 @@ const EditorManager = (() => {
 
     function _updateHighlighting() {
         if (!isActiveState || typeof SyntaxHighlighter === 'undefined') return;
-        const text = EditorUI.getInputContent();
+        const text = EditorUI.getTextareaContent();
         const mode = EditorUtils.determineMode(currentFilePath);
-        const selection = EditorUI.getInputSelection(); // Get selection before re-render
+        const selection = EditorUI.getTextareaSelection(); // Get selection before re-render
 
         const highlightedHtml = SyntaxHighlighter.highlight(text, mode, findState.matches, findState.activeIndex);
         EditorUI.renderHighlights(highlightedHtml);
 
         // Restore selection which might be lost after innerHTML update
-        EditorUI.setInputSelection(selection.start, selection.end);
+        EditorUI.setTextareaSelection(selection.start, selection.end);
     }
 
     function _debouncedHighlight() {
@@ -62,12 +62,12 @@ const EditorManager = (() => {
 
     function _updateAndRedraw() {
         if (!isActiveState) return;
-        const textContent = EditorUI.getInputContent();
+        const textContent = EditorUI.getTextareaContent();
         isDirty = textContent !== originalContent;
 
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         EditorUI.updateLineNumbers(textContent);
-        const selection = EditorUI.getInputSelection();
+        const selection = EditorUI.getTextareaSelection();
         EditorUI.updateStatusBar(textContent, selection.start);
 
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
@@ -79,7 +79,7 @@ const EditorManager = (() => {
 
     function _handleEditorInput() {
         if (!isActiveState) return;
-        const currentContent = EditorUI.getInputContent();
+        const currentContent = EditorUI.getTextareaContent();
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
             _saveUndoState(currentContent);
@@ -93,7 +93,6 @@ const EditorManager = (() => {
         if (!isActiveState) return;
         if (event.key === "Tab") {
             event.preventDefault();
-            // Use the modern, correct way to insert text in a contenteditable element
             document.execCommand('insertText', false, EditorAppConfig.EDITOR.TAB_REPLACEMENT);
         }
     }
@@ -112,10 +111,10 @@ const EditorManager = (() => {
         let fileName;
 
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.TEXT) {
-            const rawContent = EditorUI.getInputContent();
+            const rawContent = EditorUI.getTextareaContent();
             blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
             fileName = `${baseName}.txt`;
-        } else { // Handles 'markdown' and 'html'
+        } else {
             const renderedContent = EditorUI.getPreviewPaneHTML();
             const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -139,7 +138,7 @@ const EditorManager = (() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
+        await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'.`, { typeClass: 'text-success' });
     }
 
     function _getPatchedContent() {
@@ -173,13 +172,13 @@ const EditorManager = (() => {
         const patchToUndo = undoStack.pop();
         redoStack.push(patchToUndo);
 
-        const currentContent = EditorUI.getInputContent();
+        const currentContent = EditorUI.getTextareaContent();
         const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
 
-        EditorUI.setInputContent(previousContent);
+        EditorUI.setTextareaContent(previousContent);
         _updateAndRedraw();
         _updateUndoRedoButtonStates();
-        EditorUI.setInputSelection(previousContent.length, previousContent.length);
+        EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
         EditorUI.setEditorFocus();
     }
 
@@ -188,13 +187,13 @@ const EditorManager = (() => {
         const patchToRedo = redoStack.pop();
         undoStack.push(patchToRedo);
 
-        const currentContent = EditorUI.getInputContent();
+        const currentContent = EditorUI.getTextareaContent();
         const nextContent = PatchUtils.applyPatch(currentContent, patchToRedo);
 
-        EditorUI.setInputContent(nextContent);
+        EditorUI.setTextareaContent(nextContent);
         _updateAndRedraw();
         _updateUndoRedoButtonStates();
-        EditorUI.setInputSelection(nextContent.length, nextContent.length);
+        EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
         EditorUI.setEditorFocus();
     }
 
@@ -207,10 +206,10 @@ const EditorManager = (() => {
         if (!isActiveState || !EditorUI.elements.input) return;
 
         const textarea = EditorUI.elements.input;
-        const selection = EditorUI.getInputSelection();
+        const selection = EditorUI.getTextareaSelection();
         const start = selection.start;
         const end = selection.end;
-        const text = EditorUI.getInputContent();
+        const text = EditorUI.getTextareaContent();
         const selectedText = text.substring(start, end);
 
         let manipulatedText = '';
@@ -322,13 +321,13 @@ const EditorManager = (() => {
 
             if (manipulatedText !== selectedText) {
                 const newText = text.substring(0, start) + manipulatedText + text.substring(end);
-                EditorUI.setInputContent(newText);
+                EditorUI.setTextareaContent(newText);
                 _handleEditorInput();
                 EditorUI.setEditorFocus();
-                EditorUI.setInputSelection(newStart, newEnd);
+                EditorUI.setTextareaSelection(newStart, newEnd);
             } else {
                 EditorUI.setEditorFocus();
-                EditorUI.setInputSelection(start, end);
+                EditorUI.setTextareaSelection(start, end);
             }
         };
 
@@ -361,7 +360,7 @@ const EditorManager = (() => {
             findState.matches = [];
             findState.activeIndex = -1;
         } else {
-            const text = EditorUI.getInputContent();
+            const text = EditorUI.getTextareaContent();
             const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
             findState.matches = [...text.matchAll(regex)];
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
@@ -390,14 +389,14 @@ const EditorManager = (() => {
     function _scrollToMatch(index, shouldFocusTextarea = true) {
         if (index === -1) return;
         const match = findState.matches[index];
-        const textarea = EditorUI.elements.input;
+        const textarea = EditorUI.elements.textarea;
 
         if (shouldFocusTextarea) {
             textarea.focus();
         }
 
-        EditorUI.setInputSelection(match.index, match.index + match[0].length);
-        const textToMatch = textarea.innerText.substring(0, match.index);
+        EditorUI.setTextareaSelection(match.index, match.index + match[0].length);
+        const textToMatch = textarea.value.substring(0, match.index);
         const lineBreaks = (textToMatch.match(/\n/g) || []).length;
         textarea.scrollTop = lineBreaks * (parseInt(getComputedStyle(textarea).lineHeight, 10) || 16);
     }
@@ -406,9 +405,9 @@ const EditorManager = (() => {
         if (findState.activeIndex === -1 || !findState.isReplace) return;
         const match = findState.matches[findState.activeIndex];
         const replaceText = EditorUI.getReplaceQuery();
-        const originalText = EditorUI.getInputContent();
+        const originalText = EditorUI.getTextareaContent();
         const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
-        EditorUI.setInputContent(newText);
+        EditorUI.setTextareaContent(newText);
         _handleEditorInput(); // This will re-run find and update highlights
     }
 
@@ -416,8 +415,8 @@ const EditorManager = (() => {
         if (findState.matches.length === 0 || !findState.isReplace) return;
         const replaceText = EditorUI.getReplaceQuery();
         const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-        const newText = EditorUI.getInputContent().replace(regex, replaceText);
-        EditorUI.setInputContent(newText);
+        const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
+        EditorUI.setTextareaContent(newText);
         _handleEditorInput();
     }
 
@@ -495,8 +494,8 @@ const EditorManager = (() => {
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
             EditorUI.applyTextareaWordWrap(isWordWrapActive);
             EditorUI.updateWordWrapButtonText(isWordWrapActive);
-            EditorUI.setInputContent(content);
-            EditorUI.setInputSelection(0, 0);
+            EditorUI.setTextareaContent(content);
+            EditorUI.setTextareaSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);
             _updateAndRedraw();
             EditorUI.setEditorFocus();
@@ -541,7 +540,7 @@ const EditorManager = (() => {
         }
         if (!proceedToExit) return false;
         if (saveChanges && currentFilePath) {
-            const newContent = EditorUI.getInputContent();
+            const newContent = EditorUI.getTextareaContent();
             const existingNode = FileSystemManager.getNodeByPath(currentFilePath);
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
             if (!primaryGroup) {
@@ -586,12 +585,12 @@ const EditorManager = (() => {
             _closeFindBar();
             return;
         }
-        if (event.key === "Tab" && document.activeElement === EditorUI.elements.input) {
+        if (event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
             event.preventDefault();
-            const selection = EditorUI.getInputSelection();
-            const content = EditorUI.getInputContent();
-            EditorUI.setInputContent(content.substring(0, selection.start) + EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
-            EditorUI.setInputSelection(selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
+            const selection = EditorUI.getTextareaSelection();
+            const content = EditorUI.getTextareaContent();
+            EditorUI.setTextareaContent(content.substring(0, selection.start) + EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
+            EditorUI.setTextareaSelection(selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
             _handleEditorInput();
             return;
         }

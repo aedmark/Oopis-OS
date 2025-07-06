@@ -80,7 +80,92 @@ const EditorUI = (() => {
       th, td { border: 1px solid #52525b; padding: 0.5rem; text-align: left; }
       th { background-color: #3f3f46; } img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
     </style>`;
+    // --- ADDED DEFINITION: applyTextareaWordWrap ---
+    function applyTextareaWordWrap(isWordWrapActive) {
+        if (elements.input && elements.highlighter) {
+            const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
+            elements.input.style.whiteSpace = whiteSpaceStyle;
+            elements.highlighter.style.whiteSpace = whiteSpaceStyle;
+            elements.input.style.overflowX = isWordWrapActive ? "hidden" : "auto";
+            elements.highlighter.style.overflowX = isWordWrapActive ? "hidden" : "auto";
+        }
+    }
 
+    // --- ADDED DEFINITION: applyPreviewWordWrap ---
+    function applyPreviewWordWrap(isWordWrapActive, fileMode) {
+        if (elements.previewPane) {
+            elements.previewPane.style.wordBreak = isWordWrapActive ? "break-all" : "normal";
+        }
+    }
+
+    // --- ADDED DEFINITION: updateWordWrapButtonText ---
+    function updateWordWrapButtonText(isWordWrapActive) {
+        if (elements.wordWrapToggleButton) {
+            elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
+        }
+    }
+    // --- ADDED DEFINITION: getPreviewPaneHTML ---
+    function getPreviewPaneHTML() {
+        return elements.previewPane ? elements.previewPane.innerHTML : "";
+    }
+    // --- ADDED DEFINITION: _updateFormattingToolbarVisibility
+    function _updateFormattingToolbarVisibility(mode) {
+        const isMarkdown = mode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
+        const isHtml = mode === EditorAppConfig.EDITOR.MODES.HTML;
+        if (elements.formattingToolbar) {
+            elements.formattingToolbar.classList.toggle('hidden', !isMarkdown);
+        }
+        if (elements.htmlFormattingToolbar) {
+            elements.htmlFormattingToolbar.classList.toggle('hidden', !isHtml);
+        }
+    }
+    function updateFindBar(findState) {
+        if (!elements.findBar) return;
+        elements.findBar.classList.toggle('hidden', !findState.isOpen);
+        if (!findState.isOpen) return;
+
+        elements.replaceInput.classList.toggle('hidden', !findState.isReplace);
+        elements.replaceBtn.classList.toggle('hidden', !findState.isReplace);
+        elements.replaceAllBtn.classList.toggle('hidden', !findState.isReplace);
+
+        if (findState.query) {
+            elements.findMatchesDisplay.textContent = `${findState.activeIndex + 1} / ${findState.matches.length}`;
+        } else {
+            elements.findMatchesDisplay.textContent = '';
+        }
+    }
+    function getFindQuery() {
+        return elements.findInput ? elements.findInput.value : "";
+    }
+    function getReplaceQuery() {
+        return elements.replaceInput ? elements.replaceInput.value : "";
+    }
+
+    function renderPreview(text, mode, isWordWrapActive) {
+        if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+        previewDebounceTimer = setTimeout(() => {
+            if (!elements.previewPane) return;
+            try {
+                if (mode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+                    elements.previewPane.innerHTML = marked.parse(text);
+                } else if (mode === EditorAppConfig.EDITOR.MODES.HTML) {
+                    const iframe = Utils.createElement("iframe", {
+                        style: { width: "100%", height: "100%", border: "none" },
+                        sandbox: "allow-scripts"
+                    });
+                    elements.previewPane.innerHTML = '';
+                    elements.previewPane.appendChild(iframe);
+                    const iframeDoc = iframe.contentWindow.document;
+                    iframeDoc.open();
+                    iframeDoc.write(iframeStyles + text);
+                    iframeDoc.close();
+                }
+            } catch (e) {
+                elements.previewPane.textContent = `Preview failed: ${e.message}`;
+            }
+            applyPreviewWordWrap(isWordWrapActive, mode);
+        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
+    }
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
 
@@ -211,10 +296,9 @@ const EditorUI = (() => {
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
-        elements.input = Utils.createElement("div", {
-            id: "editor-input",
+        elements.textarea = Utils.createElement("textarea", {
+            id: "editor-textarea",
             className: "editor__input",
-            contentEditable: "true",
             spellcheck: "false",
             autocapitalize: "none",
             eventListeners: {
@@ -286,61 +370,41 @@ const EditorUI = (() => {
     }
 
     function syncScrolls() {
-        if (elements.lineGutter && elements.input) {
-            elements.lineGutter.scrollTop = elements.input.scrollTop;
+        if (elements.lineGutter && elements.textarea) {
+            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
         }
-        if (elements.highlighter && elements.input) {
-            elements.highlighter.scrollTop = elements.input.scrollTop;
-            elements.highlighter.scrollLeft = elements.input.scrollLeft;
+        if (elements.highlighter && elements.textarea) {
+            elements.highlighter.scrollTop = elements.textarea.scrollTop;
+            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
         }
     }
 
     function getInputContent() {
-        // For contenteditable, we must account for how browsers add divs or br's for newlines.
-        if (!elements.input) return "";
-        return elements.input.innerText.replace(/\n$/, ""); // Use innerText and trim trailing newline
+        return elements.textarea ? elements.textarea.value : "";
     }
 
     function setInputContent(text) {
-        if (elements.input) elements.input.textContent = text;
+        if (elements.textarea) elements.textarea.value = text;
     }
 
     function setInputFocus() {
-        if (elements.input) elements.input.focus();
+        if (elements.textarea) elements.textarea.focus();
     }
 
     function getInputSelection() {
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0 && elements.input.contains(sel.anchorNode)) {
-            const range = sel.getRangeAt(0);
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(elements.input);
-            preCaretRange.setEnd(range.startContainer, range.startOffset);
-            const start = preCaretRange.toString().length;
-            const end = start + range.toString().length;
-            return { start, end };
-        }
-        return { start: 0, end: 0 };
+        if(!elements.textarea) return {start: 0, end: 0};
+        return { start: elements.textarea.selectionStart, end: elements.textarea.selectionEnd};
     }
 
     function setInputSelection(start, end) {
-        // This is a simplified implementation for setting selection in a contenteditable div.
-        if (!elements.input || elements.input.childNodes.length === 0) return;
-        const range = document.createRange();
-        const sel = window.getSelection();
-        const textNode = elements.input.firstChild;
-        const realEnd = Math.min(end, textNode.length);
-        const realStart = Math.min(start, realEnd);
-        range.setStart(textNode, realStart);
-        range.setEnd(textNode, realEnd);
-        sel.removeAllRanges();
-        sel.addRange(range);
+        if(!elements.textarea) return;
+        elements.textarea.setSelectionRange(start, end);
     }
 
     function renderHighlights(htmlContent) {
         if (!elements.highlighter) return;
-        const scrollTop = elements.input.scrollTop;
-        const scrollLeft = elements.input.scrollLeft;
+        const scrollTop = elements.textarea.scrollTop;
+        const scrollLeft = elements.textarea.scrollLeft;
         elements.highlighter.innerHTML = htmlContent + '<br>'; // Add trailing break for scrolling
         elements.highlighter.scrollTop = scrollTop;
         elements.highlighter.scrollLeft = scrollLeft;
@@ -390,11 +454,11 @@ const EditorUI = (() => {
 
     return {
         buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
-        setTextareaContent: setInputContent, // Corrected alias
-        getTextareaContent: getInputContent, // Corrected alias
-        setEditorFocus: setInputFocus, // Corrected alias
-        getTextareaSelection: getInputSelection, // Corrected alias
-        setTextareaSelection: setInputSelection, // Corrected alias
+        setTextareaContent: setInputContent,
+        getTextareaContent: getInputContent,
+        setEditorFocus: setInputFocus,
+        getTextareaSelection: getInputSelection,
+        setTextareaSelection: setInputSelection,
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
         updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
