@@ -9,6 +9,6 @@
 *.deb
 *.appimage
 *.exe
-/docs/*.html
+/docs/
 /release/
 /docs/
