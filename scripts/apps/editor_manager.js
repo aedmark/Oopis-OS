@@ -14,7 +14,8 @@ const EditorManager = (() => {
         activeIndex: -1,
     };
 
-    let findDebounceTimer = null; // Debounce timer for find input
+    let findDebounceTimer = null;
+    let highlightDebounceTimer = null; // New timer for highlighting
 
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
@@ -36,10 +37,11 @@ const EditorManager = (() => {
         EditorUI.setEditorFocus();
         EditorUI.setGutterVisibility(!isWordWrapActive);
     }
+
     function _updateFullEditorUI() {
         if (!isActiveState) return;
         const textContent = EditorUI.getTextareaContent();
-        isDirty = textContent !== _getPatchedContent(); // Updated isDirty check
+        isDirty = textContent !== originalContent;
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         EditorUI.updateLineNumbers(textContent);
         const selection = EditorUI.getTextareaSelection();
@@ -50,18 +52,38 @@ const EditorManager = (() => {
         EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
         EditorUI.syncScrolls();
     }
+
+    function _updateHighlighting() {
+        if (!isActiveState || typeof SyntaxHighlighter === 'undefined') return;
+        const text = EditorUI.getTextareaContent();
+        const mode = EditorUtils.determineMode(currentFilePath);
+        const highlightedHtml = SyntaxHighlighter.highlight(text, mode);
+        EditorUI.renderHighlights(highlightedHtml); // Pass HTML, not text
+        EditorUI.syncScrolls();
+    }
+
+    function _debouncedHighlight() {
+        if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
+        highlightDebounceTimer = setTimeout(_updateHighlighting, 150);
+    }
+
     function _handleEditorInput() {
         if (!isActiveState) return;
+
+        isDirty = EditorUI.getTextareaContent() !== originalContent;
+        _debouncedHighlight(); // New call
+
         const currentContent = EditorUI.getTextareaContent();
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
             _saveUndoState(currentContent);
             saveUndoStateTimeout = null;
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
-        isDirty = currentContent !== _getPatchedContent();
+
         _updateFullEditorUI();
         _debouncedFind();
     }
+
     function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
     function _handleEditorSelectionChange() {
         if (!isActiveState) return;
@@ -477,6 +499,7 @@ const EditorManager = (() => {
             EditorUI.setTextareaSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);
             _updateFullEditorUI();
+            _debouncedHighlight(); // Initial highlight
             EditorUI.setEditorFocus();
             _updateUndoRedoButtonStates();
         });

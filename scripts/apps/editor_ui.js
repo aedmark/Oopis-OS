@@ -4,8 +4,8 @@ const EditorAppConfig = {
         FIND_DEBOUNCE_DELAY_MS: 150, // Added for find functionality
         TAB_REPLACEMENT: "    ",
         DEFAULT_MODE: "text",
-        MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html" },
-        EXTENSIONS_MAP: { md: "markdown", html: "html", htm: "html", sh: "text", js: "text", css: "text" },
+        MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html", JAVASCRIPT: "javascript", CSS: "css", SHELL: "shell" },
+        EXTENSIONS_MAP: { md: "markdown", html: "html", htm: "html", js: "javascript", css: "css", sh: "shell" },
         VIEW_MODES: { SPLIT: "split", EDIT_ONLY: "edit", PREVIEW_ONLY: "preview" },
         WORD_WRAP_DEFAULT_ENABLED: false,
     },
@@ -123,12 +123,7 @@ const EditorUI = (() => {
           border-collapse: collapse;
           margin-bottom: 1rem;
       }
-      th, td {
-          border: 1px solid #52525b;
-          padding: 0.5rem;
-          text-align: left;
-      }
-      th { background-color: #3f3f46; }
+      img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
     </style>
   `;
 
@@ -256,7 +251,7 @@ const EditorUI = (() => {
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
-        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
+        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", autocapitalize: "none", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
         elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
@@ -280,6 +275,12 @@ const EditorUI = (() => {
         );
 
         return elements.editorContainer;
+    }
+
+    function renderHighlights(htmlContent) {
+        if (elements.highlighter) {
+            elements.highlighter.innerHTML = htmlContent;
+        }
     }
 
     function setGutterVisibility(visible) {
@@ -503,6 +504,6 @@ const EditorUI = (() => {
         setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
-        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
+        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights, renderHighlights
     };
 })();

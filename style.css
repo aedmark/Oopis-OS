@@ -454,19 +454,35 @@ body {
   min-width: 0;
 }
 
-.editor__textarea {
-  width: 100%;
-  height: 100%;
-  background-color: var(--color-background-darkest);
-  color: var(--color-text-primary);
-  border: none;
-  resize: none;
-  outline: none;
-  padding: var(--spacing-xs) var(--spacing-sm);
+.editor__highlighter, .editor__textarea {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  white-space: pre;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
+
+.editor__highlighter {
+  color: transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.editor__textarea {
+  background-color: transparent;
+  color: transparent;
+  caret-color: var(--color-text-primary);
+  z-index: 2;
+  resize: none;
+}
+
 
 .editor__textarea--no-wrap {
   white-space: pre !important;
@@ -726,14 +742,15 @@ body {
 }
 
 .editor__highlighter {
-  color: transparent; /* Makes the underlying text invisible */
-  pointer-events: none; /* Allows clicks to pass through to the textarea */
+  color: var(--color-text-primary); /* Default text color */
+  pointer-events: none;
   z-index: 1;
 }
 
 .editor__textarea {
-  background-color: transparent; /* THE CRITICAL CHANGE */
-  color: var(--color-text-primary);
+  background-color: transparent;
+  color: transparent;
+  caret-color: var(--color-text-primary);
   z-index: 2; /* Sits on top of the highlighter */
   resize: none;
 }
@@ -747,6 +764,25 @@ body {
   background-color: rgba(56, 189, 248, 0.6); /* --color-info with alpha */
   border-radius: 2px;
 }
+
+/* Syntax Highlighting Span Styles */
+.sh-comment { color: var(--sh-color-comment); font-style: italic; }
+.sh-keyword { color: var(--sh-color-keyword); font-weight: bold; }
+.sh-string { color: var(--sh-color-string); }
+.sh-number { color: var(--sh-color-number); }
+.sh-operator { color: var(--sh-color-operator); }
+.sh-punctuation { color: var(--color-text-secondary); }
+.sh-tag { color: var(--sh-color-tag); }
+.sh-attribute { color: var(--sh-color-attribute); }
+.sh-value { color: var(--sh-color-value); }
+.sh-selector { color: var(--sh-color-selector); }
+.sh-property { color: var(--sh-color-property); }
+.sh-markdown-heading { color: var(--sh-color-keyword); font-weight: bold; }
+.sh-markdown-bold { font-weight: bold; }
+.sh-markdown-italic { font-style: italic; }
+.sh-markdown-link-text { color: var(--sh-color-property); }
+.sh-markdown-link-url { color: var(--sh-color-string); text-decoration: underline; }
+.sh-markdown-list-marker { color: var(--sh-color-operator); }
 
 /* 8. Explorer Component
 /* ========================================================================== */
