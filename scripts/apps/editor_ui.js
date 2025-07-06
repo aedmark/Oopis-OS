@@ -1,71 +1,7 @@
-const EditorAppConfig = {
-    EDITOR: {
-        DEBOUNCE_DELAY_MS: 450,
-        FIND_DEBOUNCE_DELAY_MS: 250,
-        TAB_REPLACEMENT: "    ",
-        DEFAULT_MODE: "text",
-        MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html", JAVASCRIPT: "javascript", CSS: "css", SHELL: "shell" },
-        EXTENSIONS_MAP: { md: "markdown", html: "html", htm: "html", js: "javascript", css: "css", sh: "shell" },
-        VIEW_MODES: { SPLIT: "split", EDIT_ONLY: "edit", PREVIEW_ONLY: "preview" },
-        WORD_WRAP_DEFAULT_ENABLED: false,
-    },
-    STORAGE_KEYS: {
-        EDITOR_WORD_WRAP_ENABLED: "oopisOsEditorWordWrapEnabled",
-    },
-};
-const EditorUtils = (() => {
-    "use strict";
-    function determineMode(filePath) {
-        const extension = Utils.getFileExtension(filePath);
-        return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
-    }
-
-    function calculateStatusBarInfo(text, selectionStart) {
-        const lines = text.split("\n");
-        const lineCount = lines.length;
-        const charCount = text.length;
-        const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
-        let currentLineNum = 0;
-        let currentColNum = 0;
-        let charCounter = 0;
-        for (let i = 0; i < lines.length; i++) {
-            const lineLengthWithNewline = lines[i].length + 1;
-            if (selectionStart >= charCounter && selectionStart < charCounter + lineLengthWithNewline) {
-                currentLineNum = i;
-                currentColNum = selectionStart - charCounter;
-                break;
-            }
-            charCounter += lineLengthWithNewline;
-        }
-        if (selectionStart === text.length && !text.endsWith("\n")) {
-            currentLineNum = lines.length - 1;
-            currentColNum = lines[lines.length - 1].length;
-        } else if (selectionStart === text.length && text.endsWith("\n")) {
-            currentLineNum = lines.length - 1;
-            currentColNum = 0;
-        }
-        return {
-            lines: lineCount,
-            words: wordCount,
-            chars: charCount,
-            cursor: {
-                line: currentLineNum + 1,
-                col: currentColNum + 1
-            },
-        };
-    }
-    function generateLineNumbersArray(text) {
-        const lines = text.split("\n").length;
-        return Array.from({ length: lines }, (_, i) => i + 1);
-    }
-    return { determineMode, calculateStatusBarInfo, generateLineNumbersArray };
-})();
-
 const EditorUI = (() => {
     "use strict";
     let elements = {};
     let eventCallbacks = {};
-    let previewDebounceTimer = null;
     const iframeStyles = `
     <style>
       body { font-family: 'Inter', sans-serif; line-height: 1.5; color: #e5e7eb; background-color: #212121; margin: 1rem; }
@@ -177,6 +113,7 @@ const EditorUI = (() => {
 
     function renderPreview(text, mode, isWordWrapActive) {
         if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+        let previewDebounceTimer;
         previewDebounceTimer = setTimeout(() => {
             if (!elements.previewPane) return;
             try {
@@ -210,7 +147,7 @@ const EditorUI = (() => {
         elements.textarea = Utils.createElement("div", {
             id: "editor-textarea",
             className: "editor__input",
-            contenteditable: "true", // The key change to make it an editable div
+            contenteditable: "true",
             spellcheck: "false",
             autocapitalize: "none",
             eventListeners: {
@@ -228,13 +165,26 @@ const EditorUI = (() => {
             }
         });
 
+        // --- START FIX ---
+        // Add a new grid container specifically for the highlighter and the textarea
+        const gridContainer = Utils.createElement("div", {
+            style: {
+                position: 'relative',
+                flexGrow: 1,
+                display: 'grid'
+            }
+        }, elements.highlighter, elements.textarea);
+
+        // Put the line gutter and the new grid container into the main wrapper
         elements.textareaWrapper = Utils.createElement("div", {
             id: "editor-textarea-wrapper",
             className: "editor__textarea-wrapper",
             eventListeners: {
                 scroll: eventCallbacks.onScroll
             }
-        }, elements.lineGutter, elements.highlighter, elements.textarea);
+        }, elements.lineGutter, gridContainer);
+        // --- END FIX ---
+
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
         elements.findMatchesDisplay = Utils.createElement("span", { className: "find-bar__matches" });
@@ -298,7 +248,7 @@ const EditorUI = (() => {
         elements.statusBar = Utils.createElement("div", { id: "editor-status-bar", className: "editor__status-bar" }, statusBarLeft, elements.filenameDisplay, statusBarRight);
 
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" },
-            elements.textareaWrapper, // <-- Corrected structure
+            elements.textareaWrapper,
             elements.previewWrapper
         );
 
@@ -393,7 +343,6 @@ const EditorUI = (() => {
         let charCount = 0;
         let startNode, startOffset, endNode, endOffset;
 
-        // Helper to traverse text nodes and find the correct character offsets
         function findNode(node) {
             if (node.nodeType === Node.TEXT_NODE) {
                 const nextCharCount = charCount + node.length;
@@ -408,7 +357,7 @@ const EditorUI = (() => {
                 charCount = nextCharCount;
             } else {
                 for (let i = 0; i < node.childNodes.length; i++) {
-                    if (findNode(node.childNodes[i])) return true; // Stop if both found
+                    if (findNode(node.childNodes[i])) return true;
                 }
             }
             return startNode && endNode;
@@ -416,7 +365,6 @@ const EditorUI = (() => {
 
         findNode(editorInput);
 
-        // Fallback to end of content if nodes aren't found (e.g., empty div)
         if (!startNode || !endNode) {
             range.selectNodeContents(editorInput);
             range.collapse(false);
@@ -434,7 +382,6 @@ const EditorUI = (() => {
     function renderHighlights(htmlContent) {
         if (elements.highlighterContent) {
             elements.highlighterContent.innerHTML = htmlContent;
-            // Synchronize scroll positions as a fallback for full updates
             if (elements.textarea && elements.highlighter) {
                 elements.highlighter.scrollTop = elements.textarea.scrollTop;
             }
@@ -459,8 +406,6 @@ const EditorUI = (() => {
         editorPane.classList.add('hidden');
         previewPane.classList.add('hidden');
 
-        // Default gutter visibility depends on word-wrap. It will be shown or hidden
-        // alongside the editor pane below.
         setGutterVisibility(!isWordWrapActive);
 
         if (!isPreviewable) {
@@ -477,7 +422,7 @@ const EditorUI = (() => {
                 break;
             case EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY:
                 previewPane.classList.remove('hidden');
-                setGutterVisibility(false); // <-- THE FIX: Explicitly hide gutter in full preview mode.
+                setGutterVisibility(false);
                 previewPane.style.width = '100%';
                 if (viewToggleButton) viewToggleButton.textContent = "Split";
                 break;
@@ -490,29 +435,12 @@ const EditorUI = (() => {
                 if (viewToggleButton) viewToggleButton.textContent = "Editor";
                 break;
         }
-        // As identified previously, this incorrect call can be removed.
-        // applyPreviewWordWrap(isWordWrapActive, fileMode);
-    }    function updateHighlightButtonText(isHighlightingActive) {
+    }
+
+    function updateHighlightButtonText(isHighlightingActive) {
         if (elements.highlightToggleButton) {
             elements.highlightToggleButton.textContent = isHighlightingActive ? "Syntax: On" : "Syntax: Off";
         }
-        // Add a new grid container for the text and highlighter
-        const gridContainer = Utils.createElement("div", {
-            style: {
-                position: 'relative',
-                flexGrow: 1,
-                display: 'grid'
-            }
-        }, elements.highlighter, elements.textarea);
-
-// Put the gutter and the new grid container into the wrapper
-        elements.textareaWrapper = Utils.createElement("div", {
-            id: "editor-textarea-wrapper",
-            className: "editor__textarea-wrapper",
-            eventListeners: {
-                scroll: eventCallbacks.onScroll
-            }
-        }, elements.lineGutter, gridContainer);
     }
 
     return {
