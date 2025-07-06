@@ -32,7 +32,7 @@ const EditorManager = (() => {
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
-            EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
+            EditorUI.renderPreview(EditorUI.getInputContent(), currentFileMode, isWordWrapActive);
         }
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
         EditorUI.setEditorFocus();
@@ -112,7 +112,7 @@ const EditorManager = (() => {
         let fileName;
 
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.TEXT) {
-            const rawContent = EditorUI.getTextareaContent();
+            const rawContent = EditorUI.getInputContent();
             blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
             fileName = `${baseName}.txt`;
         } else { // Handles 'markdown' and 'html'
@@ -173,13 +173,13 @@ const EditorManager = (() => {
         const patchToUndo = undoStack.pop();
         redoStack.push(patchToUndo);
 
-        const currentContent = EditorUI.getTextareaContent();
+        const currentContent = EditorUI.getInputContent();
         const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
 
-        EditorUI.setTextareaContent(previousContent);
+        EditorUI.setInputContent(previousContent);
         _updateAndRedraw();
         _updateUndoRedoButtonStates();
-        EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
+        EditorUI.setInputSelection(previousContent.length, previousContent.length);
         EditorUI.setEditorFocus();
     }
 
@@ -188,13 +188,13 @@ const EditorManager = (() => {
         const patchToRedo = redoStack.pop();
         undoStack.push(patchToRedo);
 
-        const currentContent = EditorUI.getTextareaContent();
+        const currentContent = EditorUI.getInputContent();
         const nextContent = PatchUtils.applyPatch(currentContent, patchToRedo);
 
-        EditorUI.setTextareaContent(nextContent);
+        EditorUI.setInputContent(nextContent);
         _updateAndRedraw();
         _updateUndoRedoButtonStates();
-        EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
+        EditorUI.setInputSelection(nextContent.length, nextContent.length);
         EditorUI.setEditorFocus();
     }
 
@@ -204,12 +204,13 @@ const EditorManager = (() => {
     }
 
     async function _applyTextManipulation(type) {
-        if (!isActiveState || !EditorUI.elements.textarea) return;
+        if (!isActiveState || !EditorUI.elements.input) return;
 
-        const textarea = EditorUI.elements.textarea;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
+        const textarea = EditorUI.elements.input;
+        const selection = EditorUI.getInputSelection();
+        const start = selection.start;
+        const end = selection.end;
+        const text = EditorUI.getInputContent();
         const selectedText = text.substring(start, end);
 
         let manipulatedText = '';
@@ -321,13 +322,13 @@ const EditorManager = (() => {
 
             if (manipulatedText !== selectedText) {
                 const newText = text.substring(0, start) + manipulatedText + text.substring(end);
-                EditorUI.setTextareaContent(newText);
+                EditorUI.setInputContent(newText);
                 _handleEditorInput();
                 EditorUI.setEditorFocus();
-                EditorUI.setTextareaSelection(newStart, newEnd);
+                EditorUI.setInputSelection(newStart, newEnd);
             } else {
                 EditorUI.setEditorFocus();
-                EditorUI.setTextareaSelection(start, end);
+                EditorUI.setInputSelection(start, end);
             }
         };
 
@@ -360,7 +361,7 @@ const EditorManager = (() => {
             findState.matches = [];
             findState.activeIndex = -1;
         } else {
-            const text = EditorUI.getTextareaContent();
+            const text = EditorUI.getInputContent();
             const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
             findState.matches = [...text.matchAll(regex)];
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
@@ -389,14 +390,14 @@ const EditorManager = (() => {
     function _scrollToMatch(index, shouldFocusTextarea = true) {
         if (index === -1) return;
         const match = findState.matches[index];
-        const textarea = EditorUI.elements.textarea;
+        const textarea = EditorUI.elements.input;
 
         if (shouldFocusTextarea) {
             textarea.focus();
         }
 
-        textarea.setSelectionRange(match.index, match.index + match[0].length);
-        const textToMatch = textarea.value.substring(0, match.index);
+        EditorUI.setInputSelection(match.index, match.index + match[0].length);
+        const textToMatch = textarea.innerText.substring(0, match.index);
         const lineBreaks = (textToMatch.match(/\n/g) || []).length;
         textarea.scrollTop = lineBreaks * (parseInt(getComputedStyle(textarea).lineHeight, 10) || 16);
     }
@@ -405,9 +406,9 @@ const EditorManager = (() => {
         if (findState.activeIndex === -1 || !findState.isReplace) return;
         const match = findState.matches[findState.activeIndex];
         const replaceText = EditorUI.getReplaceQuery();
-        const originalText = EditorUI.getTextareaContent();
+        const originalText = EditorUI.getInputContent();
         const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
-        EditorUI.setTextareaContent(newText);
+        EditorUI.setInputContent(newText);
         _handleEditorInput(); // This will re-run find and update highlights
     }
 
@@ -415,8 +416,8 @@ const EditorManager = (() => {
         if (findState.matches.length === 0 || !findState.isReplace) return;
         const replaceText = EditorUI.getReplaceQuery();
         const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-        const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
-        EditorUI.setTextareaContent(newText);
+        const newText = EditorUI.getInputContent().replace(regex, replaceText);
+        EditorUI.setInputContent(newText);
         _handleEditorInput();
     }
 
@@ -484,7 +485,8 @@ const EditorManager = (() => {
                     if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); _goToPrevMatch(); }
                     else if (e.key === 'Enter') { e.preventDefault(); _goToNextMatch(); }
                     else if (e.key === 'Escape') { e.preventDefault(); _closeFindBar(); }
-                }
+                },
+                onKeydown: handleEditorKeyDown
             };
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
@@ -493,8 +495,8 @@ const EditorManager = (() => {
             EditorUI.setViewMode(currentViewMode, currentFileMode, isPreviewable, isWordWrapActive);
             EditorUI.applyTextareaWordWrap(isWordWrapActive);
             EditorUI.updateWordWrapButtonText(isWordWrapActive);
-            EditorUI.setTextareaContent(content);
-            EditorUI.setTextareaSelection(0, 0);
+            EditorUI.setInputContent(content);
+            EditorUI.setInputSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);
             _updateAndRedraw();
             EditorUI.setEditorFocus();
@@ -539,7 +541,7 @@ const EditorManager = (() => {
         }
         if (!proceedToExit) return false;
         if (saveChanges && currentFilePath) {
-            const newContent = EditorUI.getTextareaContent();
+            const newContent = EditorUI.getInputContent();
             const existingNode = FileSystemManager.getNodeByPath(currentFilePath);
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
             if (!primaryGroup) {
@@ -584,12 +586,12 @@ const EditorManager = (() => {
             _closeFindBar();
             return;
         }
-        if (event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
+        if (event.key === "Tab" && document.activeElement === EditorUI.elements.input) {
             event.preventDefault();
-            const selection = EditorUI.getTextareaSelection();
-            const content = EditorUI.getTextareaContent();
-            EditorUI.setTextareaContent(content.substring(0, selection.start) + EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
-            EditorUI.setTextareaSelection(selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
+            const selection = EditorUI.getInputSelection();
+            const content = EditorUI.getInputContent();
+            EditorUI.setInputContent(content.substring(0, selection.start) + EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
+            EditorUI.setInputSelection(selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
             _handleEditorInput();
             return;
         }

@@ -7,9 +7,6 @@
     <list default="true" id="3a18268e-a7b5-4c7d-9067-c1ae6db1f62d" name="Changes" comment="4.0">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/apps/editor_manager.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/apps/editor_manager.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/apps/editor_ui.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/apps/editor_ui.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/syntax_highlighter.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/syntax_highlighter.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,7 +82,7 @@
       <option name="presentableId" value="Default" />
       <updated>1751762350706</updated>
       <workItem from="1751762351755" duration="1285000" />
-      <workItem from="1751763664268" duration="13796000" />
+      <workItem from="1751763664268" duration="14137000" />
     </task>
     <task id="LOCAL-00001" summary="4.0">
       <option name="closed" value="true" />
@@ -271,7 +268,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751776080395</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="4.0">
+      <option name="closed" value="true" />
+      <created>1751777931556</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1751777931556</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
