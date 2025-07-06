@@ -80,7 +80,8 @@ const EditorUI = (() => {
       th, td { border: 1px solid #52525b; padding: 0.5rem; text-align: left; }
       th { background-color: #3f3f46; } img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
     </style>`;
-    // --- ADDED DEFINITION: applyTextareaWordWrap ---
+    // --- VIRTUALIZED RENDERING REFACTOR ---
+
     function applyTextareaWordWrap(isWordWrapActive) {
         if (elements.textarea && elements.highlighterContent) { // Target highlighterContent now
             const whiteSpaceStyle = isWordWrapActive ? "pre-wrap" : "pre";
@@ -90,24 +91,20 @@ const EditorUI = (() => {
         }
     }
 
-    // --- ADDED DEFINITION: applyPreviewWordWrap ---
     function applyPreviewWordWrap(isWordWrapActive, fileMode) {
         if (elements.previewPane) {
             elements.previewPane.style.wordBreak = isWordWrapActive ? "break-all" : "normal";
         }
     }
 
-    // --- ADDED DEFINITION: updateWordWrapButtonText ---
     function updateWordWrapButtonText(isWordWrapActive) {
         if (elements.wordWrapToggleButton) {
             elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
         }
     }
-    // --- ADDED DEFINITION: getPreviewPaneHTML ---
     function getPreviewPaneHTML() {
         return elements.previewPane ? elements.previewPane.innerHTML : "";
     }
-    // --- ADDED DEFINITION: _updateFormattingToolbarVisibility
     function _updateFormattingToolbarVisibility(mode) {
         const isMarkdown = mode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
         const isHtml = mode === EditorAppConfig.EDITOR.MODES.HTML;
@@ -217,17 +214,9 @@ const EditorUI = (() => {
             className: "editor__highlighter"
         }, elements.highlighterContent);
 
-        elements.textarea = Utils.createElement("textarea", { /* ... keep existing textarea setup ... */ });
-
-        elements.textareaWrapper = Utils.createElement("div", {
-            id: "editor-textarea-wrapper",
-            className: "editor__textarea-wrapper"
-        }, elements.highlighter, elements.textarea);
-
-        elements.input = Utils.createElement("div", {
-            id: "editor-input",
+        elements.textarea = Utils.createElement("textarea", {
+            id: "editor-textarea",
             className: "editor__input",
-            contentEditable: "true",
             spellcheck: "false",
             autocapitalize: "none",
             eventListeners: {
@@ -238,6 +227,11 @@ const EditorUI = (() => {
                 keydown: eventCallbacks.onKeydown
             }
         });
+
+        elements.textareaWrapper = Utils.createElement("div", {
+            id: "editor-textarea-wrapper",
+            className: "editor__textarea-wrapper"
+        }, elements.highlighter, elements.textarea);
 
         // --- Find & Replace Bar ---
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
@@ -355,27 +349,18 @@ const EditorUI = (() => {
         const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.highlightToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton); // <-- ADDED BUTTON HERE
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
-        elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
-        elements.textarea = Utils.createElement("textarea", {
-            id: "editor-textarea",
-            className: "editor__input",
-            spellcheck: "false",
-            autocapitalize: "none",
-            eventListeners: {
-                input: eventCallbacks.onInput,
-                scroll: eventCallbacks.onScroll,
-                click: eventCallbacks.onSelectionChange,
-                keyup: eventCallbacks.onSelectionChange,
-                keydown: eventCallbacks.onKeydown // Need to capture keydown for tab
-            }
-        });
-        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
+
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
+
+        // ***************** FIX START *****************
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" },
-            elements.lineGutter, // Line gutter is now a sibling
+            elements.lineGutter,
             elements.textareaWrapper,
-            elements.previewWrapper,
+            elements.previewWrapper
+        );
+        // ***************** FIX END *******************
+
         elements.filenameDisplay = Utils.createElement("span", { id: "editor-filename-display" });
         elements.statusBarCursorPos = Utils.createElement("span", { id: "status-cursor" });
         elements.statusBarLineCount = Utils.createElement("span", { id: "status-lines" });
@@ -466,10 +451,19 @@ const EditorUI = (() => {
         if (!elements.highlighter) return;
         const scrollTop = elements.textarea.scrollTop;
         const scrollLeft = elements.textarea.scrollLeft;
-        elements.highlighter.innerHTML = htmlContent + '<br>'; // Add trailing break for scrolling
-        elements.highlighter.scrollTop = scrollTop;
-        elements.highlighter.scrollLeft = scrollLeft;
-    }
+        // The new virtualized renderer expects a pre-rendered block for the visible area.
+        // We'll call the new method for consistency. This function is now a proxy.
+        // This is the new core rendering function for the virtualized viewport
+        function renderVisibleContent(html, paddingTop, totalHeight) {
+            if (elements.highlighterContent) {
+                elements.highlighterContent.innerHTML = html;
+                elements.highlighterContent.style.transform = `translateY(${paddingTop}px)`;
+            }
+            if (elements.highlighter) {
+                elements.highlighter.style.height = `${totalHeight}px`;
+            }
+        }
+
     function setViewMode(viewMode, fileMode, isPreviewable, isWordWrapActive) {
         if (!elements.mainArea || !elements.textareaWrapper || !elements.previewWrapper) return;
 
