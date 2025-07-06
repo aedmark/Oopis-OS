@@ -13,9 +13,8 @@
             { name: "lines", short: "-n", long: "--lines", takesValue: true },
             { name: "bytes", short: "-c", long: "--bytes", takesValue: true },
         ],
-        // argValidation is handled inside coreLogic due to multiple input modes.
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context;
+            const { args, flags } = context;
 
             if (flags.lines && flags.bytes) {
                 return { success: false, error: "tail: cannot use both -n and -c" };
@@ -44,41 +43,28 @@
                     return content.substring(content.length - byteCount);
                 }
                 const lines = content.split('\n');
-                // If the last line is empty (due to a trailing newline), ignore it for slicing purposes
                 const relevantLines = lines.at(-1) === '' ? lines.slice(0, -1) : lines;
                 return relevantLines.slice(-lineCount).join('\n');
             };
 
-            // Handle standard input
-            if (args.length === 0) {
-                if (options.stdinContent !== null) {
-                    return { success: true, output: processContent(options.stdinContent) };
-                }
-                return { success: true, output: "" }; // No files and no stdin
-            }
-
-            // Handle file inputs
             const outputParts = [];
-            for (let i = 0; i < args.length; i++) {
-                const pathArg = args[i];
-                const pathValidation = FileSystemManager.validatePath("tail", pathArg, { expectedType: 'file' });
+            let fileCount = 0;
 
-                if (pathValidation.error) {
-                    outputParts.push(pathValidation.error);
-                    continue;
-                }
-
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    outputParts.push(`tail: cannot open '${pathArg}' for reading: Permission denied`);
+            for await (const item of Utils.generateInputContent(context)) {
+                if (!item.success) {
+                    outputParts.push(item.error);
                     continue;
                 }
 
                 if (args.length > 1) {
-                    outputParts.push(`${i > 0 ? '\n' : ''}==> ${pathArg} <==`);
+                    if (fileCount > 0) {
+                        outputParts.push('');
+                    }
+                    outputParts.push(`==> ${item.sourceName} <==`);
                 }
 
-                const content = pathValidation.node.content || "";
-                outputParts.push(processContent(content));
+                outputParts.push(processContent(item.content));
+                fileCount++;
             }
 
             return { success: true, output: outputParts.join('\n') };
@@ -86,7 +72,6 @@
     };
 
     const tailDescription = "Outputs the last part of files.";
-
     const tailHelpText = `Usage: tail [OPTION]... [FILE]...
 
 Print the last 10 lines of each FILE to standard output.

@@ -15,41 +15,28 @@
             { name: "unique", short: "-u", long: "--unique" },
         ],
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context;
-
-            let lines = [];
+            const { flags } = context;
+            let allContent = "";
             let hadError = false;
-            let combinedContent = "";
 
-            if (args.length > 0) {
-                // Read from all specified files
-                for (const pathArg of args) {
-                    const pathValidation = FileSystemManager.validatePath("sort", pathArg, { expectedType: 'file' });
-                    if (pathValidation.error) {
-                        // Using OutputManager directly for errors in multi-file scenarios
-                        await OutputManager.appendToOutput(pathValidation.error, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                        hadError = true;
-                        continue;
-                    }
-                    if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                        await OutputManager.appendToOutput(`sort: cannot read '${pathArg}': Permission denied`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                        hadError = true;
-                        continue;
-                    }
-                    combinedContent += pathValidation.node.content || "";
+            for await (const item of Utils.generateInputContent(context)) {
+                if (!item.success) {
+                    await OutputManager.appendToOutput(item.error, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                    hadError = true;
+                    continue;
                 }
-                lines = combinedContent.split('\n');
-            } else if (options.stdinContent !== null) {
-                // Read from standard input
-                lines = options.stdinContent.split('\n');
+                allContent += item.content;
             }
 
-            // If the last line of input is empty (from a trailing newline), remove it.
+            if (hadError && !allContent) {
+                return { success: false, error: "sort: No readable input provided." };
+            }
+
+            let lines = allContent.split('\n');
             if (lines.length > 0 && lines[lines.length - 1] === '') {
                 lines.pop();
             }
 
-            // Perform the sort
             if (flags.numeric) {
                 lines.sort((a, b) => {
                     const numA = parseFloat(a);
@@ -68,8 +55,7 @@
             }
 
             if (flags.unique) {
-                lines = [...new Set(lines)]; // Simple way to get unique lines
-                // Re-sort after uniquing if numeric or reverse, as Set doesn't preserve numeric sort order.
+                lines = [...new Set(lines)];
                 if (flags.numeric) lines.sort((a, b) => parseFloat(a) - parseFloat(b));
                 if (flags.reverse) lines.reverse();
             }

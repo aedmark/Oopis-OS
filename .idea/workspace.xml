@@ -5,8 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3a18268e-a7b5-4c7d-9067-c1ae6db1f62d" name="Changes" comment="4.0">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/apps/chidi_app.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/apps/chidi_app.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/cat.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/cat.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/cksum.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/cksum.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/grep.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/grep.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/head.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/head.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/sort.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/sort.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/tail.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/tail.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/commands/wc.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/commands/wc.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/utils.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,7 +90,7 @@
       <option name="presentableId" value="Default" />
       <updated>1751762350706</updated>
       <workItem from="1751762351755" duration="1285000" />
-      <workItem from="1751763664268" duration="4272000" />
+      <workItem from="1751763664268" duration="5491000" />
     </task>
     <task id="LOCAL-00001" summary="4.0">
       <option name="closed" value="true" />
@@ -180,7 +188,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751767769954</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="4.0">
+      <option name="closed" value="true" />
+      <created>1751768115010</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1751768115010</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

@@ -12,21 +12,14 @@
         flagDefinitions: [
             { name: "numberLines", short: "-n", long: "--number" }
         ],
-        // --- ADDED FOR AUTO-COMPLETION ---
         pathValidation: [
             { argIndex: 0, optional: true, options: { expectedType: 'file' } }
         ],
-        // --- END ADDITION ---
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context;
-
-            if (args.length === 0 && (options.stdinContent === null || options.stdinContent === undefined)) {
-                return { success: true, output: "" };
-            }
-
-            let outputContent = "";
-            let firstFile = true;
+            const { flags } = context;
+            const outputParts = [];
             let lineCounter = 1;
+            let hadError = false;
 
             const processAndNumberContent = (content) => {
                 if (!flags.numberLines) {
@@ -37,31 +30,23 @@
                 return processedLines.map(line => `     ${lineCounter++}  ${line}`).join('\n');
             };
 
-            if (options.stdinContent !== null && options.stdinContent !== undefined) {
-                outputContent += processAndNumberContent(options.stdinContent);
-                firstFile = false;
-            }
-
-            for (const pathArg of args) {
-                const pathValidation = FileSystemManager.validatePath("cat", pathArg, { expectedType: 'file' });
-                if (pathValidation.error) return { success: false, error: pathValidation.error };
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    return { success: false, error: `cat: '${pathArg}': Permission denied` };
+            for await (const item of Utils.generateInputContent(context)) {
+                if (!item.success) {
+                    outputParts.push(item.error);
+                    hadError = true;
+                    continue;
                 }
-
-                if (!firstFile && outputContent && !outputContent.endsWith("\n")) outputContent += "\n";
-
-                const fileContent = pathValidation.node.content || "";
-                outputContent += processAndNumberContent(fileContent);
-                firstFile = false;
+                outputParts.push(processAndNumberContent(item.content));
             }
 
-            return { success: true, output: outputContent };
+            return {
+                success: !hadError,
+                output: outputParts.join('\n')
+            };
         },
     };
 
     const catDescription = "Concatenate and display the content of files.";
-
     const catHelpText = `Usage: cat [FILE]...
 
 Concatenate and print files to the standard output.

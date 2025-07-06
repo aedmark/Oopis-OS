@@ -1,3 +1,9 @@
+/**
+ * @file chidi_app - AI Digital Librarian Logic
+ * @author Andrew Edmark
+ * @author Gemini
+ */
+
 const ChidiApp = {
     state: {
         loadedFiles: [],

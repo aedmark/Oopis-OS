@@ -13,9 +13,8 @@
             { name: "lines", short: "-n", long: "--lines", takesValue: true },
             { name: "bytes", short: "-c", long: "--bytes", takesValue: true },
         ],
-        // No argValidation needed as it can take 0 or more file arguments.
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context;
+            const { args, flags } = context;
 
             if (flags.lines && flags.bytes) {
                 return { success: false, error: "head: cannot use both -n and -c" };
@@ -46,40 +45,24 @@
                 return content.split('\n').slice(0, lineCount).join('\n');
             };
 
-            // Handle standard input
-            if (args.length === 0) {
-                if (options.stdinContent !== null) {
-                    return { success: true, output: processContent(options.stdinContent) };
-                }
-                return { success: true, output: "" }; // No files and no stdin
-            }
-
-            // Handle file inputs
             const outputParts = [];
-            for (let i = 0; i < args.length; i++) {
-                const pathArg = args[i];
-                const pathValidation = FileSystemManager.validatePath("head", pathArg, { expectedType: 'file' });
+            let fileCount = 0;
 
-                if (pathValidation.error) {
-                    outputParts.push(pathValidation.error);
-                    continue;
-                }
-
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    outputParts.push(`head: cannot open '${pathArg}' for reading: Permission denied`);
+            for await (const item of Utils.generateInputContent(context)) {
+                if (!item.success) {
+                    outputParts.push(item.error);
                     continue;
                 }
 
                 if (args.length > 1) {
-                    outputParts.push(`==> ${pathArg} <==`);
+                    if (fileCount > 0) {
+                        outputParts.push('');
+                    }
+                    outputParts.push(`==> ${item.sourceName} <==`);
                 }
 
-                const content = pathValidation.node.content || "";
-                outputParts.push(processContent(content));
-
-                if (args.length > 1 && i < args.length - 1) {
-                    outputParts.push('\n');
-                }
+                outputParts.push(processContent(item.content));
+                fileCount++;
             }
 
             return { success: true, output: outputParts.join('\n') };
@@ -87,7 +70,6 @@
     };
 
     const headDescription = "Outputs the first part of files.";
-
     const headHelpText = `Usage: head [OPTION]... [FILE]...
 
 Print the first 10 lines of each FILE to standard output.

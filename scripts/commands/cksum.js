@@ -7,26 +7,10 @@
 (() => {
     "use strict";
 
-    /**
-     * @const {object} cksumCommandDefinition
-     * @description The command definition for the 'cksum' command.
-     */
     const cksumCommandDefinition = {
         commandName: "cksum",
-        // No flags needed for the standard POSIX implementation
         flagDefinitions: [],
         coreLogic: async (context) => {
-            const { args, options, currentUser } = context;
-
-            /**
-             * Calculates the POSIX CRC-32 checksum for a given string.
-             * This implementation is a standard CRC-32 algorithm.
-             * Note: A true POSIX cksum includes the file length in the calculation,
-             * which makes it non-standard. This implementation uses a standard CRC-32
-             * for simplicity and broad compatibility, which is a common approach.
-             * @param {string} str - The input string.
-             * @returns {number} The calculated checksum.
-             */
             const crc32 = (str) => {
                 const table = [];
                 for (let i = 0; i < 256; i++) {
@@ -40,13 +24,13 @@
                 for (let i = 0; i < str.length; i++) {
                     crc = (crc >>> 8) ^ table[(crc ^ str.charCodeAt(i)) & 0xFF];
                 }
-                return (crc ^ -1) >>> 0; // Return as unsigned 32-bit integer
+                return (crc ^ -1) >>> 0;
             };
 
             const processContent = (content, fileName) => {
                 const checksum = crc32(content);
                 const byteCount = content.length;
-                if (fileName) {
+                if (fileName && fileName !== 'stdin') {
                     return `${checksum} ${byteCount} ${fileName}`;
                 }
                 return `${checksum} ${byteCount}`;
@@ -55,28 +39,13 @@
             const outputLines = [];
             let hadError = false;
 
-            if (args.length === 0) {
-                // Read from standard input
-                if (options.stdinContent !== null) {
-                    outputLines.push(processContent(options.stdinContent, null));
+            for await (const item of Utils.generateInputContent(context)) {
+                if (!item.success) {
+                    outputLines.push(item.error);
+                    hadError = true;
+                    continue;
                 }
-            } else {
-                // Read from file arguments
-                for (const pathArg of args) {
-                    const pathValidation = FileSystemManager.validatePath("cksum", pathArg, { expectedType: 'file' });
-                    if (pathValidation.error) {
-                        outputLines.push(pathValidation.error);
-                        hadError = true;
-                        continue;
-                    }
-
-                    if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                        outputLines.push(`cksum: '${pathArg}': Permission denied`);
-                        hadError = true;
-                        continue;
-                    }
-                    outputLines.push(processContent(pathValidation.node.content || "", pathArg));
-                }
+                outputLines.push(processContent(item.content, item.sourceName));
             }
 
             return {
