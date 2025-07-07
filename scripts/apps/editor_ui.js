@@ -424,13 +424,15 @@ const EditorUI = (() => {
     }
 
     function applyTextareaWordWrap(isWordWrapActive) {
-        if (!elements.textarea) return;
+        if (!elements.textarea || !elements.highlighter) return;
         if (isWordWrapActive) {
             elements.textarea.setAttribute("wrap", "soft");
             elements.textarea.classList.remove("editor__textarea--no-wrap");
+            elements.highlighter.classList.remove("editor__highlighter--no-wrap");
         } else {
             elements.textarea.setAttribute("wrap", "off");
             elements.textarea.classList.add("editor__textarea--no-wrap");
+            elements.highlighter.classList.add("editor__highlighter--no-wrap");
         }
     }
 

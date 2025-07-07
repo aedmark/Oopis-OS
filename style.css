@@ -450,7 +450,7 @@ body {
   overflow: visible;
 }
 
-.editor__textarea--no-wrap {
+.editor__textarea--no-wrap, .editor__highlighter--no-wrap {
   white-space: pre !important;
   overflow-x: auto !important;
 }
@@ -1697,13 +1697,13 @@ code[class*="language-"] {
   height: 100%;
   margin: 0;
   border: none;
-  white-space: pre; /* Important for preserving code formatting */
+  white-space: pre-wrap;
   font-family: var(--font-family-mono), monospace;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background-color: transparent; /* CRITICAL: See the highlighter layer through it */
-  color: var(--color-text-primary); /* The text you actually see and type */
+  background-color: transparent;
+  color: var(--color-text-primary);
   z-index: 2;
   resize: none;
   overflow: auto;
