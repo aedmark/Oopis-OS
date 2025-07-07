@@ -288,7 +288,6 @@ const EditorUI = (() => {
             if (grammar) {
                 elements.highlighter.innerHTML = Prism.highlight(text, grammar, language) + '<br>';
             } else {
-                // Basic escaping for plain text to prevent HTML injection
                 elements.highlighter.textContent = text;
                 elements.highlighter.innerHTML += '<br>';
             }
@@ -298,22 +297,18 @@ const EditorUI = (() => {
     function renderSearchHighlights(matches, activeIndex) {
         if (!elements.highlighter) return;
 
-        // Remove previous search highlights before adding new ones
         const existingHighlights = elements.highlighter.querySelectorAll('.highlight-match, .highlight-match--active');
         existingHighlights.forEach(el => {
-            // Unwrap the content, preserving the original text nodes
             const parent = el.parentNode;
             while (el.firstChild) {
                 parent.insertBefore(el.firstChild, el);
             }
             parent.removeChild(el);
-            parent.normalize(); // Merges adjacent text nodes
+            parent.normalize();
         });
 
-        // If no new matches, we're done.
         if (!matches || matches.length === 0) return;
 
-        // Use a TreeWalker to find all text nodes in the highlighter
         const walker = document.createTreeWalker(elements.highlighter, NodeFilter.SHOW_TEXT);
         const textNodes = [];
         let currentNode;
@@ -329,42 +324,31 @@ const EditorUI = (() => {
 
             let match = matches[currentMatchIndex];
             let nodeText = node.nodeValue;
-            let startIndex = 0;
 
             while (match) {
                 const matchStartInNode = match.index - textOffset;
                 const matchEndInNode = matchStartInNode + match[0].length;
 
                 if (matchStartInNode >= 0 && matchEndInNode <= nodeText.length) {
-                    // The entire match is within this node
-                    const remainingText = nodeText.substring(matchEndInNode);
-                    const matchText = nodeText.substring(matchStartInNode, matchEndInNode);
-                    node.nodeValue = nodeText.substring(0, matchStartInNode);
+                    const remainingTextNode = node.splitText(matchStartInNode);
+                    const matchNode = remainingTextNode.splitText(match[0].length);
 
                     const span = document.createElement('span');
                     span.className = currentMatchIndex === activeIndex ? 'highlight-match--active' : 'highlight-match';
-                    span.textContent = matchText;
+                    span.textContent = remainingTextNode.nodeValue;
 
-                    const nextNode = node.nextSibling;
-                    const parent = node.parentNode;
+                    remainingTextNode.parentNode.replaceChild(span, remainingTextNode);
 
-                    if (remainingText) {
-                        parent.insertBefore(document.createTextNode(remainingText), nextNode);
-                    }
-                    parent.insertBefore(span, parent.insertBefore(document.createTextNode(remainingText), nextNode));
-
-                    // Advance to the next match
                     currentMatchIndex++;
                     match = matches[currentMatchIndex];
                 } else {
-                    // Match not in this node, or spans across nodes.
-                    // This simplified version handles matches within single text nodes.
                     break;
                 }
             }
-            textOffset += nodeText.length;
+            textOffset += node.nodeValue.length;
         }
     }
+
 
     function setGutterVisibility(visible) {
         if (elements.lineGutter) {

@@ -458,7 +458,7 @@ body {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   white-space: pre;
-  overflow: hidden; /* Scroll is handled by the parent wrapper */
+  overflow: auto; /* Scroll is handled by the parent wrapper */
   position: absolute;
   top: 0;
   left: 0;

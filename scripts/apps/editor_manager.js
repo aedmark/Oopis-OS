@@ -47,16 +47,17 @@ const EditorManager = (() => {
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
-        // --- START FIX ---
-        // First, apply syntax highlighting based on the file type.
+
+        // --- REFACTORED HIGHLIGHTING LOGIC ---
+        // 1. Apply base syntax highlighting.
         const language = currentFileMode;
         EditorUI.renderSyntaxHighlights(textContent, language);
 
-        // Then, layer search highlighting on top if there are active matches.
-        if (findState.matches.length > 0) {
-            EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
-        }
-        // --- END FIX ---
+        // 2. Layer search highlights on top if there are active matches,
+        //    or clear them if the search is inactive.
+        EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
+        // --- END REFACTORED LOGIC ---
+
         EditorUI.syncScrolls();
     }
     function _handleEditorInput() {
@@ -327,7 +328,7 @@ const EditorManager = (() => {
         findState.matches = [];
         findState.activeIndex = -1;
         EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), [], -1); // Clear highlights
+        _updateFullEditorUI(); // Re-render to clear highlights
         EditorUI.setEditorFocus();
     }
 
@@ -353,39 +354,41 @@ const EditorManager = (() => {
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
         }
         EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, false); // FIX: Do not focus textarea on find
+        _updateFullEditorUI(); // Re-render with new highlights
+        _scrollToMatch(findState.activeIndex, false);
     }
 
     function _goToNextMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
         EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
+        _updateFullEditorUI(); // Re-render with new active highlight
+        _scrollToMatch(findState.activeIndex, true);
     }
 
     function _goToPrevMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
         EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
+        _updateFullEditorUI(); // Re-render with new active highlight
+        _scrollToMatch(findState.activeIndex, true);
     }
 
-    function _scrollToMatch(index, shouldFocusTextarea = true) { // FIX: Added parameter
+    function _scrollToMatch(index, shouldFocusTextarea = true) {
         if (index === -1) return;
         const match = findState.matches[index];
         const textarea = EditorUI.elements.textarea;
 
-        if (shouldFocusTextarea) { // FIX: Conditional focus
+        if (shouldFocusTextarea) {
             textarea.focus();
         }
 
         textarea.setSelectionRange(match.index, match.index + match[0].length);
         const textToMatch = textarea.value.substring(0, match.index);
         const lineBreaks = (textToMatch.match(/\n/g) || []).length;
-        textarea.scrollTop = lineBreaks * 16;
+        // A rough approximation for scrolling.
+        const lineHeight = 16;
+        textarea.scrollTop = lineBreaks * lineHeight;
     }
 
     function _replace() {
@@ -398,7 +401,7 @@ const EditorManager = (() => {
         const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
 
         EditorUI.setTextareaContent(newText);
-        _handleEditorInput();
+        _handleEditorInput(); // This will re-run find and update highlights
     }
 
     function _replaceAll() {
@@ -408,7 +411,7 @@ const EditorManager = (() => {
         const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
 
         EditorUI.setTextareaContent(newText);
-        _handleEditorInput();
+        _handleEditorInput(); // This will re-run find and update highlights
     }
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
