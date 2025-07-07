@@ -1,42 +1,14 @@
-/**
- * @file Manages the entire virtual file system for OopisOS, including its structure, persistence, and all related operations.
- * This module is the single source of truth for file and directory data, permissions, and navigation.
- * @module FileSystemManager
- * @author Andrew Edmark
- * @author Gemini
- */
-
 const FileSystemManager = (() => {
     "use strict";
-    /**
-     * The in-memory representation of the entire file system. This is a nested object
-     * structure where keys are file/directory names and values are node objects.
-     * @private
-     * @type {object}
-     */
+
     let fsData = {};
-    /**
-     * The current working directory path for the active user session.
-     * @private
-     * @type {string}
-     */
     let currentPath = Config.FILESYSTEM.ROOT_PATH;
-    /**
-     * The default content for the /etc/oopis.conf file.
-     * @private
-     * @const {string}
-     */
+
     const OOPIS_CONF_CONTENT = `TERMINAL.PROMPT_CHAR=>
 OS.DEFAULT_HOST_NAME=OopisOS
 MESSAGES.WELCOME_PREFIX=Welcome,
 MESSAGES.WELCOME_SUFFIX=!`;
 
-    /**
-     * Initializes a new, default file system structure in memory if one doesn't exist.
-     * Creates root, /home, /etc, and home directories for default users.
-     * @param {string} guestUsername - The name of the default guest user.
-     * @async
-     */
     async function initialize(guestUsername) {
         const nowISO = new Date().toISOString();
         fsData = {
@@ -107,11 +79,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         }
     }
 
-    /**
-     * Creates a home directory for a specified user under /home if it doesn't already exist.
-     * @param {string} username - The name of the user for whom to create a home directory.
-     * @async
-     */
     async function createUserHomeDirectory(username) {
         if (!fsData["/"]?.children?.home) {
             console.error(
@@ -133,12 +100,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         }
     }
 
-    /**
-     * Saves the current in-memory file system (fsData) to IndexedDB.
-     * Rejects the promise if the operation fails.
-     * @async
-     * @returns {Promise<boolean>} A promise that resolves to true on success, false on failure (e.g., quota exceeded).
-     */
     async function save() {
         const totalSize = _calculateTotalSize();
         if (totalSize > Config.FILESYSTEM.MAX_VFS_SIZE) {
@@ -186,11 +147,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         });
     }
 
-    /**
-     * Loads the file system from IndexedDB into memory. If no saved file system is found, it initializes a new one.
-     * @async
-     * @returns {Promise<void>} A promise that resolves when the file system is loaded.
-     */
     async function load() {
         let db;
         try {
@@ -228,11 +184,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         });
     }
 
-    /**
-     * Clears the entire file system from IndexedDB. Used for system resets.
-     * @async
-     * @returns {Promise<boolean>} A promise that resolves to true on success.
-     */
     async function clearAllFS() {
         let db;
         try {
@@ -265,45 +216,22 @@ MESSAGES.WELCOME_SUFFIX=!`;
         });
     }
 
-    /**
-     * Gets the current working directory path.
-     * @returns {string} The current path.
-     */
     function getCurrentPath() {
         return currentPath;
     }
 
-    /**
-     * Sets the current working directory path.
-     * @param {string} path - The new path to set.
-     */
     function setCurrentPath(path) {
         currentPath = path;
     }
 
-    /**
-     * Gets the raw in-memory file system data object.
-     * @returns {object} The fsData object.
-     */
     function getFsData() {
         return fsData;
     }
 
-    /**
-     * Replaces the in-memory file system data object. Used for restores.
-     * @param {object} newData - The new file system data object.
-     */
     function setFsData(newData) {
         fsData = newData;
     }
 
-    /**
-     * Resolves a relative or absolute path to a fully qualified absolute path.
-     * Handles '.', '..', and empty path segments.
-     * @param {string} targetPath - The path to resolve.
-     * @param {string} basePath - The base path to resolve against if targetPath is relative.
-     * @returns {string} The resolved absolute path.
-     */
     function getAbsolutePath(targetPath, basePath = FileSystemManager.getCurrentPath()) {
         if (!targetPath) targetPath = Config.FILESYSTEM.CURRENT_DIR_SYMBOL;
         let effectiveBasePath = basePath;
@@ -338,12 +266,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         );
     }
 
-    /**
-     * Retrieves a file system node object from a given absolute path.
-     * Traverses the fsData tree and respects execute permissions along the path.
-     * @param {string} absolutePath - The absolute path to the node.
-     * @returns {object|null} The node object if found and accessible, otherwise null.
-     */
     function getNodeByPath(absolutePath) {
         const currentUser = UserManager.getCurrentUser().name;
         if (absolutePath === Config.FILESYSTEM.ROOT_PATH) {
@@ -366,12 +288,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         return currentNode;
     }
 
-    /**
-     * Calculates the size of a node. For files, it's the content length.
-     * For directories, it's the recursive sum of the sizes of its children.
-     * @param {object} node - The file system node to measure.
-     * @returns {number} The size of the node in bytes.
-     */
     function calculateNodeSize(node) {
         if (!node) return 0;
         if (node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE)
@@ -385,12 +301,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         return 0;
     }
 
-    /**
-     * Updates the modification time (mtime) of a node and its direct parent.
-     * @private
-     * @param {string} nodePath - The absolute path of the node to update.
-     * @param {string} nowISO - The ISO timestamp to set.
-     */
     function _updateNodeAndParentMtime(nodePath, nowISO) {
         if (!nodePath || !nowISO) return;
         const node = getNodeByPath(nodePath);
@@ -410,11 +320,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         }
     }
 
-    /**
-     * Creates all non-existent parent directories for a given path, similar to `mkdir -p`.
-     * @param {string} fullPath - The full path for which to create parent directories.
-     * @returns {{parentNode: object|null, error: string|null}} An object containing the final parent node or an error message.
-     */
     function createParentDirectoriesIfNeeded(fullPath) {
         const currentUserForCPDIF = UserManager.getCurrentUser().name;
         const nowISO = new Date().toISOString();
@@ -510,18 +415,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
     }
 
-    /**
-     * Validates a path for a command, checking for existence, type, and permissions.
-     * This is a crucial pre-execution step for most file system commands.
-     * @param {string} commandName - The name of the command requesting validation.
-     * @param {string} pathArg - The path argument provided to the command.
-     * @param {object} [options={}] - Validation options.
-     * @param {boolean} [options.allowMissing=false] - If true, does not error if the path doesn't exist.
-     * @param {string|null} [options.expectedType=null] - The expected node type ('file' or 'directory').
-     * @param {boolean} [options.disallowRoot=false] - If true, errors if the path resolves to the root directory.
-     * @param {boolean} [options.defaultToCurrentIfEmpty=true] - If true, treats an empty path as the current directory.
-     * @returns {{error: string|null, node: object|null, resolvedPath: string, optionsUsed: object}} A validation result object.
-     */
     function validatePath(commandName, pathArg, options = {}) {
         const {
             allowMissing = false,
@@ -630,14 +523,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
     }
 
-    /**
-     * Checks if a user has a specific permission (read, write, execute) for a given node.
-     * Takes into account owner, group, and other permissions. The 'root' user always has permission.
-     * @param {object} node - The file system node to check.
-     * @param {string} username - The name of the user to check permissions for.
-     * @param {string} permissionType - The permission to check ('read', 'write', or 'execute').
-     * @returns {boolean} True if the user has the permission, false otherwise.
-     */
     function hasPermission(node, username, permissionType) {
         if (username === 'root') {
             return true;
@@ -676,11 +561,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         return (otherPerms & requiredPerm) === requiredPerm;
     }
 
-    /**
-     * Formats a node's octal mode into a human-readable string (e.g., 'drwxr-xr--').
-     * @param {object} node - The node whose mode should be formatted.
-     * @returns {string} The formatted permission string.
-     */
     function formatModeToString(node) {
         if (!node || typeof node.mode !== "number") {
             return "----------";
@@ -724,15 +604,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         );
     }
 
-    /**
-     * Recursively deletes a node and all its children. Used by the 'rm' command.
-     * @param {string} path - The absolute path to the node to delete.
-     * @param {object} [options={}] - Deletion options.
-     * @param {boolean} [options.force=false] - If true, suppresses some permission errors.
-     * @param {string} options.currentUser - The user performing the deletion.
-     * @async
-     * @returns {Promise<{success: boolean, messages: string[], anyChangeMade?: boolean}>} An object indicating the result of the operation.
-     */
     async function deleteNodeRecursive(path, options = {}) {
         const {
             force = false, currentUser
@@ -801,16 +672,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
     }
 
-    /**
-     * Creates a new file node object with default properties.
-     * @private
-     * @param {string} name - The name of the file.
-     * @param {string} content - The initial content of the file.
-     * @param {string} owner - The username of the file's owner.
-     * @param {string} group - The group name for the file.
-     * @param {number|null} [mode=null] - The octal permission mode. Defaults to config setting if null.
-     * @returns {object} The new file node object.
-     */
     function _createNewFileNode(name, content, owner, group, mode = null) {
         const nowISO = new Date().toISOString();
         return {
@@ -823,24 +684,11 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
     }
 
-    /**
-     * Calculates the total size of the entire file system. Used for quota checks.
-     * @private
-     * @returns {number} The total size in bytes.
-     */
     function _calculateTotalSize() {
         if (!fsData || !fsData[Config.FILESYSTEM.ROOT_PATH]) return 0;
         return calculateNodeSize(fsData[Config.FILESYSTEM.ROOT_PATH]);
     }
 
-    /**
-     * Creates a new directory node object with default properties.
-     * @private
-     * @param {string} owner - The username of the directory's owner.
-     * @param {string} group - The group name for the directory.
-     * @param {number|null} [mode=null] - The octal permission mode. Defaults to config setting if null.
-     * @returns {object} The new directory node object.
-     */
     function _createNewDirectoryNode(owner, group, mode = null) {
         const nowISO = new Date().toISOString();
         return {
@@ -853,18 +701,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
     }
 
-    /**
-     * Creates a new file or updates an existing one at a given absolute path.
-     * This function handles permission checks and parent directory creation.
-     * @param {string} absolutePath - The absolute path where the file should be created or updated.
-     * @param {string} content - The content to write to the file.
-     * @param {object} context - Contextual information for the operation.
-     * @param {string} context.currentUser - The username of the user performing the action.
-     * @param {string} context.primaryGroup - The primary group of the current user.
-     * @param {object|null} [context.existingNode] - An optional, pre-validated existing node to speed up updates.
-     * @returns {Promise<{success: boolean, error?: string}>} An object indicating the result of the operation.
-     * @async
-     */
     async function createOrUpdateFile(absolutePath, content, context) {
         const {
             currentUser,

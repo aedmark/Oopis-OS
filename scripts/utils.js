@@ -1,37 +1,28 @@
-/**
- * @file Utils.js - Generalized OS Utilities
- * @author Andrew Edmark
- * @author Gemini
- */
-
 const Utils = (() => {
     "use strict";
 
     async function* generateInputContent(context) {
         const { args, options, currentUser } = context;
 
-        // Handle standard input first if it exists
         if (options.stdinContent !== null && options.stdinContent !== undefined) {
             yield { success: true, content: options.stdinContent, sourceName: 'stdin' };
             return;
         }
 
-        // If no stdin and no file args, yield nothing.
         if (args.length === 0) {
             return;
         }
 
-        // Iterate through file arguments
         for (const pathArg of args) {
             const pathValidation = FileSystemManager.validatePath("input stream", pathArg, { expectedType: 'file' });
             if (pathValidation.error) {
                 yield { success: false, error: pathValidation.error, sourceName: pathArg };
-                continue; // Skip to the next file
+                continue;
             }
 
             if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
                 yield { success: false, error: `Permission denied: ${pathArg}`, sourceName: pathArg };
-                continue; // Skip to the next file
+                continue;
             }
 
             yield { success: true, content: pathValidation.node.content || "", sourceName: pathArg };
@@ -40,10 +31,10 @@ const Utils = (() => {
 
     function getCharacterDimensions(fontStyle = '16px "VT323"') {
         const tempSpan = document.createElement("span");
-        tempSpan.textContent = 'M'; // A common character for measurement
+        tempSpan.textContent = 'M';
         tempSpan.style.font = fontStyle;
         tempSpan.style.position = 'absolute';
-        tempSpan.style.left = '-9999px'; // Position off-screen
+        tempSpan.style.left = '-9999px';
         tempSpan.style.top = '-9999px';
         tempSpan.style.visibility = 'hidden';
 
@@ -260,7 +251,7 @@ const Utils = (() => {
                 body = JSON.stringify({ contents: conversation });
                 break;
             case 'ollama':
-                url = url.replace('/generate', '/chat'); // Dynamically change to chat endpoint
+                url = url.replace('/generate', '/chat');
                 body = JSON.stringify({ model: model || providerConfig.defaultModel, messages: chatMessages, stream: false });
                 break;
             case 'llm-studio':
@@ -287,7 +278,6 @@ const Utils = (() => {
             switch (provider) {
                 case 'gemini': finalAnswer = responseData.candidates?.[0]?.content?.parts?.[0]?.text; break;
                 case 'ollama':
-                    // Check for message.content first, then response.
                     finalAnswer = responseData.message?.content || responseData.response;
                     break;
                 case 'llm-studio': finalAnswer = responseData.choices?.[0]?.message?.content; break;
@@ -303,7 +293,7 @@ const Utils = (() => {
     }
 
     function globToRegex(glob) {
-        if (glob === '*') return /.*/; // Optimization for the most common case
+        if (glob === '*') return /.*/;
 
         let regexStr = "^";
         for (let i = 0; i < glob.length; i++) {
@@ -378,17 +368,13 @@ const TimestampParser = (() => {
     function parseDateString(dateStr) {
         if (typeof dateStr !== "string") return null;
 
-        // Try to parse absolute date first, e.g., "2025-01-01"
         const absoluteDate = new Date(dateStr);
         if (!isNaN(absoluteDate.getTime())) {
-            // Check if the input string is purely numeric, which Date() might interpret as milliseconds from epoch.
-            // We want to avoid treating "12345" as a valid absolute date string for our use case.
             if (isNaN(parseInt(dateStr.trim(), 10)) || !/^\d+$/.test(dateStr.trim())) {
                 return absoluteDate;
             }
         }
 
-        // Regex to handle formats like: "2 days ago", "-1 week", "+3 hours"
         const relativeMatch = dateStr.match(/([-+]?\d+)\s*(minute|hour|day|week|month|year)s?(\s+ago)?/i);
 
         if (relativeMatch) {
@@ -396,7 +382,6 @@ const TimestampParser = (() => {
             const unit = relativeMatch[2].toLowerCase();
             const isAgo = !!relativeMatch[3];
 
-            // If "ago" is present, ensure the amount is negative.
             if (isAgo) {
                 amount = -Math.abs(amount);
             }
@@ -423,12 +408,12 @@ const TimestampParser = (() => {
                     now.setFullYear(now.getFullYear() + amount);
                     break;
                 default:
-                    return null; // Should not happen with the regex, but good practice
+                    return null;
             }
             return now;
         }
 
-        return null; // Return null if no format matches
+        return null;
     }
 
     function parseStampToISO(stampStr) {

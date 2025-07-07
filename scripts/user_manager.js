@@ -1,22 +1,9 @@
-// scripts/user_manager.js
-
-/**
- * @file Manages all user-related logic for OopisOS.
- * @module UserManager
- */
-
 const UserManager = (() => {
     "use strict";
     let currentUser = {
         name: Config.USER.DEFAULT_NAME,
     };
 
-    /**
-     * Hashes a password using the Web Crypto API (SHA-256).
-     * @private
-     * @param {string} password The plain-text password to hash.
-     * @returns {Promise<string|null>} A promise that resolves to the hex-encoded hash string, or null on failure.
-     */
     async function _secureHashPassword(password) {
         if (!password || typeof password !== "string" || password.trim() === "") {
             return null;
@@ -33,19 +20,10 @@ const UserManager = (() => {
         }
     }
 
-    /**
-     * Gets the currently active user object.
-     * @returns {{name: string}} The current user object.
-     */
     function getCurrentUser() {
         return currentUser;
     }
 
-    /**
-     * Retrieves the primary group for a given user.
-     * @param {string} username - The name of the user to check.
-     * @returns {string|null} The name of the user's primary group, or null if not found.
-     */
     function getPrimaryGroupForUser(username) {
         const users = StorageManager.loadItem(
             Config.STORAGE_KEYS.USER_CREDENTIALS,
@@ -55,12 +33,6 @@ const UserManager = (() => {
         return users[username]?.primaryGroup || null;
     }
 
-    /**
-     * Registers a new user, creates their home directory and primary group.
-     * @param {string} username - The desired username.
-     * @param {string|null} password - The desired password (can be null for no password).
-     * @returns {Promise<object>} A command result object indicating success or failure.
-     */
     async function register(username, password) {
         const formatValidation = Utils.validateUsernameFormat(username);
         if (!formatValidation.isValid)
@@ -119,13 +91,6 @@ const UserManager = (() => {
         }
     }
 
-    /**
-     * Authenticates a user against stored credentials. Does not handle UI/modals.
-     * @private
-     * @param {string} username - The username to authenticate.
-     * @param {string|null} providedPassword - The password to check.
-     * @returns {Promise<object>} An object indicating the result. Includes `requiresPasswordPrompt` if a password is needed but wasn't provided.
-     */
     async function _authenticateUser(username, providedPassword) {
         const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
         const userEntry = users[username];
@@ -151,12 +116,6 @@ const UserManager = (() => {
         return { success: true };
     }
 
-    /**
-     * Verifies a user's password without changing the session. Required for sudo.
-     * @param {string} username - The user whose password to verify.
-     * @param {string} password - The password to check.
-     * @returns {Promise<{success: boolean, error?: string}>} An object indicating if the password is correct.
-     */
     async function verifyPassword(username, password) {
         const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
         const userEntry = users[username];
@@ -167,7 +126,6 @@ const UserManager = (() => {
 
         const storedPasswordHash = userEntry.passwordHash;
         if (storedPasswordHash === null) {
-            // This case shouldn't be hit if sudoers requires it, but handles users with no password.
             return { success: false, error: "User does not have a password set."};
         }
 
@@ -179,19 +137,10 @@ const UserManager = (() => {
         }
     }
 
-    /**
-     * Executes a command with root privileges and then safely returns to the original user.
-     * @param {string} commandStr - The full command string to execute as root.
-     * @param {object} options - The original command options.
-     * @returns {Promise<object>} The result object from the command execution.
-     */
     async function sudoExecute(commandStr, options) {
         const originalUser = currentUser;
         try {
-            // Escalate privileges to root
             currentUser = { name: 'root' };
-            // Execute the command with the provided options, which correctly specify
-            // that this is a non-interactive, scripted execution.
             return await CommandExecutor.processSingleCommand(commandStr, options);
         } catch (e) {
             return { success: false, error: `sudo: an unexpected error occurred during execution: ${e.message}` };
@@ -201,14 +150,6 @@ const UserManager = (() => {
         }
     }
 
-    /**
-     * Changes a user's password after performing security checks.
-     * @param {string} actorUsername - The user attempting the change.
-     * @param {string} targetUsername - The user whose password is to be changed.
-     * @param {string|null} oldPassword - The current password (required for non-root users).
-     * @param {string} newPassword - The new password.
-     * @returns {Promise<{success: boolean, message?: string, error?: string}>} Result object.
-     */
     async function changePassword(actorUsername, targetUsername, oldPassword, newPassword) {
         const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
 
@@ -248,25 +189,13 @@ const UserManager = (() => {
         }
     }
 
-
-    /**
-     * Handles the shared authentication logic for login and su, including interactive password prompts.
-     * @private
-     * @param {string} username - The user to authenticate.
-     * @param {string|null} providedPassword - The password from the command arguments.
-     * @param {function} successCallback - The function to call upon successful authentication (e.g., _performLogin, _performSu).
-     * @param {string} failureMessage - The error message to show on authentication failure.
-     * @param {object} options - Command options, including scriptingContext.
-     * @returns {Promise<object>} A command result object.
-     */
     async function _handleAuthFlow(username, providedPassword, successCallback, failureMessage, options) {
         const authResult = await _authenticateUser(username, providedPassword);
 
         if (!authResult.success) {
             if (!authResult.requiresPasswordPrompt) {
-                return authResult; // Return direct failure (e.g., invalid user, wrong password type)
+                return authResult;
             }
-            // Password prompt is required
             return new Promise(resolve => {
                 ModalInputManager.requestInput(
                     Config.MESSAGES.PASSWORD_PROMPT,
@@ -279,34 +208,23 @@ const UserManager = (() => {
                         }
                     },
                     () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
-                    true, // isObscured
+                    true,
                     options
                 );
             });
         }
-        // Authentication succeeded without needing a prompt
         return await successCallback(username);
     }
 
-    /**
-     * Logs in as a specified user, replacing the current session stack.
-     * @param {string} username - The username to log in as.
-     * @param {string|null} providedPassword - The password, if provided.
-     * @param {object} [options={}] - Command options, including scriptingContext for automated tests.
-     * @returns {Promise<object>} A command result object.
-     */
     async function login(username, providedPassword, options = {}) {
         const currentStack = SessionManager.getStack();
         const currentUserName = getCurrentUser().name;
 
-        // Check if user is trying to log in as themselves.
         if (username === currentUserName) {
-            // Correctly use the configuration for the message.
             const message = `${Config.MESSAGES.ALREADY_LOGGED_IN_AS_PREFIX}${username}${Config.MESSAGES.ALREADY_LOGGED_IN_AS_SUFFIX}`;
             return { success: true, message: message, noAction: true };
         }
 
-        // Check if the user is present anywhere else in the session stack (e.g., from a previous `su`).
         if (currentStack.includes(username)) {
             return {
                 success: false,
@@ -314,23 +232,14 @@ const UserManager = (() => {
             };
         }
 
-        // If checks pass, proceed with the standard authentication flow.
         return _handleAuthFlow(username, providedPassword, _performLogin, "Login failed.", options);
     }
 
-    /**
-     * Performs the final actions of a login after authentication is successful.
-     * @private
-     * @param {string} username - The username to log in as.
-     * @returns {Promise<object>} A command result object.
-     */
     async function _performLogin(username) {
-        // Save state of the *current* user before logging out of their session entirely.
         if (currentUser.name !== Config.USER.DEFAULT_NAME) {
             SessionManager.saveAutomaticState(currentUser.name);
             SudoManager.clearUserTimestamp(currentUser.name);
         }
-        // This is the key action for `login` - it starts a new session stack.
         SessionManager.clearUserStack(username);
         currentUser = { name: username };
         SessionManager.loadAutomaticState(username);
@@ -343,13 +252,6 @@ const UserManager = (() => {
         return { success: true, message: `Logged in as ${username}.`, isLogin: true };
     }
 
-    /**
-     * Switches to a new user, stacking the session on top of the current one.
-     * @param {string} username - The user to switch to.
-     * @param {string|null} providedPassword - The password, if provided.
-     * @param {object} [options={}] - Command options, including scriptingContext for automated tests.
-     * @returns {Promise<object>} A command result object.
-     */
     async function su(username, providedPassword, options = {}) {
         if (currentUser.name === username) {
             return { success: true, message: `Already user '${username}'.`, noAction: true };
@@ -357,12 +259,6 @@ const UserManager = (() => {
         return _handleAuthFlow(username, providedPassword, _performSu, "su: Authentication failure.", options);
     }
 
-    /**
-     * Performs the final actions of a user switch after authentication is successful.
-     * @private
-     * @param {string} username - The username to switch to.
-     * @returns {Promise<object>} A command result object.
-     */
     async function _performSu(username) {
         SessionManager.saveAutomaticState(currentUser.name);
         SessionManager.pushUserToStack(username);
@@ -377,10 +273,6 @@ const UserManager = (() => {
         return { success: true, message: `Switched to user: ${username}.` };
     }
 
-    /**
-     * Logs out of the current stacked session and returns to the previous user.
-     * @returns {Promise<object>} A command result object.
-     */
     async function logout() {
         const oldUser = currentUser.name;
         if (SessionManager.getStack().length <= 1) {
@@ -388,7 +280,7 @@ const UserManager = (() => {
         }
 
         SessionManager.saveAutomaticState(oldUser);
-        SudoManager.clearUserTimestamp(oldUser); // Clear sudo timestamp on logout.
+        SudoManager.clearUserTimestamp(oldUser);
         SessionManager.popUserFromStack();
         const newUsername = SessionManager.getCurrentUserFromStack();
         currentUser = { name: newUsername };
@@ -402,10 +294,6 @@ const UserManager = (() => {
         return { success: true, message: `Logged out from ${oldUser}. Now logged in as ${newUsername}.`, isLogout: true, newUser: newUsername };
     }
 
-    /**
-     * Initializes the default users (root, Guest, userDiag) if they do not already exist in storage.
-     * @returns {Promise<void>}
-     */
     async function initializeDefaultUsers() {
         const users = StorageManager.loadItem(
             Config.STORAGE_KEYS.USER_CREDENTIALS,
@@ -439,9 +327,6 @@ const UserManager = (() => {
         }
     }
 
-    /**
-     * Public interface for UserManager.
-     */
     return {
         getCurrentUser,
         register,

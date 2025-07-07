@@ -1,9 +1,3 @@
-/**
- * Oopis Basic Interpreter
- * DECLARED IN GLOBAL SCOPE. This script must be loaded before basic_app.js.
- * @class BasicInterpreter
- */
-
 class BasicInterpreter {
     constructor() {
         this.variables = new Map();

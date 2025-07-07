@@ -1,26 +1,8 @@
-/**
- * @file Manages all terminal UI components and interactions, including modals,
- * the command prompt, user input, and tab completion.
- * @module TerminalUI-All
- */
-
-/**
- * @module ModalManager
- * @description Handles requests for confirmation dialogs, supporting both graphical modals
- * (for full-screen apps like the editor) and terminal-based (Y/N) prompts.
- * It is also aware of scripting and can automate responses.
- */
 const ModalManager = (() => {
     "use strict";
-    /** @private @type {boolean} */
     let isAwaitingTerminalInput = false;
-    /** @private @type {object|null} */
     let activeModalContext = null;
 
-    /**
-     * Renders a graphical modal dialog for confirmation.
-     * @private
-     */
     function _renderGraphicalModal(options) {
         const {
             messageLines,
@@ -29,7 +11,7 @@ const ModalManager = (() => {
             confirmText = "OK",
             cancelText = "Cancel",
         } = options;
-        const parentContainer = document.getElementById('terminal-bezel'); // Use bezel for centering
+        const parentContainer = document.getElementById('terminal-bezel');
         if (!parentContainer) {
             console.error("ModalManager: Cannot find terminal-bezel to attach modal.");
             if (options.onCancel) options.onCancel();
@@ -71,17 +53,12 @@ const ModalManager = (() => {
             messageContainer.appendChild(Utils.createElement("p", { textContent: line }));
         });
 
-        // The modal itself is now wrapped in an overlay
         const modalDialog = Utils.createElement("div", { className: "modal-dialog" }, [messageContainer, buttonContainer]);
         const modalOverlay = Utils.createElement("div", { id: "dynamic-modal-dialog", className: "modal-overlay" }, [modalDialog]);
 
         parentContainer.appendChild(modalOverlay);
     }
 
-    /**
-     * Renders a graphical modal with a text input field.
-     * @private
-     */
     function _renderGraphicalInputModal(options) {
         const {
             messageLines,
@@ -149,10 +126,6 @@ const ModalManager = (() => {
         inputField.focus();
     }
 
-    /**
-     * Renders a text-based confirmation prompt in the terminal output.
-     * @private
-     */
     function _renderTerminalPrompt(options) {
         if (isAwaitingTerminalInput) {
             if (options.onCancel) options.onCancel();
@@ -174,17 +147,11 @@ const ModalManager = (() => {
         if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
     }
 
-    /**
-     * The main entry point for requesting a modal.
-     * @param {object} options - The options for the modal request.
-     * @param {'graphical'|'graphical-input'|'terminal'} options.context - The type of modal to display.
-     */
     function request(options) {
         if (options.options?.stdinContent) {
             const inputLine = options.options.stdinContent.trim().split('\n')[0];
             const promptEcho = `${document.getElementById('prompt-container').textContent} `;
 
-            // Echo prompt and response to terminal for clarity
             options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
             void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
             void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
@@ -194,7 +161,7 @@ const ModalManager = (() => {
             } else {
                 if (options.onCancel) options.onCancel(options.data);
             }
-            return; // Important: Exit after handling stdin
+            return;
         }
         if (options.options?.scriptingContext?.isScripting) {
             const scriptContext = options.options.scriptingContext;
@@ -238,12 +205,6 @@ const ModalManager = (() => {
         }
     }
 
-    /**
-     * Handles the user's text input in response to a terminal-based confirmation prompt.
-     * @param {string} input - The text entered by the user.
-     * @returns {Promise<boolean>} A promise that resolves to true if input was handled.
-     * @async
-     */
     async function handleTerminalInput(input) {
         if (!isAwaitingTerminalInput) return false;
         const promptString = `${document.getElementById('prompt-container').textContent} `;
@@ -265,17 +226,11 @@ const ModalManager = (() => {
     return { request, handleTerminalInput, isAwaiting: () => isAwaitingTerminalInput };
 })();
 
-// ... (The rest of terminal_ui.js remains unchanged) ...
 const TerminalUI = (() => {
     "use strict";
-    /** @private @type {boolean} */
     let isNavigatingHistory = false;
-    /** @private @type {boolean} */
     let _isObscuredInputMode = false;
 
-    /**
-     * Updates the command prompt based on the PS1 environment variable or default settings.
-     */
     function updatePrompt() {
         const user = UserManager.getCurrentUser() || { name: Config.USER.DEFAULT_NAME };
         const ps1 = EnvironmentManager.get('PS1');
@@ -304,10 +259,6 @@ const TerminalUI = (() => {
         }
     }
 
-
-    /**
-     * Sets focus to the main terminal input element.
-     */
     function focusInput() {
         const editableInputDiv = document.getElementById('editable-input');
         if (editableInputDiv && editableInputDiv.contentEditable === "true") {
@@ -317,28 +268,16 @@ const TerminalUI = (() => {
         }
     }
 
-    /**
-     * Clears all text from the terminal input element.
-     */
     function clearInput() {
         const editableInputDiv = document.getElementById('editable-input');
         if (editableInputDiv) editableInputDiv.textContent = "";
     }
 
-    /**
-     * Gets the current text content of the terminal input element.
-     * @returns {string}
-     */
     function getCurrentInputValue() {
         const editableInputDiv = document.getElementById('editable-input');
         return editableInputDiv ? editableInputDiv.textContent : "";
     }
 
-    /**
-     * Sets the text content of the terminal input element.
-     * @param {string} value - The text to set.
-     * @param {boolean} [setAtEnd=true] - If true, the caret is moved to the end of the new text.
-     */
     function setCurrentInputValue(value, setAtEnd = true) {
         const editableInputDiv = document.getElementById('editable-input');
         if (editableInputDiv) {
@@ -347,10 +286,6 @@ const TerminalUI = (() => {
         }
     }
 
-    /**
-     * Utility function to move the caret to the end of a content-editable element.
-     * @param {HTMLElement} element - The element to set the caret in.
-     */
     function setCaretToEnd(element) {
         if (!element || typeof window.getSelection === "undefined" || typeof document.createRange === "undefined") return;
         const range = document.createRange();
@@ -364,11 +299,6 @@ const TerminalUI = (() => {
         element.focus();
     }
 
-    /**
-     * Utility function to set the caret to a specific character position within a content-editable element.
-     * @param {HTMLElement} element - The element to set the caret in.
-     * @param {number} position - The character position to move the caret to.
-     */
     function setCaretPosition(element, position) {
         if (!element || typeof position !== "number" || typeof window.getSelection === "undefined" || typeof document.createRange === "undefined") return;
         const sel = window.getSelection();
@@ -406,11 +336,6 @@ const TerminalUI = (() => {
         element.focus();
     }
 
-    /**
-     * Enables or disables the terminal input area.
-     * @param {boolean} isEditable - True to enable input, false to disable.
-     * @param {boolean} [obscured=false] - True if input should be treated as a password (for internal logic).
-     */
     function setInputState(isEditable, obscured = false) {
         const editableInputDiv = document.getElementById('editable-input');
         if (editableInputDiv) {
@@ -421,26 +346,14 @@ const TerminalUI = (() => {
         }
     }
 
-    /**
-     * Sets a flag indicating whether the user is currently navigating the command history.
-     * @param {boolean} status - The new status.
-     */
     function setIsNavigatingHistory(status) {
         isNavigatingHistory = status;
     }
 
-    /**
-     * Gets the status of the history navigation flag.
-     * @returns {boolean}
-     */
     function getIsNavigatingHistory() {
         return isNavigatingHistory;
     }
 
-    /**
-     * Gets the start and end position of the user's selection within the input div.
-     * @returns {{start: number, end: number}}
-     */
     function getSelection() {
         const sel = window.getSelection();
         const editableInputDiv = document.getElementById('editable-input');
@@ -461,25 +374,21 @@ const TerminalUI = (() => {
         }
         return { start, end };
     }
-    /**
-     * Handles pasted text when an obscured input is active.
-     * @param {string} pastedText - The text copied from the clipboard.
-     */
+
     function handlePaste(pastedText) {
         if (!_isAwaitingInput || !_inputContext) return;
 
-        // Determine current cursor position to insert text correctly
         const selection = TerminalUI.getSelection();
         let { start, end } = selection;
 
         let inputArray = Array.from(_inputContext.currentInput);
-        inputArray.splice(start, end - start, pastedText); // Replace selected text with pasted text
+        inputArray.splice(start, end - start, pastedText);
 
         _inputContext.currentInput = inputArray.join("");
         const displayText = _inputContext.isObscured ? "*".repeat(_inputContext.currentInput.length) : _inputContext.currentInput;
 
-        TerminalUI.setCurrentInputValue(displayText, false); // Set display value without moving caret
-        TerminalUI.setCaretPosition(document.getElementById('editable-input'), start + pastedText.length); // Reposition caret
+        TerminalUI.setCurrentInputValue(displayText, false);
+        TerminalUI.setCaretPosition(document.getElementById('editable-input'), start + pastedText.length);
     }
 
     return {
@@ -497,34 +406,15 @@ const TerminalUI = (() => {
     };
 })();
 
-/**
- * @module ModalInputManager
- * @description Manages requests for single-line, dedicated user input, such as passwords or filenames.
- * This is distinct from general command input and confirmation modals. It also supports automated scripting.
- */
 const ModalInputManager = (() => {
     "use strict";
-    /** @private @type {boolean} */
     let _isAwaitingInput = false;
-    /** @private @type {object|null} */
     let _inputContext = null;
 
-    /**
-     * Checks if the manager is currently awaiting input in an obscured (password) mode.
-     * @returns {boolean}
-     */
     function isObscured() {
         return _isAwaitingInput && _inputContext && _inputContext.isObscured;
     }
 
-    /**
-     * Requests a single line of input from the user, handling both interactive and scripted scenarios.
-     * @param {string} promptMessage - The message to display to the user.
-     * @param {function(string): void} onInputReceivedCallback - Callback executed with the user's input.
-     * @param {function(): void} onCancelledCallback - Callback executed if the input is cancelled.
-     * @param {boolean} [isObscured=false] - If true, the input will be visually obscured (for passwords).
-     * @param {object} [options={}] - Options from the command context, potentially containing a `scriptingContext`.
-     */
     function requestInput(promptMessage, onInputReceivedCallback, onCancelledCallback, isObscured = false, options = {}) {
         if (options.stdinContent) {
             const inputLine = options.stdinContent.trim().split('\n')[0];
@@ -581,25 +471,20 @@ const ModalInputManager = (() => {
             void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
         }
         TerminalUI.clearInput();
-        TerminalUI.setInputState(true, isObscured); // --- Pass obscured status to setInputState ---
+        TerminalUI.setInputState(true, isObscured);
         TerminalUI.focusInput();
 
         const outputDiv = document.getElementById('output');
         if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
     }
 
-    /**
-     * Handles the final input submission when the user presses Enter.
-     * @returns {Promise<boolean>} A promise that resolves to true if input was successfully handled.
-     * @async
-     */
     async function handleInput() {
         if (!_isAwaitingInput || !_inputContext) return false;
         const finalInput = _inputContext.isObscured ? _inputContext.currentInput : TerminalUI.getCurrentInputValue();
         const callback = _inputContext.onInputReceived;
         _isAwaitingInput = false;
         _inputContext = null;
-        TerminalUI.setInputState(true, false); // --- REVERT STATE ON COMPLETION ---
+        TerminalUI.setInputState(true, false);
         TerminalUI.clearInput();
         if (typeof callback === "function") {
             await callback(finalInput.trim());
@@ -607,11 +492,6 @@ const ModalInputManager = (() => {
         return true;
     }
 
-    /**
-     * Manually updates the input state when in obscured (password) mode.
-     * @param {string} key - The `key` property from the KeyboardEvent (e.g., 'Backspace').
-     * @param {string|null} rawChar - The character to add, or null for non-character keys.
-     */
     function updateInput(key, rawChar) {
         if (!_isAwaitingInput) return;
         let inputArray = Array.from(_inputContext.currentInput);
@@ -640,11 +520,9 @@ const ModalInputManager = (() => {
         TerminalUI.setCaretPosition(document.getElementById('editable-input'), start);
     }
 
-    // --- NEW FUNCTION TO HANDLE PASTING ---
     function handlePaste(pastedText) {
         if (!_isAwaitingInput || !_inputContext) return;
 
-        // This function is now called directly from the paste event listener in main.js
         const selection = TerminalUI.getSelection();
         let { start, end } = selection;
 
@@ -657,7 +535,6 @@ const ModalInputManager = (() => {
         TerminalUI.setCurrentInputValue(displayText, false);
         TerminalUI.setCaretPosition(document.getElementById('editable-input'), start + pastedText.length);
     }
-    // --- END NEW FUNCTION ---
 
     return {
         requestInput,
@@ -665,38 +542,22 @@ const ModalInputManager = (() => {
         updateInput,
         isAwaiting: () => _isAwaitingInput,
         isObscured,
-        handlePaste, // --- EXPOSE NEW FUNCTION ---
+        handlePaste,
     };
 })();
 
-/**
- * @module TabCompletionManager
- * @description Manages all logic for command and file path tab completion.
- */
 const TabCompletionManager = (() => {
     "use strict";
-    /** @private @type {string[]} */
     let suggestionsCache = [];
-    /** @private @type {number} */
     let cycleIndex = -1;
-    /** @private @type {string|null} */
     let lastCompletionInput = null;
 
-    /**
-     * Resets the tab completion cycle, clearing the cache.
-     */
     function resetCycle() {
         suggestionsCache = [];
         cycleIndex = -1;
         lastCompletionInput = null;
     }
 
-    /**
-     * Finds the longest common starting substring from an array of strings.
-     * @private
-     * @param {string[]} strs - The array of strings to compare.
-     * @returns {string} The longest common prefix.
-     */
     function findLongestCommonPrefix(strs) {
         if (!strs || strs.length === 0) return "";
         if (strs.length === 1) return strs[0];
@@ -710,14 +571,6 @@ const TabCompletionManager = (() => {
         return prefix;
     }
 
-    /**
-     * Analyzes the input string to determine the context for completion.
-     * This version correctly handles single and double quoted arguments.
-     * @private
-     * @param {string} fullInput - The entire current input string.
-     * @param {number} cursorPos - The current cursor position.
-     * @returns {{commandName: string, isCompletingCommand: boolean, currentWordPrefix: string, startOfWordIndex: number, currentWordLength: number, isQuoted: boolean, quoteChar: string|null}}
-     */
     function _getCompletionContext(fullInput, cursorPos) {
         // Tokenize the input string, respecting quotes.
         const tokens = (fullInput.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []);
@@ -758,12 +611,6 @@ const TabCompletionManager = (() => {
         };
     }
 
-    /**
-     * Gets a list of potential suggestions based on the completion context.
-     * @private
-     * @param {object} context - The completion context from `_getCompletionContext`.
-     * @returns {Promise<string[]>} An array of sorted suggestion strings.
-     */
     async function _getSuggestionsFromProvider(context) {
         const { currentWordPrefix, isCompletingCommand, commandName } = context;
         let suggestions = [];
@@ -811,13 +658,6 @@ const TabCompletionManager = (() => {
         return suggestions;
     }
 
-
-    /**
-     * Main handler for the Tab key press. Orchestrates the entire completion logic.
-     * @param {string} fullInput - The current input string.
-     * @param {number} cursorPos - The current cursor position.
-     * @returns {Promise<{textToInsert: string|null, newCursorPos?: number}>} An object with the text to insert, or null if no action is taken.
-     */
     async function handleTab(fullInput, cursorPos) {
         if (fullInput !== lastCompletionInput) {
             resetCycle();
@@ -886,11 +726,6 @@ const TabCompletionManager = (() => {
     };
 })();
 
-/**
- * @module AppLayerManager
- * @description Manages the display layer for full-screen applications like edit, paint, and chidi.
- * It ensures only one app is active at a time and handles showing/hiding the terminal UI.
- */
 const AppLayerManager = (() => {
     "use strict";
     let appLayer = null;
@@ -899,17 +734,12 @@ const AppLayerManager = (() => {
     let isActive = false;
     let currentAppContainer = null;
 
-    // Cache DOM elements on first use
     function _cacheDOM() {
         if (!appLayer) appLayer = document.getElementById('app-layer');
         if (!terminalOutput) terminalOutput = document.getElementById('output');
         if (!terminalInputContainer) terminalInputContainer = document.querySelector('.terminal__input-line');
     }
 
-    /**
-     * Displays a full-screen application, hiding the standard terminal UI.
-     * @param {HTMLElement} appContainerElement - The main container element of the application to display.
-     */
     function show(appContainerElement) {
         _cacheDOM();
         if (isActive || !appLayer || !appContainerElement) {
@@ -932,16 +762,12 @@ const AppLayerManager = (() => {
         isActive = true;
     }
 
-    /**
-     * Hides the currently active full-screen application and restores the terminal UI.
-     */
     function hide() {
         _cacheDOM();
         if (!isActive || !appLayer) return;
 
         appLayer.classList.add('hidden');
         if (currentAppContainer && appLayer.contains(currentAppContainer)) {
-            // Instead of removing, just hide it so it can be re-shown
             currentAppContainer.remove();
         }
 

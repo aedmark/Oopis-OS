@@ -1,8 +1,3 @@
-/**
- * @file Manages the execution of all commands, pipelines, I/O redirection, and background processes.
- * @module CommandExecutor
- */
-
 const CommandExecutor = (() => {
   "use strict";
   let scriptExecutionInProgress = false;
@@ -100,8 +95,8 @@ const CommandExecutor = (() => {
 
   async function _ensureCommandLoaded(commandName) {
     if (!commandName) return false;
-    if (commands[commandName]) return true; // Already loaded.
-    if (loadingPromises[commandName]) return await loadingPromises[commandName]; // Already in progress.
+    if (commands[commandName]) return true;
+    if (loadingPromises[commandName]) return await loadingPromises[commandName];
 
     const promise = new Promise((resolve) => {
       const script = document.createElement('script');
@@ -216,7 +211,6 @@ const CommandExecutor = (() => {
   async function _executeCommandHandler(segment, execCtxOpts, stdinContent = null, signal) {
     const commandName = segment.command?.toLowerCase();
 
-    // Dynamically load command if necessary.
     const commandExists = await _ensureCommandLoaded(commandName);
     if (!commandExists) {
       return { success: false, error: `${commandName}: command not found` };

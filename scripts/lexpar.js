@@ -1,16 +1,5 @@
 // lexpar.js - OopisOS Lexer/Parser Logic
 
-/**
- * @file Implements the Lexer and Parser for the OopisOS command-line interface.
- * The Lexer breaks the raw input string into a sequence of tokens.
- * The Parser takes these tokens and builds a structured, executable representation of the command(s).
- * @module LexPar
- */
-
-/**
- * An enumeration of the different types of tokens that the Lexer can produce.
- * @enum {string}
- */
 const TokenType = {
   WORD: "WORD",
   STRING_DQ: "STRING_DQ",
@@ -26,16 +15,8 @@ const TokenType = {
   EOF: "EOF",
 };
 
-/**
- * Represents a single token identified by the Lexer.
- */
 class Token {
-  /**
-   * Creates an instance of a Token.
-   * @param {TokenType} type - The type of the token.
-   * @param {string|null} value - The actual string value of the token.
-   * @param {number} position - The starting position of the token in the original input string.
-   */
+
   constructor(type, value, position) {
     this.type = type;
     this.value = value;
@@ -43,24 +24,14 @@ class Token {
   }
 }
 
-/**
- * The Lexer is responsible for turning a raw command-line string into an array of tokens.
- */
 class Lexer {
-  /**
-   * Creates an instance of the Lexer.
-   * @param {string} input - The raw command string to be tokenized.
-   */
+
   constructor(input) {
     this.input = input;
     this.position = 0;
     this.tokens = [];
   }
 
-  /**
-   * Processes the entire input string and breaks it down into a sequence of tokens.
-   * @returns {Token[]} An array of Token objects representing the input string.
-   */
   tokenize() {
     const specialChars = ['"', "'", ">", "<", "|", "&", ";"]; // ADDED '<'
     while (this.position < this.input.length) {
@@ -87,7 +58,6 @@ class Lexer {
         }
         continue;
       }
-      // NEW BLOCK for '<'
       if (char === "<") {
         this.tokens.push(new Token(TokenType.OPERATOR_LT, "<", this.position));
         this.position++;
@@ -248,11 +218,9 @@ class Parser {
     return new ParsedCommandSegment(command, args);
   }
 
-  // --- REFACTORED/NEW PARSER LOGIC ---
   _parseSinglePipeline() {
     const pipeline = new ParsedPipeline();
 
-    // A pipeline can start with an optional input redirection
     if (this._currentToken().type === TokenType.OPERATOR_LT) {
       this._nextToken(); // consume '<'
       const fileToken = this._expectAndConsume(TokenType.WORD, true)
@@ -291,10 +259,8 @@ class Parser {
       };
     }
 
-    // Only return a pipeline object if it's valid (has segments OR redirection)
     return pipeline.segments.length > 0 || pipeline.redirection || pipeline.inputRedirectFile ? pipeline : null;
   }
-  // --- END REFACTORED/NEW LOGIC ---
 
   parse() {
     const commandSequence = [];
@@ -302,11 +268,10 @@ class Parser {
       const pipeline = this._parseSinglePipeline();
 
       if (!pipeline) {
-        // If the pipeline is null, but we're not at a valid separator or EOF, it's a syntax error.
         if (![TokenType.EOF, TokenType.OPERATOR_SEMICOLON, TokenType.OPERATOR_BG, TokenType.OPERATOR_AND, TokenType.OPERATOR_OR].includes(this._currentToken().type)) {
           throw new Error(`Parser Error: Unexpected token '${this._currentToken().value}' at start of command.`);
         }
-        break; // Likely end of input
+        break;
       }
 
       let operator = null;

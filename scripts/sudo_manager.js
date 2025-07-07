@@ -1,27 +1,9 @@
-/**
- * @file Manages sudo (superuser do) functionality for the entire OS.
- * @author Andrew Edmark
- * @author Gemini
- */
-
-/**
- * @module SudoManager
- * @description Handles the core logic for sudo operations, including parsing the sudoers file,
- * managing authorization timestamps, and validating user permissions for sudo access.
- */
 const SudoManager = (() => {
     "use strict";
 
-    // In-memory cache for the parsed sudoers configuration.
     let sudoersConfig = null;
-    // Stores timestamps of the last successful sudo authentication for each user.
     let userSudoTimestamps = {};
 
-    /**
-     * Parses the content of the /etc/sudoers file into a structured object.
-     * This function is the single source of truth for sudo rules.
-     * @private
-     */
     function _parseSudoers() {
         const sudoersNode = FileSystemManager.getNodeByPath(Config.SUDO.SUDOERS_PATH);
         if (!sudoersNode || sudoersNode.type !== 'file') {
@@ -47,7 +29,6 @@ const SudoManager = (() => {
 
             const parts = line.split(/\s+/);
             if (parts.length < 2) {
-                // Resilience enhancement: Log a warning for malformed lines.
                 console.warn(`SudoManager: Malformed line in /etc/sudoers: "${line}". Ignoring.`);
                 return;
             }
@@ -64,28 +45,15 @@ const SudoManager = (() => {
         sudoersConfig = config;
     }
 
-    /**
-     * Retrieves the current sudo configuration, parsing it from the file if necessary.
-     * @private
-     * @returns {object} The parsed sudoers configuration object.
-     */
     function _getSudoersConfig() {
         _parseSudoers(); // Always re-parse to get the latest rules.
         return sudoersConfig;
     }
 
-    /**
-     * Forces a re-parse of the /etc/sudoers file. Called after visudo saves changes.
-     */
     function invalidateSudoersCache() {
         sudoersConfig = null;
     }
 
-    /**
-     * Checks if a user is still within their authorized sudo timeout window.
-     * @param {string} username - The name of the user to check.
-     * @returns {boolean} True if the user is within the timeout window, false otherwise.
-     */
     function isUserTimestampValid(username) {
         const timestamp = userSudoTimestamps[username];
         if (!timestamp) return false;
@@ -100,30 +68,16 @@ const SudoManager = (() => {
         return elapsedMinutes < timeoutMinutes;
     }
 
-    /**
-     * Updates a user's successful sudo authentication timestamp.
-     * @param {string} username - The user whose timestamp should be updated.
-     */
     function updateUserTimestamp(username) {
         userSudoTimestamps[username] = new Date().getTime();
     }
 
-    /**
-     * Clears the sudo timestamp for a specific user, typically on logout.
-     * @param {string} username - The user whose timestamp should be cleared.
-     */
     function clearUserTimestamp(username) {
         if (userSudoTimestamps[username]) {
             delete userSudoTimestamps[username];
         }
     }
 
-    /**
-     * Determines if a user has permission to run a specific command via sudo.
-     * @param {string} username - The user attempting to run the command.
-     * @param {string} commandToRun - The command the user wants to execute.
-     * @returns {boolean} True if the user is authorized, false otherwise.
-     */
     function canUserRunCommand(username, commandToRun) {
         if (username === 'root') return true;
 

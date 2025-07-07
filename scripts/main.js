@@ -1,22 +1,5 @@
-/**
- * @file This is the main entry point for OopisOS. It handles the initial boot sequence,
- * caches essential DOM elements, and sets up the primary terminal event listeners.
- * @author Andrew Edmark
- * @author Gemini
- */
-
-/**
- * A global object to cache frequently accessed DOM elements.
- * This improves performance by reducing the number of `getElementById` or `querySelector` calls.
- * @type {Object.<string, HTMLElement|null>}
- */
 let DOM = {};
 
-/**
- * Sets up the core event listeners for the terminal, enabling user interaction.
- * This includes handling clicks for focus, key presses for commands, command history,
- * tab completion, and pasting text.
- */
 function initializeTerminalEventListeners() {
   if (!DOM.terminalDiv || !DOM.editableInputDiv) {
     console.error(
@@ -25,9 +8,7 @@ function initializeTerminalEventListeners() {
     return;
   }
 
-  // Focus the input area when the terminal is clicked, unless text is being selected.
   DOM.terminalDiv.addEventListener("click", (e) => {
-    // REFACTORED: Use the central AppLayerManager to check if any app is active.
     if (AppLayerManager.isActive()) return;
 
     const selection = window.getSelection();
@@ -43,49 +24,37 @@ function initializeTerminalEventListeners() {
     }
   });
 
-  // Main keyboard input handler for the entire document.
   document.addEventListener("keydown", async (e) => {
-    // HIGHEST PRIORITY: Check if a modal input is actively waiting for an Enter key.
     if (ModalInputManager.isAwaiting()) {
       if (e.key === 'Enter') {
         e.preventDefault();
         await ModalInputManager.handleInput();
       } else if (ModalInputManager.isObscured()) {
-        // --- REVISED FIX FOR PASTE ISSUE START ---
-        // If it's a paste combination (Ctrl/Cmd + V), DO NOT preventDefault on keydown.
-        // Let the 'paste' event listener handle it.
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-          // Do nothing here on keydown for paste. Allow the 'paste' event to fire naturally.
         } else {
-          // For all other regular key presses in obscured mode, prevent default
-          // to hide the actual characters and update internal buffer.
           e.preventDefault();
           ModalInputManager.updateInput(
               e.key,
               e.key.length === 1 ? e.key : null
           );
         }
-        // --- REVISED FIX FOR PASTE ISSUE END ---
       }
       return;
     }
 
-    // SECOND PRIORITY: If a full-screen app is running, let it handle its own keys.
     if (AppLayerManager.isActive()) {
-      return; // Let the active app handle its own keyboard events.
+      return;
     }
-    // Ignore key events not targeting the main input div.
+
     if (e.target !== DOM.editableInputDiv) {
       return;
     }
 
-    // Prevent user input while a script is running.
     if (CommandExecutor.isScriptRunning()) {
       e.preventDefault();
       return;
     }
 
-    // Handle special key presses for terminal functionality.
     switch (e.key) {
       case "Enter":
         e.preventDefault();
@@ -132,7 +101,6 @@ function initializeTerminalEventListeners() {
         } else {
           cursorPos = currentInput.length;
         }
-        // FIX: Removed 'void' and added 'await' to correctly handle the async tab completion
         const result = await TabCompletionManager.handleTab(currentInput, cursorPos);
         if (
             result?.textToInsert !== null &&
@@ -148,7 +116,6 @@ function initializeTerminalEventListeners() {
     }
   });
 
-  // --- REFACTORED PASTE HANDLER ---
   if (DOM.editableInputDiv) {
     DOM.editableInputDiv.addEventListener("paste", (e) => {
       e.preventDefault(); // Always prevent default native paste to control it.
@@ -157,11 +124,9 @@ function initializeTerminalEventListeners() {
       const text = (e.clipboardData || window.clipboardData).getData("text/plain");
       const processedText = text.replace(/\r?\n|\r/g, " ");
 
-      // If a modal input is active and obscured, delegate paste handling.
       if (ModalInputManager.isAwaiting() && ModalInputManager.isObscured()) {
         ModalInputManager.handlePaste(processedText);
       } else {
-        // Existing logic for normal terminal input paste.
         const selection = window.getSelection();
         if (!selection || !selection.rangeCount) return;
 
@@ -179,17 +144,9 @@ function initializeTerminalEventListeners() {
       }
     });
   }
-  // --- END REFACTORED PASTE HANDLER ---
 }
 
-/**
- * The main entry point for the OopisOS application. This function serves as the
- * "bootloader" for the OS, initializing all managers in the correct order,
- * loading data from storage, and setting up the UI for interaction.
- * @async
- */
 window.onload = async () => {
-  // Cache all necessary DOM elements for performance.
   DOM = {
     terminalBezel: document.getElementById("terminal-bezel"),
     terminalDiv: document.getElementById("terminal"),
@@ -202,11 +159,9 @@ window.onload = async () => {
     adventureInput: document.getElementById("adventure-input"),
   };
 
-  // Override console methods to output to the terminal display.
   OutputManager.initializeConsoleOverrides();
 
   try {
-    // Begin the OS boot sequence. Order is important here.
     await IndexedDBManager.init();
     await FileSystemManager.load();
     await UserManager.initializeDefaultUsers();
@@ -216,13 +171,10 @@ window.onload = async () => {
     EnvironmentManager.initialize();
     SessionManager.initializeStack();
 
-    // Initialize the command executor, which now only sets up its core functions.
     CommandExecutor.initialize();
 
-    // Load the initial user's session state.
     SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
 
-    // Ensure the current path is valid after loading.
     const guestHome = `/home/${Config.USER.DEFAULT_NAME}`;
     if (!FileSystemManager.getNodeByPath(FileSystemManager.getCurrentPath())) {
       if (FileSystemManager.getNodeByPath(guestHome)) {
@@ -232,7 +184,6 @@ window.onload = async () => {
       }
     }
 
-    // Finalize UI setup and event listeners.
     initializeTerminalEventListeners();
     TerminalUI.updatePrompt();
     TerminalUI.focusInput();
@@ -241,7 +192,6 @@ window.onload = async () => {
     );
 
     const resizeObserver = new ResizeObserver(_entries => {
-      // Re-enabled: The dynamic, aspect-ratio-locked canvas requires this.
       if (typeof PaintManager !== 'undefined' && PaintManager.isActive()) {
         if (typeof PaintUI !== 'undefined' && typeof PaintUI.handleResize === 'function') {
           PaintUI.handleResize();
