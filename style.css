@@ -461,7 +461,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-  background-color: #212121;
+  background-color: var(--color-background-darkest); /* CHANGED: Was #212121 */
   color: #ffffff;
   min-width: 0;
 }
@@ -489,6 +489,7 @@ body {
 
 .markdown-preview p {
   margin-bottom: 1rem;
+  color: #e5e7eb; /* ADDED: Explicitly set paragraph color */
 }
 
 .markdown-preview a {
@@ -504,6 +505,7 @@ body {
 .markdown-preview ol {
   padding-left: 2rem;
   margin-bottom: 1rem;
+  color: #e5e7eb;
 }
 
 .markdown-preview blockquote {
