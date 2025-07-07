@@ -286,10 +286,9 @@ const EditorUI = (() => {
         if (elements.highlighter) {
             const grammar = Prism.languages[language];
             if (grammar) {
-                elements.highlighter.innerHTML = Prism.highlight(text, grammar, language) + '<br>';
+                elements.highlighter.innerHTML = Prism.highlight(text, grammar, language);
             } else {
                 elements.highlighter.textContent = text;
-                elements.highlighter.innerHTML += '<br>';
             }
         }
     }

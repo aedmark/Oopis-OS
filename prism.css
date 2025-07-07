@@ -1,16 +1,16 @@
 /* PrismJS 1.30.0
-https://prismjs.com/download.html#themes=prism&languages=markup+css+clike+javascript+armasm+asm6502+bash+basic+c+css-extras+csv+inform7+javadoclike+jsdoc+json+markdown+typescript */
+https://prismjs.com/download.html#themes=prism-dark&languages=markup+css+clike+javascript+bash+basic+c+css-extras+csv+git+ignore+inform7+javadoclike+jsdoc+markdown+powershell+python+ruby+rust+typescript+wiki&plugins=inline-color */
 /**
- * prism.js default theme for JavaScript, CSS and HTML
- * Based on dabblet (http://dabblet.com)
+ * prism.js Dark theme for JavaScript, CSS and HTML
+ * Based on the slides of the talk “/Reg(exp){2}lained/”
  * @author Lea Verou
  */
 
 code[class*="language-"],
 pre[class*="language-"] {
-	color: black;
+	color: white;
 	background: none;
-	text-shadow: 0 1px white;
+	text-shadow: 0 -.1em .2em black;
 	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 	font-size: 1em;
 	text-align: left;
@@ -30,18 +30,6 @@ pre[class*="language-"] {
 	hyphens: none;
 }
 
-pre[class*="language-"]::-moz-selection, pre[class*="language-"] ::-moz-selection,
-code[class*="language-"]::-moz-selection, code[class*="language-"] ::-moz-selection {
-	text-shadow: none;
-	background: #b3d4fc;
-}
-
-pre[class*="language-"]::selection, pre[class*="language-"] ::selection,
-code[class*="language-"]::selection, code[class*="language-"] ::selection {
-	text-shadow: none;
-	background: #b3d4fc;
-}
-
 @media print {
 	code[class*="language-"],
 	pre[class*="language-"] {
@@ -49,22 +37,27 @@ code[class*="language-"]::selection, code[class*="language-"] ::selection {
 	}
 }
 
+pre[class*="language-"],
+:not(pre) > code[class*="language-"] {
+	background: hsl(30, 20%, 25%);
+}
+
 /* Code blocks */
 pre[class*="language-"] {
 	padding: 1em;
 	margin: .5em 0;
 	overflow: auto;
-}
-
-:not(pre) > code[class*="language-"],
-pre[class*="language-"] {
-	background: #f5f2f0;
+	border: .3em solid hsl(30, 20%, 40%);
+	border-radius: .5em;
+	box-shadow: 1px 1px .5em black inset;
 }
 
 /* Inline code */
 :not(pre) > code[class*="language-"] {
-	padding: .1em;
+	padding: .15em .2em .05em;
 	border-radius: .3em;
+	border: .13em solid hsl(30, 20%, 40%);
+	box-shadow: 1px 1px .3em -.1em black inset;
 	white-space: normal;
 }
 
@@ -72,11 +65,11 @@ pre[class*="language-"] {
 .token.prolog,
 .token.doctype,
 .token.cdata {
-	color: slategray;
+	color: hsl(30, 20%, 50%);
 }
 
 .token.punctuation {
-	color: #999;
+	opacity: .7;
 }
 
 .token.namespace {
@@ -88,9 +81,8 @@ pre[class*="language-"] {
 .token.boolean,
 .token.number,
 .token.constant,
-.token.symbol,
-.token.deleted {
-	color: #905;
+.token.symbol {
+	color: hsl(350, 40%, 70%);
 }
 
 .token.selector,
@@ -99,33 +91,26 @@ pre[class*="language-"] {
 .token.char,
 .token.builtin,
 .token.inserted {
-	color: #690;
+	color: hsl(75, 70%, 60%);
 }
 
 .token.operator,
 .token.entity,
 .token.url,
 .language-css .token.string,
-.style .token.string {
-	color: #9a6e3a;
-	/* This background color was intended by the author of this theme. */
-	background: hsla(0, 0%, 100%, .5);
+.style .token.string,
+.token.variable {
+	color: hsl(40, 90%, 60%);
 }
 
 .token.atrule,
 .token.attr-value,
 .token.keyword {
-	color: #07a;
-}
-
-.token.function,
-.token.class-name {
-	color: #DD4A68;
+	color: hsl(350, 40%, 70%);
 }
 
 .token.regex,
-.token.important,
-.token.variable {
+.token.important {
 	color: #e90;
 }
 
@@ -139,5 +124,43 @@ pre[class*="language-"] {
 
 .token.entity {
 	cursor: help;
+}
+
+.token.deleted {
+	color: red;
+}
+
+span.inline-color-wrapper {
+	/*
+	 * The background image is the following SVG inline in base 64:
+	 *
+	 * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">
+	 *     <path fill="gray" d="M0 0h2v2H0z"/>
+	 *     <path fill="white" d="M0 0h1v1H0zM1 1h1v1H1z"/>
+	 * </svg>
+	 *
+	 * SVG-inlining explained:
+	 * https://stackoverflow.com/a/21626701/7595472
+	 */
+	background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyIDIiPjxwYXRoIGZpbGw9ImdyYXkiIGQ9Ik0wIDBoMnYySDB6Ii8+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0wIDBoMXYxSDB6TTEgMWgxdjFIMXoiLz48L3N2Zz4=");
+	/* This is to prevent visual glitches where one pixel from the repeating pattern could be seen. */
+	background-position: center;
+	background-size: 110%;
+
+	display: inline-block;
+	height: 1.333ch;
+	width: 1.333ch;
+	margin: 0 .333ch;
+	box-sizing: border-box;
+	border: 1px solid white;
+	outline: 1px solid rgba(0,0,0,.5);
+	overflow: hidden;
+}
+
+span.inline-color {
+	display: block;
+	/* To prevent visual glitches again */
+	height: 120%;
+	width: 120%;
 }
 

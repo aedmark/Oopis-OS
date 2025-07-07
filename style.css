@@ -689,10 +689,13 @@ body {
 }
 
 .editor__highlighter {
-  color: transparent; /* Makes the underlying text invisible */
-  pointer-events: none; /* Allows clicks to pass through to the textarea */
   z-index: 1;
-  overflow: hidden;
+  pointer-events: none;
+  scrollbar-width: none;
+}
+
+.editor__highlighter::-webkit-scrollbar {
+  display: none;
 }
 
 .highlight-match {
@@ -1722,4 +1725,12 @@ code[class*="language-"] {
   color: transparent; /* Make the actual text invisible */
   caret-color: var(--color-text-primary); /* But keep the cursor visible and green */
 }
-
+.editor__highlighter > pre,
+.editor__highlighter > pre > code {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
