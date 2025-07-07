@@ -132,14 +132,15 @@ body {
 }
 
 #terminal-bezel {
-  flex-grow: 1; /* Allow terminal to fill available space */
+  flex-grow: 1;
   display: flex;
   background-color: var(--color-background-medium);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
-  min-height: 0; /* Critical for flexbox shrinking */
+  min-height: 0;
   width: 100%;
-  padding: var(--spacing-lg); /* Padding was here, keeping it */
+  padding: var(--spacing-lg);
+  position: relative;
 }
 
 /* 4. Terminal Component (BEM-like)
@@ -447,7 +448,8 @@ body {
   position: relative;
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
-  overflow: visible;
+  background-color: var(--color-background-darkest);
+  overflow: hidden;
 }
 
 .editor__textarea--no-wrap, .editor__highlighter--no-wrap {
