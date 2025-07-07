@@ -68,18 +68,6 @@ const EditorUI = (() => {
     let eventCallbacks = {};
     let previewDebounceTimer = null;
 
-    /**
-     * Synchronizes the height of the textarea to the highlighter's scroll height.
-     * This is the key to making the single-scroller architecture work.
-     * @private
-     */
-    function _syncContentHeight() {
-        if (!elements.highlighter || !elements.textarea) return;
-
-        const highlighterHeight = elements.highlighter.scrollHeight;
-        elements.textarea.style.height = `${highlighterHeight}px`;
-    }
-
     const iframeStyles = `
     <style>
       body {
@@ -307,8 +295,6 @@ const EditorUI = (() => {
             elements.highlighter.innerHTML = '';
             elements.highlighter.appendChild(pre);
         }
-        // We still need to call this to ensure the container resizes vertically
-        _syncContentHeight();
     }
 
     function renderSyntaxHighlights(language) {
@@ -423,7 +409,6 @@ const EditorUI = (() => {
         elements.lineGutter.textContent = numbersArray.join("\n");
         // Sync gutter scroll with the wrapper, not the textarea
         elements.lineGutter.scrollTop = elements.textareaWrapper.scrollTop;
-        _syncContentHeight(); // Also sync height when line numbers change.
     }
 
     function syncScrolls() {
