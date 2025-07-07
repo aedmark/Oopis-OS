@@ -454,7 +454,6 @@ body {
 
 .editor__textarea--no-wrap, .editor__highlighter--no-wrap {
   white-space: pre !important;
-  overflow-x: auto !important;
 }
 
 .editor__preview-wrapper {

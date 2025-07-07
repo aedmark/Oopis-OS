@@ -438,6 +438,7 @@ const EditorUI = (() => {
         if (elements.textarea) {
             elements.textarea.selectionStart = start;
             elements.textarea.selectionEnd = end;
+            elements.textarea.focus();
         }
     }
 

@@ -114,13 +114,14 @@ const EditorManager = (() => {
 
     function _toggleWordWrap() {
         if (!isActiveState) return;
+        const selection = EditorUI.getTextareaSelection(); // <-- ADD THIS LINE
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
         EditorUI.setGutterVisibility(!isWordWrapActive);
-        EditorUI.setEditorFocus();
+        EditorUI.setTextareaSelection(selection.start, selection.end); // <-- CHANGE THIS LINE (from setEditorFocus)
     }
 
     function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
