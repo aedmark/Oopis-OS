@@ -7,7 +7,6 @@ const EditorManager = (() => {
 
     const MAX_UNDO_STATES = 100;
 
-    // --- REFACTORED: Timers for debouncing expensive operations ---
     let saveUndoStateTimeout = null;
     let highlightDebounceTimer = null;
     let findDebounceTimer = null;
@@ -20,13 +19,6 @@ const EditorManager = (() => {
         activeIndex: -1,
     };
 
-    // --- REFACTORED & NEW FUNCTIONS ---
-
-    /**
-     * Instantly updates lightweight UI elements that need to respond on every keystroke.
-     * This includes the status bar, dirty indicator, and scroll synchronization.
-     * @private
-     */
     function _updateInstantUI() {
         if (!isActiveState) return;
         const textContent = EditorUI.getTextareaContent();
@@ -37,11 +29,6 @@ const EditorManager = (() => {
         EditorUI.syncScrolls();
     }
 
-    /**
-     * A debounced function to handle expensive rendering tasks like syntax highlighting.
-     * This prevents re-highlighting the entire document on every keystroke, dramatically improving performance.
-     * @private
-     */
     function _debouncedHighlightAndFind() {
         if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
 
@@ -64,11 +51,6 @@ const EditorManager = (() => {
         }, 150);
     }
 
-    /**
-     * A new debounced function specifically for the find input.
-     * It re-runs the find logic as the user types their query.
-     * @private
-     */
     function _debouncedFind() {
         if (findDebounceTimer) clearTimeout(findDebounceTimer);
         findDebounceTimer = setTimeout(() => {
@@ -320,22 +302,22 @@ const EditorManager = (() => {
 
         await manipulate();
     }
-    function _openFindBar(isReplace = false) {
-        findState.isOpen = true;
-        findState.isReplace = isReplace;
-        EditorUI.updateFindBar(findState);
-        EditorUI.elements.findInput.focus();
-        EditorUI.elements.findInput.select();
-        _find();
-    }
 
-    function _closeFindBar() {
-        findState.isOpen = false;
-        findState.matches = [];
-        findState.activeIndex = -1;
-        EditorUI.updateFindBar(findState);
-        _debouncedHighlightAndFind(); // Re-render to clear highlights
-        EditorUI.setEditorFocus();
+    // **FIX:** Moved _find and related functions before _openFindBar, which calls them.
+    function _scrollToMatch(index, shouldFocusTextarea = true) {
+        if (index === -1) return;
+        const match = findState.matches[index];
+        const textarea = EditorUI.elements.textarea;
+
+        if (shouldFocusTextarea) {
+            textarea.focus();
+        }
+
+        textarea.setSelectionRange(match.index, match.index + match[0].length);
+        const textToMatch = textarea.value.substring(0, match.index);
+        const lineBreaks = (textToMatch.match(/\n/g) || []).length;
+        const lineHeight = 16;
+        textarea.scrollTop = lineBreaks * lineHeight;
     }
 
     function _find(focus = true) {
@@ -356,6 +338,24 @@ const EditorManager = (() => {
         if (focus) _scrollToMatch(findState.activeIndex, true);
     }
 
+    function _openFindBar(isReplace = false) {
+        findState.isOpen = true;
+        findState.isReplace = isReplace;
+        EditorUI.updateFindBar(findState);
+        EditorUI.elements.findInput.focus();
+        EditorUI.elements.findInput.select();
+        _find(); // Now this call is valid
+    }
+
+    function _closeFindBar() {
+        findState.isOpen = false;
+        findState.matches = [];
+        findState.activeIndex = -1;
+        EditorUI.updateFindBar(findState);
+        _debouncedHighlightAndFind(); // Re-render to clear highlights
+        EditorUI.setEditorFocus();
+    }
+
     function _goToNextMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
@@ -370,22 +370,6 @@ const EditorManager = (() => {
         EditorUI.updateFindBar(findState);
         EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
         _scrollToMatch(findState.activeIndex, true);
-    }
-
-    function _scrollToMatch(index, shouldFocusTextarea = true) {
-        if (index === -1) return;
-        const match = findState.matches[index];
-        const textarea = EditorUI.elements.textarea;
-
-        if (shouldFocusTextarea) {
-            textarea.focus();
-        }
-
-        textarea.setSelectionRange(match.index, match.index + match[0].length);
-        const textToMatch = textarea.value.substring(0, match.index);
-        const lineBreaks = (textToMatch.match(/\n/g) || []).length;
-        const lineHeight = 16;
-        textarea.scrollTop = lineBreaks * lineHeight;
     }
 
     function _replace() {
@@ -410,6 +394,7 @@ const EditorManager = (() => {
         EditorUI.setTextareaContent(newText);
         _handleEditorInput();
     }
+
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
         const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
