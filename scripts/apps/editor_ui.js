@@ -404,12 +404,10 @@ const EditorUI = (() => {
     }
 
     function syncScrolls() {
-        // The scroll event is now on the wrapper.
-        // We sync the gutter to the wrapper, and the textarea's horizontal scroll to the wrapper.
         if (elements.lineGutter && elements.textareaWrapper) {
             elements.lineGutter.scrollTop = elements.textareaWrapper.scrollTop;
         }
-        if (elements.textarea && elements.textareaWrapper) {
+        if (elements.textarea && elements.highlighter && elements.textareaWrapper) {
             elements.textarea.scrollLeft = elements.textareaWrapper.scrollLeft;
             elements.highlighter.scrollLeft = elements.textareaWrapper.scrollLeft;
         }
