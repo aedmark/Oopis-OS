@@ -1,26 +1,10 @@
-/**
- * @file Manages the OopisOS Graphical File Explorer application.
- * This refactored version uses the AppLayerManager for a fully modal experience.
- * @author Architect
- */
-
-/**
- * @module ExplorerUI
- * @description Manages all DOM building and manipulation for the file explorer.
- */
 const ExplorerUI = (() => {
     "use strict";
     let elements = {};
     let callbacks = {};
 
-    /**
-     * Creates the main layout of the explorer application.
-     * @param {object} cb - An object containing callback functions for UI events.
-     * @returns {HTMLElement} The root element of the explorer UI.
-     */
     function buildLayout(cb) {
         callbacks = cb;
-        // REFACTORED: Using new BEM-style class names from style.css
         elements.treePane = Utils.createElement('div', { id: 'explorer-tree-pane', className: 'explorer__tree-pane' });
         elements.mainPane = Utils.createElement('div', { id: 'explorer-main-pane', className: 'explorer__main-pane' });
         elements.statusBar = Utils.createElement('div', { id: 'explorer-status-bar', className: 'explorer__status-bar' });
@@ -42,18 +26,12 @@ const ExplorerUI = (() => {
 
         elements.container = Utils.createElement('div', {
             id: 'explorer-container',
-            className: 'explorer-container' // This top-level class name is correct as per style.css
+            className: 'explorer-container'
         }, header, mainContainer, elements.statusBar);
 
         return elements.container;
     }
 
-    /**
-     * Renders the directory tree in the left pane.
-     * @param {object} treeData - The root node of the file system.
-     * @param {string} selectedPath - The currently selected path to highlight.
-     * @param {object} expandedPaths - A Set of paths that should be rendered in an expanded state.
-     */
     function renderTree(treeData, selectedPath, expandedPaths) {
         if (!elements.treePane) return;
         const treeRoot = Utils.createElement('ul', { className: 'explorer-tree' });
@@ -108,10 +86,6 @@ const ExplorerUI = (() => {
         elements.treePane.appendChild(treeRoot);
     }
 
-    /**
-     * Renders the contents of a directory in the main right pane.
-     * @param {Array<object>} items - An array of item objects to display.
-     */
     function renderMainPane(items) {
         if (!elements.mainPane) return;
         elements.mainPane.innerHTML = '';
@@ -124,7 +98,6 @@ const ExplorerUI = (() => {
         const list = Utils.createElement('ul', { className: 'explorer-file-list' });
         items.forEach(item => {
             const icon = Utils.createElement('span', { className: 'mr-2 w-4 inline-block', textContent: item.type === 'directory' ? '📁' : '📄' });
-            // REFACTORED: Using new BEM-style class names from style.css
             const name = Utils.createElement('span', { className: 'explorer-item-name', textContent: item.name });
             const perms = Utils.createElement('span', { className: 'explorer-item-perms', textContent: FileSystemManager.formatModeToString(item.node) });
             const size = Utils.createElement('span', { className: 'explorer-item-size', textContent: Utils.formatBytes(item.size) });
@@ -142,19 +115,11 @@ const ExplorerUI = (() => {
         elements.mainPane.appendChild(list);
     }
 
-    /**
-     * Updates the status bar with information about the selected path.
-     * @param {string} path - The current path.
-     * @param {number|string} itemCount - The number of items in the current directory or a status string.
-     */
     function updateStatusBar(path, itemCount) {
         if (!elements.statusBar) return;
         elements.statusBar.textContent = `Path: ${path}  |  Items: ${itemCount}`;
     }
 
-    /**
-     * Clears all elements and callbacks.
-     */
     function reset() {
         elements = {};
         callbacks = {};
@@ -163,11 +128,6 @@ const ExplorerUI = (() => {
     return { buildLayout, renderTree, renderMainPane, updateStatusBar, reset };
 })();
 
-
-/**
- * @module ExplorerManager
- * @description The main controller for the file explorer application.
- */
 const ExplorerManager = (() => {
     "use strict";
     let isActive = false;
@@ -178,7 +138,7 @@ const ExplorerManager = (() => {
     const callbacks = {
         onExit: exit,
         onTreeItemSelect: (path) => {
-            if (path !== '/') { // Root cannot be collapsed
+            if (path !== '/') {
                 if (expandedPaths.has(path)) {
                     expandedPaths.delete(path);
                 } else {
@@ -195,10 +155,6 @@ const ExplorerManager = (() => {
         }
     };
 
-    /**
-     * Launches the file explorer application.
-     * @param {string|null} startPath - The optional path to start the explorer in.
-     */
     async function enter(startPath = null) {
         if (isActive) return;
 
@@ -230,9 +186,6 @@ const ExplorerManager = (() => {
         _updateView(initialPath);
     }
 
-    /**
-     * Closes the explorer and cleans up resources.
-     */
     function exit() {
         if (!isActive) return;
 
@@ -246,21 +199,12 @@ const ExplorerManager = (() => {
         expandedPaths = new Set(['/']);
     }
 
-    /**
-     * Handles keydown events for the explorer, like the Escape key.
-     * @param {KeyboardEvent} event - The keyboard event.
-     */
     function handleKeyDown(event) {
         if (isActive && event.key === 'Escape') {
             exit();
         }
     }
 
-    /**
-     * Updates the entire explorer view for a given path.
-     * @private
-     * @param {string} path - The path to display.
-     */
     function _updateView(path) {
         currentPath = path;
         const currentUser = UserManager.getCurrentUser().name;

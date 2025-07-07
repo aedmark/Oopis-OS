@@ -1,9 +1,3 @@
-/**
- * @file Manages the Oopis Basic IDE application.
- * This file contains the UI and Manager modules for the BASIC app.
- * @author The Engineer
- */
-
 const BasicUI = (() => {
     "use strict";
     let elements = {};
@@ -11,7 +5,6 @@ const BasicUI = (() => {
 
     function buildLayout(cb) {
         callbacks = cb;
-        // Re-using styles from the adventure game for a retro feel.
         elements.output = Utils.createElement('div', { id: 'basic-app-output', className: 'basic-app__output' });
         elements.input = Utils.createElement('input', { id: 'basic-app-input', className: 'basic-app__input', type: 'text', spellcheck: 'false', autocapitalize: 'none' });
         const inputContainer = Utils.createElement('div', { className: 'basic-app__input-line' },
@@ -47,7 +40,6 @@ const BasicUI = (() => {
 
     function appendOutput(text, withNewline = true) {
         if (!elements.output) return;
-        // BASIC interpreter expects raw text, not styled paragraphs.
         elements.output.textContent += text + (withNewline ? '\n' : '');
         elements.output.scrollTop = elements.output.scrollHeight;
     }
@@ -98,7 +90,7 @@ const BasicManager = (() => {
         if (isActive) return;
         isActive = true;
 
-        loadOptions = options; // Store file data
+        loadOptions = options;
         const layout = BasicUI.buildLayout(callbacks);
         AppLayerManager.show(layout);
         document.addEventListener('keydown', handleKeyDown, true); // Capture keys globally
@@ -113,7 +105,6 @@ const BasicManager = (() => {
         AppLayerManager.hide();
         BasicUI.reset();
 
-        // Reset state
         isActive = false;
         interpreter = new BasicInterpreter();
         programBuffer.clear();
@@ -132,7 +123,6 @@ const BasicManager = (() => {
         }
 
         BasicUI.writeln('READY.');
-        // FIX: Defer focus until after current execution stack clears
         setTimeout(() => BasicUI.focusInput(), 0);
     }
 
@@ -177,22 +167,19 @@ const BasicManager = (() => {
                 programBuffer.set(lineNumber, lineContent);
             }
         } else {
-            // Intelligently parse the command from its arguments before uppercasing.
             const firstSpaceIndex = command.indexOf(' ');
             let cmd, argsStr;
 
             if (firstSpaceIndex === -1) {
-                // No arguments, the whole string is the command.
                 cmd = command.toUpperCase();
                 argsStr = '';
             } else {
-                // Split command and arguments, uppercasing only the command.
                 cmd = command.substring(0, firstSpaceIndex).toUpperCase();
                 argsStr = command.substring(firstSpaceIndex + 1).trim();
             }
             await _executeIdeCommand(cmd, argsStr);
         }
-        if (isActive) { // Check if not exited
+        if (isActive) {
             BasicUI.writeln('READY.');
         }
     }
@@ -246,7 +233,6 @@ const BasicManager = (() => {
         }
         try {
             await interpreter.run(programText, {
-                // This callback now respects the 'withNewline' flag passed by the interpreter.
                 outputCallback: (text, withNewline = true) => {
                     if (withNewline) {
                         BasicUI.writeln(text);
@@ -254,8 +240,7 @@ const BasicManager = (() => {
                         BasicUI.write(text);
                     }
                 },
-                // This callback's only job is to wait for and return user input.
-                // The interpreter handles printing the prompt via the outputCallback.
+
                 inputCallback: async () => {
                     return new Promise(resolve => {
                         onInputPromiseResolver = resolve;
@@ -285,7 +270,7 @@ const BasicManager = (() => {
         const saveResult = await FileSystemManager.createOrUpdateFile(absPath, content, { currentUser, primaryGroup });
         if (saveResult.success) {
             if (await FileSystemManager.save()) {
-                loadOptions.path = savePath; // Update the current path
+                loadOptions.path = savePath;
                 BasicUI.writeln('OK');
             } else {
                 BasicUI.writeln("?FILESYSTEM SAVE FAILED");
@@ -318,7 +303,6 @@ const BasicManager = (() => {
 
     function handleKeyDown(e) {
         if (!isActive) return;
-        // Allows the app to handle all keydown events it needs
         if (e.key === 'Escape') {
             exit();
         }

@@ -1,11 +1,3 @@
-/**
- * @file Manages the interactive "Adventure Creator" application.
- * This file contains the logic for the REPL (Read-Eval-Print-Loop) that allows
- * users to build and edit adventure game JSON files via a command-line interface.
- * @module AdventureCreator
- * @author The Engineer
- */
-
 const AdventureCreator = (() => {
     "use strict";
 
@@ -14,11 +6,10 @@ const AdventureCreator = (() => {
         adventureData: {},
         targetFilename: '',
         isDirty: false,
-        commandContext: null, // The context from the 'adventure' command
-        editContext: null // {type: 'room', id: 'some_id'}
+        commandContext: null,
+        editContext: null
     };
 
-    // Main entry point
     async function enter(filename, initialData, commandContext) {
         if (state.isActive) return;
 
@@ -33,11 +24,9 @@ const AdventureCreator = (() => {
 
         await OutputManager.appendToOutput("Entering Adventure Creator. Type 'help' for commands, 'exit' to quit.", {typeClass: 'text-success'});
 
-        // Start the REPL
         _requestNextCommand();
     }
 
-    // Main REPL loop
     function _requestNextCommand() {
         if (!state.isActive) return;
 
@@ -51,10 +40,10 @@ const AdventureCreator = (() => {
             async (input) => {
                 await _processCreatorCommand(input);
                 if (state.isActive) {
-                    _requestNextCommand(); // Loop
+                    _requestNextCommand();
                 }
             },
-            () => { // onCancel
+            () => {
                 if (state.isActive) _requestNextCommand();
             },
             false,
@@ -93,7 +82,7 @@ const AdventureCreator = (() => {
                 _handleHelp();
                 break;
             case '':
-                break; // Ignore empty input
+                break;
             default:
                 await OutputManager.appendToOutput(`Unknown command: '${command}'. Type 'help'.`, {typeClass: 'text-error'});
         }
@@ -136,7 +125,7 @@ const AdventureCreator = (() => {
 
         state.isDirty = true;
         OutputManager.appendToOutput(`Created ${type} '${name}' with ID '${id}'.`, {typeClass: 'text-success'});
-        _handleEdit(`${type} "${name}"`); // Automatically enter edit mode for the new entity
+        _handleEdit(`${type} "${name}"`);
     }
 
     function _findEntity(type, name) {
@@ -193,9 +182,7 @@ const AdventureCreator = (() => {
             return;
         }
 
-        // Basic validation
         if (Object.keys(entity).includes(prop)) {
-            // Handle boolean conversion
             if (value.toLowerCase() === 'true') {
                 entity[prop] = true;
             } else if (value.toLowerCase() === 'false') {

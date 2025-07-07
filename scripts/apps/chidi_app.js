@@ -1,9 +1,3 @@
-/**
- * @file chidi_app - AI Digital Librarian Logic
- * @author Andrew Edmark
- * @author Gemini
- */
-
 const ChidiApp = {
     state: {
         loadedFiles: [],
@@ -176,17 +170,14 @@ const ChidiApp = {
             this.showMessage(`Verbose logging ${this.state.isVerbose ? 'enabled' : 'disabled'}.`, true);
         });
 
-        // Listener for the main trigger button
         this.elements.selectorTrigger.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent the global click listener from immediately closing it
+            e.stopPropagation();
             this._toggleDropdown();
         });
 
-        // Modify the global keydown listener
         document.addEventListener('keydown', (e) => {
             if (!this.isActive()) return;
 
-            // Existing Escape logic...
             if (e.key === 'Escape') {
                 if (this.elements.selectorPanel.classList.contains('hidden')) {
                     this.close();
@@ -195,13 +186,11 @@ const ChidiApp = {
                 }
             }
 
-            // New keyboard navigation logic
             if (!this.elements.selectorPanel.classList.contains('hidden')) {
                 this._handleKeyboardNavigation(e);
             }
         });
 
-        // Add a new listener to handle clicks outside the dropdown
         document.addEventListener('click', (e) => {
             if (!this.isActive() || this.elements.selectorPanel.classList.contains('hidden')) {
                 return;
@@ -260,14 +249,10 @@ const ChidiApp = {
         if (shouldBeVisible) {
             const triggerRect = this.elements.selectorTrigger.getBoundingClientRect();
             const consoleRect = document.getElementById('chidi-console-panel').getBoundingClientRect();
-
-            // This is the fix for the dimensional rift.
-            // We constrain the dropdown's height to the available space below the trigger.
-            const maxHeight = consoleRect.bottom - triggerRect.bottom - 10; // 10px buffer
+            const maxHeight = consoleRect.bottom - triggerRect.bottom - 10;
             panel.style.maxHeight = `${maxHeight}px`;
 
             panel.classList.remove('hidden');
-            // Focus the selected item when opening
             const selected = panel.querySelector('.selected') || panel.firstChild;
             if (selected) selected.focus();
         } else {
@@ -481,10 +466,8 @@ const ChidiApp = {
         }
     },
 
-    async callGeminiApi(chatHistory) { // Let's keep the name for now to minimize refactoring
+    async callGeminiApi(chatHistory) {
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
-
-        // For now, let's hardcode to use gemini, but we'll add a flag later
         const provider = 'gemini';
         const model = Config.API.LLM_PROVIDERS[provider].defaultModel;
 
@@ -618,10 +601,6 @@ const ChidiApp = {
         this.showMessage(`Exported session for ${currentFile.name}.`, true);
     },
 
-    /**
-     * Returns the HTML structure for the application modal.
-     * @returns {string} The HTML content as a string.
-     */
     getHTML() {
         return `
             <header class="chidi-console-header">
