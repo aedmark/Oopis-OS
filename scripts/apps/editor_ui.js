@@ -312,14 +312,25 @@ const EditorUI = (() => {
     }
 
     function renderSyntaxHighlights(language) {
-        if (elements.highlighter) {
-            const codeElement = elements.highlighter.querySelector('code');
-            if (codeElement) {
-                codeElement.className = `language-${language}`;
-                Prism.highlightElement(codeElement);
-            }
-            _syncContentHeight();
+        if (!elements.highlighter) return;
+
+        // Find the <code> element that contains the raw text
+        const codeElement = elements.highlighter.querySelector('code');
+
+        // Make sure we have a code element, a language, and that Prism supports the language
+        if (codeElement && language && Prism.languages[language]) {
+            const text = codeElement.textContent;
+
+            // Use the more direct Prism.highlight method
+            const highlightedHTML = Prism.highlight(text, Prism.languages[language], language);
+
+            // Set the innerHTML to the new highlighted content and ensure the class is correct
+            codeElement.innerHTML = highlightedHTML;
+            codeElement.className = `language-${language}`;
         }
+
+        // This part remains the same
+        _syncContentHeight();
     }
 
     function renderSearchHighlights(matches, activeIndex) {
