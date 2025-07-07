@@ -709,20 +709,36 @@ body {
   position: relative; /* This is crucial for positioning children */
 }
 
-.editor__highlighter, .editor__textarea {
-  /* Both must share the exact same font, size, padding, and border settings */
+/* 1. Create a new shared base class for positioning and typography */
+.editor__shared-pane-styles {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   white-space: pre;
-  overflow: hidden; /* Scroll is handled by the parent wrapper */
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+/* 2. Style the highlighter to use the base class and hide overflow */
+.editor__highlighter {
+  color: transparent;
+  pointer-events: none; /* Allows clicks to pass through to the textarea */
+  z-index: 1;
+  overflow: hidden; /* Correctly hide overflow here */
+}
+
+/* 3. Style the textarea to use the base class and allow scrolling */
+.editor__textarea {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  z-index: 2; /* Sits on top of the highlighter */
+  resize: none;
+  overflow: auto; /* This enables vertical and horizontal scrolling */
 }
 
 .editor__highlighter {
