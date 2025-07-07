@@ -68,6 +68,18 @@ const EditorUI = (() => {
     let eventCallbacks = {};
     let previewDebounceTimer = null;
 
+    /**
+     * Synchronizes the height of the textarea to the highlighter's scroll height.
+     * This is the key to making the single-scroller architecture work.
+     * @private
+     */
+    function _syncContentHeight() {
+        if (!elements.highlighter || !elements.textarea) return;
+
+        const highlighterHeight = elements.highlighter.scrollHeight;
+        elements.textarea.style.height = `${highlighterHeight}px`;
+    }
+
     const iframeStyles = `
     <style>
       body {
@@ -255,9 +267,13 @@ const EditorUI = (() => {
         const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
+
+        // --- REFACTORED FOR SINGLE SCROLLER ---
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
-        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
-        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
+        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
+        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper", eventListeners: { scroll: eventCallbacks.onScroll } }, elements.highlighter, elements.textarea);
+        // --- END REFACTOR ---
+
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.textareaWrapper, elements.previewWrapper);
@@ -284,12 +300,13 @@ const EditorUI = (() => {
 
     function renderSyntaxHighlights(text, language) {
         if (elements.highlighter) {
-            const grammar = Prism.languages[language];
-            if (grammar) {
-                elements.highlighter.innerHTML = Prism.highlight(text, grammar, language);
-            } else {
-                elements.highlighter.textContent = text;
-            }
+            const code = Utils.createElement('code', { className: `language-${language}`, textContent: text });
+            const pre = Utils.createElement('pre', { className: `language-${language}` }, code);
+            elements.highlighter.innerHTML = '';
+            elements.highlighter.appendChild(pre);
+            Prism.highlightElement(code);
+            // After highlighting, sync the heights.
+            _syncContentHeight();
         }
     }
 
@@ -378,19 +395,23 @@ const EditorUI = (() => {
     }
 
     function updateLineNumbers(text) {
-        if (!elements.textarea || !elements.lineGutter) return;
+        if (!elements.textareaWrapper || !elements.lineGutter) return;
         const numbersArray = EditorUtils.generateLineNumbersArray(text);
         elements.lineGutter.textContent = numbersArray.join("\n");
-        elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+        // Sync gutter scroll with the wrapper, not the textarea
+        elements.lineGutter.scrollTop = elements.textareaWrapper.scrollTop;
+        _syncContentHeight(); // Also sync height when line numbers change.
     }
 
     function syncScrolls() {
-        if (elements.lineGutter && elements.textarea) {
-            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+        // The scroll event is now on the wrapper.
+        // We sync the gutter to the wrapper, and the textarea's horizontal scroll to the wrapper.
+        if (elements.lineGutter && elements.textareaWrapper) {
+            elements.lineGutter.scrollTop = elements.textareaWrapper.scrollTop;
         }
-        if (elements.highlighter && elements.textarea) {
-            elements.highlighter.scrollTop = elements.textarea.scrollTop;
-            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
+        if (elements.textarea && elements.textareaWrapper) {
+            elements.textarea.scrollLeft = elements.textareaWrapper.scrollLeft;
+            elements.highlighter.scrollLeft = elements.textareaWrapper.scrollLeft;
         }
     }
 
@@ -424,15 +445,14 @@ const EditorUI = (() => {
 
     function applyTextareaWordWrap(isWordWrapActive) {
         if (!elements.textarea || !elements.highlighter) return;
-        if (isWordWrapActive) {
-            elements.textarea.setAttribute("wrap", "soft");
-            elements.textarea.classList.remove("editor__textarea--no-wrap");
-            elements.highlighter.classList.remove("editor__highlighter--no-wrap");
-        } else {
-            elements.textarea.setAttribute("wrap", "off");
-            elements.textarea.classList.add("editor__textarea--no-wrap");
-            elements.highlighter.classList.add("editor__highlighter--no-wrap");
-        }
+        // The 'wrap' attribute is deprecated. We use CSS white-space instead.
+        const wrapValue = isWordWrapActive ? "pre-wrap" : "pre";
+        elements.textarea.style.whiteSpace = wrapValue;
+        elements.highlighter.style.whiteSpace = wrapValue;
+
+        // Toggle class for overflow-x handling
+        elements.textarea.classList.toggle("editor__textarea--no-wrap", !isWordWrapActive);
+        elements.highlighter.classList.toggle("editor__highlighter--no-wrap", !isWordWrapActive);
     }
 
     function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
