@@ -271,6 +271,18 @@ class BasicInterpreter {
         return part; // Return as-is if it's not a known var or number
     }
 
+    /**
+     * Evaluates a conditional expression from an IF statement.
+     * @param {string} condition - The conditional string to evaluate (e.g., "A > 10", "N$ = \"YES\"").
+     * @returns {Promise<boolean>} A promise that resolves to true if the condition is met, false otherwise.
+     * @private
+     * @description This function intentionally uses loose equality operators (`==`, `!=`)
+     * instead of strict equality (`===`, `!==`). This is a deliberate design choice to
+     * emulate the behavior of classic BASIC interpreters, which were not strictly typed
+     * and would often coerce types during comparison (e.g., treating the number 10
+     * as equal to the string "10"). This preserves the nostalgic, quirky behavior
+     * expected by users familiar with the language's history.
+     */
     async _evaluateCondition(condition) {
         const operators = ['<=', '>=', '<>', '<', '>', '='];
         let operator = null;
