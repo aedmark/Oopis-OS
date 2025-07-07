@@ -3,13 +3,8 @@ const EditorManager = (() => {
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
         currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
-        onSaveCallback = null, _exitPromiseResolve = null;
-
+        saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
     const MAX_UNDO_STATES = 100;
-
-    let saveUndoStateTimeout = null;
-    let highlightDebounceTimer = null;
-    let findDebounceTimer = null;
 
     let findState = {
         isOpen: false,
@@ -19,136 +14,61 @@ const EditorManager = (() => {
         activeIndex: -1,
     };
 
-    function _updateInstantUI() {
-        if (!isActiveState) return;
-        const textContent = EditorUI.getTextareaContent();
-        isDirty = textContent !== originalContent;
-        EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
-        const selection = EditorUI.getTextareaSelection();
-        EditorUI.updateStatusBar(textContent, selection.start);
-        EditorUI.syncScrolls();
-    }
-
-    function _debouncedHighlightAndFind() {
-        if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
-
-        highlightDebounceTimer = setTimeout(() => {
-            if (!isActiveState) return;
-            const textContent = EditorUI.getTextareaContent();
-
-            EditorUI.updateLineNumbers(textContent);
-            EditorUI.renderSyntaxHighlights(textContent, currentFileMode);
-
-            if (findState.isOpen) {
-                _find(false);
-            }
-
-            if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
-                EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
-            }
-
-            highlightDebounceTimer = null;
-        }, 150);
-    }
-
-    function _debouncedFind() {
-        if (findDebounceTimer) clearTimeout(findDebounceTimer);
-        findDebounceTimer = setTimeout(() => {
-            _find(true);
-            findDebounceTimer = null;
-        }, 150);
-    }
-
-
-    function _handleEditorInput() {
-        if (!isActiveState) return;
-
-        const textContent = EditorUI.getTextareaContent();
-        EditorUI.setHighlighterText(textContent); // New UI function to set raw text
-        _updateInstantUI(); // This handles scroll sync and status bar
-
-        if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
-        saveUndoStateTimeout = setTimeout(() => {
-            _saveUndoState(textContent);
-            saveUndoStateTimeout = null;
-        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
-
-        // This part remains the same, but now it only applies colors
-        if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
-        highlightDebounceTimer = setTimeout(() => {
-            if (!isActiveState) return;
-            EditorUI.renderSyntaxHighlights(currentFileMode); // Note: No longer passing text
-            if (findState.isOpen) {
-                _find(false);
-            }
-            if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
-                EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
-            }
-        }, 150); // Kept the 150ms debounce for performance
-    }
-
-    function _saveUndoState(currentContent) {
-        redoStack = [];
-        undoStack.push(currentContent);
-        if (undoStack.length > MAX_UNDO_STATES) {
-            undoStack.shift();
-        }
-        _updateUndoRedoButtonStates();
-    }
-
-    function _performUndo() {
-        if (undoStack.length <= 1) return;
-        redoStack.push(undoStack.pop());
-        const previousContent = undoStack[undoStack.length - 1];
-        EditorUI.setTextareaContent(previousContent);
-        _handleEditorInput();
-        EditorUI.setEditorFocus();
-        _updateUndoRedoButtonStates();
-    }
-
-    function _performRedo() {
-        if (redoStack.length === 0) return;
-        const nextContent = redoStack.pop();
-        undoStack.push(nextContent);
-        EditorUI.setTextareaContent(nextContent);
-        _handleEditorInput();
-        EditorUI.setEditorFocus();
-        _updateUndoRedoButtonStates();
-    }
+    let findDebounceTimer = null; // Debounce timer for find input
 
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
         isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
     }
-
     function _saveWordWrapSetting() {
         StorageManager.saveItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, isWordWrapActive, "Editor word wrap setting");
     }
-
     function _toggleWordWrap() {
         if (!isActiveState) return;
-        const selection = EditorUI.getTextareaSelection(); // <-- ADD THIS LINE
         isWordWrapActive = !isWordWrapActive;
         _saveWordWrapSetting();
         EditorUI.applyTextareaWordWrap(isWordWrapActive);
         EditorUI.applyPreviewWordWrap(isWordWrapActive, currentFileMode);
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+            EditorUI.renderPreview(EditorUI.getTextareaContent(), currentFileMode, isWordWrapActive);
+        }
         EditorUI.updateWordWrapButtonText(isWordWrapActive);
+        EditorUI.setEditorFocus();
         EditorUI.setGutterVisibility(!isWordWrapActive);
-        EditorUI.setTextareaSelection(selection.start, selection.end); // <-- CHANGE THIS LINE (from setEditorFocus)
     }
-
+    function _updateFullEditorUI() {
+        if (!isActiveState) return;
+        const textContent = EditorUI.getTextareaContent();
+        isDirty = textContent !== _getPatchedContent(); // Updated isDirty check
+        EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
+        EditorUI.updateLineNumbers(textContent);
+        const selection = EditorUI.getTextareaSelection();
+        EditorUI.updateStatusBar(textContent, selection.start);
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+            EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
+        }
+        EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
+        EditorUI.syncScrolls();
+    }
+    function _handleEditorInput() {
+        if (!isActiveState) return;
+        const currentContent = EditorUI.getTextareaContent();
+        if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
+        saveUndoStateTimeout = setTimeout(() => {
+            _saveUndoState(currentContent);
+            saveUndoStateTimeout = null;
+        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
+        isDirty = currentContent !== _getPatchedContent();
+        _updateFullEditorUI();
+        _debouncedFind();
+    }
     function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
-
     function _handleEditorSelectionChange() {
         if (!isActiveState) return;
-        _updateInstantUI();
+        const textContent = EditorUI.getTextareaContent();
+        const selection = EditorUI.getTextareaSelection();
+        EditorUI.updateStatusBar(textContent, selection.start);
     }
-
-    function _updateUndoRedoButtonStates() {
-        if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
-        if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
-    }
-
     async function exportPreviewAsHtml() {
         if (!isActiveState) return;
         const baseName = (currentFilePath || "untitled").split('/').pop().split('.').slice(0, -1).join('.') || "export";
@@ -159,7 +79,7 @@ const EditorManager = (() => {
             const rawContent = EditorUI.getTextareaContent();
             blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
             fileName = `${baseName}.txt`;
-        } else {
+        } else { // Handles 'markdown' and 'html'
             const renderedContent = EditorUI.getPreviewPaneHTML();
             const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -186,6 +106,74 @@ const EditorManager = (() => {
         await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
     }
 
+    // --- REFACTORED UNDO/REDO LOGIC ---
+
+    function _getPatchedContent() {
+        if (undoStack.length === 0) return "";
+        let content = undoStack[0];
+        for (let i = 1; i < undoStack.length; i++) {
+            content = PatchUtils.applyPatch(content, undoStack[i]);
+        }
+        return content;
+    }
+
+    function _saveUndoState(currentContent) {
+        const lastKnownState = _getPatchedContent();
+        const patch = PatchUtils.createPatch(lastKnownState, currentContent);
+
+        if (patch) {
+            undoStack.push(patch);
+            if (undoStack.length > MAX_UNDO_STATES + 1) { // +1 for original content
+                // To keep memory usage down, we'd need to occasionally re-base
+                // For now, just cap the stack
+                undoStack.shift();
+                undoStack[0] = _getPatchedContent(); // Re-base
+                const rebasePatches = undoStack.slice(1);
+                undoStack = [undoStack[0], ...rebasePatches];
+            }
+            redoStack = [];
+            _updateUndoRedoButtonStates();
+        }
+    }
+
+    function _performUndo() {
+        if (undoStack.length <= 1) return;
+        const patchToUndo = undoStack.pop();
+        redoStack.push(patchToUndo);
+
+        const currentContent = EditorUI.getTextareaContent();
+        const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
+
+        EditorUI.setTextareaContent(previousContent);
+        isDirty = (previousContent !== originalContent); // Simple check is okay here because we reverted to a known state
+        _updateFullEditorUI();
+        _updateUndoRedoButtonStates();
+        EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
+        EditorUI.setEditorFocus();
+    }
+
+    function _performRedo() {
+        if (redoStack.length === 0) return;
+        const patchToRedo = redoStack.pop();
+        undoStack.push(patchToRedo);
+
+        const currentContent = EditorUI.getTextareaContent();
+        const nextContent = PatchUtils.applyPatch(currentContent, patchToRedo);
+
+        EditorUI.setTextareaContent(nextContent);
+        isDirty = (nextContent !== originalContent);
+        _updateFullEditorUI();
+        _updateUndoRedoButtonStates();
+        EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
+        EditorUI.setEditorFocus();
+    }
+
+    // --- END REFACTORED LOGIC ---
+
+    function _updateUndoRedoButtonStates() {
+        if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
+        if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
+    }
     async function _applyTextManipulation(type) {
         if (!isActiveState || !EditorUI.elements.textarea) return;
 
@@ -316,25 +304,33 @@ const EditorManager = (() => {
 
         await manipulate();
     }
-
-    // **FIX:** Moved _find and related functions before _openFindBar, which calls them.
-    function _scrollToMatch(index, shouldFocusTextarea = true) {
-        if (index === -1) return;
-        const match = findState.matches[index];
-        const textarea = EditorUI.elements.textarea;
-
-        if (shouldFocusTextarea) {
-            textarea.focus();
-        }
-
-        textarea.setSelectionRange(match.index, match.index + match[0].length);
-        const textToMatch = textarea.value.substring(0, match.index);
-        const lineBreaks = (textToMatch.match(/\n/g) || []).length;
-        const lineHeight = 16;
-        textarea.scrollTop = lineBreaks * lineHeight;
+    function _openFindBar(isReplace = false) {
+        findState.isOpen = true;
+        findState.isReplace = isReplace;
+        EditorUI.updateFindBar(findState);
+        EditorUI.elements.findInput.focus();
+        EditorUI.elements.findInput.select();
+        _find();
     }
 
-    function _find(focus = true) {
+    function _closeFindBar() {
+        findState.isOpen = false;
+        findState.matches = [];
+        findState.activeIndex = -1;
+        EditorUI.updateFindBar(findState);
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), [], -1); // Clear highlights
+        EditorUI.setEditorFocus();
+    }
+
+    function _debouncedFind() {
+        if (findDebounceTimer) clearTimeout(findDebounceTimer);
+        findDebounceTimer = setTimeout(() => {
+            _find();
+            findDebounceTimer = null;
+        }, EditorAppConfig.EDITOR.FIND_DEBOUNCE_DELAY_MS);
+    }
+
+    function _find() {
         if (!findState.isOpen) return;
         const query = EditorUI.getFindQuery();
         findState.query = query;
@@ -348,42 +344,39 @@ const EditorManager = (() => {
             findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
         }
         EditorUI.updateFindBar(findState);
-        EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
-        if (focus) _scrollToMatch(findState.activeIndex, true);
-    }
-
-    function _openFindBar(isReplace = false) {
-        findState.isOpen = true;
-        findState.isReplace = isReplace;
-        EditorUI.updateFindBar(findState);
-        EditorUI.elements.findInput.focus();
-        EditorUI.elements.findInput.select();
-        _find(); // Now this call is valid
-    }
-
-    function _closeFindBar() {
-        findState.isOpen = false;
-        findState.matches = [];
-        findState.activeIndex = -1;
-        EditorUI.updateFindBar(findState);
-        _debouncedHighlightAndFind(); // Re-render to clear highlights
-        EditorUI.setEditorFocus();
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+        _scrollToMatch(findState.activeIndex, false); // FIX: Do not focus textarea on find
     }
 
     function _goToNextMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
         EditorUI.updateFindBar(findState);
-        EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true);
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
     }
 
     function _goToPrevMatch() {
         if (findState.matches.length === 0) return;
         findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
         EditorUI.updateFindBar(findState);
-        EditorUI.renderSearchHighlights(findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true);
+        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
+        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
+    }
+
+    function _scrollToMatch(index, shouldFocusTextarea = true) { // FIX: Added parameter
+        if (index === -1) return;
+        const match = findState.matches[index];
+        const textarea = EditorUI.elements.textarea;
+
+        if (shouldFocusTextarea) { // FIX: Conditional focus
+            textarea.focus();
+        }
+
+        textarea.setSelectionRange(match.index, match.index + match[0].length);
+        const textToMatch = textarea.value.substring(0, match.index);
+        const lineBreaks = (textToMatch.match(/\n/g) || []).length;
+        textarea.scrollTop = lineBreaks * 16;
     }
 
     function _replace() {
@@ -408,7 +401,6 @@ const EditorManager = (() => {
         EditorUI.setTextareaContent(newText);
         _handleEditorInput();
     }
-
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
         const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
@@ -433,7 +425,7 @@ const EditorManager = (() => {
             originalContent = content;
             isDirty = false;
             onSaveCallback = callback;
-            undoStack = [content];
+            undoStack = [content]; // Start with the full original content
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
@@ -484,8 +476,7 @@ const EditorManager = (() => {
             EditorUI.setTextareaContent(content);
             EditorUI.setTextareaSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);
-            _updateInstantUI();
-            _debouncedHighlightAndFind();
+            _updateFullEditorUI();
             EditorUI.setEditorFocus();
             _updateUndoRedoButtonStates();
         });
