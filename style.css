@@ -1739,7 +1739,7 @@ code[class*="language-"] {
 .editor__textarea {
   z-index: 2;
   color: transparent;
-  color: var(--color-background-darkest);
+  -webkit-text-fill-color: transparent;
   caret-color: var(--color-text-primary);
 }
 
