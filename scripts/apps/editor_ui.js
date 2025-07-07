@@ -255,13 +255,9 @@ const EditorUI = (() => {
         const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
-
-        // --- REFACTORED FOR SINGLE SCROLLER ---
         elements.highlighter = Utils.createElement("div", { id: "editor-highlighter", className: "editor__highlighter" });
-        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
-        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper", eventListeners: { scroll: eventCallbacks.onScroll } }, elements.highlighter, elements.textarea);
-        // --- END REFACTOR ---
-
+        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
+        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.textareaWrapper, elements.previewWrapper);
@@ -285,92 +281,6 @@ const EditorUI = (() => {
 
         return elements.editorContainer;
     }
-
-    function setHighlighterText(text) {
-        if (elements.highlighter) {
-            // We set the text inside a <pre><code> structure to be consistent
-            // with what Prism.js expects and to match the styling.
-            const code = Utils.createElement('code', { textContent: text });
-            const pre = Utils.createElement('pre', { className: `language-none` }, code);
-            elements.highlighter.innerHTML = '';
-            elements.highlighter.appendChild(pre);
-        }
-    }
-
-    function renderSyntaxHighlights(language) {
-        if (!elements.highlighter) return;
-
-        // Find the <code> element that contains the raw text
-        const codeElement = elements.highlighter.querySelector('code');
-
-        // Make sure we have a code element, a language, and that Prism supports the language
-        if (codeElement && language && Prism.languages[language]) {
-            const text = codeElement.textContent;
-
-            // Use the more direct Prism.highlight method
-            const highlightedHTML = Prism.highlight(text, Prism.languages[language], language);
-
-            // Set the innerHTML to the new highlighted content and ensure the class is correct
-            codeElement.innerHTML = highlightedHTML;
-            codeElement.className = `language-${language}`;
-        }
-    }
-
-    function renderSearchHighlights(matches, activeIndex) {
-        if (!elements.highlighter) return;
-
-        const existingHighlights = elements.highlighter.querySelectorAll('.highlight-match, .highlight-match--active');
-        existingHighlights.forEach(el => {
-            const parent = el.parentNode;
-            while (el.firstChild) {
-                parent.insertBefore(el.firstChild, el);
-            }
-            parent.removeChild(el);
-            parent.normalize();
-        });
-
-        if (!matches || matches.length === 0) return;
-
-        const walker = document.createTreeWalker(elements.highlighter, NodeFilter.SHOW_TEXT);
-        const textNodes = [];
-        let currentNode;
-        while(currentNode = walker.nextNode()) {
-            textNodes.push(currentNode);
-        }
-
-        let currentMatchIndex = 0;
-        let textOffset = 0;
-
-        for (const node of textNodes) {
-            if (currentMatchIndex >= matches.length) break;
-
-            let match = matches[currentMatchIndex];
-            let nodeText = node.nodeValue;
-
-            while (match) {
-                const matchStartInNode = match.index - textOffset;
-                const matchEndInNode = matchStartInNode + match[0].length;
-
-                if (matchStartInNode >= 0 && matchEndInNode <= nodeText.length) {
-                    const remainingTextNode = node.splitText(matchStartInNode);
-                    const matchNode = remainingTextNode.splitText(match[0].length);
-
-                    const span = document.createElement('span');
-                    span.className = currentMatchIndex === activeIndex ? 'highlight-match--active' : 'highlight-match';
-                    span.textContent = remainingTextNode.nodeValue;
-
-                    remainingTextNode.parentNode.replaceChild(span, remainingTextNode);
-
-                    currentMatchIndex++;
-                    match = matches[currentMatchIndex];
-                } else {
-                    break;
-                }
-            }
-            textOffset += node.nodeValue.length;
-        }
-    }
-
 
     function setGutterVisibility(visible) {
         if (elements.lineGutter) {
@@ -401,20 +311,19 @@ const EditorUI = (() => {
     }
 
     function updateLineNumbers(text) {
-        if (!elements.textareaWrapper || !elements.lineGutter) return;
+        if (!elements.textarea || !elements.lineGutter) return;
         const numbersArray = EditorUtils.generateLineNumbersArray(text);
         elements.lineGutter.textContent = numbersArray.join("\n");
-        // Sync gutter scroll with the wrapper, not the textarea
-        elements.lineGutter.scrollTop = elements.textareaWrapper.scrollTop;
+        elements.lineGutter.scrollTop = elements.textarea.scrollTop;
     }
 
     function syncScrolls() {
-        if (elements.lineGutter && elements.textareaWrapper) {
-            elements.lineGutter.scrollTop = elements.textareaWrapper.scrollTop;
+        if (elements.lineGutter && elements.textarea) {
+            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
         }
-        if (elements.textarea && elements.highlighter && elements.textareaWrapper) {
-            elements.textarea.scrollLeft = elements.textareaWrapper.scrollLeft;
-            elements.highlighter.scrollLeft = elements.textareaWrapper.scrollLeft;
+        if (elements.highlighter && elements.textarea) {
+            elements.highlighter.scrollTop = elements.textarea.scrollTop;
+            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
         }
     }
 
@@ -443,20 +352,18 @@ const EditorUI = (() => {
         if (elements.textarea) {
             elements.textarea.selectionStart = start;
             elements.textarea.selectionEnd = end;
-            elements.textarea.focus();
         }
     }
 
     function applyTextareaWordWrap(isWordWrapActive) {
-        if (!elements.textarea || !elements.highlighter) return;
-        // The 'wrap' attribute is deprecated. We use CSS white-space instead.
-        const wrapValue = isWordWrapActive ? "pre-wrap" : "pre";
-        elements.textarea.style.whiteSpace = wrapValue;
-        elements.highlighter.style.whiteSpace = wrapValue;
-
-        // Toggle class for overflow-x handling
-        elements.textarea.classList.toggle("editor__textarea--no-wrap", !isWordWrapActive);
-        elements.highlighter.classList.toggle("editor__highlighter--no-wrap", !isWordWrapActive);
+        if (!elements.textarea) return;
+        if (isWordWrapActive) {
+            elements.textarea.setAttribute("wrap", "soft");
+            elements.textarea.classList.remove("editor__textarea--no-wrap");
+        } else {
+            elements.textarea.setAttribute("wrap", "off");
+            elements.textarea.classList.add("editor__textarea--no-wrap");
+        }
     }
 
     function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
@@ -500,7 +407,7 @@ const EditorUI = (() => {
         previewDebounceTimer = setTimeout(() => {
             if (isMarkdownMode) {
                 if (typeof marked !== "undefined") {
-                    elements.previewPane.innerHTML = marked.parse(content);
+                    elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
                 } else {
                     elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
                 }
@@ -576,33 +483,26 @@ const EditorUI = (() => {
         return elements.replaceInput ? elements.replaceInput.value : "";
     }
 
+    function renderHighlights(text, matches, activeIndex) {
+        if (!elements.highlighter) return;
+        let highlightedHtml = '';
+        let lastIndex = 0;
+        matches.forEach((match, index) => {
+            highlightedHtml += text.substring(lastIndex, match.index);
+            const className = index === activeIndex ? 'highlight-match--active' : 'highlight-match';
+            highlightedHtml += `<span class="${className}">${match[0]}</span>`;
+            lastIndex = match.index + match[0].length;
+        });
+        highlightedHtml += text.substring(lastIndex);
+        elements.highlighter.innerHTML = highlightedHtml;
+        syncScrolls();
+    }
+
     return {
-        buildLayout,
-        destroyLayout,
-        updateFilenameDisplay,
-        updateStatusBar,
-        updateLineNumbers,
-        syncScrolls,
-        setTextareaContent,
-        getTextareaContent,
-        setEditorFocus,
-        getTextareaSelection,
-        setTextareaSelection,
-        applyTextareaWordWrap,
-        applyPreviewWordWrap,
-        updateWordWrapButtonText,
-        renderPreview,
-        setViewMode,
-        getPreviewPaneHTML,
-        setGutterVisibility,
-        elements,
-        _updateFormattingToolbarVisibility,
-        iframeStyles,
-        updateFindBar,
-        getFindQuery,
-        getReplaceQuery,
-        renderSyntaxHighlights,
-        renderSearchHighlights,
-        setHighlighterText
+        buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
+        setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
+        applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
+        getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
+        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
     };
 })();
