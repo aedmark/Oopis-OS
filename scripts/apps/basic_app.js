@@ -165,7 +165,7 @@ const BasicManager = (() => {
         if (command === '') {
             BasicUI.writeln('READY.');
             return;
-        };
+        }
 
         const lineMatch = command.match(/^(\d+)(.*)/);
         if (lineMatch) {
