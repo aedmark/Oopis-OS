@@ -1758,4 +1758,5 @@ code[class*="language-"] {
   font-size: inherit !important;
   line-height: inherit !important;
   text-shadow: none !important;
+  white-space: inherit !important;
 }
