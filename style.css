@@ -1698,20 +1698,29 @@ code[class*="language-"] {
 .editor__textarea-wrapper {
   flex: 1;
   position: relative;
+  /* border-right is fine, no change needed here */
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
   background-color: var(--color-background-darkest);
-  overflow: auto;
+  overflow: auto; /* This will now work correctly */
+
+  /* --- FIX START --- */
+  display: grid; /* Make the wrapper a grid container */
+  /* --- FIX END --- */
 }
 
-/* The highlighter and textarea are layered on top of each other.
-   Their height is now managed by JavaScript to ensure it always matches the content. */
+/* The highlighter and textarea are layered on top of each other. */
 .editor__highlighter,
 .editor__textarea {
-  position: absolute;
-  top: 0;
-  left: 0;
+  /* --- FIX START --- */
+  /* Remove absolute positioning to keep them in the layout flow */
+  /* position: absolute; */ /* REMOVE THIS */
+  grid-area: 1 / 1 / 2 / 2; /* Place both elements in the same grid cell */
+  /* --- FIX END --- */
+
+  /* These existing styles are correct and should be kept */
   width: 100%;
+  min-height: 100%; /* Use min-height to ensure they fill the container */
   margin: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
@@ -1721,9 +1730,9 @@ code[class*="language-"] {
   line-height: var(--line-height-terminal);
   white-space: pre-wrap;
   resize: none;
-  overflow: hidden;
 }
 
+/* These existing styles are also correct */
 .editor__highlighter {
   z-index: 1;
   pointer-events: none;
