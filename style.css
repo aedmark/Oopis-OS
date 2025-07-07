@@ -1718,7 +1718,7 @@ code[class*="language-"] {
   margin: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
-  background: transparent;
+  background: transparent; !important
   font-family: var(--font-family-mono), monospace;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
@@ -1739,6 +1739,7 @@ code[class*="language-"] {
 .editor__textarea {
   z-index: 2;
   color: transparent;
+  color: var(--color-background-darkest);
   caret-color: var(--color-text-primary);
 }
 

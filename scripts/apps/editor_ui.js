@@ -314,9 +314,6 @@ const EditorUI = (() => {
             codeElement.innerHTML = highlightedHTML;
             codeElement.className = `language-${language}`;
         }
-
-        // This part remains the same
-        _syncContentHeight();
     }
 
     function renderSearchHighlights(matches, activeIndex) {
@@ -503,7 +500,7 @@ const EditorUI = (() => {
         previewDebounceTimer = setTimeout(() => {
             if (isMarkdownMode) {
                 if (typeof marked !== "undefined") {
-                    elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
+                    elements.previewPane.innerHTML = marked.parse(content);
                 } else {
                     elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
                 }
