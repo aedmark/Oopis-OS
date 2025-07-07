@@ -1,53 +1,34 @@
-/* OopisOS v3.3: Vanilla Style Sheet */
-/* Phase 1 & 2: Audit, Architecture, and Design Token System */
+/* OopisOS v4.0: Vanilla Style Sheet */
 
-/* 1. Design Tokens (Root Variables)
+/* Design Tokens (Root Variables)
 /* ========================================================================== */
-/* This section replaces the Tailwind theme. All colors, fonts, and spacing
-   are defined here as CSS custom properties for global consistency and
-   easy maintenance. */
+
 :root {
-  /* Colors */
   --color-text-primary: #00ff5b;
-  /* text-green-500 */
   --color-text-secondary: #a3a3a3;
-  /* text-neutral-400 */
   --color-text-subtle: #737373;
-  /* text-neutral-500 */
   --color-text-link: #2dd4bf;
-  /* custom */
   --color-text-link-hover: #0a3b36;
-  /* custom */
 
   --color-accent-sky: #38bdf8;
-  /* text-sky-400 */
   --color-accent-amber: #fbbF24;
-  /* text-amber-400 */
   --color-accent-lime: #a3e635;
   --color-accent-green: #52cf05;
 
   --color-success: var(--color-accent-lime);
   --color-warning: var(--color-accent-amber);
   --color-error: #ef4444;
-  /* text-red-500 */
   --color-info: var(--color-accent-sky);
-
   --color-background-darkest: #0a0a0a;
-  /* Near black */
   --color-background-dark: #1a1a1a;
   --color-background-medium: #27272a;
-  /* zinc-800 */
   --color-background-light: #3f3f46;
-  /* zinc-700 */
   --color-border-primary: #52525b;
-  /* zinc-600 */
   --color-border-secondary: #3f3f46;
-  /* zinc-700 */
 
   /* Typography */
   --font-family-mono: 'VT323', monospace;
   --font-family-sans: 'Inter', sans-serif;
-  /* A sensible default for UI elements */
   --font-size-sm: 0.875rem;
   /* 14px */
   --font-size-base: 1rem;
@@ -114,7 +95,6 @@ body {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  /* Prevents scrollbars on the body */
 }
 
 /* 3. Layout Architecture
@@ -143,15 +123,11 @@ body {
 
 #main-footer {
   flex-shrink: 0;
-  /* Prevent footer from shrinking */
   text-align: center;
   font-family: var(--font-family-mono), monospace;
   font-size: clamp(0.75rem, 1.6vw, 1.125rem);
-  /* Dynamically scales font */
   white-space: nowrap;
-  /* Prevents wrapping */
   overflow: hidden;
-  /* Prevents overflow from breaking layout */
   color: var(--color-text-primary);
   padding-top: var(--spacing-sm);
 }
@@ -168,21 +144,17 @@ body {
 
 #terminal-bezel {
   flex-grow: 1;
-  /* Allow terminal to fill available space */
   display: flex;
   background-color: var(--color-background-medium);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
   min-height: 0;
-  /* Critical for flexbox shrinking */
   width: 100%;
   padding: var(--spacing-lg);
-  /* Padding was here, keeping it */
 }
 
 /* 4. Terminal Component (BEM-like)
 /* ========================================================================== */
-/* All styles related to the core terminal interface. */
 
 .terminal {
   width: 100%;
@@ -196,7 +168,6 @@ body {
   display: grid;
   grid-template-rows: 1fr auto;
   position: relative;
-  /* For child absolute positioning */
 }
 
 .terminal__output {
@@ -255,7 +226,6 @@ body {
   align-items: center;
   justify-content: center;
   background-color: rgba(10, 10, 10, 0.85);
-  /* Dark overlay */
   backdrop-filter: blur(2px);
 }
 
@@ -464,7 +434,6 @@ body {
   border-bottom: var(--border-width) solid var(--color-border-secondary);
   margin-bottom: var(--spacing-sm);
   flex-shrink: 0;
-  /* Add these two lines */
   flex-wrap: nowrap;
   overflow: hidden;
 }
@@ -556,7 +525,6 @@ body {
   font-family: var(--font-family-sans), sans-serif;
   line-height: var(--line-height-base);
   color: #e5e7eb;
-  /* A light grey for body text */
 }
 
 .markdown-preview h1,
@@ -599,7 +567,6 @@ body {
 .markdown-preview code:not(pre > code) {
   background-color: var(--color-background-medium);
   color: #fde047;
-  /* A gold/yellow for code */
   padding: 0.2rem 0.4rem;
   border-radius: var(--border-radius-sm);
   font-family: var(--font-family-mono), monospace;
@@ -641,9 +608,7 @@ body {
 
 .editor__status-bar {
   font-size: clamp(0.6rem, 1.2vw, 0.875rem);
-  /* Dynamically scales font */
   white-space: nowrap;
-  /* Prevents text wrapping */
   padding: var(--spacing-xs) var(--spacing-sm);
   color: var(--color-text-subtle);
   border-top: var(--border-width) solid var(--color-border-secondary);
@@ -662,11 +627,8 @@ body {
 .editor__footer {
   padding-top: var(--spacing-sm);
   font-size: clamp(0.6rem, 1.2vw, 0.875rem);
-  /* Dynamically scales font */
   white-space: nowrap;
-  /* Prevents text wrapping */
   overflow: hidden;
-  /* Clips content if it still overflows */
   text-align: center;
   color: var(--color-text-secondary);
   flex-shrink: 0;
@@ -786,10 +748,8 @@ body {
 /* Highlighter styles */
 .editor__textarea-wrapper {
   position: relative;
-  /* This is crucial for positioning children */
 }
 
-/* 1. Create a new shared base class for positioning and typography */
 .editor__shared-pane-styles {
   font-family: var(--font-family-mono), monospace;
   font-size: var(--font-size-sm);
@@ -804,22 +764,17 @@ body {
   height: 100%;
 }
 
-/* 2. Style the highlighter to use the base class and hide overflow */
 .editor__highlighter {
   color: transparent;
   pointer-events: none;
-  /* Allows clicks to pass through to the textarea */
   z-index: 1;
   overflow: hidden;
-  /* Correctly hide overflow here */
 }
 
-/* 3. Style the textarea to use the base class and allow scrolling */
 .editor__textarea {
   background-color: transparent;
   color: var(--color-text-primary);
   z-index: 2;
-  /* Sits on top of the highlighter */
   resize: none;
   overflow: auto;
   /* This enables vertical and horizontal scrolling */
@@ -827,30 +782,24 @@ body {
 
 .editor__highlighter {
   color: transparent;
-  /* Makes the underlying text invisible */
   pointer-events: none;
-  /* Allows clicks to pass through to the textarea */
   z-index: 1;
 }
 
 .editor__textarea {
   background-color: transparent;
-  /* THE CRITICAL CHANGE */
   color: var(--color-text-primary);
   z-index: 2;
-  /* Sits on top of the highlighter */
   resize: none;
 }
 
 .highlight-match {
   background-color: rgba(251, 191, 36, 0.4);
-  /* --color-accent-amber with alpha */
   border-radius: 2px;
 }
 
 .highlight-match--active {
   background-color: rgba(56, 189, 248, 0.6);
-  /* --color-info with alpha */
   border-radius: 2px;
 }
 
@@ -931,7 +880,6 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Tree and List item specific styles */
 .explorer-tree,
 .explorer-file-list {
   list-style: none;
@@ -1034,7 +982,8 @@ body {
   font-size: var(--font-size-xl);
 }
 
-#chidi-markdownDisplay, .chidi-ask-container {
+#chidi-markdownDisplay,
+.chidi-ask-container {
   flex-grow: 1;
   background-color: var(--color-background-darkest);
   color: var(--color-text-secondary);
@@ -1048,7 +997,7 @@ body {
   scrollbar-color: var(--color-accent-green) var(--color-background-darkest);
 }
 
-.chidi-markdown-content > * + * {
+.chidi-markdown-content>*+* {
   margin-top: var(--spacing-md);
 }
 
@@ -1061,15 +1010,24 @@ body {
 }
 
 #chidi-markdownDisplay::-webkit-scrollbar-thumb {
-  background-color: var(--color-accent-green); border-radius: 4px; border: 2px solid var(--color-background-darkest);
+  background-color: var(--color-accent-green);
+  border-radius: 4px;
+  border: 2px solid var(--color-background-darkest);
 }
 
-.chidi-markdown-content h1, .chidi-markdown-content h2, .chidi-markdown-content h3 {
-  margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border-primary); padding-bottom: 0.3rem; color: var(--color-info);
+.chidi-markdown-content h1,
+.chidi-markdown-content h2,
+.chidi-markdown-content h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border-primary);
+  padding-bottom: 0.3rem;
+  color: var(--color-info);
 }
 
 .chidi-markdown-content a {
-  color: var(--color-text-link); text-decoration: none;
+  color: var(--color-text-link);
+  text-decoration: none;
 }
 
 .chidi-markdown-content a:hover {
@@ -1077,23 +1035,40 @@ body {
 }
 
 .chidi-markdown-content code:not(pre > code) {
-  background-color: var(--color-background-medium); color: #fde047; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em;
+  background-color: var(--color-background-medium);
+  color: #fde047;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
 }
 
 .chidi-markdown-content pre {
-  background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid var(--color-border-secondary);
+  background-color: #000;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--color-border-secondary);
 }
 
 .chidi-markdown-content blockquote {
-  border-left: 4px solid var(--color-info); padding-left: 1rem; margin-left: 0; font-style: italic; color: var(--color-text-subtle);
+  border-left: 4px solid var(--color-info);
+  padding-left: 1rem;
+  margin-left: 0;
+  font-style: italic;
+  color: var(--color-text-subtle);
 }
 
 .chidi-markdown-content table {
-  width: 100%; border-collapse: collapse; margin-bottom: 1rem;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
 }
 
-.chidi-markdown-content th, .chidi-markdown-content td {
-  border: 1px solid var(--color-border-primary); padding: 0.5rem; text-align: left;
+.chidi-markdown-content th,
+.chidi-markdown-content td {
+  border: 1px solid var(--color-border-primary);
+  padding: 0.5rem;
+  text-align: left;
 }
 
 .chidi-markdown-content th {
@@ -1101,35 +1076,64 @@ body {
 }
 
 .chidi-ai-output {
-  border-top: 2px dashed var(--color-info); margin-top: 2rem; padding-top: 1rem;
+  border-top: 2px dashed var(--color-info);
+  margin-top: 2rem;
+  padding-top: 1rem;
 }
 
 .chidi-ask-textarea {
-  width: 100%; height: 100%; background: transparent; border: none; color: var(--color-text-primary); font-size: 1.1rem; resize: none; outline: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  resize: none;
+  outline: none;
 }
 
 .chidi-controls-container {
-  display: flex; justify-content: space-between; padding-top: 1rem; margin-bottom: 0.5rem; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
 }
 
 .chidi-control-group {
-  display: flex; gap: 0.5rem; align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .chidi-btn {
-  background-color: #333; color: var(--color-accent-green); border: 1px solid var(--color-border-primary); padding: 0.4rem 0.8rem; border-radius: 2px; font-size: 1rem; cursor: pointer; transition: all 0.2s ease; font-family: var(--font-family-mono), monospace;
+  background-color: #333;
+  color: var(--color-accent-green);
+  border: 1px solid var(--color-border-primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 2px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family-mono), monospace;
 }
 
 .chidi-btn:hover:not(:disabled) {
-  background-color: var(--color-background-light); color: #fff;
+  background-color: var(--color-background-light);
+  color: #fff;
 }
 
 .chidi-btn:disabled {
-  background-color: #222; color: #555; border-color: #444; cursor: not-allowed;
+  background-color: #222;
+  color: #555;
+  border-color: #444;
+  cursor: not-allowed;
 }
 
 .chidi-exit-btn {
-  background-color: #3f1212; color: #fca5a5; border-color: var(--color-error);
+  background-color: #3f1212;
+  color: #fca5a5;
+  border-color: var(--color-error);
 }
 
 .chidi-exit-btn:hover:not(:disabled) {
@@ -1149,19 +1153,38 @@ body {
 }
 
 .chidi-status-readout {
-  display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--color-border-primary); padding-top: 0.5rem; margin-top: 0.5rem; font-size: 1rem; color: #888;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-top: 1px solid var(--color-border-primary);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #888;
 }
 
 .chidi-status-message {
-  flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex-grow: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chidi-status-item {
-  flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex-grow: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chidi-loader {
-  width: 10px; height: 16px; background-color: var(--color-accent-green); animation: chidi-blink-cursor 1.2s steps(2, start) infinite;
+  width: 10px;
+  height: 16px;
+  background-color: var(--color-accent-green);
+  animation: chidi-blink-cursor 1.2s steps(2, start) infinite;
 }
 
 .chidi-hidden {
@@ -1178,7 +1201,6 @@ body {
 /* ========================================================================== */
 
 #adventure-container {
-  /* Adopts the core modal/app structure */
   display: flex;
   flex-direction: column;
   width: 90%;
@@ -1209,9 +1231,7 @@ body {
   font-weight: bold;
 }
 
-#adventure-close-btn {
-  /* Uses existing button classes defined in the core styles */
-}
+#adventure-close-btn {}
 
 #adventure-output {
   flex-grow: 1;
@@ -1225,10 +1245,8 @@ body {
 
 #adventure-output p {
   margin-bottom: var(--spacing-sm);
-  /* Consistent spacing for all output lines */
 }
 
-/* New semantic classes for game text */
 .adv-room-name {
   color: var(--color-info);
   font-weight: bold;
@@ -1246,7 +1264,8 @@ body {
   color: var(--color-error);
 }
 
-.adv-exits, .adv-items {
+.adv-exits,
+.adv-items {
   color: var(--color-text-subtle);
 }
 
@@ -1296,7 +1315,6 @@ body {
   border-bottom: var(--border-width) solid var(--color-border-primary);
   flex-shrink: 0;
   flex-wrap: wrap;
-  /* Allow wrapping on smaller screens */
   gap: var(--spacing-md);
 }
 
@@ -1305,18 +1323,14 @@ body {
   align-items: center;
   gap: var(--spacing-xs);
   flex-wrap: nowrap;
-  /* Prevent individual groups from wrapping */
 }
 
 #paint-canvas-wrapper {
   flex-grow: 1;
-  /* This makes the canvas area fill available space */
   aspect-ratio: 4 / 3;
   background-color: var(--color-background-darkest);
   box-shadow: var(--shadow-inset-light);
-  /* Apply inset shadow for screen effect */
   overflow: auto;
-  /* Allow scrolling for zoomed canvas */
   display: grid;
   place-items: center;
   position: relative;
@@ -1344,7 +1358,6 @@ body {
   font-size: var(--font-size-base);
   color: var(--color-text-subtle);
   flex-shrink: 0;
-  /* Prevent status bar from shrinking */
 }
 
 .paint-tool-dropdown {
@@ -1368,7 +1381,6 @@ body {
 .paint-dropdown-content.paint-dropdown-active {
   display: block;
 }
-
 
 /* Modal styles (now using global classes) for paint-specific modals */
 .modal-overlay {
@@ -1396,7 +1408,8 @@ body {
   padding: var(--spacing-sm);
 }
 
-#paint-char-select-grid, #paint-color-select-grid {
+#paint-char-select-grid,
+#paint-color-select-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   gap: var(--spacing-xs);
@@ -1445,7 +1458,6 @@ body {
   height: 20px;
 }
 
-/* Allow text/display buttons to size to their content */
 #paint-toolbar .btn.btn--confirm,
 #paint-toolbar .btn.btn--cancel,
 #paint-toolbar .btn.paint-zoom-display {
@@ -1462,7 +1474,8 @@ body {
   overflow: hidden;
 }
 
-.paint-size-display, .paint-zoom-display {
+.paint-size-display,
+.paint-zoom-display {
   padding: 0 var(--spacing-sm);
   background-color: var(--color-background-darkest);
   color: var(--color-text-secondary);
@@ -1499,19 +1512,17 @@ body {
   box-shadow: 0 0 8px var(--color-accent-lime);
 }
 
-/* Make the main Chidi panel a flex column */
 #chidi-console-panel {
   display: flex;
   flex-direction: column;
 }
 
-/* Ensure the main content area grows to fill space */
-#chidi-markdownDisplay, .chidi-ask-container {
+#chidi-markdownDisplay,
+.chidi-ask-container {
   flex-grow: 1;
   min-height: 0;
 }
 
-/* Style the header as a non-wrapping flex row */
 .chidi-console-header {
   display: flex;
   justify-content: space-between;
@@ -1537,12 +1548,10 @@ body {
   font-size: var(--font-size-xl);
 }
 
-/* NEW: A container for all controls on the right side of the header */
 .chidi-header-controls {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  /* Prevent this group from shrinking */
   gap: var(--spacing-md);
 }
 
@@ -1556,23 +1565,15 @@ body {
   gap: var(--spacing-md);
 }
 
-/* Ensure button text does not wrap */
 .chidi-btn {
   white-space: nowrap;
 }
 
 .markdown-preview img,
 .chidi-markdown-content img {
-  /* This is the key rule: an image can be, at most, the full width of its container. */
   max-width: 100%;
-
-  /* This maintains the image's aspect ratio as it scales. */
   height: auto;
-
-  /* This can help prevent extra space below the image. */
   display: block;
-
-  /* Add a little vertical space for aesthetics. */
   margin-top: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
 }
@@ -1582,22 +1583,17 @@ body {
 
 .chidi-selector-container {
   position: relative;
-  /* Anchor for the dropdown panel */
   min-width: 150px;
   flex-shrink: 1;
-  /* Allow it to shrink but not grow aggressively */
 }
 
 .chidi-selector-trigger {
-  /* Re-using chidi-btn and chidi-select for base styling */
   width: 100%;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* Gracefully handle long filenames */
   padding-right: 2rem;
-  /* Make space for a dropdown arrow */
   position: relative;
 }
 
@@ -1609,7 +1605,6 @@ body {
   transform: translateY(-50%) scale(0.8);
   color: var(--color-text-secondary);
   pointer-events: none;
-  /* So it doesn't interfere with clicks */
 }
 
 .chidi-selector-panel {
@@ -1623,7 +1618,6 @@ body {
   margin-top: var(--spacing-xs);
   z-index: 1000;
   overflow-y: auto;
-  /* This enables scrolling when max-height is exceeded */
   box-shadow: var(--shadow-drop-medium);
 }
 
@@ -1793,13 +1787,11 @@ body {
   height: 95%;
   max-width: 1200px;
   background-color: #0088FF;
-  /* C64-inspired blue background */
   border: var(--border-width-thick) solid #AAFFEE;
   border-radius: var(--border-radius-md);
   padding: var(--spacing-sm);
   font-family: var(--font-family-mono), monospace;
   color: #AAFFEE;
-  /* C64-inspired light blue text */
   box-shadow: var(--shadow-inset-light), var(--shadow-drop-medium);
 }
 
@@ -1808,10 +1800,8 @@ body {
   padding: var(--spacing-xs) var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
   color: #AAFFEE;
-  /* Match new text color */
   font-size: var(--font-size-lg);
   border-bottom: var(--border-width-thick) double #AAFFEE;
-  /* Match new text color */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1820,7 +1810,6 @@ body {
 .basic-app__title {
   font-size: var(--font-size-xl);
   color: #FFFFFF;
-  /* Brighter white for title contrast */
 }
 
 .basic-app__exit-btn {
@@ -1829,7 +1818,6 @@ body {
   border: none;
   cursor: pointer;
   color: #AAFFEE;
-  /* Match new text color */
   transition: color 0.2s ease-in-out;
 }
 
@@ -1852,13 +1840,11 @@ body {
   flex-shrink: 0;
   padding: var(--spacing-sm);
   border-top: var(--border-width) solid #AAFFEE;
-  /* Match new text color */
 }
 
-.basic-app__input-line > span {
+.basic-app__input-line>span {
   margin-right: var(--spacing-sm);
   color: #AAFFEE;
-  /* Match new text color for prompt consistency */
 }
 
 .basic-app__input {
@@ -1867,9 +1853,7 @@ body {
   border: none;
   outline: none;
   color: #AAFFEE;
-  /* Match new text color */
   font-family: inherit;
   font-size: inherit;
   caret-color: #AAFFEE;
-  /* Match new text color */
 }

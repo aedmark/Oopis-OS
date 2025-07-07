@@ -14,7 +14,7 @@ const EditorManager = (() => {
         activeIndex: -1,
     };
 
-    let findDebounceTimer = null; // Debounce timer for find input
+    let findDebounceTimer = null;
 
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
@@ -39,7 +39,7 @@ const EditorManager = (() => {
     function _updateFullEditorUI() {
         if (!isActiveState) return;
         const textContent = EditorUI.getTextareaContent();
-        isDirty = textContent !== _getPatchedContent(); // Updated isDirty check
+        isDirty = textContent !== _getPatchedContent();
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         EditorUI.updateLineNumbers(textContent);
         const selection = EditorUI.getTextareaSelection();
@@ -106,8 +106,6 @@ const EditorManager = (() => {
         await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
     }
 
-    // --- REFACTORED UNDO/REDO LOGIC ---
-
     function _getPatchedContent() {
         if (undoStack.length === 0) return "";
         let content = undoStack[0];
@@ -123,9 +121,7 @@ const EditorManager = (() => {
 
         if (patch) {
             undoStack.push(patch);
-            if (undoStack.length > MAX_UNDO_STATES + 1) { // +1 for original content
-                // To keep memory usage down, we'd need to occasionally re-base
-                // For now, just cap the stack
+            if (undoStack.length > MAX_UNDO_STATES + 1) {
                 undoStack.shift();
                 undoStack[0] = _getPatchedContent(); // Re-base
                 const rebasePatches = undoStack.slice(1);
@@ -145,7 +141,7 @@ const EditorManager = (() => {
         const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
 
         EditorUI.setTextareaContent(previousContent);
-        isDirty = (previousContent !== originalContent); // Simple check is okay here because we reverted to a known state
+        isDirty = (previousContent !== originalContent);
         _updateFullEditorUI();
         _updateUndoRedoButtonStates();
         EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
@@ -167,8 +163,6 @@ const EditorManager = (() => {
         EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
         EditorUI.setEditorFocus();
     }
-
-    // --- END REFACTORED LOGIC ---
 
     function _updateUndoRedoButtonStates() {
         if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
@@ -345,7 +339,7 @@ const EditorManager = (() => {
         }
         EditorUI.updateFindBar(findState);
         EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, false); // FIX: Do not focus textarea on find
+        _scrollToMatch(findState.activeIndex, false);
     }
 
     function _goToNextMatch() {
@@ -353,7 +347,7 @@ const EditorManager = (() => {
         findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
         EditorUI.updateFindBar(findState);
         EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
+        _scrollToMatch(findState.activeIndex, true);
     }
 
     function _goToPrevMatch() {
@@ -361,15 +355,15 @@ const EditorManager = (() => {
         findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
         EditorUI.updateFindBar(findState);
         EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true); // FIX: Focus on explicit navigation
+        _scrollToMatch(findState.activeIndex, true);
     }
 
-    function _scrollToMatch(index, shouldFocusTextarea = true) { // FIX: Added parameter
+    function _scrollToMatch(index, shouldFocusTextarea = true) {
         if (index === -1) return;
         const match = findState.matches[index];
         const textarea = EditorUI.elements.textarea;
 
-        if (shouldFocusTextarea) { // FIX: Conditional focus
+        if (shouldFocusTextarea) {
             textarea.focus();
         }
 
@@ -425,7 +419,7 @@ const EditorManager = (() => {
             originalContent = content;
             isDirty = false;
             onSaveCallback = callback;
-            undoStack = [content]; // Start with the full original content
+            undoStack = [content];
             redoStack = [];
             findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
