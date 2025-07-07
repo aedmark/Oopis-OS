@@ -1688,44 +1688,36 @@ code[class*="language-"] {
  * =========================================================================
  */
 
-/* Position both layers absolutely to overlap them perfectly. */
-.editor__highlighter, .editor__textarea
-  {position: absolute;
+/* Define the shared layout for both the highlighter and the textarea */
+.editor__highlighter, .editor__textarea {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
-  white-space: pre-wrap;
+  background-color: transparent; /* Both must be transparent */
   font-family: var(--font-family-mono), monospace;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background-color: transparent;
-  color: var(--color-text-primary);
-  z-index: 2;
+  white-space: pre-wrap; /* This enables word wrapping */
   resize: none;
   overflow: auto;
 }
 
-/*
- * THEME FIX: A dark theme for PrismJS using existing CSS variables.
- */
-pre[class*="language-"],
-code[class*="language-"] {
-  color: var(--color-text-primary);
-  text-shadow: none;
+/* Style the highlighter layer (the colored text) */
+.editor__highlighter {
+  z-index: 1; /* Place it on the bottom layer */
+  pointer-events: none; /* Clicks should pass through it */
+  overflow: hidden; /* Hide its own scrollbar */
 }
 
-.token.comment, .token.prolog, .token.doctype, .token.cdata {
-  color: var(--color-text-subtle);
-  font-style: italic;
+/* Style the textarea layer (what you type into) */
+.editor__textarea {
+  z-index: 2; /* Place it ON TOP */
+  color: transparent; /* Make the actual text invisible */
+  caret-color: var(--color-text-primary); /* But keep the cursor visible and green */
 }
-.token.punctuation { color: var(--color-text-secondary); }
-.token.property, .token.tag, .token.boolean, .token.number, .token.constant, .token.symbol, .token.deleted { color: #ff8b3f; } /* Orange */
-.token.selector, .token.attr-name, .token.string, .token.char, .token.builtin, .token.inserted { color: var(--color-accent-lime); }
-.token.operator, .token.entity, .token.url { color: #ff8b3f; }
-.token.atrule, .token.attr-value, .token.keyword { color: var(--color-accent-sky); }
-.token.function, .token.class-name { color: var(--color-accent-amber); }
-.token.regex, .token.important, .token.variable { color: var(--color-text-link); }
+
