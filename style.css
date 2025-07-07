@@ -1740,6 +1740,7 @@ code[class*="language-"] {
   z-index: 2;
   color: transparent;
   -webkit-text-fill-color: transparent;
+
   caret-color: var(--color-text-primary);
 }
 
