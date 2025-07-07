@@ -1,38 +1,34 @@
 {
-  "name": "oopisos-electron",
+  "name": "oopisos",
   "version": "4.0.0",
-  "description": "OopisOS Standalone Application",
-  "main": "electron.js",
-  "author": "Andrew Edmark & Gemini <oopismcgoopis@gmail.com> (https://oopisos.com/)",
+  "description": "OopisOS Pocket",
+  "keywords": [
+    "OS"
+  ],
+  "homepage": "https://github.com/aedmark/oopis-os#readme",
+  "bugs": {
+    "url": "https://github.com/aedmark/oopis-os/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aedmark/oopis-os.git"
+  },
   "license": "MIT",
+  "author": "Andrew Edmark & Gemini <oopismcgoopis@gmail.com> (https://oopisos.com/)",
+  "main": "electron.js",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
-  "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
-  },
   "build": {
     "appId": "com.oopisos.app",
     "productName": "OopisOS",
     "files": [
-      "index.html",
-      "style.css",
-      "electron.js",
-      "preload.js",
-      "package.json",
-      "package-lock.json",
-      "codemirror.min.js",
-      "README.md",
-      "codemirror.min.css",
-      "manifest.json",
-      "sw.js",
-      "LICENSE.txt",
-      "scripts/",
-      "docs/",
-      "icons/"
+      "**/*",
+      "!{dist,release,build}",
+      "!*.{map,ts,md}",
+      "!**/*.{o,h}"
     ],
     "win": {
       "target": "nsis",
@@ -45,7 +41,8 @@
       "icon": "icons/"
     }
   },
-  "dependencies": {
-    "codemirror": "^6.0.2"
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
   }
 }
