@@ -132,15 +132,14 @@ body {
 }
 
 #terminal-bezel {
-  flex-grow: 1;
+  flex-grow: 1; /* Allow terminal to fill available space */
   display: flex;
   background-color: var(--color-background-medium);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
-  min-height: 0;
+  min-height: 0; /* Critical for flexbox shrinking */
   width: 100%;
-  padding: var(--spacing-lg);
-  position: relative;
+  padding: var(--spacing-lg); /* Padding was here, keeping it */
 }
 
 /* 4. Terminal Component (BEM-like)
@@ -334,6 +333,10 @@ body {
   color: var(--color-background-darkest);
 }
 
+
+/* Scrollbar styling for consistency */
+.terminal__output,
+.editor-pane,
 #adventure-output {
   scrollbar-width: thin;
   scrollbar-color: var(--color-text-primary) var(--color-background-darkest);
@@ -446,14 +449,28 @@ body {
 .editor__textarea-wrapper {
   flex: 1;
   position: relative;
+  overflow: hidden;
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
-  background-color: var(--color-background-darkest);
-  overflow: hidden;
 }
 
-.editor__textarea--no-wrap, .editor__highlighter--no-wrap {
+.editor__textarea {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-background-darkest);
+  color: var(--color-text-primary);
+  border: none;
+  resize: none;
+  outline: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+}
+
+.editor__textarea--no-wrap {
   white-space: pre !important;
+  overflow-x: auto !important;
 }
 
 .editor__preview-wrapper {
@@ -462,7 +479,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-  background-color: var(--color-background-darkest); /* CHANGED: Was #212121 */
+  background-color: #212121;
   color: #ffffff;
   min-width: 0;
 }
@@ -490,7 +507,6 @@ body {
 
 .markdown-preview p {
   margin-bottom: 1rem;
-  color: #e5e7eb; /* ADDED: Explicitly set paragraph color */
 }
 
 .markdown-preview a {
@@ -506,7 +522,6 @@ body {
 .markdown-preview ol {
   padding-left: 2rem;
   margin-bottom: 1rem;
-  color: #e5e7eb;
 }
 
 .markdown-preview blockquote {
@@ -689,14 +704,38 @@ body {
   border-left: var(--border-width) solid var(--color-border-primary);
 }
 
-.editor__highlighter {
-  z-index: 1;
-  pointer-events: none;
-  scrollbar-width: none;
+/* Highlighter styles */
+.editor__textarea-wrapper {
+  position: relative; /* This is crucial for positioning children */
 }
 
-.editor__highlighter::-webkit-scrollbar {
-  display: none;
+.editor__highlighter, .editor__textarea {
+  /* Both must share the exact same font, size, padding, and border settings */
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  white-space: pre;
+  overflow: hidden; /* Scroll is handled by the parent wrapper */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.editor__highlighter {
+  color: transparent; /* Makes the underlying text invisible */
+  pointer-events: none; /* Allows clicks to pass through to the textarea */
+  z-index: 1;
+}
+
+.editor__textarea {
+  background-color: transparent; /* THE CRITICAL CHANGE */
+  color: var(--color-text-primary);
+  z-index: 2; /* Sits on top of the highlighter */
+  resize: none;
 }
 
 .highlight-match {
@@ -1071,7 +1110,7 @@ body {
 
 #paint-canvas-wrapper {
   flex-grow: 1; /* This makes the canvas area fill available space */
-  aspect-ratio: 4 / 3;
+aspect-ratio: 4 / 3;
   background-color: var(--color-background-darkest);
   box-shadow: var(--shadow-inset-light); /* Apply inset shadow for screen effect */
   overflow: auto; /* Allow scrolling for zoomed canvas */
@@ -1603,162 +1642,4 @@ body {
   font-family: inherit;
   font-size: inherit;
   caret-color: #AAFFEE; /* Match new text color */
-}
-/**
- * =========================================================================
- * 14. Editor and PrismJS Integration Fixes
- * =========================================================================
- */
-
-pre[class*="language-"],
-code[class*="language-"] {
-  color: var(--color-text-primary);
-  text-shadow: none;
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-terminal);
-  white-space: pre;
-  word-spacing: normal;
-  word-break: normal;
-  word-wrap: normal;
-  tab-size: 4;
-  hyphens: none;
-}
-
-.token.comment,
-.token.prolog,
-.token.doctype,
-.token.cdata {
-  color: var(--color-text-subtle);
-  font-style: italic;
-}
-
-.token.punctuation {
-  color: var(--color-text-secondary);
-}
-
-.token.property,
-.token.tag,
-.token.boolean,
-.token.number,
-.token.constant,
-.token.symbol,
-.token.deleted {
-  color: #ff8b3f; /* A nice orange for constants */
-}
-
-.token.selector,
-.token.attr-name,
-.token.string,
-.token.char,
-.token.builtin,
-.token.inserted {
-  color: var(--color-accent-lime);
-}
-
-.token.operator,
-.token.entity,
-.token.url {
-  color: #ff8b3f;
-}
-
-.token.atrule,
-.token.attr-value,
-.token.keyword {
-  color: var(--color-accent-sky);
-}
-
-.token.function,
-.token.class-name {
-  color: var(--color-accent-amber);
-}
-
-.token.regex,
-.token.important,
-.token.variable {
-  color: var(--color-text-link);
-}
-
-.token.important,
-.token.bold {
-  font-weight: bold;
-}
-
-.token.italic {
-  font-style: italic;
-}
-
-/**
- * =========================================================================
- * Editor Highlighter Fixes
- * =========================================================================
- */
-
-/* The wrapper is now the single source of truth for scrolling */
-.editor__textarea-wrapper {
-  flex: 1;
-  position: relative;
-  /* border-right is fine, no change needed here */
-  border-right: var(--border-width) solid var(--color-border-secondary);
-  min-width: 0;
-  background-color: var(--color-background-darkest);
-  overflow: auto; /* This will now work correctly */
-
-  /* --- FIX START --- */
-  display: grid; /* Make the wrapper a grid container */
-  /* --- FIX END --- */
-}
-
-/* The highlighter and textarea are layered on top of each other. */
-.editor__highlighter,
-.editor__textarea {
-  grid-area: 1 / 1 / 2 / 2;
-  width: 100%;
-  min-height: 100%; /* Use min-height to ensure they fill the container */
-  margin: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  background: transparent; !important
-  font-family: var(--font-family-mono), monospace;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-terminal);
-  white-space: pre-wrap;
-  resize: none;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-variant-ligatures: none;
-  letter-spacing: normal;
-}
-
-/* These existing styles are also correct */
-.editor__highlighter {
-  z-index: 1;
-  pointer-events: none;
-}
-
-.editor__textarea {
-  z-index: 2;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-
-  caret-color: var(--color-text-primary);
-}
-
-.editor__textarea--no-wrap,
-.editor__highlighter--no-wrap {
-  white-space: pre !important;
-  /* overflow-x is now handled by the wrapper */
-}
-
-/* This rule remains crucial to override the prism theme's layout styles */
-.editor__highlighter > pre,
-.editor__highlighter > pre > code {
-  margin: 0 !important;
-  padding: 0 !important;
-  background: none !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  text-shadow: none !important;
-  white-space: inherit !important;
 }
