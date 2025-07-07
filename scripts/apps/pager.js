@@ -20,14 +20,11 @@ const PagerUI = (() => {
     }
 
     function getTerminalRows() {
-        if (!elements.content) return 24; // Return a safe default if the element doesn't exist yet.
+        if (!elements.content) return 24;
         const screenHeight = elements.content.clientHeight;
-        // Dynamically determine line height
         const computedStyle = window.getComputedStyle(elements.content);
         const fontStyle = computedStyle.font;
-        // Use the utility to measure the actual height of a character with the current style.
         const { height: lineHeight } = Utils.getCharacterDimensions(fontStyle);
-        // If for some reason the height is zero, fall back to a reasonable default to avoid division by zero.
         if (lineHeight === 0) {
             return 24;
         }

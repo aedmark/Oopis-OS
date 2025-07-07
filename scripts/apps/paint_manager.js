@@ -112,13 +112,10 @@ const PaintManager = (() => {
 
             let newCanvasPixelWidth, newCanvasPixelHeight;
 
-            // Determine if the canvas should be letterboxed or pillarboxed
             if (availableWidth / availableHeight > targetAspectRatio) {
-                // Container is wider than the target aspect ratio (pillarbox)
                 newCanvasPixelHeight = availableHeight;
                 newCanvasPixelWidth = newCanvasPixelHeight * targetAspectRatio;
             } else {
-                // Container is taller than the target aspect ratio (letterbox)
                 newCanvasPixelWidth = availableWidth;
                 newCanvasPixelHeight = newCanvasPixelWidth / targetAspectRatio;
             }
@@ -131,7 +128,6 @@ const PaintManager = (() => {
     }
 
     function _handleResize() {
-        // The function is left as a placeholder for the event listener but does nothing.
     }
 
     function _updateToolbarState() { PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible, currentBrushSize); }
@@ -427,7 +423,7 @@ const PaintManager = (() => {
                 savePath = prospectivePathResult.path;
             } else {
                 await OutputManager.appendToOutput(prospectivePathResult.reason, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
-                AppLayerManager.show(paintContainerElement); // Re-show paint UI
+                AppLayerManager.show(paintContainerElement);
                 return;
             }
         }
@@ -443,7 +439,7 @@ const PaintManager = (() => {
             });
             if (!confirmedOverwrite) {
                 await OutputManager.appendToOutput("Save cancelled by user.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                if (!currentFilePath) AppLayerManager.show(paintContainerElement); // Re-show if we were hidden
+                if (!currentFilePath) AppLayerManager.show(paintContainerElement);
                 return;
             }
         }
@@ -468,7 +464,6 @@ const PaintManager = (() => {
 
         setTimeout(() => {
             if (fileContent) {
-                // ----------- REFACTORED BLOCK START -----------
                 try {
                     const parsedData = JSON.parse(fileContent);
                     if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
@@ -476,16 +471,13 @@ const PaintManager = (() => {
                         currentCanvasWidth = parsedData.width;
                         currentCanvasHeight = parsedData.height;
                     } else {
-                        // Handle invalid format directly instead of throwing.
                         void OutputManager.appendToOutput("Error loading paint file: Invalid .oopic file format.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
                         _initializeNewCanvasDimensions();
                     }
                 } catch (e) {
-                    // This catch block now only handles JSON parsing errors.
                     void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                    _initializeNewCanvasDimensions(); // Fallback for corrupt files.
+                    _initializeNewCanvasDimensions();
                 }
-                // ----------- REFACTORED BLOCK END -----------
             } else {
                 _initializeNewCanvasDimensions();
             }

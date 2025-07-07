@@ -1,15 +1,5 @@
-/**
- * @file Manages the OopisOS Personal Journal application (log).
- * This file contains the UI and Manager modules for the log app.
- * @author The Architect & Gemini
- */
-
 const LOG_DIR = "/home/Guest/.journal";
 
-/**
- * @module LogUI
- * @description Manages all DOM building and manipulation for the log app.
- */
 const LogUI = (() => {
     "use strict";
     let elements = {};
@@ -19,7 +9,6 @@ const LogUI = (() => {
         callbacks = cb;
         elements.entryList = Utils.createElement('div', { id: 'log-entry-list', className: 'log-app__list-pane' });
 
-        // Change content view to a textarea for editing
         elements.contentView = Utils.createElement('textarea', {
             id: 'log-content-view',
             className: 'log-app__content-pane log-app__content-pane--editable',
@@ -29,7 +18,6 @@ const LogUI = (() => {
         elements.searchBar = Utils.createElement('input', { id: 'log-search-bar', type: 'text', placeholder: 'Search entries...', className: 'log-app__search' });
         elements.newBtn = Utils.createElement('button', { id: 'log-new-btn', textContent: 'New Entry', className: 'log-app__btn' });
 
-        // Add a Save button, initially hidden
         elements.saveBtn = Utils.createElement('button', { id: 'log-save-btn', textContent: 'Save Changes', className: 'log-app__btn hidden' });
 
         elements.exitBtn = Utils.createElement('button', { id: 'log-exit-btn', textContent: 'Exit', className: 'log-app__btn log-app__btn--exit' });
@@ -102,10 +90,6 @@ const LogUI = (() => {
     return { buildLayout, renderEntries, renderContent, reset, getContent, updateSaveButton };
 })();
 
-/**
- * @module LogManager
- * @description The main controller for the log application.
- */
 const LogManager = (() => {
     "use strict";
     let state = {
@@ -255,7 +239,6 @@ const LogManager = (() => {
             for (const filename in dirNode.children) {
                 if (filename.endsWith('.md')) {
                     const fileNode = dirNode.children[filename];
-                    // FIX: Robust date parsing from filename
                     const rawTimestamp = filename.replace('.md', '');
                     const isoString = rawTimestamp.substring(0, 10) + 'T' +
                         rawTimestamp.substring(11, 13) + ':' +
@@ -270,7 +253,7 @@ const LogManager = (() => {
                 }
             }
         }
-        state.allEntries.sort((a, b) => b.timestamp - a.timestamp); // Sort descending
+        state.allEntries.sort((a, b) => b.timestamp - a.timestamp);
         state.filteredEntries = [...state.allEntries];
     }
 

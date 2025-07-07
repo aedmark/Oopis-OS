@@ -2,7 +2,7 @@ const PaintAppConfig = {
     CANVAS: {
         DEFAULT_WIDTH: 80,
         DEFAULT_HEIGHT: 24,
-        BASE_FONT_SIZE_PX: 18, // Base font size for zoom calculations
+        BASE_FONT_SIZE_PX: 18,
     },
     BRUSH: {
         DEFAULT_SIZE: 1,
@@ -24,8 +24,8 @@ const PaintAppConfig = {
     ASCII_CHAR_RANGE: { START: 32, END: 126 },
     CSS_CLASSES: {
         MODAL_HIDDEN: 'hidden',
-        ACTIVE_TOOL: 'active', // Standardized active class
-        GRID_ACTIVE: 'grid-active', // Class for the canvas wrapper
+        ACTIVE_TOOL: 'active',
+        GRID_ACTIVE: 'grid-active',
         DROPDOWN_ACTIVE: 'paint-dropdown-active',
     },
     PALETTE: [
@@ -57,8 +57,6 @@ const PaintUI = (() => {
     let eventCallbacks = {};
     let cellDimensions = { width: 0, height: 0 };
     let gridDimensions = { width: 0, height: 0 };
-
-    // SVGs are defined once and reused
     const pencilSVG = '<svg fill="currentColor" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" id="memory-pencil"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M16 2H17V3H18V4H19V5H20V6H19V7H18V8H17V7H16V6H15V5H14V4H15V3H16M12 6H14V7H15V8H16V10H15V11H14V12H13V13H12V14H11V15H10V16H9V17H8V18H7V19H6V20H2V16H3V15H4V14H5V13H6V12H7V11H8V10H9V9H10V8H11V7H12"></path></g></svg>';
     const eraserSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M17.9995 13L10.9995 6.00004M20.9995 21H7.99955M10.9368 20.0628L19.6054 11.3941C20.7935 10.2061 21.3875 9.61207 21.6101 8.92709C21.8058 8.32456 21.8058 7.67551 21.6101 7.07298C21.3875 6.388 20.7935 5.79397 19.6054 4.60592L19.3937 4.39415C18.2056 3.2061 17.6116 2.61207 16.9266 2.38951C16.3241 2.19373 15.675 2.19373 15.0725 2.38951C14.3875 2.61207 13.7935 3.2061 12.6054 4.39415L4.39366 12.6059C3.20561 13.794 2.61158 14.388 2.38902 15.073C2.19324 15.6755 2.19324 16.3246 2.38902 16.9271C2.61158 17.6121 3.20561 18.2061 4.39366 19.3941L5.06229 20.0628C5.40819 20.4087 5.58114 20.5816 5.78298 20.7053C5.96192 20.815 6.15701 20.8958 6.36108 20.9448C6.59126 21 6.83585 21 7.32503 21H8.67406C9.16324 21 9.40784 21 9.63801 20.9448C9.84208 20.8958 10.0372 20.815 10.2161 20.7053C10.418 20.5816 10.5909 20.4087 10.9368 20.0628Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>';
     const lineSVG = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -73,17 +71,14 @@ const PaintUI = (() => {
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
 
-        // Create all tools using the standard .btn class
         elements.undoBtn = Utils.createElement('button', { className: 'btn', innerHTML: undoSVG, title: 'Undo (Ctrl+Z)', eventListeners: { click: () => eventCallbacks.onUndo() } });
         elements.redoBtn = Utils.createElement('button', { className: 'btn', innerHTML: redoSVG, title: 'Redo (Ctrl+Y)', eventListeners: { click: () => eventCallbacks.onRedo() }});
         elements.pencilBtn = Utils.createElement('button', { className: 'btn', innerHTML: pencilSVG, title: 'Pencil (P)', eventListeners: { click: () => eventCallbacks.onToolChange('pencil') }});
         elements.eraserBtn = Utils.createElement('button', { className: 'btn', innerHTML: eraserSVG, title: 'Eraser (E)', eventListeners: { click: () => eventCallbacks.onToolChange('eraser') }});
-
         elements.brushSizeDownBtn = Utils.createElement('button', { className: 'btn', textContent: '-', title: 'Decrease Brush Size', eventListeners: { click: () => eventCallbacks.onBrushSizeDown() }});
         elements.brushSizeDisplay = Utils.createElement('span', { className: 'paint-size-display', textContent: '1' });
         elements.brushSizeUpBtn = Utils.createElement('button', { className: 'btn', textContent: '+', title: 'Increase Brush Size', eventListeners: { click: () => eventCallbacks.onBrushSizeUp() }});
         const brushSizeContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.brushSizeDownBtn, elements.brushSizeDisplay, elements.brushSizeUpBtn);
-
         elements.shapeToolBtn = Utils.createElement('button', { className: 'btn', innerHTML: lineSVG, title: 'Shape Tool (L)' });
         elements.shapeDropdown = Utils.createElement('div', { className: 'paint-dropdown-content' },
             Utils.createElement('button', { className: 'btn', innerHTML: lineSVG, title: 'Line', eventListeners: { click: () => eventCallbacks.onToolChange('line') } }),
@@ -94,13 +89,11 @@ const PaintUI = (() => {
             elements.shapeDropdown.classList.toggle(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
         });
         elements.shapeToolContainer = Utils.createElement('div', { className: 'paint-tool-dropdown' }, elements.shapeToolBtn, elements.shapeDropdown);
-
         elements.gridBtn = Utils.createElement('button', { className: 'btn', innerHTML: gridSVG, title: 'Toggle Grid (G)', eventListeners: { click: () => eventCallbacks.onGridToggle() } });
         elements.zoomOutBtn = Utils.createElement('button', { className: 'btn', textContent: '-', title: 'Zoom Out (Ctrl+-)', eventListeners: { click: () => eventCallbacks.onZoomOut() }});
         elements.zoomResetBtn = Utils.createElement('button', { className: 'btn paint-zoom-display', textContent: '100%', title: 'Reset Zoom (Ctrl+0)', eventListeners: { click: () => eventCallbacks.onZoomReset() }});
         elements.zoomInBtn = Utils.createElement('button', { className: 'btn', textContent: '+', title: 'Zoom In (Ctrl++)', eventListeners: { click: () => eventCallbacks.onZoomIn() }});
         const zoomContainer = Utils.createElement('div', { className: 'paint-brush-control' }, elements.zoomOutBtn, elements.zoomResetBtn, elements.zoomInBtn);
-
         elements.charSelectBtn = Utils.createElement('button', { className: 'btn', innerHTML: charSelectSVG, title: 'Select Character (C)', eventListeners: { click: () => eventCallbacks.onCharSelectOpen() } });
 
         elements.colorButtons = [];
@@ -132,21 +125,17 @@ const PaintUI = (() => {
         elements.saveBtn = Utils.createElement('button', { className: 'btn btn--confirm', textContent: 'Save', title: 'Save (Ctrl+S)', eventListeners: { click: () => eventCallbacks.onSave() }});
         elements.exitBtn = Utils.createElement('button', { className: 'btn btn--cancel', textContent: 'Exit', title: 'Exit Application (Ctrl+O)', eventListeners: { click: () => eventCallbacks.onExit() }});
 
-        // Assemble toolbar
         const leftGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.undoBtn, elements.redoBtn, elements.pencilBtn, brushSizeContainer, elements.eraserBtn, elements.shapeToolContainer, elements.gridBtn, zoomContainer, elements.charSelectBtn);
         const rightGroup = Utils.createElement('div', { className: 'paint-toolbar-group' }, elements.colorPalleteBtn, colorPaletteContainer);
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' }, leftGroup, rightGroup);
 
-        // Assemble status bar / footer
         elements.statusBarText = Utils.createElement('span', { id: 'paint-status-text' });
         const footerButtonGroup = Utils.createElement('div', { className: 'paint-toolbar-group'}, elements.saveBtn, elements.exitBtn);
         elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' }, elements.statusBarText, footerButtonGroup);
 
-        // Assemble canvas
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' }, elements.canvas);
 
-        // Add event listeners to canvas
         elements.canvas.addEventListener('mousedown', eventCallbacks.onMouseDown);
         elements.canvas.addEventListener('touchstart', eventCallbacks.onMouseDown, { passive: false });
         elements.canvas.addEventListener('mouseleave', eventCallbacks.onMouseLeave);
@@ -156,7 +145,6 @@ const PaintUI = (() => {
         document.addEventListener('mouseup', eventCallbacks.onMouseUp);
         document.addEventListener('touchend', eventCallbacks.onMouseUp, { passive: false });
 
-        // Assemble the final container
         elements.container = Utils.createElement('div', { id: 'paint-container' },
             elements.toolbar,
             elements.canvasWrapper,
@@ -168,7 +156,6 @@ const PaintUI = (() => {
 
     function toggleGrid(isActive) {
         if (!elements.canvasWrapper) return;
-        // Use the new standard class for the grid
         elements.canvasWrapper.classList.toggle(PaintAppConfig.CSS_CLASSES.GRID_ACTIVE, isActive);
     }
 
@@ -189,7 +176,6 @@ const PaintUI = (() => {
             charGrid.appendChild(btn);
         }
 
-        // Use the global modal structure
         const modalDialog = Utils.createElement('div', { className: 'modal-dialog modal-dialog--wide' },
             Utils.createElement('h2', { className: 'paint-modal-title', textContent: 'Select a Character' }),
             Utils.createElement('div', { className: 'paint-modal-body' }, charGrid)
@@ -319,22 +305,15 @@ const PaintUI = (() => {
 
     function renderCanvas(canvasData, zoomLevel) {
         if (!elements.canvas) return;
-
         const newFontSize = PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX * (zoomLevel / 100);
         elements.canvas.style.fontSize = `${newFontSize}px`;
-
-        // CORRECTED LOGIC: Get the *actual* computed font style after setting the size.
         const computedFontStyle = window.getComputedStyle(elements.canvas).font;
         cellDimensions = Utils.getCharacterDimensions(computedFontStyle);
-
-        // Now, this line will work correctly with accurate dimensions.
         elements.canvas.style.backgroundSize = `${cellDimensions.width}px ${cellDimensions.height}px`;
-
         elements.canvas.innerHTML = '';
         const fragment = document.createDocumentFragment();
         gridDimensions.width = canvasData[0]?.length || PaintAppConfig.CANVAS.DEFAULT_WIDTH;
         gridDimensions.height = canvasData.length || PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-
         const totalWidth = cellDimensions.width * gridDimensions.width;
         const totalHeight = cellDimensions.height * gridDimensions.height;
         elements.canvas.style.width = totalWidth + 'px';

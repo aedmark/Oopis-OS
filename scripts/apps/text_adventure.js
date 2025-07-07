@@ -1,14 +1,3 @@
-/**
- * @file Manages the text adventure game engine and its associated user interface modal.
- * @module TextAdventure
- * @author Andrew Edmark & Gemini
- * @author The Architect (UI Module Design)
- */
-
-/**
- * @module TextAdventureModal
- * @description Manages all UI components and user interaction for the text adventure game.
- */
 const TextAdventureModal = (() => {
   "use strict";
 
@@ -122,7 +111,7 @@ const TextAdventureModal = (() => {
             return;
           }
         }
-        resolve(null); // End of script
+        resolve(null);
       }
     });
   }
@@ -146,10 +135,6 @@ const TextAdventureModal = (() => {
   };
 })();
 
-/**
- * @module TextAdventureEngine
- * @description The core engine for processing text adventure game logic.
- */
 const TextAdventureEngine = (() => {
   "use strict";
   let adventure;
@@ -251,7 +236,6 @@ const TextAdventureEngine = (() => {
     }
     return npcs;
   }
-
 
   function _getDynamicDescription(entity) {
     if (entity.descriptions && entity.state && entity.descriptions[entity.state]) {
@@ -436,7 +420,6 @@ const TextAdventureEngine = (() => {
     }
   }
 
-
   async function processCommand(command) {
     if (!command) return;
 
@@ -457,9 +440,7 @@ const TextAdventureEngine = (() => {
     } else {
       lastPlayerCommand = commandToProcess;
     }
-
     player.moves++;
-
     const parsedCommands = _parseMultiCommand(commandToProcess);
     let stopProcessing = false;
 
@@ -643,11 +624,6 @@ const TextAdventureEngine = (() => {
     }
   }
 
-  /**
-   * @param {*} directObjectStr
-   * @param {*} indirectObjectStr
-   * @param {onDisambiguation} onDisambiguation
-   */
   function _handleUse(directObjectStr, indirectObjectStr, onDisambiguation) {
     if (!directObjectStr || !indirectObjectStr) {
       TextAdventureModal.appendOutput("What do you want to use, and what do you want to use it on?", 'error');
@@ -659,7 +635,6 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput(`You don't have a "${directObjectStr}".`, 'error');
       return;
     }
-    // Simplification: not handling disambiguation for the item being used.
     const itemToUse = itemToUseResult.found[0];
 
     const targetScope = [..._getItemsInLocation(player.currentLocation), ..._getNpcsInLocation(player.currentLocation)];
@@ -669,7 +644,6 @@ const TextAdventureEngine = (() => {
       TextAdventureModal.appendOutput(`You don't see a "${indirectObjectStr}" here.`, 'error');
       return;
     }
-    // Simplification: not handling disambiguation for the target item.
     const targetItem = targetItemResult.found[0];
 
     if (targetItem.onUse && targetItem.onUse[itemToUse.id]) {
@@ -784,13 +758,6 @@ const TextAdventureEngine = (() => {
     lastReferencedItemId = item.id;
   }
 
-  /**
-   * Handles the 'unlock' command logic.
-   * @private
-   * @param {string} target - The noun phrase for the item to unlock.
-   * @param {string} key - The noun phrase for the key to use.
-   * @param {Function} onDisambiguation - Callback to halt processing for ambiguous commands.
-   */
   function _handleUnlock(target, key, onDisambiguation) {
     if (!key) {
       TextAdventureModal.appendOutput("What do you want to unlock that with?", 'error');
@@ -834,7 +801,6 @@ const TextAdventureEngine = (() => {
     }
   }
 
-
   function _resolveVerb(verbWord) {
     if (!verbWord) return null;
     for (const verbKey in adventure.verbs) {
@@ -873,7 +839,6 @@ const TextAdventureEngine = (() => {
     const topScore = potentialItems[0].score;
     const foundItems = potentialItems.filter(p => p.score === topScore).map(p => p.item);
     const exactMatch = foundItems.length === 1 && targetString === foundItems[0].noun;
-
 
     return { found: foundItems, exactMatch };
   }
@@ -920,7 +885,6 @@ const TextAdventureEngine = (() => {
           item.contains.forEach(itemId => {
             const containedItem = adventure.items[itemId];
             if (containedItem) {
-              // Set the location of the contained item to its container for scope checking
               containedItem.location = item.id;
               queue.push(containedItem);
             }
@@ -928,7 +892,6 @@ const TextAdventureEngine = (() => {
         }
       }
     }
-    // Filter out items that are not takable at the end
     return takable.filter(item => item.canTake);
   }
 
@@ -982,7 +945,6 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    // Before moving, check if the exit is blocked by an item (like a closed door)
     const exitBlocker = Object.values(adventure.items).find(item => item.location === player.currentLocation && item.blocksExit && item.blocksExit[direction]);
     if (exitBlocker && (!exitBlocker.isOpenable || !exitBlocker.isOpen)) {
       TextAdventureModal.appendOutput(exitBlocker.lockedMessage || `The way is blocked by the ${exitBlocker.name}.`);
@@ -1025,10 +987,8 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    // Remove item from its original location (room or container)
     const originalLocationId = item.location;
     if (adventure.rooms[originalLocationId]) {
-      // It was in a room, now it will be in player's inventory
     } else if (adventure.items[originalLocationId] && adventure.items[originalLocationId].isContainer) {
       const container = adventure.items[originalLocationId];
       container.contains = container.contains.filter(id => id !== item.id);
@@ -1386,10 +1346,9 @@ const TextAdventureEngine = (() => {
   }
 
   function _handleSensoryVerb(verb, target, onDisambiguation) {
-    // If there's no target, the player is sensing the room.
     if (!target) {
       const room = adventure.rooms[player.currentLocation];
-      const property = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`; // e.g., onListen
+      const property = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`;
       const defaultMessages = {
         listen: "You don't hear anything out of the ordinary.",
         smell: "You don't smell anything unusual.",
@@ -1401,7 +1360,6 @@ const TextAdventureEngine = (() => {
       return;
     }
 
-    // If there is a target, find the item.
     const scope = [..._getItemsInLocation(player.currentLocation), ...player.inventory.map(id => adventure.items[id])];
     const result = _findItem(target, scope);
 
@@ -1422,7 +1380,7 @@ const TextAdventureEngine = (() => {
   }
 
   function _performSensoryVerb(verb, item) {
-    const property = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`; // e.g., onTouch
+    const property = `on${verb.charAt(0).toUpperCase() + verb.slice(1)}`;
     const defaultMessages = {
       listen: `The ${item.name} is silent.`,
       smell: `The ${item.name} doesn't smell like anything in particular.`,
@@ -1461,7 +1419,6 @@ const TextAdventureEngine = (() => {
       if(document.getElementById('adventure-input')) {
         document.getElementById('adventure-input').disabled = true;
       }
-      // Since the game has been won, prevent further commands
       state.inputCallback = null;
     }
   }
