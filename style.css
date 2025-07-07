@@ -333,10 +333,6 @@ body {
   color: var(--color-background-darkest);
 }
 
-
-/* Scrollbar styling for consistency */
-.terminal__output,
-.editor__textarea,
 #adventure-output {
   scrollbar-width: thin;
   scrollbar-color: var(--color-text-primary) var(--color-background-darkest);
@@ -449,23 +445,9 @@ body {
 .editor__textarea-wrapper {
   flex: 1;
   position: relative;
-  overflow: hidden;
   border-right: var(--border-width) solid var(--color-border-secondary);
   min-width: 0;
-}
-
-.editor__textarea {
-  width: 100%;
-  height: 100%;
-  background-color: var(--color-background-darkest);
-  color: var(--color-text-primary);
-  border: none;
-  resize: none;
-  outline: none;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-terminal);
+  overflow: visible;
 }
 
 .editor__textarea--no-wrap {
@@ -704,38 +686,11 @@ body {
   border-left: var(--border-width) solid var(--color-border-primary);
 }
 
-/* Highlighter styles */
-.editor__textarea-wrapper {
-  position: relative; /* This is crucial for positioning children */
-}
-
-.editor__highlighter, .editor__textarea {
-  /* Both must share the exact same font, size, padding, and border settings */
-  font-family: var(--font-family-mono), monospace;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-terminal);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  white-space: pre;
-  overflow: hidden; /* Scroll is handled by the parent wrapper */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
 .editor__highlighter {
   color: transparent; /* Makes the underlying text invisible */
   pointer-events: none; /* Allows clicks to pass through to the textarea */
   z-index: 1;
-}
-
-.editor__textarea {
-  background-color: transparent; /* THE CRITICAL CHANGE */
-  color: var(--color-text-primary);
-  z-index: 2; /* Sits on top of the highlighter */
-  resize: none;
+  overflow: hidden;
 }
 
 .highlight-match {
@@ -1649,28 +1604,6 @@ aspect-ratio: 4 / 3;
  * =========================================================================
  */
 
-/*
- * SCROLLBAR FIX:
- * First, let's make sure the textarea itself is scrollable and the
- * wrappers that contain it do not hide the scrollbar.
- */
-.editor__textarea-wrapper {
-  overflow: visible; /* Fix: Was 'hidden', preventing scrollbar */
-}
-.editor__textarea {
-  overflow: auto; /* Fix: Allow this element to scroll */
-}
-.editor__highlighter {
-  overflow: hidden; /* This should not scroll; it syncs with the textarea */
-}
-
-/*
- * THEME FIX:
- * The following rules create a new PrismJS dark theme that uses the
- * color variables already defined in your CSS. This will override the
-
- * default light theme from prism.css.
- */
 pre[class*="language-"],
 code[class*="language-"] {
   color: var(--color-text-primary);
@@ -1748,3 +1681,51 @@ code[class*="language-"] {
 .token.italic {
   font-style: italic;
 }
+
+/**
+ * =========================================================================
+ * Editor Highlighter Fixes
+ * =========================================================================
+ */
+
+/* Position both layers absolutely to overlap them perfectly. */
+.editor__highlighter, .editor__textarea
+  {position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: none;
+  white-space: pre; /* Important for preserving code formatting */
+  font-family: var(--font-family-mono), monospace;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: transparent; /* CRITICAL: See the highlighter layer through it */
+  color: var(--color-text-primary); /* The text you actually see and type */
+  z-index: 2;
+  resize: none;
+  overflow: auto;
+}
+
+/*
+ * THEME FIX: A dark theme for PrismJS using existing CSS variables.
+ */
+pre[class*="language-"],
+code[class*="language-"] {
+  color: var(--color-text-primary);
+  text-shadow: none;
+}
+
+.token.comment, .token.prolog, .token.doctype, .token.cdata {
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+.token.punctuation { color: var(--color-text-secondary); }
+.token.property, .token.tag, .token.boolean, .token.number, .token.constant, .token.symbol, .token.deleted { color: #ff8b3f; } /* Orange */
+.token.selector, .token.attr-name, .token.string, .token.char, .token.builtin, .token.inserted { color: var(--color-accent-lime); }
+.token.operator, .token.entity, .token.url { color: #ff8b3f; }
+.token.atrule, .token.attr-value, .token.keyword { color: var(--color-accent-sky); }
+.token.function, .token.class-name { color: var(--color-accent-amber); }
+.token.regex, .token.important, .token.variable { color: var(--color-text-link); }
