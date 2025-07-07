@@ -336,7 +336,7 @@ body {
 
 /* Scrollbar styling for consistency */
 .terminal__output,
-.editor-pane,
+.editor__textarea,
 #adventure-output {
   scrollbar-width: thin;
   scrollbar-color: var(--color-text-primary) var(--color-background-darkest);
@@ -711,7 +711,7 @@ body {
 
 .editor__highlighter, .editor__textarea {
   /* Both must share the exact same font, size, padding, and border settings */
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-mono), monospace;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-terminal);
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -1642,4 +1642,109 @@ aspect-ratio: 4 / 3;
   font-family: inherit;
   font-size: inherit;
   caret-color: #AAFFEE; /* Match new text color */
+}
+/**
+ * =========================================================================
+ * 14. Editor and PrismJS Integration Fixes
+ * =========================================================================
+ */
+
+/*
+ * SCROLLBAR FIX:
+ * First, let's make sure the textarea itself is scrollable and the
+ * wrappers that contain it do not hide the scrollbar.
+ */
+.editor__textarea-wrapper {
+  overflow: visible; /* Fix: Was 'hidden', preventing scrollbar */
+}
+.editor__textarea {
+  overflow: auto; /* Fix: Allow this element to scroll */
+}
+.editor__highlighter {
+  overflow: hidden; /* This should not scroll; it syncs with the textarea */
+}
+
+/*
+ * THEME FIX:
+ * The following rules create a new PrismJS dark theme that uses the
+ * color variables already defined in your CSS. This will override the
+
+ * default light theme from prism.css.
+ */
+pre[class*="language-"],
+code[class*="language-"] {
+  color: var(--color-text-primary);
+  text-shadow: none;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-terminal);
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  tab-size: 4;
+  hyphens: none;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: var(--color-text-secondary);
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #ff8b3f; /* A nice orange for constants */
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: var(--color-accent-lime);
+}
+
+.token.operator,
+.token.entity,
+.token.url {
+  color: #ff8b3f;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: var(--color-accent-sky);
+}
+
+.token.function,
+.token.class-name {
+  color: var(--color-accent-amber);
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: var(--color-text-link);
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
 }
