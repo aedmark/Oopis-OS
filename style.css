@@ -1712,13 +1712,7 @@ code[class*="language-"] {
 /* The highlighter and textarea are layered on top of each other. */
 .editor__highlighter,
 .editor__textarea {
-  /* --- FIX START --- */
-  /* Remove absolute positioning to keep them in the layout flow */
-  /* position: absolute; */ /* REMOVE THIS */
-  grid-area: 1 / 1 / 2 / 2; /* Place both elements in the same grid cell */
-  /* --- FIX END --- */
-
-  /* These existing styles are correct and should be kept */
+  grid-area: 1 / 1 / 2 / 2;
   width: 100%;
   min-height: 100%; /* Use min-height to ensure they fill the container */
   margin: 0;
@@ -1730,6 +1724,10 @@ code[class*="language-"] {
   line-height: var(--line-height-terminal);
   white-space: pre-wrap;
   resize: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-ligatures: none;
+  letter-spacing: normal;
 }
 
 /* These existing styles are also correct */

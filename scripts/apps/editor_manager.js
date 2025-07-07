@@ -63,15 +63,28 @@ const EditorManager = (() => {
     function _handleEditorInput() {
         if (!isActiveState) return;
 
+        const textContent = EditorUI.getTextareaContent();
+        EditorUI.setHighlighterText(textContent); // New UI function to set raw text
+        _updateInstantUI(); // This handles scroll sync and status bar
+
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
-            const currentContent = EditorUI.getTextareaContent();
-            _saveUndoState(currentContent);
+            _saveUndoState(textContent);
             saveUndoStateTimeout = null;
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
 
-        _updateInstantUI();
-        _debouncedHighlightAndFind();
+        // This part remains the same, but now it only applies colors
+        if (highlightDebounceTimer) clearTimeout(highlightDebounceTimer);
+        highlightDebounceTimer = setTimeout(() => {
+            if (!isActiveState) return;
+            EditorUI.renderSyntaxHighlights(currentFileMode); // Note: No longer passing text
+            if (findState.isOpen) {
+                _find(false);
+            }
+            if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
+                EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
+            }
+        }, 150); // Kept the 150ms debounce for performance
     }
 
     function _saveUndoState(currentContent) {

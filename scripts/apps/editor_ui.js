@@ -298,14 +298,26 @@ const EditorUI = (() => {
         return elements.editorContainer;
     }
 
-    function renderSyntaxHighlights(text, language) {
+    function setHighlighterText(text) {
         if (elements.highlighter) {
-            const code = Utils.createElement('code', { className: `language-${language}`, textContent: text });
-            const pre = Utils.createElement('pre', { className: `language-${language}` }, code);
+            // We set the text inside a <pre><code> structure to be consistent
+            // with what Prism.js expects and to match the styling.
+            const code = Utils.createElement('code', { textContent: text });
+            const pre = Utils.createElement('pre', { className: `language-none` }, code);
             elements.highlighter.innerHTML = '';
             elements.highlighter.appendChild(pre);
-            Prism.highlightElement(code);
-            // After highlighting, sync the heights.
+        }
+        // We still need to call this to ensure the container resizes vertically
+        _syncContentHeight();
+    }
+
+    function renderSyntaxHighlights(language) {
+        if (elements.highlighter) {
+            const codeElement = elements.highlighter.querySelector('code');
+            if (codeElement) {
+                codeElement.className = `language-${language}`;
+                Prism.highlightElement(codeElement);
+            }
             _syncContentHeight();
         }
     }
@@ -597,6 +609,7 @@ const EditorUI = (() => {
         getFindQuery,
         getReplaceQuery,
         renderSyntaxHighlights,
-        renderSearchHighlights
+        renderSearchHighlights,
+        setHighlighterText
     };
 })();
