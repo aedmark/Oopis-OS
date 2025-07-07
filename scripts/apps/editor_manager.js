@@ -49,30 +49,38 @@ const EditorManager = (() => {
             if (!isActiveState) return;
             const textContent = EditorUI.getTextareaContent();
 
-            // 1. Update line numbers (relatively cheap)
             EditorUI.updateLineNumbers(textContent);
-
-            // 2. Apply base syntax highlighting (expensive)
             EditorUI.renderSyntaxHighlights(textContent, currentFileMode);
 
-            // 3. Layer search highlights on top if the find bar is open (can be expensive)
             if (findState.isOpen) {
-                _find(false); // Re-run find without focusing to update matches in the background
+                _find(false);
             }
 
-            // 4. Update the preview pane (debounced internally in EditorUI)
             if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
                 EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
             }
 
             highlightDebounceTimer = null;
-        }, 150); // 150ms delay feels responsive without being overwhelming
+        }, 150);
     }
+
+    /**
+     * A new debounced function specifically for the find input.
+     * It re-runs the find logic as the user types their query.
+     * @private
+     */
+    function _debouncedFind() {
+        if (findDebounceTimer) clearTimeout(findDebounceTimer);
+        findDebounceTimer = setTimeout(() => {
+            _find(true);
+            findDebounceTimer = null;
+        }, 150);
+    }
+
 
     function _handleEditorInput() {
         if (!isActiveState) return;
 
-        // Save undo state with a longer debounce
         if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
         saveUndoStateTimeout = setTimeout(() => {
             const currentContent = EditorUI.getTextareaContent();
@@ -80,15 +88,12 @@ const EditorManager = (() => {
             saveUndoStateTimeout = null;
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
 
-        // Update the essential UI elements immediately for a responsive feel
         _updateInstantUI();
-
-        // Trigger the debounced function for expensive highlighting
         _debouncedHighlightAndFind();
     }
 
     function _saveUndoState(currentContent) {
-        redoStack = []; // Clear redo stack on new action
+        redoStack = [];
         undoStack.push(currentContent);
         if (undoStack.length > MAX_UNDO_STATES) {
             undoStack.shift();
@@ -101,7 +106,7 @@ const EditorManager = (() => {
         redoStack.push(undoStack.pop());
         const previousContent = undoStack[undoStack.length - 1];
         EditorUI.setTextareaContent(previousContent);
-        _handleEditorInput(); // Trigger a full refresh after undo
+        _handleEditorInput();
         EditorUI.setEditorFocus();
         _updateUndoRedoButtonStates();
     }
@@ -111,7 +116,7 @@ const EditorManager = (() => {
         const nextContent = redoStack.pop();
         undoStack.push(nextContent);
         EditorUI.setTextareaContent(nextContent);
-        _handleEditorInput(); // Trigger a full refresh after redo
+        _handleEditorInput();
         EditorUI.setEditorFocus();
         _updateUndoRedoButtonStates();
     }
@@ -158,7 +163,7 @@ const EditorManager = (() => {
             const rawContent = EditorUI.getTextareaContent();
             blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
             fileName = `${baseName}.txt`;
-        } else { // Handles 'markdown' and 'html'
+        } else {
             const renderedContent = EditorUI.getPreviewPaneHTML();
             const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -379,7 +384,6 @@ const EditorManager = (() => {
         textarea.setSelectionRange(match.index, match.index + match[0].length);
         const textToMatch = textarea.value.substring(0, match.index);
         const lineBreaks = (textToMatch.match(/\n/g) || []).length;
-        // A rough approximation for scrolling.
         const lineHeight = 16;
         textarea.scrollTop = lineBreaks * lineHeight;
     }
@@ -394,7 +398,7 @@ const EditorManager = (() => {
         const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
 
         EditorUI.setTextareaContent(newText);
-        _handleEditorInput(); // This will re-run find and update highlights
+        _handleEditorInput();
     }
 
     function _replaceAll() {
@@ -404,7 +408,7 @@ const EditorManager = (() => {
         const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
 
         EditorUI.setTextareaContent(newText);
-        _handleEditorInput(); // This will re-run find and update highlights
+        _handleEditorInput();
     }
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
@@ -481,8 +485,8 @@ const EditorManager = (() => {
             EditorUI.setTextareaContent(content);
             EditorUI.setTextareaSelection(0, 0);
             EditorUI._updateFormattingToolbarVisibility(currentFileMode);
-            _updateInstantUI(); // Initial instant UI update
-            _debouncedHighlightAndFind(); // Initial debounced highlight
+            _updateInstantUI();
+            _debouncedHighlightAndFind();
             EditorUI.setEditorFocus();
             _updateUndoRedoButtonStates();
         });
