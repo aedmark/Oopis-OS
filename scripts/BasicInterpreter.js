@@ -3,6 +3,7 @@
  * DECLARED IN GLOBAL SCOPE. This script must be loaded before basic_app.js.
  * @class BasicInterpreter
  */
+
 class BasicInterpreter {
     constructor() {
         this.variables = new Map();
@@ -47,7 +48,7 @@ class BasicInterpreter {
 
         const sortedLines = Array.from(this.program.keys()).sort((a, b) => a - b);
         if (this.programCounter === null) {
-            return; // No program to run
+            return;
         }
 
         let currentIndex = sortedLines.indexOf(this.programCounter);
@@ -59,11 +60,10 @@ class BasicInterpreter {
             const statement = this.program.get(this.programCounter);
             await this.executeStatement(statement);
 
-            if (this.programCounter === null) { // END statement was hit
+            if (this.programCounter === null) {
                 break;
             }
 
-            // If program counter was changed by GOTO, GOSUB, etc., find the new index.
             if (this.programCounter !== pcBeforeExecute) {
                 const newIndex = sortedLines.indexOf(this.programCounter);
                 if (newIndex === -1) {
@@ -72,7 +72,6 @@ class BasicInterpreter {
                 }
                 currentIndex = newIndex;
             } else {
-                // Otherwise, just advance to the next line.
                 currentIndex++;
             }
         }
@@ -102,17 +101,14 @@ class BasicInterpreter {
                 currentArg += char;
             }
         }
-        // Add the final argument after the loop
         args.push(currentArg.trim());
 
         return args;
     }
 
     async executeStatement(statement) {
-        // Regex to robustly capture the command and the rest of the statement.
         const match = statement.match(/^([a-zA-Z_]+)\s*(.*)/s);
 
-        // If no standard command is found, it might be an implicit LET.
         if (!match) {
             if (statement.includes('=')) {
                 await this.executeStatement(`LET ${statement}`);
@@ -140,9 +136,8 @@ class BasicInterpreter {
                 break;
             }
             case 'INPUT': {
-                let restOfStatement = rest; // Use the already-parsed 'rest'
+                let restOfStatement = rest;
                 let prompt = '? ';
-                // ... (rest of INPUT logic remains the same)
                 if (restOfStatement.startsWith('"')) {
                     const endQuoteIndex = restOfStatement.indexOf('"', 1);
                     if (endQuoteIndex !== -1) {
@@ -190,7 +185,7 @@ class BasicInterpreter {
                 if (nextLine) {
                     this.gosubStack.push(nextLine);
                 } else {
-                    this.gosubStack.push(null); // Return to end of program
+                    this.gosubStack.push(null);
                 }
                 this.programCounter = parseInt(rest, 10);
                 break;
@@ -244,7 +239,7 @@ class BasicInterpreter {
         let result = '';
         let resultIsNumeric = true;
 
-        if (parts.length > 1) { // If there's concatenation, treat as string unless all parts are numeric
+        if (parts.length > 1) {
             let tempResult = "";
             for (const part of parts) {
                 let value = this._evaluateSinglePart(part);
@@ -268,21 +263,9 @@ class BasicInterpreter {
         if (!isNaN(num) && part.trim() !== '') {
             return num;
         }
-        return part; // Return as-is if it's not a known var or number
+        return part;
     }
 
-    /**
-     * Evaluates a conditional expression from an IF statement.
-     * @param {string} condition - The conditional string to evaluate (e.g., "A > 10", "N$ = \"YES\"").
-     * @returns {Promise<boolean>} A promise that resolves to true if the condition is met, false otherwise.
-     * @private
-     * @description This function intentionally uses loose equality operators (`==`, `!=`)
-     * instead of strict equality (`===`, `!==`). This is a deliberate design choice to
-     * emulate the behavior of classic BASIC interpreters, which were not strictly typed
-     * and would often coerce types during comparison (e.g., treating the number 10
-     * as equal to the string "10"). This preserves the nostalgic, quirky behavior
-     * expected by users familiar with the language's history.
-     */
     async _evaluateCondition(condition) {
         const operators = ['<=', '>=', '<>', '<', '>', '='];
         let operator = null;

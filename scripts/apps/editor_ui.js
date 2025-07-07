@@ -360,18 +360,13 @@ const EditorUI = (() => {
 
     function applyTextareaWordWrap(isWordWrapActive) {
         if (!elements.textarea || !elements.highlighter) return;
-
-        // The elements that need identical wrapping behavior
         const elementsToStyle = [elements.textarea, elements.highlighter];
-
         if (isWordWrapActive) {
-            // Apply styles that force text to wrap
             elementsToStyle.forEach(el => {
                 el.style.whiteSpace = 'pre-wrap';
-                el.style.overflowX = 'hidden'; // Hide horizontal scrollbar
+                el.style.overflowX = 'hidden';
             });
         } else {
-            // Apply styles that prevent wrapping and allow horizontal scrolling
             elementsToStyle.forEach(el => {
                 el.style.whiteSpace = 'pre';
                 el.style.overflowX = 'auto';

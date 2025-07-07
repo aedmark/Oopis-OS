@@ -1,58 +1,18 @@
-// commexec.js - OopisOS Command Executor
-
 /**
  * @file Manages the execution of all commands, pipelines, I/O redirection, and background processes.
  * @module CommandExecutor
  */
+
 const CommandExecutor = (() => {
   "use strict";
-
-  /**
-   * A flag to indicate if a script is currently being executed by the 'run' command.
-   * This prevents nested script execution in interactive mode and manages input suspension.
-   * @private
-   * @type {boolean}
-   */
   let scriptExecutionInProgress = false;
-
-  /**
-   * A counter to assign unique IDs to background processes.
-   * @private
-   * @type {number}
-   */
   let backgroundProcessIdCounter = 0;
-
-  /**
-   * An object to store active background jobs, keyed by their process ID (PID).
-   * Each job object contains its ID, the command string, and an AbortController.
-   * @private
-   * @type {Object.<number, {id: number, command: string, abortController: AbortController}>}
-   */
   let activeJobs = {};
-
-  /**
-   * A cache for loaded command definitions. This is populated on-demand.
-   * @private
-   * @type {Object.<string, {handler: Function, description: string, helpText: string}>}
-   */
   const commands = {};
-
-  /**
-   * An object to track command scripts currently being loaded to prevent race conditions.
-   * @private
-   * @type {Object.<string, Promise<boolean>>}
-   */
   const loadingPromises = {};
 
 
-  /**
-   * A factory function that takes a command definition and returns a standardized,
-   * wrapped async command handler. This wrapper performs all the boilerplate checks
-   * like argument validation, flag parsing, path validation, and permission checks
-   * before invoking the command's core logic.
-   * @param {object} definition - The command's definition object from its file.
-   * @returns {Function} An async function that serves as the standardized handler.
-   */
+
   function createCommandHandler(definition) {
     const handler = async (args, options) => {
       const { flags, remainingArgs } = Utils.parseFlags(
@@ -61,7 +21,6 @@ const CommandExecutor = (() => {
       );
       const currentUser = UserManager.getCurrentUser().name;
 
-      // 1. Argument Count Validation
       if (definition.argValidation) {
         const validation = Utils.validateArguments(remainingArgs, definition.argValidation);
         if (!validation.isValid) {
@@ -69,14 +28,13 @@ const CommandExecutor = (() => {
         }
       }
 
-      // 2. Path Validation
       const validatedPaths = {};
       if (definition.pathValidation) {
         for (const pv of definition.pathValidation) {
           const pathArg = remainingArgs[pv.argIndex];
           if (pathArg === undefined) {
             if (pv.optional) {
-              continue; // Skip optional missing paths
+              continue;
             }
             return {
               success: false,
@@ -89,7 +47,6 @@ const CommandExecutor = (() => {
               pv.options
           );
           if (pathValidationResult.error) {
-            // Only fail if the path wasn't allowed to be missing
             if (!(pv.options.allowMissing && !pathValidationResult.node)) {
               return {
                 success: false,
@@ -101,11 +58,9 @@ const CommandExecutor = (() => {
         }
       }
 
-      // 3. Permission Checks
       if (definition.permissionChecks) {
         for (const pc of definition.permissionChecks) {
           const validatedPath = validatedPaths[pc.pathArgIndex];
-          // Skip check if path is not valid or doesn't exist (it would have failed in path validation if required)
           if (!validatedPath || !validatedPath.node) {
             continue;
           }
@@ -129,7 +84,6 @@ const CommandExecutor = (() => {
         }
       }
 
-      // 4. Core Logic Execution
       const context = {
         args: remainingArgs,
         options,
@@ -140,18 +94,10 @@ const CommandExecutor = (() => {
       };
       return definition.coreLogic(context);
     };
-    // Attach definition to handler for inspection (e.g., by `man` command)
     handler.definition = definition;
     return handler;
   }
 
-  /**
-   * Ensures a command's script is loaded. If not already cached, it dynamically
-   * injects the script tag and waits for it to load.
-   * @private
-   * @param {string} commandName The name of the command to load.
-   * @returns {Promise<boolean>} Resolves true if the command is loaded, false otherwise.
-   */
   async function _ensureCommandLoaded(commandName) {
     if (!commandName) return false;
     if (commands[commandName]) return true; // Already loaded.
@@ -176,8 +122,6 @@ const CommandExecutor = (() => {
         delete loadingPromises[commandName];
       };
       script.onerror = () => {
-        // A script failing to load is equivalent to a "command not found" error.
-        // We resolve false to allow the executor to handle it gracefully.
         resolve(false);
         delete loadingPromises[commandName];
       };
@@ -188,14 +132,6 @@ const CommandExecutor = (() => {
     return await loadingPromises[commandName];
   }
 
-
-  /**
-   * REFACTORED: Expands wildcard glob patterns (*, ?) in command arguments before parsing.
-   * This is a pre-processing step to handle file path expansion with more robust path handling.
-   * @private
-   * @param {string} commandString The raw command string after alias/variable expansion.
-   * @returns {Promise<string>} The command string with glob patterns expanded to matching file paths.
-   */
   async function _expandGlobPatterns(commandString) {
     const GLOB_WHITELIST = ['ls', 'rm', 'cat', 'cp', 'mv', 'chmod', 'chown', 'chgrp'];
     const args = commandString.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
@@ -211,7 +147,6 @@ const CommandExecutor = (() => {
       const originalArg = args[i];
       const isQuoted = (originalArg.startsWith('"') && originalArg.endsWith('"')) || (originalArg.startsWith("'") && originalArg.endsWith("'"));
 
-      // Use the unquoted version for pattern matching
       const globPattern = isQuoted ? originalArg.slice(1, -1) : originalArg;
       const hasGlobChar = globPattern.includes('*') || globPattern.includes('?');
 
@@ -258,20 +193,10 @@ const CommandExecutor = (() => {
     return hasExpansionOccurred ? expandedArgs.join(' ') : commandString;
   }
 
-
-  /**
-   * Returns a dictionary of all active background jobs.
-   * @returns {Object.<number, {id: number, command: string, abortController: AbortController}>} A dictionary of active jobs.
-   */
   function getActiveJobs() {
     return activeJobs;
   }
 
-  /**
-   * Terminates a running background job by its process ID.
-   * @param {number} jobId - The ID of the job to terminate.
-   * @returns {{success: boolean, message?: string, error?: string}} A result object.
-   */
   function killJob(jobId) {
     const job = activeJobs[jobId];
     if (job && job.abortController) {
@@ -288,15 +213,6 @@ const CommandExecutor = (() => {
     };
   }
 
-  /**
-   * Executes a single command segment, which is a part of a pipeline.
-   * @private
-   * @param {ParsedCommandSegment} segment - The parsed command segment from the parser.
-   * @param {object} execCtxOpts - Execution context options, including `isInteractive` and `scriptingContext`.
-   * @param {string|null} [stdinContent=null] - The standard input content from a previous command in a pipeline.
-   * @param {AbortSignal|null} signal - The AbortSignal for cancellation, used for background jobs.
-   * @returns {Promise<{success: boolean, output?: string, error?: string}>} The result of the command execution.
-   */
   async function _executeCommandHandler(segment, execCtxOpts, stdinContent = null, signal) {
     const commandName = segment.command?.toLowerCase();
 
@@ -325,24 +241,15 @@ const CommandExecutor = (() => {
         };
       }
     } else if (segment.command) {
-      // This case is now a fallback, as _ensureCommandLoaded should handle it.
       return { success: false, error: `${segment.command}: command not found` };
     }
 
-    // Handle cases like empty input or just redirection
     return {
       success: true,
       output: "",
     };
   }
 
-  /**
-   * Executes a full pipeline of commands, handling I/O between segments and output redirection.
-   * @private
-   * @param {ParsedPipeline} pipeline - The parsed pipeline object.
-   * @param {object} options - Execution options.
-   * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the pipeline.
-   */
   async function _executePipeline(pipeline, options) {
     const { isInteractive, signal, scriptingContext, suppressOutput } = options;
     let currentStdin = null;
@@ -377,7 +284,6 @@ const CommandExecutor = (() => {
     }
     const user = UserManager.getCurrentUser().name;
     const nowISO = new Date().toISOString();
-    // Execute each command in the pipeline
     for (let i = 0; i < pipeline.segments.length; i++) {
       const segment = pipeline.segments[i];
       lastResult = await _executeCommandHandler(
@@ -398,7 +304,6 @@ const CommandExecutor = (() => {
         };
       }
 
-      // If a command is waiting for scripted input, pause this pipeline execution
       if (scriptingContext?.waitingForInput) {
         return { success: true, output: "" };
       }
@@ -418,7 +323,6 @@ const CommandExecutor = (() => {
       }
       currentStdin = lastResult.output;
     }
-    // Handle file redirection ('>' or '>>')
     if (pipeline.redirection && lastResult.success) {
       const { type: redirType, file: redirFile } = pipeline.redirection;
       const outputToRedir = lastResult.output || "";
@@ -577,9 +481,9 @@ const CommandExecutor = (() => {
           error: `save redir fail`,
         };
       }
-      lastResult.output = ""; // Output was redirected, so clear it
+      lastResult.output = "";
     }
-    // Print final output to terminal if not redirected
+
     if (
         !pipeline.redirection &&
         lastResult.success &&
@@ -587,8 +491,7 @@ const CommandExecutor = (() => {
         lastResult.output !== undefined
     ) {
       if (pipeline.isBackground) {
-        // Suppress output for background jobs, but notify the user.
-        if (lastResult.output) { // Only notify if there was actually output to suppress.
+        if (lastResult.output) {
           await OutputManager.appendToOutput(
               `${Config.MESSAGES.BACKGROUND_PROCESS_OUTPUT_SUPPRESSED} (Job ${pipeline.jobId})`,
               {
@@ -608,44 +511,27 @@ const CommandExecutor = (() => {
     return lastResult;
   }
 
-  /**
-   * NEW: A helper function to handle the pre-processing of a command string before parsing.
-   * This includes variable expansion, alias resolution, and glob expansion.
-   * @private
-   * @param {string} rawCommandText - The raw string entered by the user.
-   * @returns {Promise<string>} The fully processed command string ready for the parser.
-   * @throws {Error} if alias resolution fails.
-   */
   async function _preprocessCommandString(rawCommandText) {
     let expandedCommand = rawCommandText.trim();
     if (!expandedCommand) {
       return "";
     }
 
-    // 1. Expand Environment Variables
     expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
       const varName = var1 || var2;
       return EnvironmentManager.get(varName);
     });
 
-    // 2. Resolve Aliases
     const aliasResult = AliasManager.resolveAlias(expandedCommand);
     if (aliasResult.error) {
       throw new Error(aliasResult.error);
     }
     const commandAfterAliases = aliasResult.newCommand;
 
-    // 3. Expand Glob Patterns
     const commandToParse = await _expandGlobPatterns(commandAfterAliases);
     return commandToParse;
   }
 
-  /**
-   * REFACTORED: Finalizes the terminal UI state after a command has been executed in interactive mode.
-   * This includes clearing the input, updating the prompt, and managing focus.
-   * @private
-   * @param {string} originalCommandText - The command text that was just executed.
-   */
   async function _finalizeInteractiveModeUI(originalCommandText) {
     TerminalUI.clearInput();
     TerminalUI.updatePrompt();
@@ -665,17 +551,9 @@ const CommandExecutor = (() => {
     TerminalUI.setIsNavigatingHistory(false);
   }
 
-  /**
-   * REFACTORED: Processes a complete command-line string. This is the main entry point for command execution.
-   * It now uses helper functions for pre-processing and post-processing, making the main flow cleaner.
-   * @param {string} rawCommandText - The raw string entered by the user.
-   * @param {object} [options={}] - An object containing execution options.
-   * @returns {Promise<{success: boolean, output?: string, error?: string}>} The final result of the entire command line.
-   */
   async function processSingleCommand(rawCommandText, options = {}) {
     const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
 
-    // --- 1. Initial State Checks ---
     if (scriptExecutionInProgress && isInteractive && !ModalManager.isAwaiting()) {
       await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
       return { success: false, error: "Script execution in progress." };
@@ -687,7 +565,6 @@ const CommandExecutor = (() => {
     }
     if (EditorManager.isActive()) return { success: true, output: "" };
 
-    // --- 2. Pre-process the Command String ---
     let commandToParse;
     try {
       commandToParse = await _preprocessCommandString(rawCommandText);
@@ -697,7 +574,6 @@ const CommandExecutor = (() => {
       return { success: false, error: e.message };
     }
 
-    // --- 3. UI Updates & History ---
     const cmdToEcho = rawCommandText.trim();
     if (isInteractive) {
       DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
@@ -711,8 +587,6 @@ const CommandExecutor = (() => {
     if (isInteractive) HistoryManager.add(cmdToEcho);
     if (isInteractive && !TerminalUI.getIsNavigatingHistory()) HistoryManager.resetIndex();
 
-
-    // --- 4. Parse the Command ---
     let commandSequence;
     try {
       commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
@@ -722,7 +596,6 @@ const CommandExecutor = (() => {
       return { success: false, error: e.message || "Command parse error." };
     }
 
-    // --- 5. Orchestration Loop ---
     let lastPipelineSuccess = true;
     let overallResult = { success: true, output: "" };
 
@@ -767,7 +640,6 @@ const CommandExecutor = (() => {
       overallResult = result;
     }
 
-    // --- 6. Finalize the UI ---
     if (isInteractive && !scriptExecutionInProgress) {
       await _finalizeInteractiveModeUI(rawCommandText);
     }
@@ -775,40 +647,26 @@ const CommandExecutor = (() => {
     return overallResult;
   }
 
-  /**
-   * Returns a dictionary of all registered commands and their handlers.
-   * This is now more dynamic, as the `commands` object is a cache.
-   * @returns {Object.<string, {handler: Function, description: string, helpText: string}>} The commands object.
-   */
   function getCommands() {
     return commands;
   }
 
-  /**
-   * Checks if a script is currently being executed.
-   * @returns {boolean} True if a script is running, false otherwise.
-   */
   function isScriptRunning() {
     return scriptExecutionInProgress;
   }
 
-  /**
-   * Sets the script execution status flag.
-   * @param {boolean} status - The new status to set.
-   */
   function setScriptExecutionInProgress(status) {
     scriptExecutionInProgress = status;
   }
 
-  // Public interface of the CommandExecutor module
   return {
-    initialize: () => {}, // No longer pre-loads all commands.
+    initialize: () => {},
     processSingleCommand,
     getCommands,
     isScriptRunning,
     setScriptExecutionInProgress,
     getActiveJobs,
     killJob,
-    _ensureCommandLoaded, // Exposed for TabCompletionManager
+    _ensureCommandLoaded,
   };
 })();
