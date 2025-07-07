@@ -36,8 +36,8 @@
             }
         ],
         coreLogic: async (context) => {
-            const { args, flags, currentUser, validatedPaths } = context; // Correctly get validatedPaths from context
-            const fileNode = validatedPaths[0].node; // Correctly access the validated file node
+            const { args, flags, currentUser, validatedPaths } = context;
+            const fileNode = validatedPaths[0].node;
             const content = fileNode.content || "";
             const lines = content.split('\n');
 
@@ -49,18 +49,15 @@
                 return { success: false, error: `csplit: invalid number of digits: '${flags.digits}'` };
             }
 
-            const createdFileNames = [];
-            let hadError = false;
+            // Phase 1: Planning Stage (Calculate Segments)
+            const segments = [];
+            let lastSplitLine = 0;
 
-            try {
-                let lastSplitLine = 0;
-                const segments = [];
+            for (const pattern of patterns) {
+                let splitLine = -1;
 
-                // Stage 1: Determine all split points and create segments
-                for (const pattern of patterns) {
-                    let splitLine = -1;
-
-                    if (pattern.startsWith('/')) {
+                if (pattern.startsWith('/')) {
+                    try {
                         const regexStr = pattern.slice(1, pattern.lastIndexOf('/'));
                         const regex = new RegExp(regexStr);
                         for (let j = lastSplitLine; j < lines.length; j++) {
@@ -69,64 +66,69 @@
                                 break;
                             }
                         }
-                    } else {
-                        const lineNum = parseInt(pattern, 10);
-                        if (isNaN(lineNum) || lineNum <= 0 || lineNum > lines.length) {
-                            throw new Error(`'${pattern}': line number out of range`);
-                        }
-                        splitLine = lineNum - 1;
+                    } catch (e) {
+                        return { success: false, error: `csplit: invalid regular expression: '${pattern}'` };
                     }
-
-                    if (splitLine === -1 || splitLine < lastSplitLine) {
-                        throw new Error(`'${pattern}': pattern not found or out of order`);
+                } else {
+                    const lineNum = parseInt(pattern, 10);
+                    if (isNaN(lineNum) || lineNum <= 0 || lineNum > lines.length) {
+                        return { success: false, error: `csplit: '${pattern}': line number out of range` };
                     }
-
-                    segments.push(lines.slice(lastSplitLine, splitLine));
-                    lastSplitLine = splitLine;
+                    splitLine = lineNum - 1;
                 }
 
-                // Add the remainder of the file as the last segment
-                segments.push(lines.slice(lastSplitLine));
-
-                // Stage 2: Write all segments to files
-                for (let i = 0; i < segments.length; i++) {
-                    const segmentContent = segments[i].join('\n');
-
-                    if (!segmentContent && flags.elideEmpty) {
-                        continue;
-                    }
-
-                    const fileName = `${prefix}${String(i).padStart(numDigits, '0')}`;
-                    createdFileNames.push(fileName);
-
-                    const saveResult = await FileSystemManager.createOrUpdateFile(
-                        FileSystemManager.getAbsolutePath(fileName),
-                        segmentContent,
-                        { currentUser, primaryGroup: UserManager.getPrimaryGroupForUser(currentUser) }
-                    );
-
-                    if (!saveResult.success) {
-                        throw new Error(`failed to write to ${fileName}: ${saveResult.error}`);
-                    }
-                    if (!flags.quiet) {
-                        await OutputManager.appendToOutput(String(segmentContent.length));
-                    }
+                if (splitLine === -1 || splitLine < lastSplitLine) {
+                    return { success: false, error: `csplit: '${pattern}': pattern not found or out of order` };
                 }
 
-                await FileSystemManager.save();
-                return { success: true, output: "" };
-
-            } catch (e) {
-                hadError = true;
-                if (!flags.keepFiles) {
-                    for (const f of createdFileNames) {
-                        // Use rm -f to ensure cleanup doesn't fail on already-deleted files
-                        await CommandExecutor.processSingleCommand(`rm -f ${f}`, { isInteractive: false });
-                    }
-                    await FileSystemManager.save();
-                }
-                return { success: false, error: `csplit: ${e.message}` };
+                segments.push(lines.slice(lastSplitLine, splitLine));
+                lastSplitLine = splitLine;
             }
+
+            segments.push(lines.slice(lastSplitLine));
+
+            // Phase 2: Execution Stage (Write Files)
+            const createdFileNames = [];
+            let anyChangeMade = false;
+
+            for (let i = 0; i < segments.length; i++) {
+                const segmentContent = segments[i].join('\n');
+
+                if (!segmentContent && flags.elideEmpty) {
+                    continue;
+                }
+
+                const fileName = `${prefix}${String(i).padStart(numDigits, '0')}`;
+                const saveResult = await FileSystemManager.createOrUpdateFile(
+                    FileSystemManager.getAbsolutePath(fileName),
+                    segmentContent,
+                    { currentUser, primaryGroup: UserManager.getPrimaryGroupForUser(currentUser) }
+                );
+
+                if (!saveResult.success) {
+                    // If a write fails, clean up previously created files unless -k is specified.
+                    if (!flags.keepFiles) {
+                        for (const f of createdFileNames) {
+                            await CommandExecutor.processSingleCommand(`rm -f ${f}`, { isInteractive: false });
+                        }
+                        await FileSystemManager.save(); // Persist the deletions
+                    }
+                    return { success: false, error: `csplit: failed to write to ${fileName}: ${saveResult.error}` };
+                }
+
+                createdFileNames.push(fileName);
+                anyChangeMade = true;
+
+                if (!flags.quiet) {
+                    await OutputManager.appendToOutput(String(segmentContent.length));
+                }
+            }
+
+            if (anyChangeMade) {
+                await FileSystemManager.save();
+            }
+
+            return { success: true, output: "" };
         }
     };
 
