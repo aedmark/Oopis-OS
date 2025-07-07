@@ -16,7 +16,8 @@
 
   --color-accent-sky: #38bdf8;        /* text-sky-400 */
   --color-accent-amber: #fbbF24;      /* text-amber-400 */
-  --color-accent-lime: #a3e635;       /* text-lime-400 */
+  --color-accent-lime: #a3e635;
+  --color-accent-green: #52cf05;
 
   --color-success: var(--color-accent-lime);
   --color-warning: var(--color-accent-amber);
