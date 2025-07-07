@@ -1,0 +1,80 @@
+/* OopisOS v4.0 BASIC Style Sheet  */
+/* ========================================================================== */
+
+.basic-app__container {
+  display: flex;
+  flex-direction: column;
+  width: 95%;
+  height: 95%;
+  max-width: 1200px;
+  background-color: #0088FF;
+  border: var(--border-width-thick) solid #AAFFEE;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm);
+  font-family: var(--font-family-mono), monospace;
+  color: #AAFFEE;
+  box-shadow: var(--shadow-inset-light), var(--shadow-drop-medium);
+}
+
+.basic-app__header {
+  flex-shrink: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  color: #AAFFEE;
+  font-size: var(--font-size-lg);
+  border-bottom: var(--border-width-thick) double #AAFFEE;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.basic-app__title {
+  font-size: var(--font-size-xl);
+  color: #FFFFFF;
+}
+
+.basic-app__exit-btn {
+  font-size: var(--font-size-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #AAFFEE;
+  transition: color 0.2s ease-in-out;
+}
+
+.basic-app__exit-btn:hover {
+  color: var(--color-error);
+}
+
+.basic-app__output {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: var(--line-height-terminal);
+}
+
+.basic-app__input-line {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: var(--spacing-sm);
+  border-top: var(--border-width) solid #AAFFEE;
+}
+
+.basic-app__input-line>span {
+  margin-right: var(--spacing-sm);
+  color: #AAFFEE;
+}
+
+.basic-app__input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #AAFFEE;
+  font-family: inherit;
+  font-size: inherit;
+  caret-color: #AAFFEE;
+}

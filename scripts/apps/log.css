@@ -1,0 +1,128 @@
+/* OopisOS v4.0 Captain's Log Style Sheet */
+/* ========================================================================== */
+
+.log-app__container {
+    display: flex;
+    flex-direction: column;
+    width: 95%;
+    height: 95%;
+    max-width: 1024px;
+    background-color: var(--color-background-dark);
+    border: var(--border-width-thick) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+    font-family: var(--font-family-sans), sans-serif;
+}
+
+.log-app__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: var(--border-width) solid var(--color-border-secondary);
+}
+
+.log-app__header h2 {
+    color: var(--color-info);
+    font-size: var(--font-size-xl);
+}
+
+.log-app__search {
+    background-color: var(--color-background-medium);
+    border: var(--border-width) solid var(--color-border-primary);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    width: 50%;
+}
+
+.log-app__actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.log-app__btn {
+    background-color: var(--color-background-light);
+    color: var(--color-text-secondary);
+    border: var(--border-width) solid var(--color-border-primary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.log-app__btn:hover {
+    background-color: var(--color-info);
+    color: var(--color-background-darkest);
+}
+
+.log-app__btn--exit {
+    background-color: var(--color-background-medium);
+}
+
+.log-app__btn--exit:hover {
+    background-color: var(--color-error);
+}
+
+.log-app__main {
+    display: flex;
+    flex-grow: 1;
+    min-height: 0;
+    gap: var(--spacing-md);
+}
+
+.log-app__list-pane {
+    width: 35%;
+    flex-shrink: 0;
+    background-color: var(--color-background-medium);
+    border-radius: var(--border-radius-sm);
+    overflow-y: auto;
+    padding: var(--spacing-sm);
+}
+
+.log-app__list-item {
+    padding: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border-secondary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    color: var(--color-text-secondary);
+}
+
+.log-app__list-item:hover {
+    background-color: var(--color-background-light);
+}
+
+.log-app__list-item.selected {
+    background-color: var(--color-info);
+    color: var(--color-background-darkest);
+    font-weight: bold;
+}
+
+.log-app__list-item strong {
+    color: var(--color-text-primary);
+}
+
+.log-app__list-item.selected strong {
+    color: var(--color-background-darkest);
+}
+
+.log-app__list-item span {
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-app__content-pane {
+    flex-grow: 1;
+    background-color: var(--color-background-darkest);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    overflow-y: auto;
+    color: var(--color-text-primary);
+    line-height: var(--line-height-base);
+}

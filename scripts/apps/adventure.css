@@ -1,0 +1,90 @@
+/* OopisOS v4.0 Adventure Style Sheet */
+/* ========================================================================== */
+
+#adventure-container {
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    max-width: 800px;
+    height: 80%;
+    max-height: 80%;
+    background-color: var(--color-background-medium);
+    border: var(--border-width-thick) solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
+    font-family: var(--font-family-mono), monospace;
+    color: var(--color-text-primary);
+}
+
+#adventure-header {
+    /* The "Infocom" status line */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border-bottom: var(--border-width) solid var(--color-border-primary);
+    flex-shrink: 0;
+}
+
+#adventure-title {
+    font-weight: bold;
+}
+
+#adventure-close-btn {}
+
+#adventure-output {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: var(--color-background-darkest);
+    box-shadow: var(--shadow-inset-light);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    line-height: var(--line-height-terminal);
+}
+
+#adventure-output p {
+    margin-bottom: var(--spacing-sm);
+}
+
+.adv-room-name {
+    color: var(--color-info);
+    font-weight: bold;
+}
+
+.adv-room-desc {
+    color: var(--color-text-primary);
+}
+
+.adv-system {
+    color: var(--color-text-secondary);
+}
+
+.adv-error {
+    color: var(--color-error);
+}
+
+.adv-exits,
+.adv-items {
+    color: var(--color-text-subtle);
+}
+
+#adventure-input-container {
+    display: flex;
+    padding-top: var(--spacing-md);
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
+}
+
+#adventure-input {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    padding-left: var(--spacing-sm);
+    caret-color: var(--color-text-primary);
+}
