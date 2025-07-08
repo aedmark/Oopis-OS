@@ -388,3 +388,63 @@
     background-color: rgba(56, 189, 248, 0.6);
     border-radius: 2px;
 }
+
+.editor-content-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    background-color: var(--color-background-darkest);
+    cursor: text;
+}
+
+.editor-scroller {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: auto;
+}
+
+.editor-line-container {
+    position: relative;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-mono), monospace;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-terminal);
+}
+
+.editor-line {
+    white-space: pre;
+}
+
+.editor-hidden-input {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    z-index: -1;
+}
+
+.editor-cursor {
+    position: absolute;
+    width: 2px;
+    background-color: var(--color-accent-lime);
+    animation: editor-cursor-blink 1.2s steps(2, start) infinite;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.editor-selection {
+    position: absolute;
+    background-color: rgba(94, 234, 212, 0.3);
+    z-index: 5;
+    pointer-events: none;
+    display: none;
+}
+
+@keyframes editor-cursor-blink {
+    to {
+        visibility: hidden;
+    }
+}

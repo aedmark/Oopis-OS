@@ -22,6 +22,28 @@ class Command {
     }
 }
 
+class ReplaceRangeCommand extends Command {
+    constructor(start, end, newText) {
+        super();
+        this.start = start;
+        this.end = end;
+        this.newText = newText;
+        this.oldText = '';
+    }
+
+    execute(editorManager) {
+        const currentContent = editorManager.getContent();
+        this.oldText = currentContent.substring(this.start, this.end);
+        editorManager.replaceRange(this.start, this.end, this.newText);
+        editorManager.setCursor(this.start + this.newText.length);
+    }
+
+    unexecute(editorManager) {
+        editorManager.replaceRange(this.start, this.start + this.newText.length, this.oldText);
+        editorManager.setCursor(this.start);
+    }
+}
+
 /**
  * Command to insert text at a specific position.
  */
