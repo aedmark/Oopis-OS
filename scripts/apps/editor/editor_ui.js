@@ -292,8 +292,9 @@ const EditorUI = (() => {
         });
         elements.hiddenTextarea.addEventListener('keydown', eventCallbacks.onKeyDown);
         elements.hiddenTextarea.addEventListener('input', eventCallbacks.onInput);
-
-
+        elements.hiddenTextarea.addEventListener('copy', eventCallbacks.onCopy);
+        elements.hiddenTextarea.addEventListener('cut', eventCallbacks.onCut);
+        elements.hiddenTextarea.addEventListener('paste', eventCallbacks.onPaste);
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
         elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.contentContainer, elements.previewWrapper);

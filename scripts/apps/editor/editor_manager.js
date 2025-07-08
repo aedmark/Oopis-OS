@@ -56,6 +56,55 @@ const EditorManager = (() => {
         }
     };
 
+    function _getSelectionRange() {
+        const start = Math.min(selectionAnchor, selectionHead);
+        const end = Math.max(selectionAnchor, selectionHead);
+        return { start, end };
+    }
+
+    function _getSelectedText() {
+        const { start, end } = _getSelectionRange();
+        if (start === end) return '';
+        // Use the public getContent method to ensure we have the latest text
+        return EditorManager.getContent().substring(start, end);
+    }
+
+    function _handleCopy(event) {
+        if (!isActiveState) return;
+        event.preventDefault(); // Take control from the browser
+        const selectedText = _getSelectedText();
+        if (selectedText) {
+            // Use the event's clipboardData to set the data
+            event.clipboardData.setData('text/plain', selectedText);
+        }
+    }
+
+    function _handleCut(event) {
+        if (!isActiveState) return;
+        event.preventDefault(); // Take control
+        const { start, end } = _getSelectionRange();
+        if (start === end) return; // Nothing to cut
+
+        const selectedText = _getSelectedText();
+        event.clipboardData.setData('text/plain', selectedText);
+
+        // Use a command to delete the text, making it undoable
+        const command = new DeleteRangeCommand(start, end);
+        commandExecutor.execute(command);
+    }
+
+    function _handlePaste(event) {
+        if (!isActiveState) return;
+        event.preventDefault(); // Take control
+        const pastedText = event.clipboardData.getData('text/plain');
+        if (pastedText) {
+            const { start, end } = _getSelectionRange();
+            // Use a command to replace the selection, making it undoable
+            const command = new ReplaceRangeCommand(start, end, pastedText);
+            commandExecutor.execute(command);
+        }
+    }
+
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED);
         isWordWrapActive = savedSetting !== null ? savedSetting : EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED;
@@ -392,12 +441,13 @@ const EditorManager = (() => {
                 onFindPrev: _goToPrevMatch,
                 onReplace: _replace,
                 onReplaceAll: _replaceAll,
+
                 onFindBarKeyDown: (e) => {
                     if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); _goToPrevMatch(); }
                     else if (e.key === 'Enter') { e.preventDefault(); _goToNextMatch(); }
                     else if (e.key === 'Escape') { e.preventDefault(); _closeFindBar(); }
                 },
-                // Add the new formatting callbacks
+
                 onFormatBold: () => _applyTextManipulation('bold'),
                 onFormatItalic: () => _applyTextManipulation('italic'),
                 onFormatLink: () => _applyTextManipulation('link'),
@@ -410,8 +460,11 @@ const EditorManager = (() => {
                 onFormatP: () => _applyTextManipulation('p'),
                 onFormatA: () => _applyTextManipulation('a'),
                 onFormatB: () => _applyTextManipulation('b'),
+                onFormatI_html: () => _applyTextManipulation('i_html'),
 
-                onFormatI_html: () => _applyTextManipulation('i_html')
+                onCopy: _handleCopy,
+                onCut: _handleCut,
+                onPaste: _handlePaste
             };
 
             const editorElement = EditorUI.buildLayout(editorCallbacks);
