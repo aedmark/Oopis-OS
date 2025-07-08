@@ -151,6 +151,7 @@ body {
     min-height: 0;
     width: 100%;
     padding: var(--spacing-lg);
+    position: relative;
 }
 
 /* 4. Terminal Component (BEM-like)
@@ -230,6 +231,20 @@ body {
 }
 
 /* Base styles for all modal dialogs */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-lg); /* Match the bezel's rounding */
+}
+
 .modal-dialog {
     position: absolute;
     top: 50%;
