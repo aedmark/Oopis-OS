@@ -1,0 +1,64 @@
+/* OopisOS v4.0 EditorV2 Style Sheet */
+/* ========================================================================== */
+
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    width: 95%;
+    height: 95%;
+    max-width: 1400px;
+    background-color: var(--color-background-dark);
+    border: var(--border-width-thick) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    font-family: var(--font-family-mono), monospace;
+    color: var(--color-text-secondary);
+    box-shadow: var(--shadow-drop-medium);
+}
+
+.editor-header {
+    flex-shrink: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-background-medium);
+    border-bottom: var(--border-width) solid var(--color-border-secondary);
+    color: var(--color-info);
+    font-size: var(--font-size-lg);
+}
+
+.editor-pane {
+    flex-grow: 1;
+    display: flex;
+    min-height: 0;
+    background-color: var(--color-background-darkest);
+}
+
+.editor-textarea {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-terminal);
+    padding: var(--spacing-md);
+    resize: none;
+}
+
+.editor-statusbar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-md);
+    background-color: var(--color-background-medium);
+    border-top: var(--border-width) solid var(--color-border-secondary);
+    font-size: var(--font-size-base);
+}
+
+.editor-dirty-indicator {
+    color: var(--color-warning);
+    font-weight: bold;
+    padding: 0 var(--spacing-sm);
+}
