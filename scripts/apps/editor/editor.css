@@ -33,6 +33,67 @@
     gap: var(--spacing-sm);
 }
 
+.editor-findbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background-color: var(--color-background-light);
+    border-bottom: 1px solid var(--color-border-secondary);
+    flex-shrink: 0;
+}
+.editor-findbar.hidden { display: none; }
+
+.editor-find-input {
+    background-color: var(--color-background-darkest);
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-primary);
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+}
+.editor-find-input:focus {
+    outline: none;
+    border-color: var(--color-info);
+}
+
+.editor-find-info {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-subtle);
+    min-width: 80px;
+}
+.editor-find-info.no-match {
+    color: var(--color-warning);
+}
+
+.editor-find-error {
+    font-size: var(--font-size-sm);
+    color: var(--color-error);
+    margin-left: auto;
+    display: none;
+}
+.editor-find-error.visible {
+    display: inline;
+}
+
+
+.editor-findbar .btn {
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+}
+
+.editor-findbar .btn.active {
+    background-color: var(--color-info);
+    border-color: var(--color-info);
+    color: var(--color-background-darkest);
+}
+
+.editor-find-close-button {
+    margin-left: auto;
+}
+
+
 .editor-main {
     flex-grow: 1;
     display: flex;
@@ -44,11 +105,13 @@
     display: flex;
     height: 100%;
     width: 100%;
+    flex-grow: 1;
 }
 
 .editor-main[data-view-mode="split"] .editor-pane-wrapper,
 .editor-main[data-view-mode="split"] .editor-preview {
     width: 50%;
+    flex-basis: 50%;
 }
 
 .editor-main[data-view-mode="editor"] .editor-preview,
@@ -140,7 +203,7 @@
 }
 
 .editor-preview p { margin-bottom: 1em; }
-.editor-preview code { background-color: var(--color-background-medium); color: var(--color-accent-amber); padding: .2em .4em; border-radius: 3px; }
+.editor-preview code:not(pre > code) { background-color: var(--color-background-light); color: var(--color-accent-amber); padding: .2em .4em; border-radius: 3px; }
 .editor-preview pre { background-color: #000; padding: 1em; border-radius: 4px; overflow-x: auto; }
 .editor-preview blockquote { border-left: 4px solid var(--color-info); padding-left: 1em; margin-left: 0; color: var(--color-text-subtle); }
 .editor-preview ul, .editor-preview ol { padding-left: 2em; margin-bottom: 1em; }

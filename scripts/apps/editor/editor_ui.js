@@ -13,21 +13,23 @@ const EditorUI = (() => {
     function buildAndShow(initialState, callbacks) {
         managerCallbacks = callbacks;
 
-        // Main container
         elements.container = Utils.createElement('div', { id: 'editor-container', className: 'editor-container' });
 
         // Header and Toolbar
         elements.fileName = Utils.createElement('div', { className: 'editor-filename' });
         elements.wordWrapButton = Utils.createElement('button', { className: 'btn', textContent: 'Wrap' });
         elements.previewButton = Utils.createElement('button', { className: 'btn', textContent: 'Preview' });
-        const toolbar = Utils.createElement('div', { className: 'editor-toolbar' }, [elements.wordWrapButton, elements.previewButton]);
+        elements.findButton = Utils.createElement('button', { className: 'btn', textContent: 'Find' });
+        const toolbar = Utils.createElement('div', { className: 'editor-toolbar' }, [elements.findButton, elements.wordWrapButton, elements.previewButton]);
         elements.header = Utils.createElement('header', { className: 'editor-header' }, [elements.fileName, toolbar]);
 
-        // Main content area (split pane)
+        // Find/Replace Bar
+        _buildFindBar();
+
+        // Main content area
         elements.lineNumbers = Utils.createElement('div', { className: 'editor-linenumbers' });
         elements.textArea = Utils.createElement('textarea', { className: 'editor-textarea', spellcheck: 'false' });
         const editorWrapper = Utils.createElement('div', { className: 'editor-pane-wrapper' }, [elements.lineNumbers, elements.textArea]);
-
         elements.previewPane = Utils.createElement('div', { className: 'editor-preview' });
         elements.mainArea = Utils.createElement('main', { className: 'editor-main' }, [editorWrapper, elements.previewPane]);
 
@@ -38,20 +40,38 @@ const EditorUI = (() => {
         elements.statusInfo = Utils.createElement('span');
         elements.statusBar.append(elements.statusFileName, elements.statusDirty, elements.statusInfo);
 
-        // Assemble the container
-        elements.container.append(elements.header, elements.mainArea, elements.statusBar);
+        elements.container.append(elements.header, elements.findBar, elements.mainArea, elements.statusBar);
 
         _addEventListeners();
-        _render(initialState); // Initial render with state
+        _render(initialState);
 
         AppLayerManager.show(elements.container);
         elements.textArea.focus();
     }
 
+    function _buildFindBar() {
+        elements.findInput = Utils.createElement('input', { type: 'text', placeholder: 'Find...', className: 'editor-find-input' });
+        elements.replaceInput = Utils.createElement('input', { type: 'text', placeholder: 'Replace...', className: 'editor-find-input' });
+        elements.findNextButton = Utils.createElement('button', { className: 'btn', textContent: 'Next' });
+        elements.findPrevButton = Utils.createElement('button', { className: 'btn', textContent: 'Prev' });
+        elements.replaceButton = Utils.createElement('button', { className: 'btn', textContent: 'Replace' });
+        elements.replaceAllButton = Utils.createElement('button', { className: 'btn', textContent: 'All' });
+        elements.findCloseButton = Utils.createElement('button', { className: 'btn', textContent: '×' });
+        elements.findInfo = Utils.createElement('span', { className: 'editor-find-info' });
+        elements.findError = Utils.createElement('span', { className: 'editor-find-error' });
+        elements.caseSensitiveToggle = Utils.createElement('button', { className: 'btn', textContent: 'Aa', title: 'Case Sensitive' });
+        elements.regexToggle = Utils.createElement('button', { className: 'btn', textContent: '.*', title: 'Use Regular Expression' });
+
+        elements.findBar = Utils.createElement('div', { className: 'editor-findbar hidden' }, [
+            elements.findInput, elements.findPrevButton, elements.findNextButton, elements.findInfo,
+            elements.replaceInput, elements.replaceButton, elements.replaceAllButton,
+            elements.caseSensitiveToggle, elements.regexToggle, elements.findError,
+            elements.findCloseButton
+        ]);
+    }
+
     function hideAndReset() {
-        if (elements.container) {
-            elements.container.remove();
-        }
+        if (elements.container) elements.container.remove();
         elements = {};
         managerCallbacks = {};
     }
@@ -73,7 +93,6 @@ const EditorUI = (() => {
         const lineCount = state.currentContent.split('\n').length;
         const wordCount = state.currentContent.trim().split(/\s+/).filter(Boolean).length;
         elements.statusInfo.textContent = `Lines: ${lineCount}, Words: ${wordCount}, Chars: ${state.currentContent.length}`;
-
         if (state.statusMessage) {
             elements.statusInfo.textContent += ` | ${state.statusMessage}`;
             setTimeout(() => {
@@ -93,10 +112,8 @@ const EditorUI = (() => {
     function renderPreview(fileMode, content) {
         if (!elements.previewPane) return;
         if (fileMode === 'markdown') {
-            const dirtyHTML = marked.parse(content);
-            elements.previewPane.innerHTML = DOMPurify.sanitize(dirtyHTML);
+            elements.previewPane.innerHTML = DOMPurify.sanitize(marked.parse(content));
         } else if (fileMode === 'html') {
-            // Basic sandboxing for HTML preview
             elements.previewPane.innerHTML = `<iframe srcdoc="${DOMPurify.sanitize(content)}" class="editor-html-preview" sandbox></iframe>`;
         } else {
             elements.previewPane.innerHTML = '';
@@ -112,7 +129,7 @@ const EditorUI = (() => {
 
     function applyViewMode(viewMode) {
         if (!elements.mainArea) return;
-        elements.mainArea.dataset.viewMode = viewMode; // Use data-attribute for CSS styling
+        elements.mainArea.dataset.viewMode = viewMode;
         elements.previewButton.classList.toggle('active', viewMode !== 'editor');
     }
 
@@ -121,58 +138,95 @@ const EditorUI = (() => {
         const cursorPos = elements.textArea.selectionStart;
         elements.textArea.value = content;
         elements.textArea.selectionStart = elements.textArea.selectionEnd = cursorPos;
-        // Trigger necessary updates after setting content programmatically
         managerCallbacks.onContentUpdate(content);
     }
 
+    function highlightMatch(match) {
+        if (!elements.textArea || !match) return;
+        elements.textArea.focus();
+        elements.textArea.setSelectionRange(match.start, match.end);
+        // Scroll into view
+        const lines = elements.textArea.value.substring(0, match.start).split('\n').length;
+        const lineHeight = elements.textArea.scrollHeight / elements.textArea.value.split('\n').length;
+        elements.textArea.scrollTop = (lines - 5) * lineHeight;
+    }
+
+    function updateFindUI(findState) {
+        const { matches, currentIndex, error } = findState;
+        if (matches.length > 0) {
+            elements.findInfo.textContent = `${currentIndex + 1} / ${matches.length}`;
+            elements.findInfo.classList.remove('no-match');
+        } else {
+            elements.findInfo.textContent = 'No results';
+            elements.findInfo.classList.add('no-match');
+        }
+        if (error) {
+            elements.findError.textContent = error;
+            elements.findError.classList.add('visible');
+        } else {
+            elements.findError.classList.remove('visible');
+        }
+    }
+
     function _addEventListeners() {
-        elements.textArea.addEventListener('input', () => {
-            managerCallbacks.onContentUpdate(elements.textArea.value);
-        });
+        elements.textArea.addEventListener('input', () => managerCallbacks.onContentUpdate(elements.textArea.value));
+        elements.textArea.addEventListener('scroll', () => { elements.lineNumbers.scrollTop = elements.textArea.scrollTop; });
 
-        // Sync scrolling for line numbers
-        elements.textArea.addEventListener('scroll', () => {
-            elements.lineNumbers.scrollTop = elements.textArea.scrollTop;
+        // Toolbar
+        elements.findButton.addEventListener('click', () => {
+            elements.findBar.classList.toggle('hidden');
+            if (!elements.findBar.classList.contains('hidden')) {
+                elements.findInput.focus();
+                elements.findInput.select();
+            }
         });
-
-        // Toolbar buttons
         elements.wordWrapButton.addEventListener('click', () => managerCallbacks.onToggleWordWrap());
         elements.previewButton.addEventListener('click', () => managerCallbacks.onToggleViewMode());
 
+        // Find Bar
+        const triggerFind = () => {
+            managerCallbacks.onFind(elements.findInput.value, {
+                isCaseSensitive: elements.caseSensitiveToggle.classList.contains('active'),
+                isRegex: elements.regexToggle.classList.contains('active')
+            });
+        };
+        elements.findInput.addEventListener('input', triggerFind);
+        elements.findInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); managerCallbacks.onFindNext(); }});
+        elements.findNextButton.addEventListener('click', () => managerCallbacks.onFindNext());
+        elements.findPrevButton.addEventListener('click', () => managerCallbacks.onFindPrev());
+        elements.replaceButton.addEventListener('click', () => managerCallbacks.onReplace(elements.replaceInput.value));
+        elements.replaceAllButton.addEventListener('click', () => managerCallbacks.onReplaceAll(elements.replaceInput.value));
+        elements.caseSensitiveToggle.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); triggerFind(); });
+        elements.regexToggle.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); triggerFind(); });
+        elements.findCloseButton.addEventListener('click', () => elements.findBar.classList.add('hidden'));
+
+        // Keyboard shortcuts
         elements.container.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key.toLowerCase()) {
-                    case 's':
+                    case 's': e.preventDefault(); managerCallbacks.onSaveRequest(); break;
+                    case 'o': e.preventDefault(); managerCallbacks.onExitRequest(); break;
+                    case 'z': e.preventDefault(); e.shiftKey ? managerCallbacks.onRedoRequest() : managerCallbacks.onUndoRequest(); break;
+                    case 'y': e.preventDefault(); managerCallbacks.onRedoRequest(); break;
+                    case 'p': e.preventDefault(); managerCallbacks.onToggleViewMode(); break;
+                    case 'f':
                         e.preventDefault();
-                        managerCallbacks.onSaveRequest();
-                        break;
-                    case 'o':
-                        e.preventDefault();
-                        managerCallbacks.onExitRequest();
-                        break;
-                    case 'z':
-                        e.preventDefault();
-                        if (e.shiftKey) {
-                            managerCallbacks.onRedoRequest();
-                        } else {
-                            managerCallbacks.onUndoRequest();
+                        elements.findBar.classList.toggle('hidden');
+                        if (!elements.findBar.classList.contains('hidden')) {
+                            elements.findInput.focus();
+                            elements.findInput.select();
                         }
-                        break;
-                    case 'y':
-                        e.preventDefault();
-                        managerCallbacks.onRedoRequest();
-                        break;
-                    case 'p':
-                        e.preventDefault();
-                        managerCallbacks.onToggleViewMode();
                         break;
                 }
             } else if (e.key === 'Escape') {
-                e.preventDefault();
-                managerCallbacks.onExitRequest();
+                if (!elements.findBar.classList.contains('hidden')) {
+                    elements.findBar.classList.add('hidden');
+                } else {
+                    managerCallbacks.onExitRequest();
+                }
             }
         });
     }
 
-    return { buildAndShow, hideAndReset, updateStatusBar, setContent, applySettings, applyViewMode, renderPreview, updateLineNumbers };
+    return { buildAndShow, hideAndReset, updateStatusBar, setContent, applySettings, applyViewMode, renderPreview, updateLineNumbers, highlightMatch, updateFindUI };
 })();
