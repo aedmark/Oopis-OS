@@ -1,7 +1,7 @@
 const EditorAppConfig = {
     EDITOR: {
         DEBOUNCE_DELAY_MS: 250,
-        FIND_DEBOUNCE_DELAY_MS: 150,
+        FIND_DEBOUNCE_DELAY_MS: 150, // Added for find functionality
         TAB_REPLACEMENT: "    ",
         DEFAULT_MODE: "text",
         MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html" },
@@ -21,30 +21,45 @@ const EditorUtils = (() => {
         return (EditorAppConfig.EDITOR.EXTENSIONS_MAP[extension] || EditorAppConfig.EDITOR.DEFAULT_MODE);
     }
 
-    function calculateStatusBarInfo(text, selection) {
+    function calculateStatusBarInfo(text, selectionStart) {
         const lines = text.split("\n");
         const lineCount = lines.length;
         const charCount = text.length;
         const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
-
+        let currentLineNum = 0;
+        let currentColNum = 0;
+        let charCounter = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const lineLengthWithNewline = lines[i].length + 1;
+            if (selectionStart >= charCounter && selectionStart < charCounter + lineLengthWithNewline) {
+                currentLineNum = i;
+                currentColNum = selectionStart - charCounter;
+                break;
+            }
+            charCounter += lineLengthWithNewline;
+        }
+        if (selectionStart === text.length && !text.endsWith("\n")) {
+            currentLineNum = lines.length - 1;
+            currentColNum = lines[lines.length - 1].length;
+        } else if (selectionStart === text.length && text.endsWith("\n")) {
+            currentLineNum = lines.length - 1;
+            currentColNum = 0;
+        }
         return {
             lines: lineCount,
             words: wordCount,
             chars: charCount,
             cursor: {
-                line: selection.line,
-                col: selection.col
+                line: currentLineNum + 1,
+                col: currentColNum + 1
             },
         };
     }
-    function generateLineNumbersArray(lineCount) {
-        return Array.from({ length: lineCount }, (_, i) => i + 1);
+    function generateLineNumbersArray(text) {
+        const lines = text.split("\n").length;
+        return Array.from({ length: lines }, (_, i) => i + 1);
     }
-    return {
-        determineMode,
-        calculateStatusBarInfo,
-        generateLineNumbersArray
-    };
+    return { determineMode, calculateStatusBarInfo, generateLineNumbersArray };
 })();
 
 const EditorUI = (() => {
@@ -52,9 +67,6 @@ const EditorUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let previewDebounceTimer = null;
-    let lines = [];
-    let selection = { line: 1, col: 1, start: 0, end: 0 };
-    const LINE_HEIGHT = 16; // A fixed line height for calculations
 
     const iframeStyles = `
     <style>
@@ -245,7 +257,7 @@ const EditorUI = (() => {
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
         elements.highlighter = Utils.createElement("div", {
             id: "editor-highlighter",
-            className: "editor__shared-pane-styles editor__highlighter"
+            className: "editor__shared-pane-styles editor__highlighter" // Use both classes
         });
         elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__shared-pane-styles editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
         elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
@@ -279,27 +291,226 @@ const EditorUI = (() => {
         }
     }
 
+    function destroyLayout() {
+        if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+        previewDebounceTimer = null;
+        elements = {};
+        eventCallbacks = {};
+    }
+
+    function updateFilenameDisplay(filePath, isDirty) {
+        if (elements.filenameDisplay) {
+            elements.filenameDisplay.textContent = `File: ${filePath || "Untitled"}${isDirty ? "*" : ""}`;
+        }
+    }
+
+    function updateStatusBar(text, selectionStart) {
+        if (!elements.textarea || !elements.statusBar) return;
+        const stats = EditorUtils.calculateStatusBarInfo(text, selectionStart);
+        if (elements.statusBarLineCount) elements.statusBarLineCount.textContent = `Lines: ${stats.lines}`;
+        if (elements.statusBarWordCount) elements.statusBarWordCount.textContent = `Words: ${stats.words} `;
+        if (elements.statusBarCharCount) elements.statusBarCharCount.textContent = `Chars: ${stats.chars}`;
+        if (elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col} `;
+    }
+
+    function updateLineNumbers(text) {
+        if (!elements.textarea || !elements.lineGutter) return;
+        const numbersArray = EditorUtils.generateLineNumbersArray(text);
+        elements.lineGutter.textContent = numbersArray.join("\n");
+        elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+    }
+
+    function syncScrolls() {
+        if (elements.lineGutter && elements.textarea) {
+            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
+        }
+        if (elements.highlighter && elements.textarea) {
+            elements.highlighter.scrollTop = elements.textarea.scrollTop;
+            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
+        }
+    }
+
+    function setTextareaContent(text) {
+        if (elements.textarea) elements.textarea.value = text;
+    }
+
+    function getTextareaContent() {
+        return elements.textarea ? elements.textarea.value : "";
+    }
+
+    function setEditorFocus() {
+        if (elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains("hidden")) {
+            elements.textarea.focus();
+        }
+    }
+
+    function getTextareaSelection() {
+        if (elements.textarea) {
+            return { start: elements.textarea.selectionStart, end: elements.textarea.selectionEnd };
+        }
+        return { start: 0, end: 0 };
+    }
+
+    function setTextareaSelection(start, end) {
+        if (elements.textarea) {
+            elements.textarea.selectionStart = start;
+            elements.textarea.selectionEnd = end;
+        }
+    }
+
+    function applyTextareaWordWrap(isWordWrapActive) {
+        if (!elements.textarea || !elements.highlighter) return;
+        const elementsToStyle = [elements.textarea, elements.highlighter];
+        if (isWordWrapActive) {
+            elementsToStyle.forEach(el => {
+                el.style.whiteSpace = 'pre-wrap';
+                el.style.overflowX = 'hidden';
+            });
+        } else {
+            elementsToStyle.forEach(el => {
+                el.style.whiteSpace = 'pre';
+                el.style.overflowX = 'auto';
+            });
+        }
+    }
+
+    function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
+        if (!elements.previewPane) return;
+        if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN) {
+            elements.previewPane.classList.toggle("word-wrap-enabled", isWordWrapActive);
+        }
+    }
+
+    function updateWordWrapButtonText(isWordWrapActive) {
+        if (elements.wordWrapToggleButton) {
+            elements.wordWrapToggleButton.textContent = isWordWrapActive ? "Wrap: On" : "Wrap: Off";
+        }
+    }
+
+    function getPreviewPaneHTML() {
+        if (elements.previewPane) {
+            const iframe = elements.previewPane.querySelector("iframe");
+            if (iframe && iframe.srcdoc) {
+                const match = iframe.srcdoc.match(/<body>([\s\S]*)<\/body>/i);
+                if (match && match[1]) return match[1];
+                return iframe.srcdoc;
+            }
+            return elements.previewPane.innerHTML;
+        }
+        return "";
+    }
+
+    function renderPreview(content, currentFileMode) {
+        if (!elements.previewPane) return;
+        const isHtmlMode = currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
+        const isMarkdownMode = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN;
+
+        if (!isHtmlMode && !isMarkdownMode) {
+            elements.previewPane.innerHTML = "";
+            return;
+        }
+
+        if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+
+        previewDebounceTimer = setTimeout(() => {
+            if (isMarkdownMode) {
+                if (typeof marked !== "undefined") {
+                    elements.previewPane.innerHTML = marked.parse(content, { sanitize: true });
+                } else {
+                    elements.previewPane.textContent = "Markdown preview library (marked.js) not loaded.";
+                }
+            } else if (isHtmlMode) {
+                let iframe = elements.previewPane.querySelector("iframe");
+                if (!iframe) {
+                    iframe = Utils.createElement("iframe", {
+                        style: { width: '100%', height: '100%', border: 'none' },
+                        sandbox: ""
+                    });
+                    elements.previewPane.innerHTML = "";
+                    elements.previewPane.appendChild(iframe);
+                }
+                iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head>${iframeStyles}</head><body>${content}</body></html>`;
+            }
+        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
+    }
+
+
+    function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
+        if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
+
+        elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
+
+        elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
+        elements.exportPreviewButton.classList.toggle("hidden", !isPreviewable);
+        elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
+
+        const viewConfigs = {
+            [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
+            [EditorAppConfig.EDITOR.VIEW_MODES.EDIT_ONLY]: { text: "Preview", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" },
+            [EditorAppConfig.EDITOR.VIEW_MODES.PREVIEW_ONLY]: { text: "Split", gutter: false, editor: false, editorFlex: "0", preview: true, previewFlex: "1" },
+            noPreview: { text: "Split View", gutter: true, editor: true, editorFlex: "1", preview: false, previewFlex: "0" }
+        };
+
+        const config = isPreviewable ? viewConfigs[viewMode] : viewConfigs.noPreview;
+        if (config) {
+            elements.viewToggleButton.textContent = config.text;
+            elements.lineGutter.classList.toggle("hidden", !config.gutter || (isWordWrapActive && config.gutter));
+            elements.textareaWrapper.classList.toggle("hidden", !config.editor);
+            elements.textareaWrapper.style.flex = config.editorFlex;
+            elements.previewWrapper.classList.toggle("hidden", !config.preview);
+            elements.previewWrapper.style.flex = config.previewFlex;
+        }
+    }
+
+    function updateFindBar(findState) {
+        if (!elements.findBar) return;
+        elements.findBar.classList.toggle('hidden', !findState.isOpen);
+        if (!findState.isOpen) return;
+
+        elements.replaceInput.classList.toggle('hidden', !findState.isReplace);
+        elements.replaceBtn.classList.toggle('hidden', !findState.isReplace);
+        elements.replaceAllBtn.classList.toggle('hidden', !findState.isReplace);
+
+        if (findState.query) {
+            const matchCount = findState.matches.length;
+            if (matchCount > 0) {
+                elements.findMatchesDisplay.textContent = `${findState.activeIndex + 1} of ${matchCount}`;
+            } else {
+                elements.findMatchesDisplay.textContent = "Not Found";
+            }
+        } else {
+            elements.findMatchesDisplay.textContent = "";
+        }
+    }
+
+    function getFindQuery() {
+        return elements.findInput ? elements.findInput.value : "";
+    }
+
+    function getReplaceQuery() {
+        return elements.replaceInput ? elements.replaceInput.value : "";
+    }
+
+    function renderHighlights(text, matches, activeIndex) {
+        if (!elements.highlighter) return;
+        let highlightedHtml = '';
+        let lastIndex = 0;
+        matches.forEach((match, index) => {
+            highlightedHtml += text.substring(lastIndex, match.index);
+            const className = index === activeIndex ? 'highlight-match--active' : 'highlight-match';
+            highlightedHtml += `<span class="${className}">${match[0]}</span>`;
+            lastIndex = match.index + match[0].length;
+        });
+        highlightedHtml += text.substring(lastIndex);
+        elements.highlighter.innerHTML = highlightedHtml;
+        syncScrolls();
+    }
+
     return {
-        buildLayout,
-        destroyLayout,
-        updateFilenameDisplay,
-        updateStatusBar,
-        updateLineNumbers,
-        syncScrolls,
-        setTextareaContent,
-        getTextareaContent,
-        setEditorFocus,
-        getTextareaSelection,
-        setTextareaSelection,
-        applyTextareaWordWrap,
-        applyPreviewWordWrap,
-        updateWordWrapButtonText,
-        renderPreview,
-        setViewMode,
-        getPreviewPaneHTML,
-        setGutterVisibility,
-        _updateFormattingToolbarVisibility,
-        iframeStyles,
-        elements
+        buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
+        setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
+        applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
+        getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
+        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
     };
 })();
