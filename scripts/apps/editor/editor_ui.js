@@ -94,7 +94,7 @@ const EditorUI = (() => {
     }
 
     function hideAndReset() {
-        if (elements.container) elements.container.remove();
+        AppLayerManager.hide();
         elements = {};
         managerCallbacks = {};
     }
