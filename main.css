@@ -230,6 +230,7 @@ body {
     backdrop-filter: blur(2px);
 }
 
+
 /* Base styles for all modal dialogs */
 .modal-overlay {
     position: absolute;
@@ -422,10 +423,4 @@ body {
 
 .text-file {
     color: var(--color-text-primary);
-}
-
-/* Add this new rule to the end of the file */
-#app-layer .modal-overlay {
-    background-color: transparent;
-    backdrop-filter: none;
 }
