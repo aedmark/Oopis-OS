@@ -3,18 +3,72 @@ const EditorManager = (() => {
     let isActiveState = false, currentFilePath = null, currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE,
         currentViewMode = EditorAppConfig.EDITOR.VIEW_MODES.SPLIT, isWordWrapActive = EditorAppConfig.EDITOR.WORD_WRAP_DEFAULT_ENABLED,
         originalContent = "", isDirty = false, undoStack = [], redoStack = [],
-        saveUndoStateTimeout = null, onSaveCallback = null, _exitPromiseResolve = null;
+        onSaveCallback = null, _exitPromiseResolve = null;
     const MAX_UNDO_STATES = 100;
 
-    let findState = {
-        isOpen: false,
-        isReplace: false,
-        query: '',
-        matches: [],
-        activeIndex: -1,
-    };
+    // --- Command Pattern for Undo/Redo ---
+    class Command {
+        execute() { throw new Error("Execute method not implemented."); }
+        unexecute() { throw new Error("Unexecute method not implemented."); }
+    }
 
-    let findDebounceTimer = null;
+    class InsertTextCommand extends Command {
+        constructor(text, position, editorUI) {
+            super();
+            this.text = text;
+            this.position = position;
+            this.editorUI = editorUI;
+        }
+
+        execute() {
+            const content = this.editorUI.getTextareaContent();
+            const newContent = content.slice(0, this.position) + this.text + content.slice(this.position);
+            this.editorUI.setTextareaContent(newContent);
+            this.editorUI.setTextareaSelection(this.position + this.text.length, this.position + this.text.length);
+        }
+
+        unexecute() {
+            const content = this.editorUI.getTextareaContent();
+            const newContent = content.slice(0, this.position) + content.slice(this.position + this.text.length);
+            this.editorUI.setTextareaContent(newContent);
+            this.editorUI.setTextareaSelection(this.position, this.position);
+        }
+    }
+
+    class DeleteTextCommand extends Command {
+        constructor(text, position, editorUI) {
+            super();
+            this.text = text;
+            this.position = position;
+            this.editorUI = editorUI;
+        }
+
+        execute() {
+            const content = this.editorUI.getTextareaContent();
+            const newContent = content.slice(0, this.position) + content.slice(this.position + this.text.length);
+            this.editorUI.setTextareaContent(newContent);
+            this.editorUI.setTextareaSelection(this.position, this.position);
+        }
+
+        unexecute() {
+            const content = this.editorUI.getTextareaContent();
+            const newContent = content.slice(0, this.position) + this.text + content.slice(this.position);
+            this.editorUI.setTextareaContent(newContent);
+            this.editorUI.setTextareaSelection(this.position + this.text.length, this.position + this.text.length);
+        }
+    }
+
+    function _executeCommand(command) {
+        command.execute();
+        undoStack.push(command);
+        redoStack = [];
+        if (undoStack.length > MAX_UNDO_STATES) {
+            undoStack.shift();
+        }
+        _updateUndoRedoButtonStates();
+        _handleEditorInput();
+    }
+
 
     function _loadWordWrapSetting() {
         const savedSetting = StorageManager.loadItem(EditorAppConfig.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor word wrap setting");
@@ -39,7 +93,7 @@ const EditorManager = (() => {
     function _updateFullEditorUI() {
         if (!isActiveState) return;
         const textContent = EditorUI.getTextareaContent();
-        isDirty = textContent !== _getPatchedContent();
+        isDirty = textContent !== originalContent;
         EditorUI.updateFilenameDisplay(currentFilePath, isDirty);
         EditorUI.updateLineNumbers(textContent);
         const selection = EditorUI.getTextareaSelection();
@@ -47,20 +101,12 @@ const EditorManager = (() => {
         if (currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML) {
             EditorUI.renderPreview(textContent, currentFileMode, isWordWrapActive);
         }
-        EditorUI.renderHighlights(textContent, findState.matches, findState.activeIndex);
         EditorUI.syncScrolls();
     }
     function _handleEditorInput() {
         if (!isActiveState) return;
-        const currentContent = EditorUI.getTextareaContent();
-        if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
-        saveUndoStateTimeout = setTimeout(() => {
-            _saveUndoState(currentContent);
-            saveUndoStateTimeout = null;
-        }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS + 50);
-        isDirty = currentContent !== _getPatchedContent();
+        isDirty = EditorUI.getTextareaContent() !== originalContent;
         _updateFullEditorUI();
-        _debouncedFind();
     }
     function _handleEditorScroll() { if (isActiveState) EditorUI.syncScrolls(); }
     function _handleEditorSelectionChange() {
@@ -106,66 +152,28 @@ const EditorManager = (() => {
         await OutputManager.appendToOutput(`Successfully exported content as '${fileName}'. Check your browser downloads.`, { typeClass: 'text-success' });
     }
 
-    function _getPatchedContent() {
-        if (undoStack.length === 0) return "";
-        let content = undoStack[0];
-        for (let i = 1; i < undoStack.length; i++) {
-            content = PatchUtils.applyPatch(content, undoStack[i]);
-        }
-        return content;
-    }
-
-    function _saveUndoState(currentContent) {
-        const lastKnownState = _getPatchedContent();
-        const patch = PatchUtils.createPatch(lastKnownState, currentContent);
-
-        if (patch) {
-            undoStack.push(patch);
-            if (undoStack.length > MAX_UNDO_STATES + 1) {
-                undoStack.shift();
-                undoStack[0] = _getPatchedContent(); // Re-base
-                const rebasePatches = undoStack.slice(1);
-                undoStack = [undoStack[0], ...rebasePatches];
-            }
-            redoStack = [];
-            _updateUndoRedoButtonStates();
-        }
-    }
-
     function _performUndo() {
-        if (undoStack.length <= 1) return;
-        const patchToUndo = undoStack.pop();
-        redoStack.push(patchToUndo);
-
-        const currentContent = EditorUI.getTextareaContent();
-        const previousContent = PatchUtils.applyInverse(currentContent, patchToUndo);
-
-        EditorUI.setTextareaContent(previousContent);
-        isDirty = (previousContent !== originalContent);
-        _updateFullEditorUI();
+        if (undoStack.length === 0) return;
+        const command = undoStack.pop();
+        command.unexecute();
+        redoStack.push(command);
         _updateUndoRedoButtonStates();
-        EditorUI.setTextareaSelection(previousContent.length, previousContent.length);
+        _handleEditorInput();
         EditorUI.setEditorFocus();
     }
 
     function _performRedo() {
         if (redoStack.length === 0) return;
-        const patchToRedo = redoStack.pop();
-        undoStack.push(patchToRedo);
-
-        const currentContent = EditorUI.getTextareaContent();
-        const nextContent = PatchUtils.applyPatch(currentContent, patchToRedo);
-
-        EditorUI.setTextareaContent(nextContent);
-        isDirty = (nextContent !== originalContent);
-        _updateFullEditorUI();
+        const command = redoStack.pop();
+        command.execute();
+        undoStack.push(command);
         _updateUndoRedoButtonStates();
-        EditorUI.setTextareaSelection(nextContent.length, nextContent.length);
+        _handleEditorInput();
         EditorUI.setEditorFocus();
     }
 
     function _updateUndoRedoButtonStates() {
-        if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length <= 1;
+        if (EditorUI.elements.undoButton) EditorUI.elements.undoButton.disabled = undoStack.length === 0;
         if (EditorUI.elements.redoButton) EditorUI.elements.redoButton.disabled = redoStack.length === 0;
     }
     async function _applyTextManipulation(type) {
@@ -174,226 +182,62 @@ const EditorManager = (() => {
         const textarea = EditorUI.elements.textarea;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-        const text = textarea.value;
-        const selectedText = text.substring(start, end);
+        const selectedText = EditorUI.getTextareaContent().substring(start, end);
 
-        let manipulatedText = '';
-        let newStart = start;
-        let newEnd = end;
+        let prefix = '';
+        let suffix = '';
+        let requiresInput = false;
 
-        const manipulate = async () => {
-            switch (type) {
-                case 'bold':
-                    manipulatedText = `**${selectedText}**`;
-                    newStart = start + 2;
-                    newEnd = end + 2;
-                    break;
-                case 'italic':
-                    manipulatedText = `*${selectedText}*`;
-                    newStart = start + 1;
-                    newEnd = end + 1;
-                    break;
-                case 'code':
-                    manipulatedText = `\`${selectedText}\``;
-                    newStart = start + 1;
-                    newEnd = end + 1;
-                    break;
-                case 'quote':
-                    const lines = selectedText.split('\n');
-                    manipulatedText = lines.map(line => `> ${line}`).join('\n');
-                    newStart = start;
-                    newEnd = start + manipulatedText.length;
-                    break;
-                case 'codeblock':
-                    manipulatedText = `\`\`\`\n${selectedText}\n\`\`\``;
-                    newStart = start + 3;
-                    newEnd = start + 3 + selectedText.length;
-                    break;
-                case 'ul':
-                    const ulLines = selectedText.split('\n');
-                    manipulatedText = ulLines.map(line => `- ${line}`).join('\n');
-                    newStart = start;
-                    newEnd = start + manipulatedText.length;
-                    break;
-                case 'ol':
-                    const olLines = selectedText.split('\n');
-                    manipulatedText = olLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
-                    newStart = start;
-                    newEnd = start + manipulatedText.length;
-                    break;
-                case 'h1':
-                    manipulatedText = `<h1>${selectedText}</h1>`;
-                    newStart = start + 4;
-                    newEnd = end + 4;
-                    break;
-                case 'p':
-                    manipulatedText = `<p>${selectedText}</p>`;
-                    newStart = start + 3;
-                    newEnd = end + 3;
-                    break;
-                case 'b':
-                    manipulatedText = `<b>${selectedText}</b>`;
-                    newStart = start + 3;
-                    newEnd = end + 3;
-                    break;
-                case 'i_html':
-                    manipulatedText = `<i>${selectedText}</i>`;
-                    newStart = start + 3;
-                    newEnd = end + 3;
-                    break;
-                case 'a':
-                    const url_html = await new Promise(resolve => {
-                        ModalManager.request({
-                            context: 'graphical-input',
-                            messageLines: ["Enter URL for the link:"],
-                            placeholder: "https://example.com",
-                            onConfirm: (value) => resolve(value.trim() || null),
-                            onCancel: () => resolve(null)
-                        });
-                    });
-                    if (url_html) {
-                        manipulatedText = `<a href="${url_html}">${selectedText}</a>`;
-                        newStart = start;
-                        newEnd = start + manipulatedText.length;
-                    } else {
-                        manipulatedText = selectedText;
-                    }
-                    break;
-                case 'link':
-                    const url = await new Promise(resolve => {
-                        ModalManager.request({
-                            context: 'graphical-input',
-                            messageLines: ["Enter URL for the link:"],
-                            placeholder: "https://example.com",
-                            confirmText: "Insert",
-                            cancelText: "Cancel",
-                            onConfirm: (value) => resolve(value.trim() || null),
-                            onCancel: () => resolve(null)
-                        });
-                    });
+        switch (type) {
+            case 'bold': prefix = '**'; suffix = '**'; break;
+            case 'italic': prefix = '*'; suffix = '*'; break;
+            case 'code': prefix = '`'; suffix = '`'; break;
+            case 'quote': prefix = '> '; suffix = ''; break;
+            case 'codeblock': prefix = '```\n'; suffix = '\n```'; break;
+            case 'ul': prefix = '- '; suffix = ''; break;
+            case 'ol': prefix = '1. '; suffix = ''; break;
+            case 'h1': prefix = '<h1>'; suffix = '</h1>'; break;
+            case 'p': prefix = '<p>'; suffix = '</p>'; break;
+            case 'b': prefix = '<b>'; suffix = '</b>'; break;
+            case 'i_html': prefix = '<i>'; suffix = '</i>'; break;
+            case 'link':
+            case 'a':
+                requiresInput = true;
+                break;
+            default:
+                return;
+        }
 
-                    if (url) {
-                        manipulatedText = `[${selectedText}](${url})`;
-                        newStart = start + 1;
-                        newEnd = start + 1 + selectedText.length;
-                    } else {
-                        manipulatedText = selectedText;
-                    }
-                    break;
-                default:
-                    manipulatedText = selectedText;
+        if (requiresInput) {
+            const url = await new Promise(resolve => {
+                ModalManager.request({
+                    context: 'graphical-input',
+                    messageLines: ["Enter URL:"],
+                    placeholder: "https://example.com",
+                    onConfirm: value => resolve(value.trim() || null),
+                    onCancel: () => resolve(null)
+                });
+            });
+
+            if (url) {
+                if (type === 'link') {
+                    prefix = `[${selectedText}](`;
+                    suffix = `)`;
+                } else { // 'a'
+                    prefix = `<a href="${url}">`;
+                    suffix = `</a>`;
+                }
+                _executeCommand(new InsertTextCommand(prefix + url + suffix, start, EditorUI));
             }
-
-            if (manipulatedText !== selectedText) {
-                const newText = text.substring(0, start) + manipulatedText + text.substring(end);
-                EditorUI.setTextareaContent(newText);
-                _handleEditorInput();
-                EditorUI.setEditorFocus();
-                EditorUI.setTextareaSelection(newStart, newEnd);
-            } else {
-                EditorUI.setEditorFocus();
-                EditorUI.setTextareaSelection(start, end);
-            }
-        };
-
-        await manipulate();
-    }
-    function _openFindBar(isReplace = false) {
-        findState.isOpen = true;
-        findState.isReplace = isReplace;
-        EditorUI.updateFindBar(findState);
-        EditorUI.elements.findInput.focus();
-        EditorUI.elements.findInput.select();
-        _find();
-    }
-
-    function _closeFindBar() {
-        findState.isOpen = false;
-        findState.matches = [];
-        findState.activeIndex = -1;
-        EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), [], -1); // Clear highlights
-        EditorUI.setEditorFocus();
-    }
-
-    function _debouncedFind() {
-        if (findDebounceTimer) clearTimeout(findDebounceTimer);
-        findDebounceTimer = setTimeout(() => {
-            _find();
-            findDebounceTimer = null;
-        }, EditorAppConfig.EDITOR.FIND_DEBOUNCE_DELAY_MS);
-    }
-
-    function _find() {
-        if (!findState.isOpen) return;
-        const query = EditorUI.getFindQuery();
-        findState.query = query;
-        if (!query) {
-            findState.matches = [];
-            findState.activeIndex = -1;
         } else {
-            const text = EditorUI.getTextareaContent();
-            const regex = new RegExp(query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-            findState.matches = [...text.matchAll(regex)];
-            findState.activeIndex = findState.matches.length > 0 ? 0 : -1;
+            let replacementText = prefix + selectedText + suffix;
+            if (type === 'quote' || type === 'ul' || type === 'ol') {
+                const lines = selectedText.split('\n');
+                replacementText = lines.map(line => prefix + line).join('\n');
+            }
+            _executeCommand(new DeleteTextCommand(selectedText, start, EditorUI));
+            _executeCommand(new InsertTextCommand(replacementText, start, EditorUI));
         }
-        EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, false);
-    }
-
-    function _goToNextMatch() {
-        if (findState.matches.length === 0) return;
-        findState.activeIndex = (findState.activeIndex + 1) % findState.matches.length;
-        EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true);
-    }
-
-    function _goToPrevMatch() {
-        if (findState.matches.length === 0) return;
-        findState.activeIndex = (findState.activeIndex - 1 + findState.matches.length) % findState.matches.length;
-        EditorUI.updateFindBar(findState);
-        EditorUI.renderHighlights(EditorUI.getTextareaContent(), findState.matches, findState.activeIndex);
-        _scrollToMatch(findState.activeIndex, true);
-    }
-
-    function _scrollToMatch(index, shouldFocusTextarea = true) {
-        if (index === -1) return;
-        const match = findState.matches[index];
-        const textarea = EditorUI.elements.textarea;
-
-        if (shouldFocusTextarea) {
-            textarea.focus();
-        }
-
-        textarea.setSelectionRange(match.index, match.index + match[0].length);
-        const textToMatch = textarea.value.substring(0, match.index);
-        const lineBreaks = (textToMatch.match(/\n/g) || []).length;
-        textarea.scrollTop = lineBreaks * 16;
-    }
-
-    function _replace() {
-        if (findState.activeIndex === -1 || !findState.isReplace) return;
-
-        const match = findState.matches[findState.activeIndex];
-        const replaceText = EditorUI.getReplaceQuery();
-        const originalText = EditorUI.getTextareaContent();
-
-        const newText = originalText.substring(0, match.index) + replaceText + originalText.substring(match.index + match[0].length);
-
-        EditorUI.setTextareaContent(newText);
-        _handleEditorInput();
-    }
-
-    function _replaceAll() {
-        if (findState.matches.length === 0 || !findState.isReplace) return;
-        const replaceText = EditorUI.getReplaceQuery();
-        const regex = new RegExp(findState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-        const newText = EditorUI.getTextareaContent().replace(regex, replaceText);
-
-        EditorUI.setTextareaContent(newText);
-        _handleEditorInput();
     }
     function _toggleViewModeHandler() {
         if (!isActiveState) return;
@@ -419,9 +263,8 @@ const EditorManager = (() => {
             originalContent = content;
             isDirty = false;
             onSaveCallback = callback;
-            undoStack = [content];
+            undoStack = [];
             redoStack = [];
-            findState = { isOpen: false, isReplace: false, query: '', matches: [], activeIndex: -1 };
 
             const isPreviewable = currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN || currentFileMode === EditorAppConfig.EDITOR.MODES.HTML;
             document.addEventListener('keydown', handleKeyDown);
@@ -448,17 +291,6 @@ const EditorManager = (() => {
                 onFormatI_html: () => _applyTextManipulation('i_html'),
                 onUndo: _performUndo.bind(this),
                 onRedo: _performRedo.bind(this),
-                onFindBarClose: _closeFindBar.bind(this),
-                onFindInputChange: _debouncedFind.bind(this),
-                onFindNext: _goToNextMatch.bind(this),
-                onFindPrev: _goToPrevMatch.bind(this),
-                onReplace: _replace.bind(this),
-                onReplaceAll: _replaceAll.bind(this),
-                onFindBarKeyDown: (e) => {
-                    if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); _goToPrevMatch(); }
-                    else if (e.key === 'Enter') { e.preventDefault(); _goToNextMatch(); }
-                    else if (e.key === 'Escape') { e.preventDefault(); _closeFindBar(); }
-                }
             };
             const editorElement = EditorUI.buildLayout(editorCallbacks);
             AppLayerManager.show(editorElement);
@@ -480,7 +312,7 @@ const EditorManager = (() => {
         AppLayerManager.hide();
         EditorUI.destroyLayout();
         isActiveState = false; currentFilePath = null; currentFileMode = EditorAppConfig.EDITOR.DEFAULT_MODE;
-        isDirty = false; originalContent = ""; onSaveCallback = null; undoStack = []; redoStack = []; saveUndoStateTimeout = null;
+        isDirty = false; originalContent = ""; onSaveCallback = null; undoStack = []; redoStack = [];
     }
     async function exit(saveChanges = false) {
         let proceedToExit = true;
@@ -550,18 +382,12 @@ const EditorManager = (() => {
     }
     async function handleKeyDown(event) {
         if (!isActiveState) return;
-        if (findState.isOpen && event.key === 'Escape') {
-            event.preventDefault();
-            _closeFindBar();
-            return;
-        }
-        if (event.key === "Tab" && document.activeElement === EditorUI.elements.textarea) {
+
+        const textarea = EditorUI.elements.textarea;
+        if (event.key === "Tab" && document.activeElement === textarea) {
             event.preventDefault();
             const selection = EditorUI.getTextareaSelection();
-            const content = EditorUI.getTextareaContent();
-            EditorUI.setTextareaContent(content.substring(0, selection.start) + EditorAppConfig.EDITOR.TAB_REPLACEMENT + content.substring(selection.end));
-            EditorUI.setTextareaSelection(selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length, selection.start + EditorAppConfig.EDITOR.TAB_REPLACEMENT.length);
-            _handleEditorInput();
+            _executeCommand(new InsertTextCommand(EditorAppConfig.EDITOR.TAB_REPLACEMENT, selection.start, EditorUI));
             return;
         }
         if (event.ctrlKey || event.metaKey) {
@@ -569,8 +395,6 @@ const EditorManager = (() => {
                 case "s": event.preventDefault(); await exit(true); break;
                 case "o": event.preventDefault(); await exit(false); break;
                 case "p": event.preventDefault(); _toggleViewModeHandler(); break;
-                case "f": event.preventDefault(); _openFindBar(false); break;
-                case "h": event.preventDefault(); _openFindBar(true); break;
                 case "b": if (currentFileMode !== 'text') { event.preventDefault(); _applyTextManipulation('bold'); } break;
                 case "i": if (!event.shiftKey && currentFileMode !== 'text') { event.preventDefault(); _applyTextManipulation('italic'); } break;
                 case "z": event.preventDefault(); event.shiftKey ? _performRedo() : _performUndo(); break;
