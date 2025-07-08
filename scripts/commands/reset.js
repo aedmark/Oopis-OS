@@ -1,28 +1,14 @@
 (() => {
     "use strict";
-    /**
-     * @file Defines the 'reset' command, a powerful and destructive command that resets the entire OopisOS system
-     * to its factory default state, deleting all user data, configurations, and cached files.
-     * @author Andrew Edmark
-     * @author Gemini
-     */
 
     const resetCommandDefinition = {
         commandName: "reset",
         argValidation: {
-            exact: 0, // This command takes no arguments.
+            exact: 0,
         },
-        /**
-         * The core logic for the 'reset' command.
-         * It confirms the user's intent in an interactive session, then proceeds to
-         * clear cache storage and perform a full session reset.
-         * @async
-         * @param {object} context - The context object from the command executor.
-         * @returns {Promise<object>} A command result object.
-         */
+
         coreLogic: async (context) => {
             const { options } = context;
-            // This command is too destructive for non-interactive scripts.
             if (!options.isInteractive) {
                 return {
                     success: false,
@@ -30,7 +16,6 @@
                 };
             }
 
-            // Request confirmation from the user due to the destructive nature of the command.
             const confirmed = await new Promise((resolve) =>
                 ModalManager.request({
                     context: "terminal",
@@ -45,21 +30,17 @@
 
             if (confirmed) {
                 let cacheCleared = false;
-                // Attempt to clear the browser's cache storage for the site.
                 if ('caches' in window) {
                     try {
                         const keys = await caches.keys();
                         await Promise.all(keys.map(key => caches.delete(key)));
-                        // Use OutputManager instead of term.writeln
                         await OutputManager.appendToOutput("Cache storage cleared successfully.");
                         cacheCleared = true;
                     } catch (error) {
-                        // Use OutputManager instead of term.writeln
                         await OutputManager.appendToOutput(`Warning: Could not clear cache storage: ${error.message}`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                     }
                 }
 
-                // Perform the main OS reset (clearing IndexedDB, etc.).
                 await SessionManager.performFullReset();
 
                 const outputMessage = cacheCleared
@@ -72,7 +53,6 @@
                     messageType: Config.CSS_CLASSES.SUCCESS_MSG,
                 };
             } else {
-                // User cancelled the operation.
                 return {
                     success: true,
                     output: `Reset cancelled. ${Config.MESSAGES.NO_ACTION_TAKEN}`,

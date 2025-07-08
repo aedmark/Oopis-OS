@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'sort' command for OopisOS.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

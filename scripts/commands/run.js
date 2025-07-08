@@ -1,31 +1,23 @@
-/**
- * @file Defines the 'run' command, which executes shell scripts within the OopisOS environment.
- * It supports argument passing, environment variable expansion, and handles interactive prompts
- * within scripts.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
     const runCommandDefinition = {
         commandName: "run",
         argValidation: {
-            min: 1, // Requires at least one argument: the script path.
+            min: 1,
         },
         pathValidation: [
             {
                 argIndex: 0,
                 options: {
-                    expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE, // The first argument must be a file.
+                    expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
                 },
             },
         ],
         permissionChecks: [
             {
                 pathArgIndex: 0,
-                permissions: ["read", "execute"], // Script must be readable and executable.
+                permissions: ["read", "execute"],
             },
         ],
         coreLogic: async (context) => {
@@ -50,30 +42,22 @@
             const rawScriptLines = scriptNode.content.split('\n');
             const isTopLevelCall = !options.scriptingContext;
 
-            // This is the context that will be passed down to nested commands.
-            // If it's a nested call, we use the existing context. If it's a top-level call, we create a new one.
             const scriptingContext = isTopLevelCall
                 ? { isScripting: true, waitingForInput: false, inputCallback: null, cancelCallback: null, steps: { count: 0 }, recursionDepth: 0 }
                 : options.scriptingContext;
 
-            // Preserve the state of the parent script if this is a nested call.
             const parentScriptState = isTopLevelCall ? null : {
                 lines: scriptingContext.lines,
                 currentLineIndex: scriptingContext.currentLineIndex
             };
 
-            // Increment recursion depth for the current execution.
             scriptingContext.recursionDepth++;
 
-            // --- START FIX ---
-            // ALWAYS create a new, sandboxed environment scope for EVERY script execution.
-            // This prevents variables from leaking into the parent environment.
             EnvironmentManager.push();
             if (isTopLevelCall) {
                 CommandExecutor.setScriptExecutionInProgress(true);
                 if (options.isInteractive) TerminalUI.setInputState(false);
             }
-            // --- END FIX ---
 
             let overallScriptSuccess = true;
             let finalResult = {};
@@ -131,27 +115,21 @@
                     }
                 }
             } finally {
-                // --- START FIX ---
-                // Decrement recursion depth.
                 scriptingContext.recursionDepth--;
 
-                // Restore parent script state if it was a nested call.
                 if (parentScriptState) {
                     scriptingContext.lines = parentScriptState.lines;
                     scriptingContext.currentLineIndex = parentScriptState.currentLineIndex;
                 }
 
-                // ALWAYS pop the environment scope to clean up after this script.
                 EnvironmentManager.pop();
 
-                // Only the top-level script call should re-enable user input.
                 if (isTopLevelCall) {
                     CommandExecutor.setScriptExecutionInProgress(false);
                     if (options.isInteractive) {
                         TerminalUI.setInputState(true);
                     }
                 }
-                // --- END FIX ---
             }
 
             finalResult = {

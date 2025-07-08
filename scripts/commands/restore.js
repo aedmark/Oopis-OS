@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'restore' command, which restores the entire OopisOS system state
- * from a previously saved backup JSON file.
- * @author Andrew Edmark
- * @author Gemini
- * @author The Engineer
- */
 (() => {
     "use strict";
 
@@ -22,7 +15,6 @@
             let fileContent;
             let fileName;
 
-            // --- NATIVE ELECTRON OPEN DIALOG ---
             if (window.electronAPI && typeof window.electronAPI.showOpenDialog === 'function') {
                 const filePath = await window.electronAPI.showOpenDialog({
                     title: 'Select OopisOS Backup File',
@@ -31,7 +23,6 @@
                 });
 
                 if (filePath) {
-                    // Similar to backup, we use our internal commands to access the host file system.
                     const readResult = await CommandExecutor.processSingleCommand(`cat "${filePath}"`, { isInteractive: false });
                     if (!readResult.success) {
                         return { success: false, error: `restore: Could not read file '${filePath}': ${readResult.error}` };
@@ -42,7 +33,6 @@
                     return { success: false, error: `restore: ${Config.MESSAGES.RESTORE_CANCELLED_NO_FILE}` };
                 }
             }
-            // --- FALLBACK TO WEB-BASED FILE INPUT ---
             else {
                 const input = Utils.createElement("input", { type: "file", accept: ".json" });
                 input.style.display = "none";
@@ -83,7 +73,6 @@
                 }
             }
 
-            // --- VALIDATION AND RESTORATION LOGIC ---
             let backupData;
             try {
                 backupData = JSON.parse(fileContent);

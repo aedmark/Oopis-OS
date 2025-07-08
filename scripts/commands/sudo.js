@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'sudo' command.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -33,8 +27,6 @@
                 return await UserManager.sudoExecute(fullCommandStr, options);
             }
 
-            // Always use the ModalInputManager. It is designed to handle both
-            // interactive and scripted input correctly.
             return new Promise(resolve => {
                 ModalInputManager.requestInput(
                     `[sudo] password for ${currentUser}:`,
@@ -51,8 +43,8 @@
                         }
                     },
                     () => resolve({ success: true, output: "" }),
-                    true, // isObscured
-                    options // Pass options object which contains scriptingContext if available
+                    true,
+                    options
                 );
             });
         }

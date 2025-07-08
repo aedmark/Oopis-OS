@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'tail' command, which outputs the last part of files.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

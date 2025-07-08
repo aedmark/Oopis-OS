@@ -1,16 +1,6 @@
-/**
- * @file Defines the 'rmdir' command, which removes empty directories.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} rmdirCommandDefinition
-     * @description The command definition for the 'rmdir' command. Adheres to the Command Contract.
-     */
     const rmdirCommandDefinition = {
         commandName: "rmdir",
         argValidation: {
@@ -24,7 +14,7 @@
 
             for (const pathArg of args) {
                 const pathValidation = FileSystemManager.validatePath("rmdir", pathArg, {
-                    expectedType: 'directory' // Explicitly require a directory
+                    expectedType: 'directory'
                 });
 
                 if (pathValidation.error) {

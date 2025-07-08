@@ -1,32 +1,16 @@
-/**
- * @file Defines the 'sync' command, which flushes filesystem changes to persistent storage.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} syncCommandDefinition
-     * @description The command definition for the 'sync' command.
-     */
     const syncCommandDefinition = {
         commandName: "sync",
         argValidation: {
             exact: 0,
         },
-        /**
-         * The core logic for the 'sync' command. It calls the FileSystemManager's
-         * save function to write the in-memory filesystem to persistent storage.
-         * @async
-         * @returns {Promise<object>} A promise that resolves to a command result object.
-         */
         coreLogic: async () => {
             try {
                 const saveSuccessful = await FileSystemManager.save();
                 if (saveSuccessful) {
-                    return { success: true, output: "" }; // Per POSIX, sync has no output on success
+                    return { success: true, output: "" };
                 } else {
                     return { success: false, error: "sync: Filesystem failed to save state." };
                 }

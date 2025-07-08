@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'touch' command, which changes file timestamps or creates empty files.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -15,11 +9,9 @@
             { name: "stamp", short: "-t", takesValue: true },
         ],
         argValidation: { min: 1 },
-        // --- ADDED FOR AUTO-COMPLETION ---
         pathValidation: [
             { argIndex: 0, options: { allowMissing: true } }
         ],
-        // --- END ADDITION ---
         coreLogic: async (context) => {
             const { args, flags, currentUser } = context;
 

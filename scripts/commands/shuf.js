@@ -1,17 +1,6 @@
-/**
- * @file Defines the 'shuf' command, which generates a random permutation of its input lines.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * Shuffles an array in place using the Fisher-Yates algorithm.
-     * @param {Array<any>} array The array to shuffle.
-     * @returns {Array<any>} The shuffled array.
-     */
     function fisherYatesShuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -27,16 +16,13 @@
             { name: "inputRange", short: "-i", long: "--input-range", takesValue: true },
             { name: "echo", short: "-e", long: "--echo" },
         ],
-        // argValidation is handled inside coreLogic due to the multiple input modes.
         coreLogic: async (context) => {
             const { args, flags, options, currentUser } = context;
 
             let lines = [];
             let outputCount = null;
 
-            // --- 1. Determine Input Source ---
             if (flags.inputRange) {
-                // Mode: Input Range (-i)
                 const rangeParts = flags.inputRange.split('-');
                 if (rangeParts.length !== 2) {
                     return { success: false, error: "shuf: invalid input range format for -i. Expected LO-HI." };
@@ -51,13 +37,10 @@
                     lines.push(String(i));
                 }
             } else if (flags.echo) {
-                // Mode: Echo Arguments (-e)
                 lines = args;
             } else if (options.stdinContent !== null) {
-                // Mode: Standard Input (Piped)
                 lines = options.stdinContent.split('\n');
             } else if (args.length > 0) {
-                // Mode: File Input
                 const pathArg = args[0];
                 const pathValidation = FileSystemManager.validatePath("shuf", pathArg, { expectedType: 'file' });
                 if (pathValidation.error) {
@@ -71,7 +54,6 @@
                 return { success: false, error: "shuf: no input source specified. Use a file, a pipe, or the -i or -e options." };
             }
 
-            // --- 2. Validate Head Count ---
             if (flags.count) {
                 const countResult = Utils.parseNumericArg(flags.count, { allowFloat: false, allowNegative: false });
                 if (countResult.error) {
@@ -80,7 +62,6 @@
                 outputCount = countResult.value;
             }
 
-            // --- 3. Process and Output ---
             const shuffledLines = fisherYatesShuffle(lines);
 
             let finalOutput;
