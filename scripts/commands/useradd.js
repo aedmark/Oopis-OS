@@ -1,44 +1,30 @@
-/**
- * @file Defines the 'useradd' command, which allows the creation of new user accounts.
- * This command handles password prompting and delegates user registration to `UserManager`.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
     const useraddCommandDefinition = {
         commandName: "useradd",
         argValidation: {
-            exact: 1, // Expects exactly one argument: the new username.
+            exact: 1,
             error: "expects exactly one argument (username)",
         },
-        /**
-         * The core logic for the 'useradd' command.
-         */
+
         coreLogic: async (context) => {
             const { args, options } = context;
             const username = args[0];
 
-            // Preliminary check for existing user to fail early.
             const userCheck = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
             if (userCheck[username]) {
                 return { success: false, error: `User '${username}' already exists.` };
             }
 
-            // Always use the ModalInputManager for password prompts. It is script-aware
-            // and will correctly consume the subsequent lines from a script as input.
             return new Promise(async (resolve) => {
                 ModalInputManager.requestInput(
                     Config.MESSAGES.PASSWORD_PROMPT,
                     async (firstPassword) => {
-                        // REFACTOR START
                         if (firstPassword.trim() === "") {
                             resolve({ success: false, error: Config.MESSAGES.EMPTY_PASSWORD_NOT_ALLOWED });
                             return;
                         }
-                        // REFACTOR END
 
                         ModalInputManager.requestInput(
                             Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
@@ -51,12 +37,12 @@
                                 resolve(registerResult);
                             },
                             () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
-                            true, // isObscured
+                            true,
                             options
                         );
                     },
                     () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
-                    true, // isObscured
+                    true,
                     options
                 );
             }).then(result => {

@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'visudo' command for safely editing the sudoers file.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -15,12 +9,10 @@
         coreLogic: async (context) => {
             const { currentUser, options } = context;
 
-            // Only root can edit the sudoers file
             if (currentUser !== 'root') {
                 return { success: false, error: "visudo: only root can run this command." };
             }
 
-            // 'visudo' must be run interactively to use the editor
             if (!options.isInteractive) {
                 return { success: false, error: "visudo: can only be run in interactive mode." };
             }
@@ -28,7 +20,6 @@
             const sudoersPath = Config.SUDO.SUDOERS_PATH;
             let sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
 
-            // Create the sudoers file if it doesn't exist
             if (!sudoersNode) {
                 const primaryGroup = UserManager.getPrimaryGroupForUser('root');
                 const content = "# /etc/sudoers\n#\n# This file controls who can run what as root.\n\nroot    ALL\n%root   ALL\n";
@@ -43,7 +34,6 @@
                 sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
             }
 
-            // Define the post-save callback to secure the file
             const onSudoersSave = async (filePath) => {
                 const node = FileSystemManager.getNodeByPath(filePath);
                 if (node) {
@@ -58,7 +48,6 @@
                 }
             };
 
-            // Open the file in the editor, passing the on-save callback.
             EditorManager.enter(sudoersPath, sudoersNode.content, onSudoersSave);
 
             return {

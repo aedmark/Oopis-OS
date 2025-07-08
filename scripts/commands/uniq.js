@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'uniq' command for OopisOS.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -15,7 +9,7 @@
             { name: "unique", short: "-u", long: "--unique" },
         ],
         argValidation: {
-            max: 1, // uniq typically works on one input file or stdin
+            max: 1,
         },
         coreLogic: async (context) => {
             const { args, flags, options, currentUser } = context;
@@ -51,7 +45,6 @@
                 if (lines[i] === currentLine) {
                     count++;
                 } else {
-                    // Process the previous line group
                     if (flags.count) {
                         outputLines.push(`${String(count).padStart(7)} ${currentLine}`);
                     } else if (flags.repeated) {
@@ -61,13 +54,11 @@
                     } else {
                         outputLines.push(currentLine);
                     }
-                    // Reset for the new line
                     currentLine = lines[i];
                     count = 1;
                 }
             }
 
-            // Process the very last line group
             if (flags.count) {
                 outputLines.push(`${String(count).padStart(7)} ${currentLine}`);
             } else if (flags.repeated) {

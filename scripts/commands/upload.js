@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'upload' command, which enables uploading files from the user's local machine
- * to the OopisOS virtual file system via a browser's file selection dialog.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -84,9 +77,7 @@
                     try {
                         const fileExtension = Utils.getFileExtension(file.name);
                         if (!ALLOWED_EXTENSIONS.has(fileExtension) && file.name.includes('.')) {
-                            // REFACTOR START
                             operationMessages.push(`${Config.MESSAGES.UPLOAD_INVALID_TYPE_PREFIX}'${fileExtension}'${Config.MESSAGES.UPLOAD_INVALID_TYPE_SUFFIX}`);
-                            // REFACTOR END
                             continue;
                         }
 
@@ -137,15 +128,11 @@
                         const explicitMode = finalFileName.endsWith(".sh") ? Config.FILESYSTEM.DEFAULT_SH_MODE : null;
                         finalTargetNode.children[finalFileName] = FileSystemManager._createNewFileNode(finalFileName, content, currentUser, primaryGroup, explicitMode);
                         finalTargetNode.mtime = nowISO;
-                        // REFACTOR START
                         operationMessages.push(`${Config.MESSAGES.UPLOAD_SUCCESS_PREFIX}'${relativePath}'${Config.MESSAGES.UPLOAD_SUCCESS_MIDDLE}'${targetDirPath}'${Config.MESSAGES.UPLOAD_SUCCESS_SUFFIX}`);
-                        // REFACTOR END
                         anyChangeMade = true;
 
                     } catch (fileError) {
-                        // REFACTOR START
                         operationMessages.push(`${Config.MESSAGES.UPLOAD_READ_ERROR_PREFIX}'${file.name}'${Config.MESSAGES.UPLOAD_READ_ERROR_SUFFIX}: ${fileError.message}`);
-                        // REFACTOR END
                         allFilesSuccess = false;
                     }
                 }

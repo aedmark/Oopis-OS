@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'wc' (word count) command for OopisOS.
- * It counts lines, words, and bytes for files or standard input.
- * @author Your Name
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

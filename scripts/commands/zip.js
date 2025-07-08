@@ -1,7 +1,3 @@
-/**
- * @file Defines the 'zip' command for creating simulated zip archives.
- * @author Andrew Edmark & Gemini
- */
 (() => {
     "use strict";
 
@@ -58,7 +54,6 @@
 
             await OutputManager.appendToOutput(`Zipping '${sourcePath}'...`);
 
-            // *** FIX: Wrap the archive in an object with the source's name as the key ***
             const sourceName = sourceValidation.resolvedPath.split('/').pop() || sourceValidation.resolvedPath;
             const archiveObject = {
                 [sourceName]: await _archiveNode(sourceValidation.node)

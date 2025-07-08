@@ -1,16 +1,8 @@
-/**
- * @file Defines the 'unzip' command for extracting simulated zip archives.
- * @author Andrew Edmark & Gemini
- */
 (() => {
     "use strict";
 
     const MAX_EXTRACTION_DEPTH = 100;
 
-    /**
-     * Recursively extracts the contents of a directory node from the archive.
-     * @private
-     */
     async function _extractChildren(children, parentPath, context, baseExtractionPath, currentDepth) {
         if (currentDepth > MAX_EXTRACTION_DEPTH) {
             return { success: false, error: "Archive nesting level exceeds maximum depth." };
@@ -39,10 +31,6 @@
         return { success: true };
     }
 
-    /**
-     * Kicks off the extraction process by iterating through the root items in the archive.
-     * @private
-     */
     async function _performExtraction(archive, destinationPath, context) {
         for (const name in archive) {
             const node = archive[name];

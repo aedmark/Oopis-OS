@@ -1,11 +1,3 @@
-/**
- * @file Defines the 'xargs' command, which builds and executes command lines from standard input.
- * It serves as a crucial bridge between commands that output lists of items and commands that operate on them.
- * @author Andrew Edmark
- * @author Gemini
- * @author The Engineer (v3 Refactor)
- */
-
 (() => {
     "use strict";
 
@@ -60,12 +52,10 @@
                 if (replaceRegex) {
                     const commandParts = baseCommandArgs.map(part => {
                         const newPart = part.replace(replaceRegex, rawLine);
-                        // Quote the entire new part *after* replacement if it contains spaces.
                         return newPart.includes(" ") && !newPart.startsWith('"') ? `"${newPart}"` : newPart;
                     });
                     commandToExecute = commandParts.join(" ");
                 } else {
-                    // Default behavior: quote the input line if it has spaces and append.
                     const finalArg = rawLine.includes(" ") ? `"${rawLine}"` : rawLine;
                     commandToExecute = [...baseCommandArgs, finalArg].join(" ");
                 }
