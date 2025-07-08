@@ -70,9 +70,9 @@ const EditorUI = (() => {
     let lines = [];
     let visibleStartLine = 0;
     let visibleEndLine = 0;
-    let charDimensions = { width: 8, height: 16 };
-    lineHeight = _calculateDynamicLineHeight();
-    charDimensions = Utils.getCharacterDimensions(getComputedStyle(elements.editorContainer).font);
+    let charDimensions = { width: 0, height: 0 };
+    let lineHeight = 16; // Initialize with a safe default
+
     let selection = {
         start: { line: 0, col: 0 },
         end: { line: 0, col: 0 }
@@ -150,6 +150,21 @@ const EditorUI = (() => {
         if (elements.htmlFormattingToolbar) {
             elements.htmlFormattingToolbar.classList.toggle('hidden', mode !== 'html');
         }
+    }
+
+    function _calculateAndSetDimensions() {
+        if (!elements.virtualContent) return;
+        const tempLine = Utils.createElement('div', { className: 'editor-line', textContent: '\u00A0' });
+        tempLine.style.position = 'absolute';
+        tempLine.style.visibility = 'hidden';
+        elements.virtualContent.appendChild(tempLine);
+
+        const rect = tempLine.getBoundingClientRect();
+        lineHeight = rect.height > 0 ? rect.height : 16;
+        charDimensions.width = rect.width;
+        charDimensions.height = lineHeight;
+
+        elements.virtualContent.removeChild(tempLine);
     }
 
     function buildLayout(callbacks) {
@@ -262,7 +277,7 @@ const EditorUI = (() => {
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
         elements.contentContainer = Utils.createElement("div", { id: "editor-content-container", style: { position: 'relative', overflow: 'hidden', height: '100%', flex: 1 } });
         elements.virtualScroller = Utils.createElement("div", { id: "virtual-scroller", style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'scroll', overflowX: 'auto' } });
-        elements.virtualContent = Utils.createElement("div", { id: "virtual-content", style: { position: 'relative' } });
+        elements.virtualContent = Utils.createElement("div", { id: "virtual-content", className: 'editor-line-container', style: { position: 'relative' } });
         elements.hiddenTextarea = Utils.createElement("textarea", { id: "hidden-textarea", style: { position: 'absolute', left: '-9999px', top: '0', width: '1px', height: '1px', opacity: 0 } });
 
         elements.virtualScroller.addEventListener('scroll', _handleScroll);
@@ -293,35 +308,34 @@ const EditorUI = (() => {
             elements.instructionsFooter
         );
 
-        // Calculate dimensions AFTER the element is in the DOM (or has a defined style)
-        // A temporary append can work if it's not in the DOM yet.
-        document.body.appendChild(elements.editorContainer); // Temporarily append
-        charDimensions = Utils.getCharacterDimensions(getComputedStyle(elements.editorContainer).font);
-        lineHeight = charDimensions.height;
-        document.body.removeChild(elements.editorContainer); // Clean up
+        _calculateAndSetDimensions();
 
         return elements.editorContainer;
     }
 
     function _handleScroll() {
+        if (!elements.virtualScroller) return;
         const scrollTop = elements.virtualScroller.scrollTop;
         const newStartLine = Math.floor(scrollTop / lineHeight);
 
         if (newStartLine !== visibleStartLine) {
             visibleStartLine = newStartLine;
             _renderVisibleContent();
+        } else {
+            // Even if the start line is the same, we might need to update the gutter's vertical transform
+            _renderGutter();
         }
     }
 
     function _calculateVisibleLines() {
-        if (!elements.contentContainer) return;
+        if (!elements.contentContainer || !lineHeight) return;
         const containerHeight = elements.contentContainer.clientHeight;
         const lineCount = Math.ceil(containerHeight / lineHeight) + 5; // buffer
         visibleEndLine = Math.min(lines.length, visibleStartLine + lineCount);
     }
 
     function _renderVisibleContent() {
-        if (!elements.virtualContent) return;
+        if (!elements.virtualContent || !lineHeight) return;
         _calculateVisibleLines();
 
         elements.virtualContent.innerHTML = '';
@@ -348,7 +362,7 @@ const EditorUI = (() => {
     }
 
     function _renderGutter() {
-        if (!elements.lineGutter) return;
+        if (!elements.lineGutter || !elements.virtualScroller) return;
         let gutterHtml = '';
         for (let i = visibleStartLine; i < visibleEndLine; i++) {
             gutterHtml += (i + 1) + '\n';
@@ -535,15 +549,33 @@ const EditorUI = (() => {
     }
 
     function renderHighlights(matches, activeIndex) {
-        // This is now handled within _renderVisibleContent
         _renderVisibleContent();
     }
 
     return {
-        buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar,
-        setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
-        applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
-        getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
-        updateFindBar, getFindQuery, getReplaceQuery, renderHighlights
+        buildLayout,
+        destroyLayout,
+        updateFilenameDisplay,
+        updateStatusBar,
+        updateLineNumbers: _renderGutter,
+        setTextareaContent,
+        getTextareaContent,
+        setEditorFocus,
+        getTextareaSelection,
+        setTextareaSelection,
+        applyTextareaWordWrap,
+        applyPreviewWordWrap,
+        updateWordWrapButtonText,
+        renderPreview,
+        setViewMode,
+        getPreviewPaneHTML,
+        setGutterVisibility,
+        elements,
+        _updateFormattingToolbarVisibility,
+        iframeStyles,
+        updateFindBar,
+        getFindQuery,
+        getReplaceQuery,
+        renderHighlights
     };
 })();
