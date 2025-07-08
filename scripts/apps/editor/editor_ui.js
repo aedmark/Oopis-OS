@@ -10,26 +10,26 @@ const EditorUI = (() => {
     let elements = {};
     let managerCallbacks = {};
 
-    /**
-     * Creates the editor's DOM structure and displays it.
-     * @param {object} initialState - The initial state from EditorManager.
-     * @param {object} callbacks - The callback functions from EditorManager.
-     */
     function buildAndShow(initialState, callbacks) {
         managerCallbacks = callbacks;
 
         // Main container
         elements.container = Utils.createElement('div', { id: 'editor-container', className: 'editor-container' });
 
-        // Header
-        elements.header = Utils.createElement('header', { className: 'editor-header' });
+        // Header and Toolbar
         elements.fileName = Utils.createElement('div', { className: 'editor-filename' });
-        elements.header.appendChild(elements.fileName);
+        elements.wordWrapButton = Utils.createElement('button', { className: 'btn', textContent: 'Wrap' });
+        elements.previewButton = Utils.createElement('button', { className: 'btn', textContent: 'Preview' });
+        const toolbar = Utils.createElement('div', { className: 'editor-toolbar' }, [elements.wordWrapButton, elements.previewButton]);
+        elements.header = Utils.createElement('header', { className: 'editor-header' }, [elements.fileName, toolbar]);
 
-        // Editor Pane
-        elements.editorPane = Utils.createElement('div', { className: 'editor-pane' });
+        // Main content area (split pane)
+        elements.lineNumbers = Utils.createElement('div', { className: 'editor-linenumbers' });
         elements.textArea = Utils.createElement('textarea', { className: 'editor-textarea', spellcheck: 'false' });
-        elements.editorPane.appendChild(elements.textArea);
+        const editorWrapper = Utils.createElement('div', { className: 'editor-pane-wrapper' }, [elements.lineNumbers, elements.textArea]);
+
+        elements.previewPane = Utils.createElement('div', { className: 'editor-preview' });
+        elements.mainArea = Utils.createElement('main', { className: 'editor-main' }, [editorWrapper, elements.previewPane]);
 
         // Status Bar
         elements.statusBar = Utils.createElement('div', { className: 'editor-statusbar' });
@@ -39,22 +39,15 @@ const EditorUI = (() => {
         elements.statusBar.append(elements.statusFileName, elements.statusDirty, elements.statusInfo);
 
         // Assemble the container
-        elements.container.append(elements.header, elements.editorPane, elements.statusBar);
+        elements.container.append(elements.header, elements.mainArea, elements.statusBar);
 
-        // Attach event listeners
         _addEventListeners();
+        _render(initialState); // Initial render with state
 
-        // Initial render
-        _render(initialState);
-
-        // Show on screen
         AppLayerManager.show(elements.container);
         elements.textArea.focus();
     }
 
-    /**
-     * Hides and cleans up the editor's DOM elements.
-     */
     function hideAndReset() {
         if (elements.container) {
             elements.container.remove();
@@ -63,21 +56,18 @@ const EditorUI = (() => {
         managerCallbacks = {};
     }
 
-    /**
-     * Renders the entire UI based on the current state.
-     * @param {object} state - The current state from EditorManager.
-     */
     function _render(state) {
         elements.fileName.textContent = state.currentFilePath;
         elements.textArea.value = state.currentContent;
         updateStatusBar(state);
+        updateLineNumbers(state.currentContent);
+        renderPreview(state.fileMode, state.currentContent);
+        applySettings(state.editorSettings);
+        applyViewMode(state.viewMode);
     }
 
-    /**
-     * Updates only the status bar with new information.
-     * @param {object} state - The current state from EditorManager.
-     */
     function updateStatusBar(state) {
+        if (!elements.statusFileName) return;
         elements.statusFileName.textContent = state.currentFilePath;
         elements.statusDirty.textContent = state.isDirty ? '*' : '';
         const lineCount = state.currentContent.split('\n').length;
@@ -86,36 +76,69 @@ const EditorUI = (() => {
 
         if (state.statusMessage) {
             elements.statusInfo.textContent += ` | ${state.statusMessage}`;
-            // Clear the message after a delay
             setTimeout(() => {
-                if (elements.statusInfo) {
-                    updateStatusBar(state); // Re-render without message
+                if (elements.statusInfo && !state.statusMessage.startsWith("Error")) {
+                    updateStatusBar({ ...state, statusMessage: null });
                 }
             }, 3000);
         }
     }
 
-    /**
-     * Sets the content of the text area.
-     * @param {string} content - The new content to display.
-     */
-    function setContent(content) {
-        if (elements.textArea) {
-            elements.textArea.value = content;
+    function updateLineNumbers(content) {
+        if (!elements.lineNumbers) return;
+        const lineCount = content.split('\n').length || 1;
+        elements.lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join('');
+    }
+
+    function renderPreview(fileMode, content) {
+        if (!elements.previewPane) return;
+        if (fileMode === 'markdown') {
+            const dirtyHTML = marked.parse(content);
+            elements.previewPane.innerHTML = DOMPurify.sanitize(dirtyHTML);
+        } else if (fileMode === 'html') {
+            // Basic sandboxing for HTML preview
+            elements.previewPane.innerHTML = `<iframe srcdoc="${DOMPurify.sanitize(content)}" class="editor-html-preview" sandbox></iframe>`;
+        } else {
+            elements.previewPane.innerHTML = '';
         }
     }
 
+    function applySettings(settings) {
+        if (!elements.textArea) return;
+        elements.textArea.style.whiteSpace = settings.wordWrap ? 'pre-wrap' : 'pre';
+        elements.textArea.style.wordBreak = settings.wordWrap ? 'break-all' : 'normal';
+        elements.wordWrapButton.classList.toggle('active', settings.wordWrap);
+    }
 
-    /**
-     * Sets up all necessary DOM event listeners.
-     */
+    function applyViewMode(viewMode) {
+        if (!elements.mainArea) return;
+        elements.mainArea.dataset.viewMode = viewMode; // Use data-attribute for CSS styling
+        elements.previewButton.classList.toggle('active', viewMode !== 'editor');
+    }
+
+    function setContent(content) {
+        if (!elements.textArea) return;
+        const cursorPos = elements.textArea.selectionStart;
+        elements.textArea.value = content;
+        elements.textArea.selectionStart = elements.textArea.selectionEnd = cursorPos;
+        // Trigger necessary updates after setting content programmatically
+        managerCallbacks.onContentUpdate(content);
+    }
+
     function _addEventListeners() {
-        // Listen for content changes
         elements.textArea.addEventListener('input', () => {
             managerCallbacks.onContentUpdate(elements.textArea.value);
         });
 
-        // Listen for keyboard shortcuts
+        // Sync scrolling for line numbers
+        elements.textArea.addEventListener('scroll', () => {
+            elements.lineNumbers.scrollTop = elements.textArea.scrollTop;
+        });
+
+        // Toolbar buttons
+        elements.wordWrapButton.addEventListener('click', () => managerCallbacks.onToggleWordWrap());
+        elements.previewButton.addEventListener('click', () => managerCallbacks.onToggleViewMode());
+
         elements.container.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key.toLowerCase()) {
@@ -139,6 +162,10 @@ const EditorUI = (() => {
                         e.preventDefault();
                         managerCallbacks.onRedoRequest();
                         break;
+                    case 'p':
+                        e.preventDefault();
+                        managerCallbacks.onToggleViewMode();
+                        break;
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
@@ -147,10 +174,5 @@ const EditorUI = (() => {
         });
     }
 
-    return {
-        buildAndShow,
-        hideAndReset,
-        updateStatusBar,
-        setContent,
-    };
+    return { buildAndShow, hideAndReset, updateStatusBar, setContent, applySettings, applyViewMode, renderPreview, updateLineNumbers };
 })();

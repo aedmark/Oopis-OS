@@ -14,7 +14,8 @@ const EditorManager = (() => {
         undoStack: [],
         redoStack: [],
         isDirty: false,
-        fileMode: 'text', // Default mode
+        fileMode: 'text',
+        viewMode: 'editor', // 'editor', 'split', 'preview'
         editorSettings: {
             wordWrap: false
         }
@@ -32,8 +33,10 @@ const EditorManager = (() => {
             return;
         }
 
-        // Load settings from storage
         const wordWrapSetting = StorageManager.loadItem(Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor Word Wrap", false);
+        const fileMode = _getFileMode(filePath);
+        const initialViewMode = (fileMode === 'markdown' || fileMode === 'html') ? 'split' : 'editor';
+
 
         state = {
             isActive: true,
@@ -43,14 +46,15 @@ const EditorManager = (() => {
             undoStack: [fileContent],
             redoStack: [],
             isDirty: false,
-            fileMode: _getFileMode(filePath),
+            fileMode: fileMode,
+            viewMode: initialViewMode,
             editorSettings: {
                 wordWrap: wordWrapSetting
             }
         };
 
         EditorUI.buildAndShow(state, callbacks);
-        callbacks.onExit = onExitCallback; // Store the exit callback
+        callbacks.onExit = onExitCallback;
     }
 
     /**
@@ -71,21 +75,20 @@ const EditorManager = (() => {
                         resolve(true); // Proceed with exiting
                     },
                     onCancel: () => {
-                        // Create a new modal for discarding
                         ModalManager.request({
                             context: 'graphical',
                             messageLines: ["Are you sure you want to discard all changes?"],
                             confirmText: "Discard",
                             cancelText: "Cancel",
-                            onConfirm: () => resolve(true), // Proceed with exiting
-                            onCancel: () => resolve(false) // Do not exit
+                            onConfirm: () => resolve(true),
+                            onCancel: () => resolve(false)
                         });
                     }
                 });
             });
 
             if (!confirmed) {
-                return; // User cancelled the exit
+                return;
             }
         }
 
@@ -148,6 +151,17 @@ const EditorManager = (() => {
         }
     }
 
+    // Debounced undo state saver
+    const debouncedSaveUndo = Utils.debounce(() => {
+        if (state.undoStack.at(-1) !== state.currentContent) {
+            state.undoStack.push(state.currentContent);
+            if (state.undoStack.length > 50) { // Limit undo history
+                state.undoStack.shift();
+            }
+            state.redoStack = []; // Clear redo stack on new action
+        }
+    }, 300);
+
     // Callback handlers passed to the UI
     const callbacks = {
         onContentUpdate: (newContent) => {
@@ -155,12 +169,9 @@ const EditorManager = (() => {
             state.currentContent = newContent;
             state.isDirty = state.currentContent !== state.originalContent;
             EditorUI.updateStatusBar(state);
-            // Simple undo snapshotting
-            // A more robust implementation would debounce this.
-            if (state.undoStack.at(-1) !== newContent) {
-                state.undoStack.push(newContent);
-                state.redoStack = []; // Clear redo stack on new action
-            }
+            EditorUI.renderPreview(state.fileMode, state.currentContent);
+            EditorUI.updateLineNumbers(state.currentContent);
+            debouncedSaveUndo();
         },
         onSaveRequest: async () => {
             await saveContent();
@@ -175,7 +186,6 @@ const EditorManager = (() => {
                 state.currentContent = state.undoStack.at(-1);
                 state.isDirty = state.currentContent !== state.originalContent;
                 EditorUI.setContent(state.currentContent);
-                EditorUI.updateStatusBar(state);
             }
         },
         onRedoRequest: () => {
@@ -185,9 +195,19 @@ const EditorManager = (() => {
                 state.currentContent = nextState;
                 state.isDirty = state.currentContent !== state.originalContent;
                 EditorUI.setContent(state.currentContent);
-                EditorUI.updateStatusBar(state);
             }
         },
+        onToggleWordWrap: () => {
+            state.editorSettings.wordWrap = !state.editorSettings.wordWrap;
+            StorageManager.saveItem(Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, state.editorSettings.wordWrap, "Editor Word Wrap");
+            EditorUI.applySettings(state.editorSettings);
+        },
+        onToggleViewMode: () => {
+            const modes = ['editor', 'split', 'preview'];
+            const currentIndex = modes.indexOf(state.viewMode);
+            state.viewMode = modes[(currentIndex + 1) % modes.length];
+            EditorUI.applyViewMode(state.viewMode);
+        }
     };
 
     return {
