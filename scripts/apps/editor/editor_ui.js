@@ -20,8 +20,13 @@ const EditorUI = (() => {
         elements.wordWrapButton = Utils.createElement('button', { className: 'btn', textContent: 'Wrap' });
         elements.previewButton = Utils.createElement('button', { className: 'btn', textContent: 'Preview' });
         elements.findButton = Utils.createElement('button', { className: 'btn', textContent: 'Find' });
-        const toolbar = Utils.createElement('div', { className: 'editor-toolbar' }, [elements.findButton, elements.wordWrapButton, elements.previewButton]);
-        elements.header = Utils.createElement('header', { className: 'editor-header' }, [elements.fileName, toolbar]);
+
+        // Build the formatting toolbar (initially hidden)
+        _buildFormattingToolbar();
+
+        const rightToolbar = Utils.createElement('div', { className: 'editor-toolbar' }, [elements.findButton, elements.wordWrapButton, elements.previewButton]);
+        elements.header = Utils.createElement('header', { className: 'editor-header' }, [elements.fileName, elements.formattingToolbar, rightToolbar]);
+
 
         // Find/Replace Bar
         _buildFindBar();
@@ -48,6 +53,24 @@ const EditorUI = (() => {
         AppLayerManager.show(elements.container);
         elements.textArea.focus();
     }
+
+    function _buildFormattingToolbar() {
+        const createButton = (text, title, action) => {
+            const button = Utils.createElement('button', { className: 'btn', textContent: text, title });
+            button.addEventListener('click', action);
+            return button;
+        };
+
+        elements.formattingToolbar = Utils.createElement('div', { className: 'editor-toolbar editor-format-toolbar hidden' }, [
+            createButton('B', 'Bold (Ctrl+B)', () => _wrapSelection('**')),
+            createButton('I', 'Italic (Ctrl+I)', () => _wrapSelection('*')),
+            createButton('H', 'Heading (Ctrl+H)', () => _prefixLine('# ')),
+            createButton('“', 'Blockquote', () => _prefixLine('> ')),
+            createButton('🔗', 'Link', () => _insertLink()),
+            createButton('img', 'Image', () => _insertImage()),
+        ]);
+    }
+
 
     function _buildFindBar() {
         elements.findInput = Utils.createElement('input', { type: 'text', placeholder: 'Find...', className: 'editor-find-input' });
@@ -79,6 +102,7 @@ const EditorUI = (() => {
     function _render(state) {
         elements.fileName.textContent = state.currentFilePath;
         elements.textArea.value = state.currentContent;
+        elements.formattingToolbar.classList.toggle('hidden', state.fileMode !== 'markdown');
         updateStatusBar(state);
         updateLineNumbers(state.currentContent);
         renderPreview(state.fileMode, state.currentContent);
@@ -92,7 +116,10 @@ const EditorUI = (() => {
         elements.statusDirty.textContent = state.isDirty ? '*' : '';
         const lineCount = state.currentContent.split('\n').length;
         const wordCount = state.currentContent.trim().split(/\s+/).filter(Boolean).length;
-        elements.statusInfo.textContent = `Lines: ${lineCount}, Words: ${wordCount}, Chars: ${state.currentContent.length}`;
+        const cursorPos = elements.textArea ? `Ln ${elements.textArea.value.substring(0, elements.textArea.selectionStart).split('\n').length}, Col ${elements.textArea.selectionStart - elements.textArea.value.lastIndexOf('\n', elements.textArea.selectionStart - 1)}` : '';
+
+        elements.statusInfo.textContent = `Lines: ${lineCount} | Words: ${wordCount} | ${cursorPos}`;
+
         if (state.statusMessage) {
             elements.statusInfo.textContent += ` | ${state.statusMessage}`;
             setTimeout(() => {
@@ -102,6 +129,7 @@ const EditorUI = (() => {
             }, 3000);
         }
     }
+
 
     function updateLineNumbers(content) {
         if (!elements.lineNumbers) return;
@@ -141,11 +169,61 @@ const EditorUI = (() => {
         managerCallbacks.onContentUpdate(content);
     }
 
+    function _wrapSelection(wrapper, defaultText = 'text') {
+        const { textArea } = elements;
+        const start = textArea.selectionStart;
+        const end = textArea.selectionEnd;
+        const text = textArea.value;
+        const selectedText = text.substring(start, end);
+
+        const textToInsert = selectedText || defaultText;
+        const newText = `${text.substring(0, start)}${wrapper}${textToInsert}${wrapper}${text.substring(end)}`;
+
+        setContent(newText);
+
+        // After setting content, re-focus and select the inserted text
+        setTimeout(() => {
+            textArea.focus();
+            if (selectedText) {
+                textArea.setSelectionRange(start + wrapper.length, start + wrapper.length + selectedText.length);
+            } else {
+                textArea.setSelectionRange(start + wrapper.length, start + wrapper.length + defaultText.length);
+            }
+        }, 0);
+    }
+
+    function _prefixLine(prefix) {
+        const { textArea } = elements;
+        const start = textArea.selectionStart;
+        const text = textArea.value;
+        const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+
+        const newText = `${text.substring(0, lineStart)}${prefix}${text.substring(lineStart)}`;
+        setContent(newText);
+
+        setTimeout(() => {
+            textArea.focus();
+            textArea.setSelectionRange(start + prefix.length, start + prefix.length);
+        }, 0);
+    }
+
+    async function _insertLink() {
+        const url = await new Promise(r => ModalManager.request({ context: 'graphical-input', messageLines: ["Enter URL:"], onConfirm: r, onCancel: () => r(null)}));
+        if(!url) return;
+        _wrapSelection(`[`, `link text](${url})`);
+    }
+
+    async function _insertImage() {
+        const url = await new Promise(r => ModalManager.request({ context: 'graphical-input', messageLines: ["Enter Image URL:"], onConfirm: r, onCancel: () => r(null)}));
+        if(!url) return;
+        _wrapSelection(`![`, `alt text](${url})`);
+    }
+
+
     function highlightMatch(match) {
         if (!elements.textArea || !match) return;
         elements.textArea.focus();
         elements.textArea.setSelectionRange(match.start, match.end);
-        // Scroll into view
         const lines = elements.textArea.value.substring(0, match.start).split('\n').length;
         const lineHeight = elements.textArea.scrollHeight / elements.textArea.value.split('\n').length;
         elements.textArea.scrollTop = (lines - 5) * lineHeight;
@@ -171,6 +249,8 @@ const EditorUI = (() => {
     function _addEventListeners() {
         elements.textArea.addEventListener('input', () => managerCallbacks.onContentUpdate(elements.textArea.value));
         elements.textArea.addEventListener('scroll', () => { elements.lineNumbers.scrollTop = elements.textArea.scrollTop; });
+        elements.textArea.addEventListener('keyup', () => updateStatusBar(managerCallbacks.getState ? managerCallbacks.getState() : {}));
+        elements.textArea.addEventListener('click', () => updateStatusBar(managerCallbacks.getState ? managerCallbacks.getState() : {}));
 
         // Toolbar
         elements.findButton.addEventListener('click', () => {
@@ -217,9 +297,13 @@ const EditorUI = (() => {
                             elements.findInput.select();
                         }
                         break;
+                    case 'b': e.preventDefault(); _wrapSelection('**'); break;
+                    case 'i': e.preventDefault(); _wrapSelection('*'); break;
+                    case 'h': e.preventDefault(); _prefixLine('# '); break;
                 }
             } else if (e.key === 'Escape') {
                 if (!elements.findBar.classList.contains('hidden')) {
+                    e.preventDefault();
                     elements.findBar.classList.add('hidden');
                 } else {
                     managerCallbacks.onExitRequest();

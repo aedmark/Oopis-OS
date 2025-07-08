@@ -33,6 +33,18 @@
     gap: var(--spacing-sm);
 }
 
+.editor-format-toolbar {
+    flex-grow: 1;
+    justify-content: flex-start;
+}
+.editor-format-toolbar.hidden {
+    display: none;
+}
+.editor-format-toolbar .btn {
+    font-weight: bold;
+}
+
+
 .editor-findbar {
     display: flex;
     align-items: center;
