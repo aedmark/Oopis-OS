@@ -237,7 +237,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: transparent;
     z-index: 50;
     display: flex;
     align-items: center;
@@ -422,4 +422,10 @@ body {
 
 .text-file {
     color: var(--color-text-primary);
+}
+
+/* Add this new rule to the end of the file */
+#app-layer .modal-overlay {
+    background-color: transparent;
+    backdrop-filter: none;
 }
