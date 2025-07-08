@@ -775,6 +775,12 @@ const AppLayerManager = (() => {
 
         if (terminalOutput) terminalOutput.classList.remove('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.remove('hidden');
+        
+        // These calls ensure the prompt is redrawn and the view is correct.
+        TerminalUI.updatePrompt();
+        if (terminalOutput) {
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
 
         TerminalUI.clearInput();
         TerminalUI.setInputState(true);
