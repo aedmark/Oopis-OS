@@ -140,11 +140,16 @@ const EditorManager = (() => {
         }
     }
 
+    // Define the debounced function before the callbacks object that uses it.
     const debouncedSaveUndo = Utils.debounce(() => {
         if (state.undoStack.at(-1) !== state.currentContent) {
             state.undoStack.push(state.currentContent);
             if (state.undoStack.length > 50) state.undoStack.shift();
             state.redoStack = [];
+            // Make sure the UI reflects that the undo stack has changed
+            if(state.isActive) {
+                EditorUI.updateStatusBar(state);
+            }
         }
     }, 300);
 
@@ -153,13 +158,18 @@ const EditorManager = (() => {
             if (!state.isActive) return;
             state.currentContent = newContent;
             state.isDirty = state.currentContent !== state.originalContent;
-            // When content changes, re-run the find to keep matches fresh
+
+            // Re-run find to keep matches fresh
             state.findState.matches = _findMatches(state.findState.query, state.currentContent, state.findState.isCaseSensitive, state.findState.isRegex);
             state.findState.currentIndex = -1;
+
+            // Update UI elements
             EditorUI.updateFindUI(state.findState);
             EditorUI.updateStatusBar(state);
             EditorUI.renderPreview(state.fileMode, state.currentContent);
             EditorUI.updateLineNumbers(state.currentContent);
+
+            // Now, safely call the debounced function
             debouncedSaveUndo();
         },
         onSaveRequest: async () => { await saveContent(); _performExit(); },

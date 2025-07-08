@@ -111,11 +111,15 @@ const EditorUI = (() => {
     }
 
     function updateStatusBar(state) {
-        if (!elements.statusFileName) return;
-        elements.statusFileName.textContent = state.currentFilePath;
+        if (!elements.statusFileName || !state) return; // Added a check for the state object itself
+
+        elements.statusFileName.textContent = state.currentFilePath || '...';
         elements.statusDirty.textContent = state.isDirty ? '*' : '';
-        const lineCount = state.currentContent.split('\n').length;
-        const wordCount = state.currentContent.trim().split(/\s+/).filter(Boolean).length;
+
+        // Ensure currentContent is a string before calling .split on it.
+        const content = state.currentContent || "";
+        const lineCount = content.split('\n').length;
+        const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
         const cursorPos = elements.textArea ? `Ln ${elements.textArea.value.substring(0, elements.textArea.selectionStart).split('\n').length}, Col ${elements.textArea.selectionStart - elements.textArea.value.lastIndexOf('\n', elements.textArea.selectionStart - 1)}` : '';
 
         elements.statusInfo.textContent = `Lines: ${lineCount} | Words: ${wordCount} | ${cursorPos}`;
@@ -123,7 +127,8 @@ const EditorUI = (() => {
         if (state.statusMessage) {
             elements.statusInfo.textContent += ` | ${state.statusMessage}`;
             setTimeout(() => {
-                if (elements.statusInfo && !state.statusMessage.startsWith("Error")) {
+                // Check if state is still valid before clearing the message
+                if (elements.statusInfo && state && !state.statusMessage.startsWith("Error")) {
                     updateStatusBar({ ...state, statusMessage: null });
                 }
             }, 3000);

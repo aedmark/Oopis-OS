@@ -34,7 +34,6 @@
 }
 
 .editor-format-toolbar {
-    flex-grow: 1;
     justify-content: flex-start;
 }
 .editor-format-toolbar.hidden {
