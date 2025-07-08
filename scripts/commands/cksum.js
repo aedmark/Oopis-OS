@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'cksum' command, which calculates a file's checksum and byte count.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

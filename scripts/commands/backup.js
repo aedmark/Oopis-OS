@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'backup' command, which creates a comprehensive backup of the entire
- * OopisOS system state. This version supports native dialogs in Electron.
- * @author Andrew Edmark
- * @author Gemini
- * @author The Engineer
- */
 (() => {
   "use strict";
 
@@ -63,9 +56,7 @@
         });
 
         if (filePath) {
-          // We must use the `fs` module via IPC to write the file,
-          // as the renderer process is sandboxed. This is simulated
-          // by calling our own `echo > file` command.
+
           const escapedContent = backupJsonString.replace(/'/g, "'\\''");
           const writeResult = await CommandExecutor.processSingleCommand(`echo '${escapedContent}' > "${filePath}"`, { isInteractive: false });
 
@@ -78,7 +69,6 @@
           return { success: true, output: "Backup cancelled.", messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG };
         }
       }
-      // --- FALLBACK TO WEB-BASED DOWNLOAD ---
       else {
         try {
           const blob = new Blob([backupJsonString], { type: "application/json" });

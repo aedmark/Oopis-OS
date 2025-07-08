@@ -1,17 +1,6 @@
-/**
- * @file Defines the 'awk' command, a powerful pattern-scanning and text-processing language.
- * This implementation provides a safe subset of awk's functionality.
- * @author Andrew Edmark
- * @author Gemini
- */
 (() => {
     "use strict";
 
-    /**
-     * Parses the awk program string into a structured object.
-     * @param {string} programString - The awk program, e.g., '/pattern/ { action }'.
-     * @returns {{begin: string|null, end: string|null, rules: Array<object>, error: string|null}}
-     */
     function _parseProgram(programString) {
         const program = {
             begin: null,
@@ -52,14 +41,6 @@
         return program;
     }
 
-
-    /**
-     * Safely executes a parsed awk action string.
-     * @param {string} action - The action string, e.g., 'print $1, $3'.
-     * @param {string[]} fields - The fields of the current line, where fields[0] is $0.
-     * @param {object} vars - Built-in variables like NR and NF.
-     * @returns {string|null} The output string or null if no output.
-     */
     function _executeAction(action, fields, vars) {
         if (action.startsWith("print")) {
             let argsStr = action.substring(5).trim();
@@ -79,7 +60,6 @@
         }
         return null;
     }
-
 
     const awkCommandDefinition = {
         commandName: "awk",

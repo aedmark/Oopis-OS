@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'adventure' command, which launches the OopisOS text adventure game engine or the new creation tool.
- * @author Andrew Edmark & Gemini
- * @author The Architect (Creation Mode Additions)
- */
-
 (() => {
     "use strict";
 
@@ -149,7 +143,6 @@
         coreLogic: async (context) => {
             const { args, currentUser, validatedPaths, options, flags } = context;
 
-            // --- NEW: LOGIC FOR CREATE MODE ---
             if (flags.create) {
                 const filename = args[0];
                 if (!filename) {
@@ -159,17 +152,16 @@
                     return { success: false, error: "Filename must end with .json" };
                 }
 
-                // Engineer's implementation of placeholder logic
                 let initialData = {};
                 const pathInfo = FileSystemManager.validatePath("adventure_create", filename, { allowMissing: true });
 
-                if (pathInfo.node) { // File exists
+                if (pathInfo.node) {
                     try {
                         initialData = JSON.parse(pathInfo.node.content || '{}');
                     } catch (e) {
                         return { success: false, error: `Could not parse existing file '${filename}'. It may be corrupt.` };
                     }
-                } else { // File does not exist, create a new structure
+                } else {
                     initialData = {
                         title: "New Adventure",
                         startingRoomId: "start",
@@ -191,11 +183,9 @@
                 }
 
                 AdventureCreator.enter(filename, initialData, context);
-                return { success: true, output: "" }; // The creator app handles all further output.
+                return { success: true, output: "" };
             }
-            // --- END: NEW LOGIC ---
 
-            // --- EXISTING LOGIC FOR PLAY MODE ---
             if (typeof TextAdventureModal === "undefined" || typeof TextAdventureEngine === "undefined") {
                 return { success: false, error: "Adventure module is not properly loaded." };
             }

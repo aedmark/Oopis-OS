@@ -1,13 +1,8 @@
 (() => {
     "use strict";
 
-    // A private, safe evaluator for mathematical expressions.
-    // This does not use `eval()` or `new Function()`.
-    // It parses and calculates based on operator precedence using a shunting-yard-like algorithm.
     const _safeEvaluate = (expression) => {
-        // Remove whitespace for easier parsing
         const cleanExpression = expression.replace(/\s+/g, '');
-        // Tokenize the expression into numbers, operators, and parentheses.
         const tokens = cleanExpression.match(/(\d+\.?\d*|\+|-|\*|\/|%|\(|\))/g);
 
         if (!tokens || tokens.join('') !== cleanExpression) {
@@ -61,7 +56,7 @@
                     applyOperator();
                 }
                 if (operatorStack[operatorStack.length - 1] !== '(') throw new Error("Mismatched parentheses.");
-                operatorStack.pop(); // Pop the left parenthesis.
+                operatorStack.pop();
             }
         }
 
@@ -82,7 +77,7 @@
             const input = (args.length > 0 ? args.join(' ') : options.stdinContent) || '';
 
             if (!input.trim()) {
-                return { success: true, output: "" }; // No input, no output.
+                return { success: true, output: "" };
             }
 
             try {

@@ -1,16 +1,8 @@
-/**
- * @file Defines the 'check_fail' command, a diagnostic tool used to verify that
- * other commands correctly produce an error or expected output states.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
     const check_failCommandDefinition = {
         commandName: "check_fail",
-        // No arg validation, we handle it manually due to the flag.
         coreLogic: async (context) => {
             const { args, options } = context;
             let commandToTest;
@@ -30,14 +22,12 @@
                 };
             }
 
-            // Pass down the options from the current context to preserve the scriptingContext
             const testResult = await CommandExecutor.processSingleCommand(
                 commandToTest,
                 { ...options, isInteractive: false }
             );
 
             if (checkEmptyOutput) {
-                // In -z mode, we test for empty output.
                 const outputIsEmpty = !testResult.output || testResult.output.trim() === '';
                 if (outputIsEmpty) {
                     return { success: true, output: `CHECK_FAIL: SUCCESS - Command <${commandToTest}> produced empty output as expected.` };
@@ -45,7 +35,6 @@
                     return { success: false, error: `CHECK_FAIL: FAILURE - Command <${commandToTest}> did NOT produce empty output.` };
                 }
             } else {
-                // Default mode: test for command failure.
                 if (testResult.success) {
                     const failureMessage = `CHECK_FAIL: FAILURE - Command <${commandToTest}> unexpectedly SUCCEEDED.`;
                     return {

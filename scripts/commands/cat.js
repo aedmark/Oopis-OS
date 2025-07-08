@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'cat' command, which concatenates and displays the content of files or standard input.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

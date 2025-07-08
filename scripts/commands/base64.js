@@ -1,23 +1,14 @@
-/**
- * @file Defines the 'base64' command for encoding and decoding data.
- * @author Andrew Edmark
- * @author Gemini
- */
 
 (() => {
     "use strict";
 
-    /**
-     * @const {object} base64CommandDefinition
-     * @description The command definition for the 'base64' command.
-     */
     const base64CommandDefinition = {
         commandName: "base64",
         flagDefinitions: [
             { name: "decode", short: "-d", long: "--decode" }
         ],
         argValidation: {
-            max: 1, // Accepts one optional file argument
+            max: 1,
         },
         pathValidation: [
             {
@@ -38,36 +29,29 @@
             let inputData = "";
 
             if (args.length > 0) {
-                // Input from file
                 const pathInfo = validatedPaths[0];
                 if (pathInfo.error) {
                     return { success: false, error: pathInfo.error };
                 }
                 inputData = pathInfo.node.content || "";
             } else if (options.stdinContent !== null) {
-                // Input from stdin
                 inputData = options.stdinContent;
             } else {
-                return { success: true, output: "" }; // No file and no stdin, exit gracefully.
+                return { success: true, output: "" };
             }
 
             try {
                 if (flags.decode) {
-                    // Decoding logic
                     const decodedData = atob(inputData.replace(/\s/g, ''));
                     return { success: true, output: decodedData };
                 } else {
-                    // Encoding logic
                     const encodedData = btoa(inputData);
-                    // Wrap the output to 64 characters per line for readability
                     return { success: true, output: encodedData.replace(/(.{64})/g, "$1\n") };
                 }
             } catch (e) {
-                // Catch errors from atob() for invalid base64 strings
                 if (e instanceof DOMException && e.name === "InvalidCharacterError") {
                     return { success: false, error: "base64: invalid input" };
                 }
-                // Catch other potential errors
                 return { success: false, error: `base64: an unexpected error occurred: ${e.message}` };
             }
         }

@@ -1,18 +1,6 @@
-/**
- * @file Defines the 'chmod' command, which changes the access permissions of files and directories.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} chmodCommandDefinition
-     * @description The command definition for the 'chmod' command.
-     * This object specifies the command's name, argument validation, path validation,
-     * and the core logic for changing a node's permissions.
-     */
     const chmodCommandDefinition = {
         commandName: "chmod",
         argValidation: {
@@ -24,7 +12,6 @@
                 argIndex: 1,
             },
         ],
-        // No explicit permissionChecks here because coreLogic handles root/owner permissions dynamically.
         coreLogic: async (context) => {
             const { args, currentUser, validatedPaths } = context;
             const modeArg = args[0];
@@ -33,7 +20,6 @@
             const node = pathInfo.node;
             const nowISO = new Date().toISOString();
 
-            // Validate the mode argument format.
             if (!/^[0-7]{3,4}$/.test(modeArg)) {
                 return {
                     success: false,
@@ -42,7 +28,6 @@
             }
             const newMode = parseInt(modeArg, 8);
 
-            // Permission check: Only root or the owner of the file can change permissions.
             if (currentUser !== "root" && node.owner !== currentUser) {
                 return {
                     success: false,
@@ -50,7 +35,6 @@
                 };
             }
 
-            // Apply the new mode and update modification times.
             node.mode = newMode;
             node.mtime = nowISO;
             FileSystemManager._updateNodeAndParentMtime(
@@ -58,7 +42,6 @@
                 nowISO
             );
 
-            // Attempt to save the file system changes.
             if (!(await FileSystemManager.save())) {
                 return {
                     success: false,

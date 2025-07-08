@@ -1,29 +1,16 @@
-/**
- * @fileoverview Command definition for 'chidi', a Markdown file reader and analyzer.
- * This command launches a modal application to view and interact with .md files.
- */
-
 (() => {
     "use strict";
 
-    /**
-     * Gathers all markdown files from a given path, recursively.
-     * @param {string} startPath - The absolute starting path (file or directory).
-     * @param {object} startNode - The file system node for the starting path.
-     * @param {string} currentUser - The name of the user executing the command.
-     * @returns {Promise<Array<object>>} A promise that resolves to a list of file objects.
-     */
     async function getMarkdownFiles(startPath, startNode, currentUser) {
         const files = [];
-        const visited = new Set(); // Prevent infinite loops
+        const visited = new Set();
 
         async function recurse(currentPath, node) {
             if (visited.has(currentPath)) return;
             visited.add(currentPath);
 
-            // We need to be able to read the item to process it.
             if (!FileSystemManager.hasPermission(node, currentUser, "read")) {
-                return; // Skip unreadable files/dirs
+                return;
             }
 
             if (node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
@@ -35,9 +22,8 @@
                     });
                 }
             } else if (node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
-                // To list children of a directory, we need execute permission on it.
                 if (!FileSystemManager.hasPermission(node, currentUser, "execute")) {
-                    return; // Skip un-enterable directories
+                    return;
                 }
                 for (const childName of Object.keys(node.children || {})) {
                     const childNode = node.children[childName];
@@ -64,12 +50,12 @@
             long: "--new"
         }],
         argValidation: {
-            max: 1, // Allows 0 or 1 arguments.
+            max: 1,
             error: "Usage: chidi [-n] [path] or <command> | chidi [-n]"
         },
         pathValidation: [{
             argIndex: 0,
-            optional: true, // Path argument is now optional.
+            optional: true,
             options: {
                 allowMissing: false
             }
@@ -94,7 +80,6 @@
                 };
             }
 
-            // API Key Check
             let apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
             if (!apiKey) {
                 const keyResult = await new Promise(resolve => {
@@ -123,7 +108,7 @@
                                 error: "API key entry cancelled."
                             });
                         },
-                        false, // isObscured
+                        false,
                         options
                     );
                 });
@@ -134,13 +119,11 @@
                         error: `chidi: ${keyResult.error}`
                     };
                 }
-                // No need to re-assign to local apiKey variable as it's not used further in this scope.
             }
 
             let files = [];
             let hadErrors = false;
 
-            // --- New logic for piped input ---
             if (options.stdinContent) {
                 if (args.length > 0) {
                     return {
@@ -180,7 +163,7 @@
                         });
                     }
                 }
-            } else { // --- Existing logic for argument-based input ---
+            } else {
                 let startPath;
                 let startNode;
 

@@ -1,8 +1,3 @@
-/**
- * @file Defines the 'basic' command, which launches the Oopis Basic IDE.
- * @author The Engineer
- */
-
 (() => {
     "use strict";
 
@@ -28,7 +23,6 @@
                 return { success: false, error: "basic: Cannot be run in a non-interactive mode." };
             }
 
-            // Ensure the application modules are loaded
             if (typeof BasicManager === 'undefined' || typeof BasicUI === 'undefined' || typeof BasicInterpreter === 'undefined') {
                 return { success: false, error: "basic: The BASIC application modules are not loaded." };
             }
@@ -40,10 +34,8 @@
                 filePath = validatedPaths[0].resolvedPath;
             }
 
-            // Launch the modal app. The app itself will handle the lifecycle.
             BasicManager.enter(context, { content: fileContent, path: filePath });
 
-            // The command's job is done once the app is launched.
             return { success: true, output: "" };
         }
     };
