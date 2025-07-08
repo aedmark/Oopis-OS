@@ -1,16 +1,6 @@
 (() => {
     "use strict";
-    /**
-     * @file Defines the 'removeuser' command, which permanently deletes a user account.
-     * By default, it preserves the user's home directory. An optional flag allows for its removal.
-     * @author Andrew Edmark
-     * @author Gemini
-     */
 
-    /**
-     * @const {object} removeuserCommandDefinition
-     * @description The command definition for the 'removeuser' command.
-     */
     const removeuserCommandDefinition = {
         commandName: "removeuser",
         completionType: "users",
@@ -30,21 +20,17 @@
             exact: 1,
             error: "Usage: removeuser [-f] [-r] <username>",
         },
-        /**
-         * The core logic for the 'removeuser' command.
-         */
+
         coreLogic: async (context) => {
             const { args, currentUser, flags, options } = context;
             const usernameToRemove = args[0];
 
-            // Prevent user from removing themselves.
             if (usernameToRemove === currentUser) {
                 return {
                     success: false,
                     error: "removeuser: You cannot remove yourself.",
                 };
             }
-            // Prevent removal of reserved users.
             if (usernameToRemove === Config.USER.DEFAULT_NAME || usernameToRemove === "root") {
                 return {
                     success: false,
@@ -103,7 +89,6 @@
             let errorMessages = [];
             let changesMade = false;
 
-            // Conditionally remove the user's home directory
             if (flags.removeHome) {
                 const userHomePath = `/home/${usernameToRemove}`;
                 if (FileSystemManager.getNodeByPath(userHomePath)) {
@@ -124,10 +109,8 @@
                 }
             }
 
-            // Remove the user from all supplementary groups.
             GroupManager.removeUserFromAllGroups(usernameToRemove);
 
-            // Clear the user's session states and credentials from local storage.
             if (!SessionManager.clearUserSessionStates(usernameToRemove)) {
                 allDeletionsSuccessful = false;
                 errorMessages.push(

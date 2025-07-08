@@ -1,18 +1,6 @@
-/**
- * @file Defines the 'ocrypt' command, a simple symmetric XOR cipher utility.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * Performs a simple XOR cipher on data using a key.
-     * @param {string} data - The input string to encrypt or decrypt.
-     * @param {string} key - The password to use for the cipher.
-     * @returns {string} The processed string.
-     */
     function xorCipher(data, key) {
         let output = '';
         for (let i = 0; i < data.length; i++) {
@@ -22,16 +10,11 @@
         return output;
     }
 
-    /**
-     * @const {object} ocryptCommandDefinition
-     * @description The command definition for the 'ocrypt' command.
-     */
     const ocryptCommandDefinition = {
         commandName: "ocrypt",
         flagDefinitions: [
             { name: "decode", short: "-d", long: "--decode" }
         ],
-        // No argValidation, as logic is complex (password/file are optional/positional)
         coreLogic: async (context) => {
             const { args, flags, options, currentUser } = context;
 
@@ -39,13 +22,10 @@
             let password = null;
             let filePath = null;
 
-            // NEW: Argument parsing logic for non-interactive use
             if (args.length === 2) {
                 password = args[0];
                 filePath = args[1];
             } else if (args.length === 1) {
-                // If there's stdin, the single arg is the password.
-                // Otherwise, it's the file path and we need to prompt for the password.
                 if (options.stdinContent !== null) {
                     password = args[0];
                 } else {
@@ -53,7 +33,6 @@
                 }
             }
 
-            // Handle file input if a path was determined
             if (filePath) {
                 const pathValidation = FileSystemManager.validatePath("ocrypt", filePath, { expectedType: 'file' });
                 if (pathValidation.error) {
@@ -69,9 +48,7 @@
                 return { success: false, error: "ocrypt: requires data from a file or standard input" };
             }
 
-            // Prompt for password if it wasn't provided as an argument
             if (password === null) {
-                // This part remains for interactive use
                 if (!options.isInteractive) {
                     return { success: false, error: "ocrypt: password must be provided as an argument in non-interactive mode." };
                 }
@@ -93,7 +70,6 @@
                 return { success: false, error: "ocrypt: password cannot be empty." };
             }
 
-            // The XOR operation is symmetrical, so the same function is used for encrypting and decrypting.
             const processedData = xorCipher(inputData, password);
             return { success: true, output: processedData };
         }

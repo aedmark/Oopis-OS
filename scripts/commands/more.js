@@ -15,13 +15,10 @@
                 return { success: true, output: "" };
             }
 
-            // If the command is NOT run interactively (e.g., in a script),
-            // simply pass the content through like 'cat'.
             if (!options.isInteractive) {
                 return { success: true, output: content };
             }
 
-            // Otherwise, launch the interactive pager.
             PagerManager.enter(content, { mode: 'more' });
 
             return { success: true, output: "" };

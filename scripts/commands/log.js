@@ -1,21 +1,15 @@
-/**
- * @fileoverview Command definition for 'log', the OopisOS Personal Journal.
- * This command allows for quick-logging and launches the main journal application.
- */
-
 (() => {
     "use strict";
 
     const logCommandDefinition = {
         commandName: "log",
         argValidation: {
-            max: 1, // Allows 0 or 1 argument.
+            max: 1,
             error: "Usage: log [\"quick entry text\"]"
         },
         coreLogic: async (context) => {
             const { args, currentUser, options } = context;
 
-            // The Log application is primarily a UI-based tool.
             if (!options.isInteractive) {
                 return {
                     success: false,
@@ -23,7 +17,6 @@
                 };
             }
 
-            // Ensure the application module is loaded
             if (typeof LogManager === 'undefined' || typeof LogUI === 'undefined') {
                 return {
                     success: false,
@@ -31,7 +24,6 @@
                 };
             }
 
-            // Case 1: Quick-add a new log entry
             if (args.length === 1) {
                 const entryText = args[0];
                 const result = await LogManager.quickAdd(entryText, currentUser);
@@ -43,7 +35,6 @@
                 }
             }
 
-            // Case 2: Launch the full application
             LogManager.enter();
             return { success: true, output: "" };
         }

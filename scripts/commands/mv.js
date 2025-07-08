@@ -1,11 +1,3 @@
-/**
- * @file Defines the 'mv' command, which is used to move or rename files and directories
- * within the OopisOS file system. It handles various scenarios including overwriting,
- * interactive prompts, and multi-file moves.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -19,12 +11,10 @@
             min: 2,
             error: "Usage: mv [OPTION]... <source> <destination> or mv [OPTION]... <source>... <directory>",
         },
-        // --- ADDED FOR AUTO-COMPLETION ---
         pathValidation: [
             { argIndex: 0, options: { allowMissing: false } },
             { argIndex: 1, options: { allowMissing: true } }
         ],
-        // --- END ADDITION ---
         coreLogic: async (context) => {
             const { args, currentUser, flags, options } = context;
             const nowISO = new Date().toISOString();

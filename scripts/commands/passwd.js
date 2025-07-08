@@ -4,24 +4,21 @@
     const passwdCommandDefinition = {
         commandName: "passwd",
         argValidation: {
-            max: 1, // Accepts an optional username
+            max: 1,
         },
         coreLogic: async (context) => {
             const { args, currentUser, options } = context;
 
-            // Ensure command is run interactively
             if (!options.isInteractive) {
                 return { success: false, error: "passwd: can only be run in interactive mode." };
             }
 
             const targetUsername = args[0] || currentUser;
 
-            // Security: A non-root user cannot change another user's password.
             if (currentUser !== 'root' && currentUser !== targetUsername) {
                 return { success: false, error: "passwd: you may only change your own password." };
             }
 
-            // Get the user record to check if it exists
             const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
             if (!users[targetUsername]) {
                 return { success: false, error: `passwd: user '${targetUsername}' does not exist.` };
@@ -32,12 +29,10 @@
                     ModalInputManager.requestInput(
                         `Enter new password for ${targetUsername}:`,
                         (newPassword) => {
-                            // REFACTOR START
                             if (!newPassword) {
                                 resolve({ success: false, error: Config.MESSAGES.EMPTY_PASSWORD_NOT_ALLOWED });
                                 return;
                             }
-                            // REFACTOR END
                             ModalInputManager.requestInput(
                                 `Confirm new password:`,
                                 async (confirmPassword) => {
@@ -49,25 +44,24 @@
                                     resolve(result);
                                 },
                                 () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
-                                true, // Obscured input
+                                true,
                                 options
                             );
                         },
                         () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
-                        true, // Obscured input
+                        true,
                         options
                     );
                 };
 
                 if (currentUser === 'root' && currentUser !== targetUsername) {
-                    getNewPassword(null); // Root does not need to provide an old password
+                    getNewPassword(null);
                 } else {
-                    // User changing their own password, or root changing their own password
                     ModalInputManager.requestInput(
                         `Enter current password for ${currentUser}:`,
                         (oldPassword) => getNewPassword(oldPassword),
                         () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED }),
-                        true, // Obscured input
+                        true,
                         options
                     );
                 }

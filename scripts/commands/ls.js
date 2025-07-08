@@ -1,22 +1,6 @@
-/**
- * @file Defines the 'ls' command, a core utility for listing directory contents and file information.
- * It supports various flags for detailed output, sorting, and recursive listing.
- * @author Andrew Edmark
- * @author Gemini
- * @author Engineer (Refactored for v3.5)
- */
 (() => {
     "use strict";
 
-    // --- Helper Functions (Moved to IIFE Scope) ---
-
-    /**
-     * Gathers details for a single file system item.
-     * @param {string} itemName - The name of the item.
-     * @param {object} itemNode - The file system node for the item.
-     * @param {string} itemPath - The full path to the item.
-     * @returns {object|null} A detailed object for the item or null.
-     */
     function getItemDetails(itemName, itemNode, itemPath) {
         if (!itemNode) return null;
         return {
@@ -30,16 +14,10 @@
             mtime: itemNode.mtime ? new Date(itemNode.mtime) : new Date(0),
             size: FileSystemManager.calculateNodeSize(itemNode),
             extension: Utils.getFileExtension(itemName),
-            linkCount: 1, // Hard link simulation is basic for now.
+            linkCount: 1,
         };
     }
 
-    /**
-     * Formats the details of a single item for the long listing format (-l).
-     * @param {object} itemDetails - The detailed object from getItemDetails.
-     * @param {object} effectiveFlags - The flags being used for the command.
-     * @returns {string} The formatted string for the list item.
-     */
     function formatLongListItem(itemDetails, effectiveFlags) {
         const perms = FileSystemManager.formatModeToString(itemDetails.node);
         const owner = (itemDetails.node.owner || "unknown").padEnd(10);
@@ -55,16 +33,9 @@
         return `${perms}  ${String(itemDetails.linkCount).padStart(2)} ${owner}${group}${size} ${dateStr} ${itemDetails.name}${nameSuffix}`;
     }
 
-    /**
-     * Sorts an array of item details based on the provided flags.
-     * @param {Array<object>} items - Array of item detail objects.
-     * @param {object} currentFlags - The flags to sort by.
-     * @returns {Array<object>} The sorted array of items.
-     */
     function sortItems(items, currentFlags) {
         let sortedItems = [...items];
         if (currentFlags.noSort) {
-            // Do nothing
         } else if (currentFlags.sortByTime) {
             sortedItems.sort((a, b) => b.mtime - a.mtime || a.name.localeCompare(b.name));
         } else if (currentFlags.sortBySize) {
@@ -80,11 +51,6 @@
         return sortedItems;
     }
 
-    /**
-     * Formats an array of names into a multi-column string based on terminal width.
-     * @param {Array<string>} names - The names to format.
-     * @returns {string} The multi-column formatted string.
-     */
     function formatToColumns(names) {
         if (names.length === 0) return "";
         const terminalWidth = DOM.terminalDiv?.clientWidth || 80 * 8;
@@ -105,13 +71,6 @@
         return grid.map(row => row.map((item, colIndex) => (colIndex === row.length - 1) ? item : item.padEnd(colWidth)).join("")).join("\n");
     }
 
-    /**
-     * The primary workhorse function. Lists the contents of a single path.
-     * @param {string} targetPathArg - The path argument to list.
-     * @param {object} effectiveFlags - The calculated flags for the operation.
-     * @param {string} currentUser - The current user.
-     * @returns {Promise<object>} A result object with output, success status, and item details.
-     */
     async function listSinglePathContents(targetPathArg, effectiveFlags, currentUser) {
         const pathValidation = FileSystemManager.validatePath("ls", targetPathArg);
         if (pathValidation.error) return { success: false, error: pathValidation.error };
@@ -168,13 +127,6 @@
         return { success: true, output: currentPathOutputLines.join("\n"), items: itemDetailsList, isDir: targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE };
     }
 
-    /**
-     * Handles the logic for a standard (non-recursive) listing.
-     * @param {Array<string>} pathsToList - The paths provided by the user.
-     * @param {object} effectiveFlags - The calculated flags for the operation.
-     * @param {string} currentUser - The current user.
-     * @returns {Promise<object>} The final command result object.
-     */
     async function _handleStandardListing(pathsToList, effectiveFlags, currentUser) {
         let outputBlocks = [];
         let overallSuccess = true;
@@ -229,13 +181,6 @@
         return { success: overallSuccess, [overallSuccess ? 'output' : 'error']: finalOutput };
     }
 
-    /**
-     * Handles the logic for a recursive (-R) listing.
-     * @param {Array<string>} pathsToList - The initial paths provided by the user.
-     * @param {object} effectiveFlags - The calculated flags for the operation.
-     * @param {string} currentUser - The current user.
-     * @returns {Promise<object>} The final command result object.
-     */
     async function _handleRecursiveListing(pathsToList, effectiveFlags, currentUser) {
         let outputBlocks = [];
         let overallSuccess = true;
@@ -244,7 +189,7 @@
             let blockOutputs = [];
             let encounteredErrorInThisBranch = false;
             if (depth > 0 || pathsToList.length > 1) {
-                blockOutputs.push(""); // Add spacing between directory listings
+                blockOutputs.push("");
                 blockOutputs.push(`${currentPath}:`);
             }
             const listResult = await listSinglePathContents(currentPath, displayFlags, currentUser);
@@ -275,16 +220,12 @@
             }
         }
 
-        // Clean up initial empty lines if any
         if (outputBlocks.length > 0 && outputBlocks[0] === "") {
             outputBlocks.shift();
         }
 
         return { success: overallSuccess, [overallSuccess ? 'output' : 'error']: outputBlocks.join("\n") };
     }
-
-
-    // --- Command Definition ---
 
     const lsCommandDefinition = {
         commandName: "ls",
@@ -301,11 +242,9 @@
             { name: "oneColumn", short: "-1" },
             { name: "humanReadable", short: "-h", long: "--human-readable" }
         ],
-        // --- ADDED FOR AUTO-COMPLETION ---
         pathValidation: [
             { argIndex: 0, optional: true, options: { allowMissing: false } }
         ],
-        // --- END ADDITION ---
         coreLogic: async (context) => {
             const { args, flags, currentUser, options } = context;
 
