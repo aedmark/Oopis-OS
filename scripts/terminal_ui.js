@@ -11,7 +11,7 @@ const ModalManager = (() => {
             confirmText = "OK",
             cancelText = "Cancel",
         } = options;
-        const parentContainer = document.getElementById('terminal-bezel');
+        const parentContainer = document.getElementById('terminal');
         if (!parentContainer) {
             console.error("ModalManager: Cannot find terminal-bezel to attach modal.");
             if (options.onCancel) options.onCancel();
@@ -69,7 +69,7 @@ const ModalManager = (() => {
             placeholder = ""
         } = options;
 
-        const parentContainer = document.getElementById('terminal-bezel');
+        const parentContainer = document.getElementById('terminal');
         if (!parentContainer) {
             if (onCancel) onCancel();
             return;

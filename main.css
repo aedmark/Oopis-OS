@@ -146,7 +146,7 @@ body {
     flex-grow: 1;
     display: flex;
     background-color: var(--color-background-medium);
-    border-radius: var(--border-radius-lg);
+    border-radius: var(--border-radius-md); /* Match the terminal's rounding */
     box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
     min-height: 0;
     width: 100%;
