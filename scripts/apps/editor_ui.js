@@ -1,7 +1,7 @@
 const EditorAppConfig = {
     EDITOR: {
         DEBOUNCE_DELAY_MS: 250,
-        FIND_DEBOUNCE_DELAY_MS: 150, // Added for find functionality
+        FIND_DEBOUNCE_DELAY_MS: 150,
         TAB_REPLACEMENT: "    ",
         DEFAULT_MODE: "text",
         MODES: { TEXT: "text", MARKDOWN: "markdown", HTML: "html" },
@@ -67,6 +67,16 @@ const EditorUI = (() => {
     let elements = {};
     let eventCallbacks = {};
     let previewDebounceTimer = null;
+    let lines = [];
+    let visibleStartLine = 0;
+    let visibleEndLine = 0;
+    let charDimensions = { width: 8, height: 16 };
+
+    let selection = {
+        start: { line: 0, col: 0 },
+        end: { line: 0, col: 0 }
+    };
+
 
     const iframeStyles = `
     <style>
@@ -144,7 +154,6 @@ const EditorUI = (() => {
     function buildLayout(callbacks) {
         eventCallbacks = callbacks;
 
-        // --- Find & Replace Bar ---
         elements.findInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Find...", eventListeners: { input: eventCallbacks.onFindInputChange, keydown: eventCallbacks.onFindBarKeyDown } });
         elements.replaceInput = Utils.createElement("input", { className: "find-bar__input", placeholder: "Replace...", eventListeners: { keydown: eventCallbacks.onFindBarKeyDown } });
         elements.findMatchesDisplay = Utils.createElement("span", { className: "find-bar__matches" });
@@ -160,7 +169,6 @@ const EditorUI = (() => {
             elements.findInput, findNavGroup, elements.findMatchesDisplay, elements.replaceInput, replaceGroup, elements.closeFindBtn
         );
 
-        // --- Markdown Toolbar Buttons ---
         const mdButtonDetails = [{
             name: 'undoButton',
             iconHTML: '<svg fill="#000000" height="200px" width="200px" id="Layer_1" viewBox="0 0 24 24" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <polygon points="20,6 20,5 19,5 19,4 18,4 18,3 8,3 8,4 7,4 7,5 6,5 6,6 5,6 5,5 5,4 3,4 3,10 9,10 9,8 7,8 7,7 8,7 8,6 9,6 9,5 16,5 16,6 17,6 17,7 18,7 18,8 19,8 19,16 18,16 18,17 17,17 17,18 16,18 16,19 9,19 9,18 8,18 8,17 7,17 7,16 6,16 6,15 4,15 4,18 5,18 5,19 6,19 6,20 7,20 7,21 18,21 18,20 19,20 19,19 20,19 20,18 21,18 21,6 "></polygon> </g></svg>',
@@ -222,8 +230,6 @@ const EditorUI = (() => {
             });
             elements.formattingToolbar.appendChild(elements[detail.name]);
         });
-
-        // --- HTML Toolbar Buttons ---
         const htmlButtonDetails = [
             { name: 'h1Button', text: 'H1', title: 'Header 1', callbackName: 'onFormatH1' },
             { name: 'pButton', text: 'P', title: 'Paragraph', callbackName: 'onFormatP' },
@@ -243,27 +249,31 @@ const EditorUI = (() => {
             elements.htmlFormattingToolbar.appendChild(elements[detail.name]);
         });
 
-
-        // --- Control Buttons ---
         elements.wordWrapToggleButton = Utils.createElement("button", { id: "editor-word-wrap-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onWordWrapToggle } });
         elements.viewToggleButton = Utils.createElement("button", { id: "editor-view-toggle", className: "editor-btn", eventListeners: { click: eventCallbacks.onViewToggle } });
         elements.exportPreviewButton = Utils.createElement("button", { id: "editor-export-preview", className: "editor-btn", textContent: "Export", eventListeners: { click: eventCallbacks.onExportPreview } });
         elements.exitButton = Utils.createElement("button", { id: "editor-exit-btn", className: "editor-btn", textContent: "Exit", title: "Exit (prompts to save if unsaved)", eventListeners: { click: eventCallbacks.onExitButtonClick } });
 
-        // --- Layout Structure ---
         const controlsLeftGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.formattingToolbar, elements.htmlFormattingToolbar);
         const controlsRightGroup = Utils.createElement("div", { className: "editor__controls-group" }, elements.wordWrapToggleButton, elements.viewToggleButton, elements.exportPreviewButton, elements.exitButton);
         elements.controlsDiv = Utils.createElement("div", { id: "editor-controls", className: "editor__controls" }, controlsLeftGroup, controlsRightGroup);
+
         elements.lineGutter = Utils.createElement("div", { id: "editor-line-gutter", className: "editor__gutter" });
-        elements.highlighter = Utils.createElement("div", {
-            id: "editor-highlighter",
-            className: "editor__shared-pane-styles editor__highlighter" // Use both classes
-        });
-        elements.textarea = Utils.createElement("textarea", { id: "editor-textarea", className: "editor__shared-pane-styles editor__textarea", spellcheck: "false", eventListeners: { input: eventCallbacks.onInput, scroll: eventCallbacks.onScroll, click: eventCallbacks.onSelectionChange, keyup: eventCallbacks.onSelectionChange } });
-        elements.textareaWrapper = Utils.createElement("div", { id: "editor-textarea-wrapper", className: "editor__textarea-wrapper" }, elements.highlighter, elements.textarea);
+        elements.contentContainer = Utils.createElement("div", { id: "editor-content-container", style: { position: 'relative', overflow: 'hidden', height: '100%', flex: 1 } });
+        elements.virtualScroller = Utils.createElement("div", { id: "virtual-scroller", style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'scroll', overflowX: 'auto' } });
+        elements.virtualContent = Utils.createElement("div", { id: "virtual-content", style: { position: 'relative' } });
+        elements.hiddenTextarea = Utils.createElement("textarea", { id: "hidden-textarea", style: { position: 'absolute', left: '-9999px', top: '0', width: '1px', height: '1px', opacity: 0 } });
+
+        elements.virtualScroller.addEventListener('scroll', _handleScroll);
+        elements.contentContainer.addEventListener('click', () => elements.hiddenTextarea.focus());
+
+        elements.virtualScroller.appendChild(elements.virtualContent);
+        elements.contentContainer.appendChild(elements.virtualScroller);
+        elements.contentContainer.appendChild(elements.hiddenTextarea);
+
         elements.previewPane = Utils.createElement("div", { id: "editor-preview-content", className: "editor__preview-content" });
         elements.previewWrapper = Utils.createElement("div", { id: "editor-preview-wrapper", className: "editor__preview-wrapper" }, elements.previewPane);
-        elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.textareaWrapper, elements.previewWrapper);
+        elements.mainArea = Utils.createElement("div", { id: "editor-main-area", className: "editor__main-area" }, elements.lineGutter, elements.contentContainer, elements.previewWrapper);
         elements.filenameDisplay = Utils.createElement("span", { id: "editor-filename-display" });
         elements.statusBarCursorPos = Utils.createElement("span", { id: "status-cursor" });
         elements.statusBarLineCount = Utils.createElement("span", { id: "status-lines" });
@@ -281,8 +291,121 @@ const EditorUI = (() => {
             elements.statusBar,
             elements.instructionsFooter
         );
-
+        charDimensions = Utils.getCharacterDimensions(getComputedStyle(elements.editorContainer).font);
+        lineHeight = charDimensions.height;
         return elements.editorContainer;
+    }
+
+    function renderHighlights(matches, activeIndex) {
+        if (!elements.virtualContent) return;
+
+        const lineElements = Array.from(elements.virtualContent.children);
+        let textOffset = 0;
+
+        // Reset all highlights first
+        lineElements.forEach(lineEl => {
+            const currentLineIndex = visibleStartLine + Array.prototype.indexOf.call(lineElements, lineEl);
+            lineEl.innerHTML = lines[currentLineIndex] || '\u00A0';
+        });
+
+
+        let currentLineCharOffset = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const lineLengthWithNewline = line.length + 1;
+
+            if (i >= visibleStartLine && i < visibleEndLine) {
+                const lineElement = lineElements[i - visibleStartLine];
+                if (!lineElement) continue;
+
+                const lineMatches = matches.filter(match => {
+                    return match.index >= currentLineCharOffset && match.index < currentLineCharOffset + lineLengthWithNewline;
+                });
+
+                if (lineMatches.length > 0) {
+                    let lastIndexInLine = 0;
+                    let newHtml = '';
+                    lineMatches.forEach((match, matchIndexInLine) => {
+                        const startIndexInLine = match.index - currentLineCharOffset;
+                        const matchText = match[0];
+
+                        newHtml += line.substring(lastIndexInLine, startIndexInLine);
+                        const isMatchActive = matches.findIndex(m => m.index === match.index) === activeIndex;
+                        const className = isMatchActive ? 'highlight-match--active' : 'highlight-match';
+                        newHtml += `<span class="${className}">${matchText}</span>`;
+                        lastIndexInLine = startIndexInLine + matchText.length;
+                    });
+                    newHtml += line.substring(lastIndexInLine);
+                    lineElement.innerHTML = newHtml || '\u00A0';
+                }
+            }
+            currentLineCharOffset += lineLengthWithNewline;
+        }
+    }
+
+    function _handleScroll() {
+        const scrollTop = elements.virtualScroller.scrollTop;
+        const newStartLine = Math.floor(scrollTop / lineHeight);
+
+        if (newStartLine !== visibleStartLine) {
+            visibleStartLine = newStartLine;
+            _renderVisibleContent();
+        }
+    }
+
+    function _calculateVisibleLines() {
+        if (!elements.contentContainer) return;
+        const containerHeight = elements.contentContainer.clientHeight;
+        const lineCount = Math.ceil(containerHeight / lineHeight) + 5; // buffer
+        visibleEndLine = Math.min(lines.length, visibleStartLine + lineCount);
+    }
+
+    function _renderVisibleContent() {
+        if (!elements.virtualContent) return;
+        _calculateVisibleLines();
+
+        elements.virtualContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        for (let i = visibleStartLine; i < visibleEndLine; i++) {
+            const lineElement = Utils.createElement("div", {
+                className: 'editor-line',
+                textContent: lines[i] || '\u00A0', // Use non-breaking space for empty lines
+                style: {
+                    position: 'absolute',
+                    top: `${i * lineHeight}px`,
+                    width: '100%',
+                    height: `${lineHeight}px`
+                }
+            });
+            fragment.appendChild(lineElement);
+        }
+
+        elements.virtualContent.style.height = `${lines.length * lineHeight}px`;
+        elements.virtualContent.appendChild(fragment);
+
+        _renderGutter();
+    }
+
+    function _renderGutter() {
+        if (!elements.lineGutter) return;
+        let gutterHtml = '';
+        for (let i = visibleStartLine; i < visibleEndLine; i++) {
+            gutterHtml += (i + 1) + '\n';
+        }
+        elements.lineGutter.textContent = gutterHtml;
+        elements.lineGutter.style.transform = `translateY(-${elements.virtualScroller.scrollTop % lineHeight}px)`;
+    }
+
+    function setTextareaContent(text) {
+        lines = text.split('\n');
+        visibleStartLine = 0;
+        if(elements.virtualScroller) elements.virtualScroller.scrollTop = 0;
+        _renderVisibleContent();
+    }
+
+    function getTextareaContent() {
+        return lines.join('\n');
     }
 
     function setGutterVisibility(visible) {
@@ -305,7 +428,7 @@ const EditorUI = (() => {
     }
 
     function updateStatusBar(text, selectionStart) {
-        if (!elements.textarea || !elements.statusBar) return;
+        if (!elements.statusBar) return;
         const stats = EditorUtils.calculateStatusBarInfo(text, selectionStart);
         if (elements.statusBarLineCount) elements.statusBarLineCount.textContent = `Lines: ${stats.lines}`;
         if (elements.statusBarWordCount) elements.statusBarWordCount.textContent = `Words: ${stats.words} `;
@@ -313,65 +436,25 @@ const EditorUI = (() => {
         if (elements.statusBarCursorPos) elements.statusBarCursorPos.textContent = `Ln: ${stats.cursor.line}, Col: ${stats.cursor.col} `;
     }
 
-    function updateLineNumbers(text) {
-        if (!elements.textarea || !elements.lineGutter) return;
-        const numbersArray = EditorUtils.generateLineNumbersArray(text);
-        elements.lineGutter.textContent = numbersArray.join("\n");
-        elements.lineGutter.scrollTop = elements.textarea.scrollTop;
-    }
-
-    function syncScrolls() {
-        if (elements.lineGutter && elements.textarea) {
-            elements.lineGutter.scrollTop = elements.textarea.scrollTop;
-        }
-        if (elements.highlighter && elements.textarea) {
-            elements.highlighter.scrollTop = elements.textarea.scrollTop;
-            elements.highlighter.scrollLeft = elements.textarea.scrollLeft;
-        }
-    }
-
-    function setTextareaContent(text) {
-        if (elements.textarea) elements.textarea.value = text;
-    }
-
-    function getTextareaContent() {
-        return elements.textarea ? elements.textarea.value : "";
-    }
-
     function setEditorFocus() {
-        if (elements.textarea && elements.textareaWrapper && !elements.textareaWrapper.classList.contains("hidden")) {
-            elements.textarea.focus();
+        if (elements.hiddenTextarea) {
+            elements.hiddenTextarea.focus();
         }
     }
 
     function getTextareaSelection() {
-        if (elements.textarea) {
-            return { start: elements.textarea.selectionStart, end: elements.textarea.selectionEnd };
-        }
-        return { start: 0, end: 0 };
+        return selection;
     }
 
     function setTextareaSelection(start, end) {
-        if (elements.textarea) {
-            elements.textarea.selectionStart = start;
-            elements.textarea.selectionEnd = end;
-        }
+        selection.start = start;
+        selection.end = end;
     }
 
     function applyTextareaWordWrap(isWordWrapActive) {
-        if (!elements.textarea || !elements.highlighter) return;
-        const elementsToStyle = [elements.textarea, elements.highlighter];
-        if (isWordWrapActive) {
-            elementsToStyle.forEach(el => {
-                el.style.whiteSpace = 'pre-wrap';
-                el.style.overflowX = 'hidden';
-            });
-        } else {
-            elementsToStyle.forEach(el => {
-                el.style.whiteSpace = 'pre';
-                el.style.overflowX = 'auto';
-            });
-        }
+        if (!elements.virtualContent) return;
+        elements.virtualContent.style.whiteSpace = isWordWrapActive ? 'pre-wrap' : 'pre';
+        elements.virtualContent.style.overflowX = isWordWrapActive ? 'hidden' : 'auto';
     }
 
     function applyPreviewWordWrap(isWordWrapActive, currentFileMode) {
@@ -434,15 +517,14 @@ const EditorUI = (() => {
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
 
-
     function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
-        if (!elements.lineGutter || !elements.textareaWrapper || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
+        if (!elements.lineGutter || !elements.contentContainer || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
 
         elements.previewPane.classList.toggle("markdown-preview", currentFileMode === EditorAppConfig.EDITOR.MODES.MARKDOWN);
 
         elements.viewToggleButton.classList.toggle("hidden", !isPreviewable);
         elements.exportPreviewButton.classList.toggle("hidden", !isPreviewable);
-        elements.textareaWrapper.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
+        elements.contentContainer.style.borderRight = isPreviewable && viewMode === EditorAppConfig.EDITOR.VIEW_MODES.SPLIT ? "var(--border-width) solid var(--color-border-secondary)" : "none";
 
         const viewConfigs = {
             [EditorAppConfig.EDITOR.VIEW_MODES.SPLIT]: { text: "Edit", gutter: true, editor: true, editorFlex: "1", preview: true, previewFlex: "1" },
@@ -455,8 +537,8 @@ const EditorUI = (() => {
         if (config) {
             elements.viewToggleButton.textContent = config.text;
             elements.lineGutter.classList.toggle("hidden", !config.gutter || (isWordWrapActive && config.gutter));
-            elements.textareaWrapper.classList.toggle("hidden", !config.editor);
-            elements.textareaWrapper.style.flex = config.editorFlex;
+            elements.contentContainer.classList.toggle("hidden", !config.editor);
+            elements.contentContainer.style.flex = config.editorFlex;
             elements.previewWrapper.classList.toggle("hidden", !config.preview);
             elements.previewWrapper.style.flex = config.previewFlex;
         }
@@ -491,23 +573,8 @@ const EditorUI = (() => {
         return elements.replaceInput ? elements.replaceInput.value : "";
     }
 
-    function renderHighlights(text, matches, activeIndex) {
-        if (!elements.highlighter) return;
-        let highlightedHtml = '';
-        let lastIndex = 0;
-        matches.forEach((match, index) => {
-            highlightedHtml += text.substring(lastIndex, match.index);
-            const className = index === activeIndex ? 'highlight-match--active' : 'highlight-match';
-            highlightedHtml += `<span class="${className}">${match[0]}</span>`;
-            lastIndex = match.index + match[0].length;
-        });
-        highlightedHtml += text.substring(lastIndex);
-        elements.highlighter.innerHTML = highlightedHtml;
-        syncScrolls();
-    }
-
     return {
-        buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar, updateLineNumbers, syncScrolls,
+        buildLayout, destroyLayout, updateFilenameDisplay, updateStatusBar,
         setTextareaContent, getTextareaContent, setEditorFocus, getTextareaSelection, setTextareaSelection,
         applyTextareaWordWrap, applyPreviewWordWrap, updateWordWrapButtonText, renderPreview, setViewMode,
         getPreviewPaneHTML, setGutterVisibility, elements, _updateFormattingToolbarVisibility, iframeStyles,
