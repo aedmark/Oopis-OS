@@ -415,12 +415,6 @@ const EditorManager = (() => {
             redoStack = [];
 
             const editorCallbacks = {
-                onInput: (e) => {
-                    if (e.data) {
-                        const command = new ReplaceRangeCommand(selectionAnchor, selectionHead, e.data);
-                        commandExecutor.execute(command);
-                    }
-                },
                 onSelectionStart: (startIndex) => {
                     setSelection(startIndex, startIndex);
                 },
