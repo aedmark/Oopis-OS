@@ -1,48 +1,24 @@
-/**
- * @file Defines the 'loadstate' command, which restores the last manually saved session state for the current user.
- * This includes the file system, terminal output, and command history.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} loadstateCommandDefinition
-     * @description The command definition for the 'loadstate' command.
-     * This object specifies the command's name, argument validation (no arguments expected),
-     * and the core logic for loading a manually saved session.
-     */
     const loadstateCommandDefinition = {
         commandName: "loadstate",
         argValidation: {
-            exact: 0, // This command takes no arguments.
+            exact: 0,
         },
-        /**
-         * The core logic for the 'loadstate' command.
-         * It delegates the actual loading process to `SessionManager.loadManualState()`.
-         * This function is responsible for initiating a confirmation prompt to the user
-         * before proceeding with the potentially destructive load operation.
-         * The result from `SessionManager.loadManualState()` is then formatted and returned.
-         * @async
-         * @returns {Promise<object>} A promise that resolves to a command result object
-         * indicating whether the state loading was successful, a confirmation was requested,
-         * or if an error occurred.
-         */
+
         coreLogic: async () => {
-            // Delegate the state loading to the SessionManager.
-            // The SessionManager handles the interactive confirmation prompt.
+
             const result = await SessionManager.loadManualState();
             return {
                 success: result.success,
-                output: result.message, // Contains message about success, cancellation, or error.
+                output: result.message,
                 error: result.success
-                    ? undefined // No error if successful.
-                    : result.message || "Failed to load state.", // Use message as error if unsuccessful.
+                    ? undefined
+                    : result.message || "Failed to load state.",
                 messageType: result.success
-                    ? Config.CSS_CLASSES.CONSOLE_LOG_MSG // Informational message for success/cancellation.
-                    : Config.CSS_CLASSES.ERROR_MSG, // Error styling for failure.
+                    ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
+                    : Config.CSS_CLASSES.ERROR_MSG,
             };
         },
     };

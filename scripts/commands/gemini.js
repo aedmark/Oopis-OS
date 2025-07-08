@@ -1,20 +1,9 @@
-// scripts/commands/gemini.js
-/**
- * @file Defines the 'gemini' command, enabling interaction with a configured AI model.
- * This version supports tool use (shell commands), conversational memory, and a provider fallback mechanism.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    // --- STATE & CONFIGURATION ---
     let conversationHistory = [];
-    // COMMAND_WHITELIST is still needed because the 'gemini' provider will use it.
     const COMMAND_WHITELIST = ['ls', 'cat', 'grep', 'find', 'tree', 'pwd', 'head', 'shuf', 'xargs', 'echo', 'tail', 'csplit', 'wc'];
 
-    // These prompts are specific to the 'gemini' provider's tool-use orchestration.
     const PLANNER_SYSTEM_PROMPT = `You are a helpful and witty digital archivist embedded in the OopisOS terminal environment. Your goal is to assist the user by answering their questions about their file system, but you are also able to gather answers from outside sources when relevant. Your primary task is to analyze the user's prompt and the provided local file context, then devise a plan of OopisOS commands to execute to gather the necessary information.
 
 RULES:
@@ -56,15 +45,13 @@ RULES:
             const { args, options, flags } = context;
 
             let provider = flags.provider || 'gemini';
-            const originalProvider = provider; // Keep original provider for fallback logic
+            const originalProvider = provider;
             const model = flags.model || null;
             let apiKey = null;
-            let isNewKeyProvided = false; // Flag to track if key was newly entered by user
+            let isNewKeyProvided = false;
 
-            // Define userPrompt here, accessible to all branches
             const userPrompt = args.join(" ");
 
-            // Only prompt for API key if the explicitly chosen provider is 'gemini'
             const requiresGeminiApiKey = provider === 'gemini';
 
             if (requiresGeminiApiKey) {
@@ -96,14 +83,14 @@ RULES:
                                 error: "API key entry cancelled."
                             });
                         },
-                        false, // --- UX IMPROVEMENT: Do not obscure the API key input. ---
+                        false,
                         options
                     );
                 });
 
                 if (!apiKeyResult.success) return { success: false, error: `gemini: ${apiKeyResult.error}` };
                 apiKey = apiKeyResult.key;
-                isNewKeyProvided = !apiKeyResult.fromStorage; // Set flag based on where the key came from
+                isNewKeyProvided = !apiKeyResult.fromStorage;
             }
 
             if (flags.new) {
@@ -117,8 +104,6 @@ RULES:
             const shouldUseToolUseLogic = isGeminiProvider || flags.forceToolUse;
 
             if (shouldUseToolUseLogic) {
-                // This block runs if the selected provider is 'gemini' OR if tool-use is forced.
-                // The `provider` variable here correctly reflects the user's chosen provider.
 
                 const lsResult = await CommandExecutor.processSingleCommand("ls -l", { suppressOutput: true });
                 const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
@@ -126,16 +111,13 @@ RULES:
 
                 const plannerConversation = [...conversationHistory, { role: "user", parts: [{ text: plannerPrompt }] }];
 
-                // Call the LLM API using the selected provider/model for the planner step.
                 let plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT);
 
-                // Fallback logic if the *planning step* fails (e.g., local provider unavailable).
                 if (!plannerResult.success && plannerResult.error === 'LOCAL_PROVIDER_UNAVAILABLE') {
                     if (options.isInteractive) {
                         await OutputManager.appendToOutput(`gemini: Could not connect to '${originalProvider}' for planning. Falling back to Google Gemini for tool orchestration.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                     }
-                    provider = 'gemini'; // Force provider to 'gemini' for fallback
-                    // Re-check/fetch API key for the fallback provider if needed
+                    provider = 'gemini';
                     const fallbackApiKeyResult = await new Promise(resolve => {
                         let key = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
                         if (key) resolve({ success: true, key: key, fromStorage: true });
@@ -143,15 +125,15 @@ RULES:
                     });
                     if (!fallbackApiKeyResult.success) return { success: false, error: `gemini: ${fallbackApiKeyResult.error}` };
                     apiKey = fallbackApiKeyResult.key;
-                    isNewKeyProvided = !fallbackApiKeyResult.fromStorage; // Update flag for fallback key
+                    isNewKeyProvided = !fallbackApiKeyResult.fromStorage;
 
                     plannerResult = await Utils.callLlmApi(provider, model, plannerConversation, apiKey, PLANNER_SYSTEM_PROMPT);
                 }
 
                 if (!plannerResult.success) {
                     if (plannerResult.error === "INVALID_API_KEY") {
-                        StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY); // Remove invalid key from storage
-                        if (options.isInteractive) { // Inform user that key was removed
+                        StorageManager.removeItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+                        if (options.isInteractive) {
                             await OutputManager.appendToOutput("Gemini API key was invalid and has been removed.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                         }
                         return { success: false, error: "gemini: Your API key is invalid. Please run the command again." };
@@ -159,8 +141,7 @@ RULES:
                     return { success: false, error: `gemini: Planner stage failed. ${plannerResult.error}` };
                 }
 
-                // If planner call was successful and a new key was provided, save it.
-                if (isNewKeyProvided && requiresGeminiApiKey) { // Only save if it's a Gemini key
+                if (isNewKeyProvided && requiresGeminiApiKey) {
                     StorageManager.saveItem(Config.STORAGE_KEYS.GEMINI_API_KEY, apiKey);
                     if (options.isInteractive) {
                         await OutputManager.appendToOutput("Gemini API key saved successfully.", { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
@@ -171,7 +152,6 @@ RULES:
                 const planText = plannerResult.answer?.trim();
                 if (!planText) return { success: false, error: "gemini: AI failed to generate a valid plan or response." };
 
-                // If the first word of the plan is not a whitelisted command, it's a direct answer.
                 const firstWordOfPlan = planText.split(/\s+/)[0];
                 if (!COMMAND_WHITELIST.includes(firstWordOfPlan)) {
                     conversationHistory.push({ role: "user", parts: [{ text: userPrompt }] });
@@ -179,7 +159,6 @@ RULES:
                     return { success: true, output: planText };
                 }
 
-                // --- Tool Execution Stage ---
                 let executedCommandsOutput = "";
                 const commandsToExecute = planText.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
                 if (flags.verbose && options.isInteractive) {
@@ -201,9 +180,7 @@ RULES:
                     executedCommandsOutput += `--- Output of '${commandStr}' ---\n${output}\n\n`;
                 }
 
-                // --- Synthesizer Stage ---
                 const synthesizerPrompt = `Original user question: "${userPrompt}"\n\nContext from file system:\n${executedCommandsOutput || "No commands were run."}`;
-                // Call the LLM API using the selected provider/model for the synthesizer step.
                 const synthesizerResult = await Utils.callLlmApi(provider, model, [{ role: "user", parts: [{ text: synthesizerPrompt }] }], apiKey, SYNTHESIZER_SYSTEM_PROMPT);
 
                 if (!synthesizerResult.success) {
@@ -221,19 +198,13 @@ RULES:
                 return { success: true, output: finalAnswer };
 
             } else {
-                // This 'else' block handles direct pass-through for non-Gemini providers WITHOUT the -f flag.
                 const directConversation = [...conversationHistory, { role: "user", parts: [{ text: userPrompt }] }];
-                // No system prompt here, as the model is expected to have its instructions server-side or to be guided by the user.
                 const directResult = await Utils.callLlmApi(provider, model, directConversation, apiKey, null);
-
                 if (!directResult.success) {
-                    // This is for local provider failures for direct pass-through, including if they are unavailable
                     if (directResult.error === 'LOCAL_PROVIDER_UNAVAILABLE') {
-                        // If the local provider for direct chat is unavailable, try to fall back to Google Gemini.
                         if (options.isInteractive) {
                             await OutputManager.appendToOutput(`gemini: Could not connect to '${originalProvider}'. Falling back to default 'gemini' provider.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
                         }
-                        // Re-run the command with the 'gemini' provider, without forcing tool use
                         const fallbackCommand = `gemini ${flags.new ? '-n ' : ''}${flags.verbose ? '-v ' : ''}"${userPrompt}"`;
                         return await CommandExecutor.processSingleCommand(fallbackCommand, options);
                     }

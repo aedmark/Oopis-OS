@@ -1,19 +1,6 @@
-/**
- * @file Defines the 'curl' command, a network utility for transferring data from or to a server.
- * It supports displaying fetched content to standard output or saving it to a file.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} curlCommandDefinition
-     * @description The command definition for the 'curl' command.
-     * This object specifies the command's name, supported flags, argument validation,
-     * and the core logic for making HTTP requests.
-     */
     const curlCommandDefinition = {
         commandName: "curl",
         flagDefinitions: [{
@@ -34,19 +21,7 @@
             min: 1,
             error: "Usage: curl [options] <URL>"
         },
-        /**
-         * The core logic for the 'curl' command.
-         * It performs a fetch request to the specified URL.
-         * Depending on the flags, it can include HTTP headers in the output,
-         * and save the content to a file instead of printing to the terminal.
-         * It also includes basic error handling for network issues and CORS.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @param {string[]} context.args - The arguments provided to the command, expecting a URL.
-         * @param {object} context.flags - An object containing the parsed flags.
-         * @param {string} context.currentUser - The name of the current user.
-         * @returns {Promise<object>} A promise that resolves to a command result object.
-         */
+
         coreLogic: async (context) => {
             const {
                 args,

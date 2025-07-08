@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'df' (disk free) command for OopisOS.
- * It reports the virtual file system's disk space usage.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -14,7 +7,7 @@
             { name: "humanReadable", short: "-h", long: "--human-readable" },
         ],
         argValidation: {
-            max: 0, // df doesn't take path arguments in this implementation
+            max: 0,
         },
         coreLogic: async (context) => {
             const { flags } = context;

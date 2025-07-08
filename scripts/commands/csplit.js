@@ -1,16 +1,6 @@
-/**
- * @file Defines the 'csplit' command, a utility to split a file into sections determined by context lines.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} csplitCommandDefinition
-     * @description The command definition for the 'csplit' command.
-     */
     const csplitCommandDefinition = {
         commandName: "csplit",
         flagDefinitions: [
@@ -21,7 +11,7 @@
             { name: "elideEmpty", short: "-z", long: "--elide-empty-files" },
         ],
         argValidation: {
-            min: 2, // Requires at least a file and one pattern
+            min: 2,
         },
         pathValidation: [
             {
@@ -49,7 +39,6 @@
                 return { success: false, error: `csplit: invalid number of digits: '${flags.digits}'` };
             }
 
-            // Phase 1: Planning Stage (Calculate Segments)
             const segments = [];
             let lastSplitLine = 0;
 
@@ -87,7 +76,6 @@
 
             segments.push(lines.slice(lastSplitLine));
 
-            // Phase 2: Execution Stage (Write Files)
             const createdFileNames = [];
             let anyChangeMade = false;
 
@@ -106,12 +94,11 @@
                 );
 
                 if (!saveResult.success) {
-                    // If a write fails, clean up previously created files unless -k is specified.
                     if (!flags.keepFiles) {
                         for (const f of createdFileNames) {
                             await CommandExecutor.processSingleCommand(`rm -f ${f}`, { isInteractive: false });
                         }
-                        await FileSystemManager.save(); // Persist the deletions
+                        await FileSystemManager.save();
                     }
                     return { success: false, error: `csplit: failed to write to ${fileName}: ${saveResult.error}` };
                 }

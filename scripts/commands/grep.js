@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'grep' command, which searches for patterns within files or standard input.
- * It supports various flags for case-insensitivity, inverting matches, line numbers, and recursion.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -105,7 +98,6 @@
                     await searchRecursively(FileSystemManager.getAbsolutePath(pathArg, FileSystemManager.getCurrentPath()));
                 }
             } else {
-                // Create a new context for the generator with only file paths as arguments.
                 const generatorContext = {
                     ...context,
                     args: filePathsArgs

@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'cp' command, which copies files and directories within the OopisOS file system.
- * It supports various flags for recursive copying, forcing overwrites, preserving metadata, and interactive prompts.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
@@ -20,12 +13,11 @@
             min: 2,
             error: "Usage: cp [OPTION]... <source> <destination> or cp [OPTION]... <source>... <directory>",
         },
-        // --- ADDED FOR AUTO-COMPLETION ---
         pathValidation: [
             { argIndex: 0, options: { allowMissing: false } },
             { argIndex: 1, options: { allowMissing: true } }
         ],
-        // --- END ADDITION ---
+
         coreLogic: async (context) => {
             const { args, flags, currentUser, options } = context;
             const nowISO = new Date().toISOString();

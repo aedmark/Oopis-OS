@@ -1,10 +1,3 @@
-/**
- * @file Defines the 'du' (disk usage) command for OopisOS.
- * It estimates file space usage for specified paths.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

@@ -1,9 +1,3 @@
-/**
- * @file Defines the 'head' command, which outputs the first part of files.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 

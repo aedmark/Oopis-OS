@@ -1,37 +1,14 @@
-/**
- * @file Defines the 'clearfs' command, which clears the current user's home directory.
- * @author Andrew Edmark
- * @author Gemini
- */
-
 (() => {
     "use strict";
 
-    /**
-     * @const {object} clearfsCommandDefinition
-     * @description The command definition for the 'clearfs' command.
-     * This command allows a user to permanently erase all contents within their home directory.
-     * It includes an interactive confirmation prompt to prevent accidental data loss.
-     */
     const clearfsCommandDefinition = {
         commandName: "clearfs",
         argValidation: {
             exact: 0,
         },
-        /**
-         * The core logic for the 'clearfs' command.
-         * It prompts the user for confirmation before proceeding to empty the current user's
-         * home directory. It ensures the command is run in interactive mode and handles
-         * updating the file system and UI after the operation.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @param {object} context.options - Execution options, including `isInteractive`.
-         * @param {string} context.currentUser - The name of the current user.
-         * @returns {Promise<object>} A promise that resolves to a command result object.
-         */
+
         coreLogic: async (context) => {
             const { options, currentUser } = context;
-            // Ensure the command is run in an interactive terminal session.
             if (!options.isInteractive) {
                 return {
                     success: false,
@@ -42,7 +19,6 @@
             const username = currentUser;
             const userHomePath = `/home/${username}`;
 
-            // Request confirmation from the user before proceeding with the destructive operation.
             const confirmed = await new Promise((resolve) =>
                 ModalManager.request({
                     context: "terminal",
@@ -53,11 +29,10 @@
                     ],
                     onConfirm: () => resolve(true),
                     onCancel: () => resolve(false),
-                    options, // Pass options to ModalManager for scripting context awareness
+                    options,
                 })
             );
 
-            // If the user cancels the operation, return a success message indicating no action was taken.
             if (!confirmed) {
                 return {
                     success: true,
@@ -66,10 +41,8 @@
                 };
             }
 
-            // Retrieve the home directory node.
             const homeDirNode = FileSystemManager.getNodeByPath(userHomePath);
 
-            // Critical error check: Ensure the home directory exists and is a directory.
             if (
                 !homeDirNode ||
                 homeDirNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
@@ -80,11 +53,9 @@
                 };
             }
 
-            // Clear the children of the home directory node, effectively emptying it.
             homeDirNode.children = {};
-            homeDirNode.mtime = new Date().toISOString(); // Update modification time of the home directory
+            homeDirNode.mtime = new Date().toISOString();
 
-            // Save the updated file system to persistent storage.
             if (!(await FileSystemManager.save())) {
                 return {
                     success: false,
@@ -93,15 +64,13 @@
                 };
             }
 
-            // If the current path was inside the cleared home directory, reset it to the home directory itself.
             const currentPath = FileSystemManager.getCurrentPath();
             if (currentPath.startsWith(userHomePath)) {
                 FileSystemManager.setCurrentPath(userHomePath);
             }
 
-            // Update the terminal UI to reflect the changes.
             TerminalUI.updatePrompt();
-            OutputManager.clearOutput(); // Clear the screen after successful operation for a clean slate.
+            OutputManager.clearOutput();
 
             const successMessage = `Home directory for user '${username}' has been cleared.`;
             await OutputManager.appendToOutput(successMessage, {
@@ -110,7 +79,7 @@
 
             return {
                 success: true,
-                output: "", // No further output needed as success message is handled by appendToOutput
+                output: "",
             };
         },
     };

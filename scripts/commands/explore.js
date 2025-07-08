@@ -1,25 +1,13 @@
-/**
- * @file Defines the 'explore' command, which launches the graphical file explorer.
- * @author Architect
- */
-
 (() => {
     "use strict";
 
     const exploreCommandDefinition = {
         commandName: "explore",
         argValidation: {
-            max: 1, // Accepts an optional starting path
+            max: 1,
             error: "Usage: explore [path]",
         },
-        /**
-         * The core logic for the 'explore' command.
-         * It validates that the command is run in an interactive session and then
-         * delegates the launching of the UI to the ExplorerManager.
-         * @async
-         * @param {object} context - The context object provided by the command executor.
-         * @returns {Promise<object>} A promise that resolves to a command result object.
-         */
+
         coreLogic: async (context) => {
             const { args, options } = context;
 
@@ -39,7 +27,6 @@
 
             const startPath = args.length > 0 ? args[0] : null;
 
-            // ExplorerManager.enter will handle path validation internally
             ExplorerManager.enter(startPath);
 
             return {
@@ -66,7 +53,6 @@ DESCRIPTION
        The explorer is a read-only view and respects all file permissions
        of the current user.`;
 
-    // Register the command with the system.
     CommandRegistry.register("explore", exploreCommandDefinition, exploreDescription, exploreHelpText);
 
 })();
