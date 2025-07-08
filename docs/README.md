@@ -1,3 +1,5 @@
+# OopisOS v3.7: Your Friendly Neighborhood LLM Edition
+
 ```
    /$$$$$$                      /$$            /$$$$$$   /$$$$$$
  /$$__  $$                    |__/           /$$__  $$ /$$__  $$
@@ -12,7 +14,6 @@
                     |__/  A Browser-Based OS Simulation
 ```
 
-# OopisOS v3.7: Your Friendly Neighborhood LLM Edition
 
 Welcome to OopisOS, a sophisticated OS simulation that runs entirely on your local machine. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and now, a suite of powerful, integrated AI tools. All user data is stored locally; your world remains your own.
 
