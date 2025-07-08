@@ -71,7 +71,8 @@ const EditorUI = (() => {
     let visibleStartLine = 0;
     let visibleEndLine = 0;
     let charDimensions = { width: 8, height: 16 };
-
+    lineHeight = _calculateDynamicLineHeight();
+    charDimensions = Utils.getCharacterDimensions(getComputedStyle(elements.editorContainer).font);
     let selection = {
         start: { line: 0, col: 0 },
         end: { line: 0, col: 0 }
@@ -291,56 +292,15 @@ const EditorUI = (() => {
             elements.statusBar,
             elements.instructionsFooter
         );
+
+        // Calculate dimensions AFTER the element is in the DOM (or has a defined style)
+        // A temporary append can work if it's not in the DOM yet.
+        document.body.appendChild(elements.editorContainer); // Temporarily append
         charDimensions = Utils.getCharacterDimensions(getComputedStyle(elements.editorContainer).font);
         lineHeight = charDimensions.height;
+        document.body.removeChild(elements.editorContainer); // Clean up
+
         return elements.editorContainer;
-    }
-
-    function renderHighlights(matches, activeIndex) {
-        if (!elements.virtualContent) return;
-
-        const lineElements = Array.from(elements.virtualContent.children);
-        let textOffset = 0;
-
-        // Reset all highlights first
-        lineElements.forEach(lineEl => {
-            const currentLineIndex = visibleStartLine + Array.prototype.indexOf.call(lineElements, lineEl);
-            lineEl.innerHTML = lines[currentLineIndex] || '\u00A0';
-        });
-
-
-        let currentLineCharOffset = 0;
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const lineLengthWithNewline = line.length + 1;
-
-            if (i >= visibleStartLine && i < visibleEndLine) {
-                const lineElement = lineElements[i - visibleStartLine];
-                if (!lineElement) continue;
-
-                const lineMatches = matches.filter(match => {
-                    return match.index >= currentLineCharOffset && match.index < currentLineCharOffset + lineLengthWithNewline;
-                });
-
-                if (lineMatches.length > 0) {
-                    let lastIndexInLine = 0;
-                    let newHtml = '';
-                    lineMatches.forEach((match, matchIndexInLine) => {
-                        const startIndexInLine = match.index - currentLineCharOffset;
-                        const matchText = match[0];
-
-                        newHtml += line.substring(lastIndexInLine, startIndexInLine);
-                        const isMatchActive = matches.findIndex(m => m.index === match.index) === activeIndex;
-                        const className = isMatchActive ? 'highlight-match--active' : 'highlight-match';
-                        newHtml += `<span class="${className}">${matchText}</span>`;
-                        lastIndexInLine = startIndexInLine + matchText.length;
-                    });
-                    newHtml += line.substring(lastIndexInLine);
-                    lineElement.innerHTML = newHtml || '\u00A0';
-                }
-            }
-            currentLineCharOffset += lineLengthWithNewline;
-        }
     }
 
     function _handleScroll() {
@@ -370,7 +330,7 @@ const EditorUI = (() => {
         for (let i = visibleStartLine; i < visibleEndLine; i++) {
             const lineElement = Utils.createElement("div", {
                 className: 'editor-line',
-                textContent: lines[i] || '\u00A0', // Use non-breaking space for empty lines
+                textContent: lines[i] || '\u00A0',
                 style: {
                     position: 'absolute',
                     top: `${i * lineHeight}px`,
@@ -517,6 +477,7 @@ const EditorUI = (() => {
         }, EditorAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
     }
 
+
     function setViewMode(viewMode, currentFileMode, isPreviewable, isWordWrapActive) {
         if (!elements.lineGutter || !elements.contentContainer || !elements.previewWrapper || !elements.viewToggleButton || !elements.previewPane) return;
 
@@ -571,6 +532,11 @@ const EditorUI = (() => {
 
     function getReplaceQuery() {
         return elements.replaceInput ? elements.replaceInput.value : "";
+    }
+
+    function renderHighlights(matches, activeIndex) {
+        // This is now handled within _renderVisibleContent
+        _renderVisibleContent();
     }
 
     return {

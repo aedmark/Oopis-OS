@@ -1,6 +1,15 @@
 const Utils = (() => {
     "use strict";
 
+    async function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     async function* generateInputContent(context) {
         const { args, options, currentUser } = context;
 
@@ -359,6 +368,7 @@ const Utils = (() => {
         parseFlags,
         callLlmApi,
         globToRegex,
+        debounce,
     };
 })();
 
