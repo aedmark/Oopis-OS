@@ -258,7 +258,6 @@ body {
     z-index: 100;
     min-width: 320px;
     max-width: 450px;
-    box-shadow: var(--shadow-drop-medium);
     border: var(--border-width) solid var(--color-text-primary);
     font-family: var(--font-family-mono), monospace;
     text-align: center;

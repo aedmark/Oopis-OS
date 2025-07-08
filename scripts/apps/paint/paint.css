@@ -1,4 +1,4 @@
-/* 11. OopisOS v4.0 Oopis Paint Style Sheet */
+/* OopisOS v4.0 Oopis Paint Style Sheet */
 /* ========================================================================== */
 
 #paint-container {
@@ -90,20 +90,6 @@
 
 .paint-dropdown-content.paint-dropdown-active {
     display: block;
-}
-
-/* Modal styles (now using global classes) for paint-specific modals */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .paint-modal-title {
@@ -220,70 +206,4 @@
     border-color: var(--color-accent-lime);
     transform: scale(1.1);
     box-shadow: 0 0 8px var(--color-accent-lime);
-}
-
-#chidi-console-panel {
-    display: flex;
-    flex-direction: column;
-}
-
-#chidi-markdownDisplay,
-.chidi-ask-container {
-    flex-grow: 1;
-    min-height: 0;
-}
-
-.chidi-console-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    gap: var(--spacing-md);
-    flex-wrap: nowrap;
-    padding-bottom: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    background-color: transparent;
-    border-bottom: 1px solid var(--color-border-secondary);
-}
-
-#chidi-mainTitle {
-    padding: 0;
-    margin: 0;
-    flex-shrink: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: left;
-    color: var(--color-info);
-    font-size: var(--font-size-xl);
-}
-
-.chidi-header-controls {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: var(--spacing-md);
-}
-
-/* Style the footer */
-.chidi-status-readout {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    flex-wrap: nowrap;
-    gap: var(--spacing-md);
-}
-
-.chidi-btn {
-    white-space: nowrap;
-}
-
-.markdown-preview img,
-.chidi-markdown-content img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin-top: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
 }
