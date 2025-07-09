@@ -11,13 +11,13 @@ const PaintManager = (() => {
         activeCharacter: '#',
         activeColor: '#00FF00',
         brushSize: 1,
-        zoomLevel: 100,
         undoStack: [],
         redoStack: [],
         isGridVisible: false,
         isDrawing: false,
-        startCoords: null, // For shape drawing
-        previewCanvasData: null // For shape previews
+        startCoords: null,
+        previewCanvasData: null,
+        mouseCoords: { x: -1, y: -1 }
     };
 
     function _resetState() {
@@ -31,13 +31,13 @@ const PaintManager = (() => {
             activeCharacter: '#',
             activeColor: '#00FF00',
             brushSize: 1,
-            zoomLevel: 100,
             undoStack: [],
             redoStack: [],
             isGridVisible: false,
             isDrawing: false,
             startCoords: null,
-            previewCanvasData: null
+            previewCanvasData: null,
+            mouseCoords: { x: -1, y: -1 }
         };
     }
 
@@ -85,7 +85,6 @@ const PaintManager = (() => {
         return changed;
     }
 
-    // Bresenham's line algorithm
     function _drawLine(start, end, data, tool, char, color) {
         let { x: x1, y: y1 } = start;
         let { x: x2, y: y2 } = end;
@@ -169,13 +168,14 @@ const PaintManager = (() => {
             }
         },
         onCanvasMouseMove: (coords) => {
+            state.mouseCoords = coords;
+            PaintUI.updateStatusBar(state);
             if (!state.isDrawing) return;
 
             if (state.currentTool === 'pencil' || state.currentTool === 'eraser') {
                 if (_drawAt(coords, state.canvasData, state.currentTool, state.activeCharacter, state.activeColor, state.brushSize)) {
                     PaintUI.renderCanvas(state);
                     state.isDirty = true;
-                    PaintUI.updateStatusBar(state);
                 }
             } else if (['line', 'rect'].includes(state.currentTool) && state.startCoords) {
                 state.previewCanvasData = JSON.parse(JSON.stringify(state.canvasData));
@@ -219,6 +219,7 @@ const PaintManager = (() => {
         onReplaceAll: (findChar, replaceChar) => {
             if (!findChar || !replaceChar || findChar === replaceChar) return;
             let changed = false;
+            _saveUndoState();
             state.canvasData.forEach(row => {
                 row.forEach(cell => {
                     if (cell.char === findChar) {
@@ -264,18 +265,42 @@ const PaintManager = (() => {
         }
         state.redoStack = [];
         PaintUI.updateToolbar(state);
-    }, 500);
+    }, 300);
 
 
     function _saveUndoState() {
         debouncedSaveUndo();
     }
 
+    function _handleKeyDown(e) {
+        if (!state.isActive) return;
+
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 's': e.preventDefault(); callbacks.onSaveRequest(); break;
+                case 'z': e.preventDefault(); e.shiftKey ? callbacks.onRedo() : callbacks.onUndo(); break;
+                case 'y': e.preventDefault(); callbacks.onRedo(); break;
+            }
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            switch (e.key.toLowerCase()) {
+                case 'p': callbacks.onToolSelect('pencil'); break;
+                case 'e': callbacks.onToolSelect('eraser'); break;
+                case 'l': callbacks.onToolSelect('line'); break;
+                case 'r': callbacks.onToolSelect('rect'); break;
+                default:
+                    if ("`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./".includes(e.key.toLowerCase())) {
+                        callbacks.onCharSelect(e.key);
+                    }
+                    break;
+            }
+        } else if (e.key === 'Escape') {
+            exit();
+        }
+    }
+
 
     function enter(filePath, fileContent) {
-        if (state.isActive) {
-            return;
-        }
+        if (state.isActive) return;
         _resetState();
         state.isActive = true;
         state.currentFilePath = filePath;
@@ -293,13 +318,12 @@ const PaintManager = (() => {
         }
 
         state.undoStack.push(JSON.parse(JSON.stringify(state.canvasData)));
+        document.addEventListener('keydown', _handleKeyDown);
         PaintUI.buildAndShow(state, callbacks);
     }
 
     async function exit() {
-        if (!state.isActive) {
-            return;
-        }
+        if (!state.isActive) return;
 
         if (state.isDirty) {
             const confirmed = await new Promise(resolve => {
@@ -318,6 +342,7 @@ const PaintManager = (() => {
             if (!confirmed) return;
         }
 
+        document.removeEventListener('keydown', _handleKeyDown);
         PaintUI.hideAndReset();
         _resetState();
     }

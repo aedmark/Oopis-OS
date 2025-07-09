@@ -65,11 +65,7 @@ const PaintUI = (() => {
         const { currentTool, undoStack, redoStack, brushSize, activeCharacter, activeColor, isGridVisible } = state;
         const toolButtons = elements.toolbar.querySelectorAll('.tool-btn');
         toolButtons.forEach(btn => {
-            if (btn.dataset.tool === currentTool) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
+            btn.classList.toggle('active', btn.dataset.tool === currentTool);
         });
 
         elements.undoButton.disabled = undoStack.length <= 1;
@@ -80,11 +76,7 @@ const PaintUI = (() => {
 
         const colorSwatches = elements.toolbar.querySelectorAll('.color-swatch');
         colorSwatches.forEach(swatch => {
-            if (swatch.dataset.color === activeColor) {
-                swatch.classList.add('active');
-            } else {
-                swatch.classList.remove('active');
-            }
+            swatch.classList.toggle('active', swatch.dataset.color === activeColor);
         });
 
         elements.gridButton.classList.toggle('active', isGridVisible);
@@ -92,9 +84,10 @@ const PaintUI = (() => {
 
     function updateStatusBar(state) {
         if (!elements.statusBar) return;
-        const { currentTool, activeColor, brushSize, isDirty } = state;
+        const { currentTool, activeColor, brushSize, isDirty, mouseCoords } = state;
         const dirtyIndicator = isDirty ? ' *' : '';
-        elements.statusBar.textContent = `Tool: ${currentTool} | Char: ${state.activeCharacter} | Color: ${activeColor} | Brush: ${brushSize}${dirtyIndicator}`;
+        const coordsText = mouseCoords.x !== -1 ? `[${mouseCoords.x}, ${mouseCoords.y}]` : '';
+        elements.statusBar.textContent = `Tool: ${currentTool} | Char: ${state.activeCharacter} | Brush: ${brushSize} | ${coordsText}${dirtyIndicator}`;
     }
 
     function toggleGrid(isVisible) {
@@ -202,18 +195,13 @@ const PaintUI = (() => {
                 const findChar = findInput.value[0];
                 const replaceChar = replaceInput.value[0];
                 eventCallbacks.onReplaceAll(findChar, replaceChar);
-                ModalManager.hide();
-            }
+            },
         });
     }
 
     function _attachEventListeners() {
         elements.canvas.addEventListener('mousedown', (e) => _handleMouseEvent(e, eventCallbacks.onCanvasMouseDown));
-        elements.canvas.addEventListener('mousemove', (e) => {
-            if (e.buttons === 1) {
-                _handleMouseEvent(e, eventCallbacks.onCanvasMouseMove);
-            }
-        });
+        elements.canvas.addEventListener('mousemove', (e) => _handleMouseEvent(e, eventCallbacks.onCanvasMouseMove));
         document.body.addEventListener('mouseup', (e) => {
             if (state.isDrawing) {
                 _handleMouseEvent(e, eventCallbacks.onCanvasMouseUp, true);
