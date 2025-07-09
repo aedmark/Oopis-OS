@@ -1,22 +1,25 @@
-/* OopisOS v4.0 Oopis Paint Style Sheet */
+/* OopisOS v4.0: Refactored Paint Application Style Sheet */
 /* ========================================================================== */
 
+/* Main application container, built on flexbox for modern layout. */
 #paint-container {
     display: flex;
     flex-direction: column;
+    width: 95%;
+    height: 95%;
+    max-height: 95%;
+    max-width: 1400px; /* Generous max-width for larger screens */
     background-color: var(--color-background-medium);
     border: var(--border-width-thick) solid var(--color-border-secondary);
     border-radius: var(--border-radius-md);
     color: var(--color-text-secondary);
     font-family: var(--font-family-mono), monospace;
     overflow: hidden;
-    width: 95%;
-    height: 95%;
-    max-height: 95%;
     padding: var(--spacing-sm);
     gap: var(--spacing-sm);
 }
 
+/* Toolbar styles, ensuring clean separation and alignment. */
 #paint-toolbar {
     display: flex;
     justify-content: space-between;
@@ -24,33 +27,29 @@
     padding-bottom: var(--spacing-sm);
     border-bottom: var(--border-width) solid var(--color-border-primary);
     flex-shrink: 0;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Allows toolbar to wrap on smaller screens */
     gap: var(--spacing-md);
 }
 
-.paint-toolbar-group {
+.paint-toolbar__group {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
     flex-wrap: nowrap;
 }
 
+/* Canvas wrapper for centering and grid background. */
 #paint-canvas-wrapper {
     flex-grow: 1;
-    aspect-ratio: 4 / 3;
     background-color: var(--color-background-darkest);
     box-shadow: var(--shadow-inset-light);
-    overflow: auto;
+    overflow: auto; /* Enable scrolling for zoomed-in canvas */
     display: grid;
     place-items: center;
     position: relative;
 }
 
-#paint-canvas-wrapper.grid-active #paint-canvas {
-    background-image: linear-gradient(var(--color-border-primary) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-border-primary) 1px, transparent 1px);
-}
-
+/* The canvas itself: a CSS grid for ultimate cell control. */
 #paint-canvas {
     display: grid;
     font-family: var(--font-family-mono), monospace;
@@ -59,6 +58,16 @@
     cursor: crosshair;
 }
 
+/* Grid state styling for the canvas wrapper */
+.paint-canvas-wrapper--grid-active #paint-canvas {
+    background-image:
+            linear-gradient(var(--color-border-primary) 1px, transparent 1px),
+            linear-gradient(90deg, var(--color-border-primary) 1px, transparent 1px);
+    background-size: 1em 1em; /* Adjust size based on font */
+}
+
+
+/* Status bar for providing user feedback. */
 #paint-statusbar {
     display: flex;
     justify-content: space-between;
@@ -70,140 +79,36 @@
     flex-shrink: 0;
 }
 
-.paint-tool-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.paint-dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: var(--color-background-light);
-    min-width: 40px;
-    box-shadow: var(--shadow-drop-medium);
-    z-index: 1;
-    border: var(--border-width) solid var(--color-border-primary);
-    border-radius: var(--border-radius-sm);
-    top: 100%;
-    margin-top: var(--spacing-xs);
-}
-
-.paint-dropdown-content.paint-dropdown-active {
-    display: block;
-}
-
-.paint-modal-title {
-    font-size: var(--font-size-lg);
-    color: var(--color-info);
-    margin-bottom: var(--spacing-md);
-    text-align: center;
-}
-
-.paint-modal-body {
-    overflow-y: auto;
-    padding: var(--spacing-sm);
-}
-
-#paint-char-select-grid,
-#paint-color-select-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-    gap: var(--spacing-xs);
-}
-
-.paint-char-btn {
-    background-color: var(--color-background-light);
-    color: var(--color-text-secondary);
-    border: var(--border-width) solid var(--color-border-primary);
-    aspect-ratio: 1 / 1;
-    cursor: pointer;
-    font-size: var(--font-size-xl);
-}
-
-.paint-char-btn:hover {
-    background-color: var(--color-info);
-    color: var(--color-background-darkest);
-}
-
-.paint-custom-hex-container {
-    margin-top: var(--spacing-md);
-    display: flex;
-    gap: var(--spacing-sm);
-}
-
-.paint-hex-input {
-    flex-grow: 1;
-    background-color: var(--color-background-darkest);
-    border: var(--border-width) solid var(--color-border-primary);
-    color: var(--color-text-secondary);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-}
-
-#paint-toolbar .btn {
+/* Generic button styling for the toolbar. */
+.paint-toolbar__button {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 36px;
     min-width: 36px;
     padding: var(--spacing-xs);
-}
-
-#paint-toolbar .btn svg {
-    width: 20px;
-    height: 20px;
-}
-
-#paint-toolbar .btn.btn--confirm,
-#paint-toolbar .btn.btn--cancel,
-#paint-toolbar .btn.paint-zoom-display {
-    width: auto;
-    padding-left: var(--spacing-sm);
-    padding-right: var(--spacing-sm);
-}
-
-.paint-brush-control {
-    display: flex;
-    align-items: center;
+    background-color: var(--color-background-light);
     border: var(--border-width) solid var(--color-border-primary);
     border-radius: var(--border-radius-sm);
-    overflow: hidden;
-}
-
-.paint-size-display,
-.paint-zoom-display {
-    padding: 0 var(--spacing-sm);
-    background-color: var(--color-background-darkest);
     color: var(--color-text-secondary);
-    height: 36px;
-    display: flex;
-    align-items: center;
-}
-
-.paint-palette {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    border: var(--border-width) solid var(--color-border-primary);
-    padding: var(--spacing-xs);
-    border-radius: var(--border-radius-sm);
-}
-
-.paint-color-swatch {
-    width: 28px;
-    height: 28px;
-    border: 2px solid transparent;
-    border-radius: 50%;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background-color 0.15s, color 0.15s;
 }
 
-.paint-color-swatch:hover {
-    border-color: #fff;
+.paint-toolbar__button:hover:not(:disabled) {
+    background-color: var(--color-info);
+    color: var(--color-background-darkest);
 }
 
-.paint-color-swatch.active {
+.paint-toolbar__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* State-based styling for active tools. */
+.paint-toolbar__button.active {
+    background-color: var(--color-accent-lime);
+    color: var(--color-background-darkest);
     border-color: var(--color-accent-lime);
-    transform: scale(1.1);
     box-shadow: 0 0 8px var(--color-accent-lime);
 }

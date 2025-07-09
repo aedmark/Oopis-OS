@@ -1,581 +1,232 @@
 const PaintManager = (() => {
     "use strict";
-    let isActiveState = false, currentFilePath = null, canvasData = [], isDirty = false;
-    let isDrawing = false, currentTool = 'pencil', drawChar = PaintAppConfig.DEFAULT_CHAR;
-    let fgColor = PaintAppConfig.PALETTE[0].value, lastCoords = { x: -1, y: -1 };
-    let currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
-    let zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
-    let undoStack = [], redoStack = [], saveUndoStateTimeout = null;
-    let isGridVisible = false;
-    let shapeStartCoords = null;
-    let shapePreviewBaseState = null;
-    let paintContainerElement = null;
-    let _boundGlobalClickListener = null;
-    let customColorValue = null;
-    let pointsToDraw = [];
-    let isFrameScheduled = false;
 
-    let currentCanvasWidth = 0;
-    let currentCanvasHeight = 0;
-
-    const paintEventCallbacks = {
-        onMouseDown, onMouseMove, onMouseUp, onMouseLeave, onToolChange: _setTool, onColorChange: _setColor,
-        onSave: _handleSave, onExit: () => exit(), onUndo: _performUndo, onRedo: _performRedo,
-        onGridToggle: _toggleGrid, onCharSelectOpen: _openCharSelect, onColorSelectOpen: _openColorSelect,
-        onBrushSizeUp: () => _setBrushSize(1), onBrushSizeDown: () => _setBrushSize(-1),
-        onZoomIn: _handleZoomIn, onZoomOut: _handleZoomOut, onZoomReset: _resetZoom,
-        onCustomHexSet: _setCustomHexColor,
-        onCustomSwatchClick: () => {
-            if (customColorValue) {
-                _setColor(customColorValue);
-            } else {
-                _openColorSelect();
-            }
-        },
-        onResize: _handleResize,
+    let state = {
+        isActive: false,
+        currentFilePath: null,
+        canvasData: [],
+        canvasDimensions: { width: 80, height: 24 },
+        isDirty: false,
+        currentTool: 'pencil',
+        activeCharacter: '#',
+        activeColor: '#00FF00',
+        brushSize: 1,
+        zoomLevel: 100,
+        undoStack: [],
+        redoStack: [],
+        isGridVisible: false,
+        isDrawing: false,
     };
 
-    function _getLinePoints(x0, y0, x1, y1) {
-        const points = [];
-        const dx = Math.abs(x1 - x0); const dy = -Math.abs(y1 - y0);
-        const sx = x0 < x1 ? 1 : -1; const sy = y0 < y1 ? 1 : -1;
-        let err = dx + dy;
-        while (true) {
-            points.push({ x: x0, y: y0 });
-            if (x0 === x1 && y0 === y1) break;
-            const e2 = 2 * err;
-            if (e2 >= dy) { err += dy; x0 += sx; }
-            if (e2 <= dx) { err += dx; y0 += sy; }
-        }
-        return points;
+    function _resetState() {
+        state = {
+            isActive: false,
+            currentFilePath: null,
+            canvasData: [],
+            canvasDimensions: { width: 80, height: 24 },
+            isDirty: false,
+            currentTool: 'pencil',
+            activeCharacter: '#',
+            activeColor: '#00FF00',
+            brushSize: 1,
+            zoomLevel: 100,
+            undoStack: [],
+            redoStack: [],
+            isGridVisible: false,
+            isDrawing: false,
+        };
     }
 
-    function _getRectanglePoints(x0, y0, x1, y1) {
-        const points = new Set();
-        _getLinePoints(x0, y0, x1, y0).forEach(p => points.add(`${p.x},${p.y}`));
-        _getLinePoints(x1, y0, x1, y1).forEach(p => points.add(`${p.x},${p.y}`));
-        _getLinePoints(x1, y1, x0, y1).forEach(p => points.add(`${p.x},${p.y}`));
-        _getLinePoints(x0, y1, x0, y0).forEach(p => points.add(`${p.x},${p.y}`));
-        return Array.from(points).map(p => { const [x, y] = p.split(',').map(Number); return { x, y }; });
-    }
-
-    function _getEllipsePoints(cx, cy, rx, ry) {
-        if (rx < 0 || ry < 0) return [];
-        const points = new Set();
-        let x = 0, y = ry;
-        let p1 = (ry * ry) - (rx * rx * ry) + (0.25 * rx * rx);
-        let dx = 2 * ry * ry * x;
-        let dy = 2 * rx * rx * y;
-        while (dx < dy) {
-            points.add(`${cx + x},${cy + y}`); points.add(`${cx - x},${cy + y}`); points.add(`${cx + x},${cy - y}`); points.add(`${cx - x},${cy - y}`);
-            if (p1 < 0) { x++; dx = dx + (2 * ry * ry); p1 = p1 + dx + (ry * ry); }
-            else { x++; y--; dx = dx + (2 * ry * ry); dy = dy - (2 * rx * rx); p1 = p1 + dx - dy + (ry * ry); }
-        }
-        let p2 = ((ry * ry) * ((x + 0.5) * (x + 0.5))) + ((rx * rx) * ((y - 1) * (y - 1))) - (rx * rx * ry * ry);
-        while (y >= 0) {
-            points.add(`${cx + x},${cy + y}`); points.add(`${cx - x},${cy + y}`); points.add(`${cx + x},${cy - y}`); points.add(`${cx - x},${cy - y}`);
-            if (p2 > 0) { y--; dy = dy - (2 * rx * rx); p2 = p2 + (rx * rx) - dy; }
-            else { y--; x++; dx = dx + (2 * ry * ry); dy = dy - (2 * rx * rx); p2 = p2 + dx - dy + (rx * rx); }
-        }
-        return Array.from(points).map(p => { const [px, py] = p.split(',').map(Number); return { x: px, y: py }; });
-    }
-
-    function _createBlankCanvas(w, h) {
-        let data = [];
-        for (let y = 0; y < h; y++) {
-            data.push(Array.from({ length: w }, () => ({ char: ' ', fg: PaintAppConfig.DEFAULT_FG_COLOR, bg: PaintAppConfig.ERASER_BG_COLOR })));
+    function _createBlankCanvas() {
+        const { width, height } = state.canvasDimensions;
+        const data = [];
+        for (let y = 0; y < height; y++) {
+            const row = [];
+            for (let x = 0; x < width; x++) {
+                row.push({ char: ' ', fg: '#FFFFFF', bg: '#000000' });
+            }
+            data.push(row);
         }
         return data;
     }
 
-    function _initializeNewCanvasDimensions() {
-        const wrapper = document.getElementById('paint-canvas-wrapper');
-        const canvasEl = document.getElementById('paint-canvas');
+    function _drawAt({ x, y }) {
+        const halfBrush = Math.floor(state.brushSize / 2);
+        let changed = false;
 
-        if (!wrapper || !canvasEl) {
-            currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-            currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-            canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
-            return;
-        }
+        for (let i = -halfBrush; i <= halfBrush; i++) {
+            for (let j = -halfBrush; j <= halfBrush; j++) {
+                const currentX = x + j;
+                const currentY = y + i;
 
-        canvasEl.style.fontSize = `${PaintAppConfig.CANVAS.BASE_FONT_SIZE_PX}px`;
-        const charDims = Utils.getCharacterDimensions(canvasEl.style.font);
+                if (currentY >= 0 && currentY < state.canvasDimensions.height && currentX >= 0 && currentX < state.canvasDimensions.width) {
+                    const cell = state.canvasData[currentY][currentX];
+                    const newChar = state.currentTool === 'eraser' ? ' ' : state.activeCharacter;
+                    const newColor = state.currentTool === 'eraser' ? '#FFFFFF' : state.activeColor;
+                    const newBg = '#000000';
 
-        if (charDims.width <= 0 || charDims.height <= 0) {
-            currentCanvasWidth = PaintAppConfig.CANVAS.DEFAULT_WIDTH;
-            currentCanvasHeight = PaintAppConfig.CANVAS.DEFAULT_HEIGHT;
-        } else {
-            const availableWidth = wrapper.clientWidth;
-            const availableHeight = wrapper.clientHeight;
-            const targetAspectRatio = 4 / 3;
-
-            let newCanvasPixelWidth, newCanvasPixelHeight;
-
-            if (availableWidth / availableHeight > targetAspectRatio) {
-                newCanvasPixelHeight = availableHeight;
-                newCanvasPixelWidth = newCanvasPixelHeight * targetAspectRatio;
-            } else {
-                newCanvasPixelWidth = availableWidth;
-                newCanvasPixelHeight = newCanvasPixelWidth / targetAspectRatio;
-            }
-
-            currentCanvasWidth = Math.floor(newCanvasPixelWidth / charDims.width);
-            currentCanvasHeight = Math.floor(newCanvasPixelHeight / charDims.height);
-        }
-
-        canvasData = _createBlankCanvas(currentCanvasWidth, currentCanvasHeight);
-    }
-
-    function _handleResize() {
-    }
-
-    function _updateToolbarState() { PaintUI.updateToolbar(currentTool, fgColor, undoStack.length > 1, redoStack.length > 0, isGridVisible, currentBrushSize); }
-    function _saveUndoState() {
-        redoStack = [];
-        undoStack.push(JSON.parse(JSON.stringify(canvasData)));
-        if (undoStack.length > PaintAppConfig.EDITOR.MAX_UNDO_STATES) { undoStack.shift(); }
-        _updateToolbarState();
-    }
-    function _triggerSaveUndoState() {
-        if (saveUndoStateTimeout) clearTimeout(saveUndoStateTimeout);
-        saveUndoStateTimeout = setTimeout(_saveUndoState, PaintAppConfig.EDITOR.DEBOUNCE_DELAY_MS);
-    }
-    function _performUndo() {
-        if (undoStack.length <= 1) return;
-        const currentState = undoStack.pop();
-        redoStack.push(currentState);
-        canvasData = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        _updateToolbarState();
-    }
-    function _performRedo() {
-        if (redoStack.length === 0) return;
-        const nextState = redoStack.pop();
-        undoStack.push(nextState);
-        canvasData = JSON.parse(JSON.stringify(nextState));
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        _updateToolbarState();
-    }
-    function _toggleGrid() { isGridVisible = !isGridVisible; PaintUI.toggleGrid(isGridVisible); _updateToolbarState(); }
-    function _openCharSelect() { PaintUI.populateAndShowCharSelect(_setDrawCharFromSelection); }
-    function _openColorSelect() { PaintUI.populateAndShowColorSelect(_setColor, _setCustomHexColor); }
-    function _setDrawCharFromSelection(char) {
-        drawChar = char;
-        PaintUI.hideCharSelect();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-
-    function _setCustomHexColor(hex) {
-        if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(hex)) {
-            customColorValue = hex;
-            _setColor(hex);
-        } else {
-            alert("Invalid hex color format. Please use #RRGGBB or #RGB.");
-        }
-    }
-
-    function _setBrushSize(delta) {
-        const newSize = currentBrushSize + delta;
-        currentBrushSize = Math.max(PaintAppConfig.BRUSH.MIN_SIZE, Math.min(newSize, PaintAppConfig.BRUSH.MAX_SIZE));
-        _updateToolbarState();
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-
-    function _handleZoomIn() {
-        zoomLevel = Math.min(zoomLevel + PaintAppConfig.ZOOM.ZOOM_STEP, PaintAppConfig.ZOOM.MAX_ZOOM);
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-    function _handleZoomOut() {
-        zoomLevel = Math.max(zoomLevel - PaintAppConfig.ZOOM.ZOOM_STEP, PaintAppConfig.ZOOM.MIN_ZOOM);
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-    function _resetZoom() {
-        zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
-        PaintUI.renderCanvas(canvasData, zoomLevel);
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-
-    function _drawOnCanvas(x, y, targetCanvas = null) {
-        const canvas = targetCanvas || canvasData;
-        const drawLogic = (cx, cy) => {
-            if (cy < 0 || cy >= canvas.length || cx < 0 || cx >= canvas[0].length) return false;
-            const cell = canvas[cy][cx];
-            let changed = false;
-            if (currentTool !== 'eraser') {
-                if (cell.char !== drawChar || cell.fg !== fgColor || cell.bg !== PaintAppConfig.DEFAULT_BG_COLOR) {
-                    cell.char = drawChar; cell.fg = fgColor; cell.bg = PaintAppConfig.DEFAULT_BG_COLOR;
-                    changed = true;
-                }
-            } else {
-                if (cell.char !== PaintAppConfig.ERASER_CHAR || cell.bg !== PaintAppConfig.ERASER_BG_COLOR) {
-                    cell.char = PaintAppConfig.ERASER_CHAR; cell.fg = PaintAppConfig.DEFAULT_FG_COLOR; cell.bg = PaintAppConfig.ERASER_BG_COLOR;
-                    changed = true;
-                }
-            }
-            if (changed && !targetCanvas) {
-                PaintUI.updateCell(cx, cy, cell);
-            }
-            return changed;
-        };
-
-        let anyCellChanged = false;
-        if (currentTool === 'pencil' || currentTool === 'eraser') {
-            const halfBrush = Math.floor(currentBrushSize / 2);
-            for (let dy = 0; dy < currentBrushSize; dy++) {
-                for (let dx = 0; dx < currentBrushSize; dx++) {
-                    if (drawLogic(x - halfBrush + dx, y - halfBrush + dy)) {
-                        anyCellChanged = true;
+                    if (cell.char !== newChar || cell.fg !== newColor || cell.bg !== newBg) {
+                        cell.char = newChar;
+                        cell.fg = newColor;
+                        cell.bg = newBg;
+                        changed = true;
                     }
                 }
             }
-        } else {
-            if (drawLogic(x, y)) {
-                anyCellChanged = true;
+        }
+        if (changed) {
+            PaintUI.renderCanvas(state);
+            state.isDirty = true;
+            PaintUI.updateStatusBar(state);
+        }
+    }
+
+    const callbacks = {
+        onToolSelect: (toolName) => {
+            state.currentTool = toolName;
+            PaintUI.updateToolbar(state);
+            PaintUI.updateStatusBar(state);
+        },
+        onColorSelect: (colorValue) => {
+            state.activeColor = colorValue;
+            PaintUI.updateToolbar(state);
+            PaintUI.updateStatusBar(state);
+        },
+        onBrushSizeChange: (delta) => {
+            const newSize = state.brushSize + delta;
+            state.brushSize = Math.max(1, Math.min(newSize, 5));
+            PaintUI.updateToolbar(state);
+            PaintUI.updateStatusBar(state);
+        },
+        onZoomChange: (delta) => {
+            const newZoom = state.zoomLevel + delta;
+            state.zoomLevel = Math.max(25, Math.min(newZoom, 400));
+            PaintUI.renderCanvas(state);
+            PaintUI.updateStatusBar(state);
+        },
+        onGridToggle: () => {
+            state.isGridVisible = !state.isGridVisible;
+            PaintUI.updateToolbar(state);
+            PaintUI.toggleGrid(state.isGridVisible);
+        },
+        onCanvasMouseDown: (coords) => {
+            state.isDrawing = true;
+            _drawAt(coords);
+        },
+        onCanvasMouseMove: (coords) => {
+            if (state.isDrawing) {
+                _drawAt(coords);
             }
-        }
-
-        if (anyCellChanged && !targetCanvas) {
-            isDirty = true;
-        }
-        return anyCellChanged;
-    }
-
-    function drawScheduledPoints() {
-        if (!isDrawing || pointsToDraw.length < 2) {
-            isFrameScheduled = false;
-            return;
-        }
-
-        for (let i = 0; i < pointsToDraw.length - 1; i++) {
-            const start = pointsToDraw[i];
-            const end = pointsToDraw[i + 1];
-            const linePoints = _getLinePoints(start.x, start.y, end.x, end.y);
-            linePoints.forEach(p => _drawOnCanvas(p.x, p.y));
-        }
-
-        pointsToDraw = [pointsToDraw.at(-1)];
-        isFrameScheduled = false;
-    }
-
-    function onMouseDown(e) {
-        e.preventDefault();
-        const coords = (e.touches)
-            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY, currentCanvasWidth, currentCanvasHeight)
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight);
-
-        isDrawing = true;
-        if (!coords) return;
-
-        lastCoords = coords;
-        if (['line', 'ellipse', 'quad'].includes(currentTool)) {
-            shapeStartCoords = { ...coords };
-            shapePreviewBaseState = JSON.parse(JSON.stringify(canvasData));
-        } else {
-            pointsToDraw = [];
-            pointsToDraw.push(coords);
-            _drawOnCanvas(coords.x, coords.y);
-        }
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-
-    function onMouseMove(e) {
-        e.preventDefault();
-        const coords = (e.touches)
-            ? PaintUI.getGridCoordinates(e.touches[0].clientX, e.touches[0].clientY, currentCanvasWidth, currentCanvasHeight)
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight);
-
-        if (coords) {
-            lastCoords = coords;
-            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: coords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-        }
-        if (!isDrawing || !coords) return;
-
-        if (currentTool === 'pencil' || currentTool === 'eraser') {
-            pointsToDraw.push(coords);
-            if (!isFrameScheduled) {
-                isFrameScheduled = true;
-                requestAnimationFrame(drawScheduledPoints);
+        },
+        onCanvasMouseUp: (coords) => {
+            if (state.isDrawing) {
+                state.isDrawing = false;
+                _saveUndoState();
             }
-        } else if (shapeStartCoords) {
-            let tempCanvasData = JSON.parse(JSON.stringify(shapePreviewBaseState));
-            let points = [];
-            if (currentTool === 'line') { points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y); }
-            else if (currentTool === 'quad') { points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, coords.x, coords.y); }
-            else if (currentTool === 'ellipse') {
-                let rx = Math.abs(coords.x - shapeStartCoords.x); let ry = Math.abs(coords.y - shapeStartCoords.y);
-                if (e.shiftKey) { rx = ry = Math.max(rx, ry); }
-                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
+        },
+        onUndo: () => {
+            if (state.undoStack.length > 1) {
+                state.redoStack.push(state.undoStack.pop());
+                state.canvasData = JSON.parse(JSON.stringify(state.undoStack[state.undoStack.length - 1]));
+                PaintUI.renderCanvas(state);
+                PaintUI.updateToolbar(state);
             }
-            points.forEach(p => _drawOnCanvas(p.x, p.y, tempCanvasData));
-            PaintUI.renderCanvas(tempCanvasData, zoomLevel);
-        }
-    }
-
-    function onMouseUp(e) {
-        if (!isDrawing) return;
-        const endCoords = (e.changedTouches)
-            ? PaintUI.getGridCoordinates(e.changedTouches[0].clientX, e.changedTouches[0].clientY, currentCanvasWidth, currentCanvasHeight) || lastCoords
-            : PaintUI.getGridCoordinates(e.clientX, e.clientY, currentCanvasWidth, currentCanvasHeight) || lastCoords;
-
-        if (shapeStartCoords) {
-            let points = [];
-            if (currentTool === 'line') { points = _getLinePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y); }
-            else if (currentTool === 'quad') { points = _getRectanglePoints(shapeStartCoords.x, shapeStartCoords.y, endCoords.x, endCoords.y); }
-            else if (currentTool === 'ellipse') {
-                let rx = Math.abs(endCoords.x - shapeStartCoords.x); let ry = Math.abs(endCoords.y - shapeStartCoords.y);
-                if (e.shiftKey) { rx = ry = Math.max(rx, ry); }
-                points = _getEllipsePoints(shapeStartCoords.x, shapeStartCoords.y, rx, ry);
+        },
+        onRedo: () => {
+            if (state.redoStack.length > 0) {
+                const nextState = state.redoStack.pop();
+                state.undoStack.push(nextState);
+                state.canvasData = JSON.parse(JSON.stringify(nextState));
+                PaintUI.renderCanvas(state);
+                PaintUI.updateToolbar(state);
             }
-            points.forEach(p => _drawOnCanvas(p.x, p.y));
-        }
+        },
+        onSaveRequest: async () => {
+            const { currentFilePath, canvasData, canvasDimensions } = state;
+            const fileData = {
+                width: canvasDimensions.width,
+                height: canvasDimensions.height,
+                cells: canvasData
+            };
+            const jsonContent = JSON.stringify(fileData, null, 2);
 
-        isDrawing = false;
-        if (pointsToDraw.length > 1) {
-            drawScheduledPoints();
-        }
-
-        if (isDirty) { _triggerSaveUndoState(); }
-        pointsToDraw = [];
-        shapeStartCoords = null;
-        shapePreviewBaseState = null;
-    }
-
-    function onMouseLeave(e) { if (isDrawing) { onMouseUp(e); } }
-    function _setTool(toolName) {
-        currentTool = toolName;
-        _updateToolbarState();
-        const dropdown = document.querySelector('.paint-dropdown-content');
-        if (dropdown) { dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE); }
-    }
-    function _setColor(colorValue) { fgColor = colorValue; _updateToolbarState(); PaintUI.hideColorSelect(); }
-    function _resetState() {
-        isActiveState = false; currentFilePath = null; canvasData = []; isDirty = false;
-        isDrawing = false; currentTool = 'pencil'; drawChar = PaintAppConfig.DEFAULT_CHAR;
-        fgColor = PaintAppConfig.PALETTE[0].value; lastCoords = { x: -1, y: -1 };
-        currentBrushSize = PaintAppConfig.BRUSH.DEFAULT_SIZE;
-        zoomLevel = PaintAppConfig.ZOOM.DEFAULT_ZOOM;
-        undoStack = []; redoStack = []; isGridVisible = false;
-        shapeStartCoords = null; shapePreviewBaseState = null; paintContainerElement = null;
-        customColorValue = null;
-        currentCanvasWidth = 0;
-        currentCanvasHeight = 0;
-        pointsToDraw = [];
-        isFrameScheduled = false;
-        if (saveUndoStateTimeout) { clearTimeout(saveUndoStateTimeout); saveUndoStateTimeout = null; }
-    }
-
-    async function _performSave(filePath) {
-        if (!filePath) {
-            await OutputManager.appendToOutput(`Cannot save. No filename specified.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-            return false;
-        }
-        const fileData = { version: "1.1", width: currentCanvasWidth, height: currentCanvasHeight, cells: canvasData };
-        const jsonContent = JSON.stringify(fileData, null, 2);
-        const currentUser = UserManager.getCurrentUser().name;
-        const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-        if (!primaryGroup) {
-            await OutputManager.appendToOutput(`Critical Error: Cannot determine primary group for user. Save failed.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-            return false;
-        }
-        const saveResult = await FileSystemManager.createOrUpdateFile(filePath, jsonContent, { currentUser, primaryGroup });
-        if (saveResult.success) {
-            if (await FileSystemManager.save()) {
-                await OutputManager.appendToOutput(`Art saved to '${filePath}'.`, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
-                isDirty = false;
-                _updateToolbarState();
-                return true;
-            } else {
-                await OutputManager.appendToOutput(`Error saving file system after art save.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                return false;
-            }
-        } else {
-            await OutputManager.appendToOutput(`Error saving art: ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-            return false;
-        }
-    }
-
-    async function _handleSave() {
-        let savePath = currentFilePath;
-        if (!savePath) {
-            AppLayerManager.hide();
-            const prospectivePathResult = await new Promise(resolve => {
-                ModalInputManager.requestInput(
-                    "Enter filename to save as:",
-                    (filename) => {
-                        if (!filename || filename.trim() === "") {
-                            resolve({ path: null, reason: "Save cancelled. No filename provided." });
-                        } else {
-                            if (!filename.endsWith(`.${PaintAppConfig.FILE_EXTENSION}`)) {
-                                filename += `.${PaintAppConfig.FILE_EXTENSION}`;
-                            }
-                            resolve({ path: FileSystemManager.getAbsolutePath(filename, FileSystemManager.getCurrentPath()), reason: null });
-                        }
-                    },
-                    () => { resolve({ path: null, reason: "Save cancelled." }); },
-                    false
-                );
+            const saveResult = await FileSystemManager.createOrUpdateFile(currentFilePath, jsonContent, {
+                currentUser: UserManager.getCurrentUser().name,
+                primaryGroup: UserManager.getPrimaryGroupForUser(UserManager.getCurrentUser().name)
             });
 
-            if (prospectivePathResult.path) {
-                savePath = prospectivePathResult.path;
+            if (saveResult.success && await FileSystemManager.save()) {
+                state.isDirty = false;
+                PaintUI.updateStatusBar(state);
             } else {
-                await OutputManager.appendToOutput(prospectivePathResult.reason, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
-                AppLayerManager.show(paintContainerElement);
-                return;
+                console.error("Failed to save file:", saveResult.error);
             }
         }
+    };
 
-        const pathInfo = FileSystemManager.validatePath("paint save", savePath, { allowMissing: true });
-        if (pathInfo.node) {
-            const confirmedOverwrite = await new Promise(resolve => {
-                ModalManager.request({
-                    context: 'graphical',
-                    messageLines: [`File '${pathInfo.resolvedPath.split('/').pop()}' already exists. Overwrite?`],
-                    onConfirm: () => resolve(true), onCancel: () => resolve(false)
-                });
-            });
-            if (!confirmedOverwrite) {
-                await OutputManager.appendToOutput("Save cancelled by user.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                if (!currentFilePath) AppLayerManager.show(paintContainerElement);
-                return;
-            }
+    function _saveUndoState() {
+        if (!state.isDirty) return; // Don't save state if nothing changed
+        state.redoStack = [];
+        state.undoStack.push(JSON.parse(JSON.stringify(state.canvasData)));
+        if (state.undoStack.length > 50) {
+            state.undoStack.shift();
         }
-
-        const wasSaveSuccessful = await _performSave(savePath);
-        if (wasSaveSuccessful) {
-            currentFilePath = savePath;
-        }
-
-        if (!AppLayerManager.isActive()) {
-            AppLayerManager.show(paintContainerElement);
-        }
+        PaintUI.updateToolbar(state);
     }
 
     function enter(filePath, fileContent) {
-        if (isActiveState) return;
+        if (state.isActive) {
+            return;
+        }
         _resetState();
-        isActiveState = true;
+        state.isActive = true;
+        state.currentFilePath = filePath;
 
-        paintContainerElement = PaintUI.buildLayout(paintEventCallbacks);
-        AppLayerManager.show(paintContainerElement);
-
-        setTimeout(() => {
-            if (fileContent) {
-                try {
-                    const parsedData = JSON.parse(fileContent);
-                    if (parsedData && parsedData.cells && parsedData.width && parsedData.height) {
-                        canvasData = parsedData.cells;
-                        currentCanvasWidth = parsedData.width;
-                        currentCanvasHeight = parsedData.height;
-                    } else {
-                        void OutputManager.appendToOutput("Error loading paint file: Invalid .oopic file format.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                        _initializeNewCanvasDimensions();
-                    }
-                } catch (e) {
-                    void OutputManager.appendToOutput(`Error loading paint file: ${e.message}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-                    _initializeNewCanvasDimensions();
-                }
-            } else {
-                _initializeNewCanvasDimensions();
+        if (fileContent) {
+            try {
+                const parsed = JSON.parse(fileContent);
+                state.canvasData = parsed.cells;
+                state.canvasDimensions = { width: parsed.width, height: parsed.height };
+            } catch (e) {
+                state.canvasData = _createBlankCanvas();
             }
+        } else {
+            state.canvasData = _createBlankCanvas();
+        }
 
-            undoStack = [JSON.parse(JSON.stringify(canvasData))];
-            PaintUI.renderCanvas(canvasData, zoomLevel);
-            PaintUI.toggleGrid(isGridVisible);
-            _updateToolbarState();
-            PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: {x: -1, y: -1}, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-        }, 0);
-
-
-        _boundGlobalClickListener = (e) => {
-            if (paintContainerElement) {
-                const dropdown = paintContainerElement.querySelector('.paint-dropdown-content');
-                const shapeContainer = paintContainerElement.querySelector('.paint-tool-dropdown');
-                if (dropdown && shapeContainer && !shapeContainer.contains(e.target)) {
-                    dropdown.classList.remove(PaintAppConfig.CSS_CLASSES.DROPDOWN_ACTIVE);
-                }
-            }
-        };
-        document.addEventListener('click', _boundGlobalClickListener);
-        document.addEventListener('keydown', handleKeyDown);
-
-        currentFilePath = filePath;
+        state.undoStack.push(JSON.parse(JSON.stringify(state.canvasData)));
+        PaintUI.buildAndShow(state, callbacks);
     }
 
     async function exit() {
-        if (!isActiveState) return;
+        if (!state.isActive) {
+            return;
+        }
 
-        if (isDirty) {
+        if (state.isDirty) {
             const confirmed = await new Promise(resolve => {
                 ModalManager.request({
                     context: 'graphical',
-                    messageLines: ["You have unsaved changes. Are you sure you want to exit and discard them?"],
-                    confirmText: "Discard Changes",
-                    cancelText: "Keep Painting",
-                    onConfirm: () => resolve(true),
-                    onCancel: () => resolve(false),
+                    messageLines: ["You have unsaved changes.", "Do you want to save before exiting?"],
+                    confirmText: "Save & Exit",
+                    cancelText: "Discard & Exit",
+                    onConfirm: async () => {
+                        await callbacks.onSaveRequest();
+                        resolve(true);
+                    },
+                    onCancel: () => resolve(true)
                 });
             });
-            if (!confirmed) {
-                return;
-            }
+            if (!confirmed) return;
         }
 
-        document.removeEventListener('keydown', handleKeyDown);
-        if (_boundGlobalClickListener) {
-            document.removeEventListener('click', _boundGlobalClickListener);
-        }
-
-        AppLayerManager.hide();
-        PaintUI.reset();
+        PaintUI.hideAndReset();
         _resetState();
     }
 
-    function handleKeyDown(event) {
-        if (!isActiveState) return;
-        if (event.ctrlKey || event.metaKey) {
-            const key = event.key.toLowerCase();
-            if (key === 'z') { event.preventDefault(); _performUndo(); }
-            else if (key === 'y' || (key === 'z' && event.shiftKey)) { event.preventDefault(); _performRedo(); }
-            else if (key === 's') { event.preventDefault(); void _handleSave(); }
-            else if (key === 'o') { event.preventDefault(); void exit(); }
-            else if (key === '=' || key === '+') { event.preventDefault(); _handleZoomIn(); }
-            else if (key === '-') { event.preventDefault(); _handleZoomOut(); }
-            else if (key === '0') { event.preventDefault(); _resetZoom(); }
-            return;
-        }
-        const key = event.key.toLowerCase();
-        const shapeTools = ['line', 'quad', 'ellipse'];
-        const isAppKey = ['p', 'e', 'l', 'g', 'c', '1', '2', '3', '4', '5', '6'].includes(key);
-        const isCharKey = event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey;
-        if (isAppKey) {
-            event.preventDefault();
-            if (key === 'p') { _setTool('pencil'); }
-            else if (key === 'e') { _setTool('eraser'); }
-            else if (key === 'l') {
-                const currentShapeIndex = shapeTools.indexOf(currentTool);
-                if (currentShapeIndex !== -1) {
-                    const nextShapeIndex = (currentShapeIndex + 1) % shapeTools.length;
-                    _setTool(shapeTools[nextShapeIndex]);
-                } else { _setTool('line'); }
-            }
-            else if (key === 'g') { _toggleGrid(); }
-            else if (key === 'c') { _openCharSelect(); }
-            else {
-                const colorIndex = parseInt(key, 10) - 1;
-                if (colorIndex >= 0 && colorIndex < PaintAppConfig.PALETTE.length) {
-                    _setColor(PaintAppConfig.PALETTE[colorIndex].value);
-                }
-            }
-        } else if (isCharKey) {
-            event.preventDefault();
-            drawChar = event.key;
-        }
-        PaintUI.updateStatusBar({ tool: currentTool, char: drawChar, fg: fgColor, coords: lastCoords, brushSize: currentBrushSize, zoomLevel: zoomLevel });
-    }
-
-    return { enter, exit, isActive: () => isActiveState };
+    return {
+        enter,
+        exit,
+        isActive: () => state.isActive,
+    };
 })();

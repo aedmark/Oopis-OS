@@ -22,24 +22,37 @@
                 return { success: false, error: "paint: Can only be run in interactive mode." };
             }
 
+            // Verify that the new, required modules are loaded.
+            if (typeof PaintManager === 'undefined' || typeof PaintUI === 'undefined') {
+                return {
+                    success: false,
+                    error: "paint: The Paint application module is not loaded."
+                };
+            }
+
             const pathInfo = validatedPaths[0];
             const filePath = pathInfo ? pathInfo.resolvedPath : (args[0] || null);
             let fileContent = "";
 
             if (pathInfo && pathInfo.node) {
+                // Ensure we are only opening .oopic files
                 if (Utils.getFileExtension(filePath) !== 'oopic') {
                     return { success: false, error: `paint: can only edit .oopic files.` };
                 }
+                // Check read permissions before trying to load content
                 if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
                     return { success: false, error: `paint: '${filePath}': Permission denied` };
                 }
                 fileContent = pathInfo.node.content || "";
             } else if (filePath && Utils.getFileExtension(filePath) !== 'oopic') {
+                // Ensure new files also have the correct extension
                 return { success: false, error: `paint: new file must have .oopic extension.` };
             }
 
+            // The command's only job is to call the manager's entry point.
             await PaintManager.enter(filePath, fileContent);
 
+            // The command succeeds by launching the app. The app itself now handles its own lifecycle.
             return {
                 success: true,
                 output: ""
