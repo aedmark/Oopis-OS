@@ -218,8 +218,8 @@ const PaintManager = (() => {
         },
         onReplaceAll: (findChar, replaceChar) => {
             if (!findChar || !replaceChar || findChar === replaceChar) return;
-            let changed = false;
             _saveUndoState();
+            let changed = false;
             state.canvasData.forEach(row => {
                 row.forEach(cell => {
                     if (cell.char === findChar) {

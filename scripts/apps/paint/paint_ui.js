@@ -202,11 +202,7 @@ const PaintUI = (() => {
     function _attachEventListeners() {
         elements.canvas.addEventListener('mousedown', (e) => _handleMouseEvent(e, eventCallbacks.onCanvasMouseDown));
         elements.canvas.addEventListener('mousemove', (e) => _handleMouseEvent(e, eventCallbacks.onCanvasMouseMove));
-        document.body.addEventListener('mouseup', (e) => {
-            if (state.isDrawing) {
-                _handleMouseEvent(e, eventCallbacks.onCanvasMouseUp, true);
-            }
-        });
+        document.addEventListener('mouseup', (e) => _handleMouseEvent(e, eventCallbacks.onCanvasMouseUp, true));
     }
 
     function _handleMouseEvent(e, callback, allowOutside = false) {
