@@ -72,7 +72,6 @@ const PaintUI = (() => {
         elements.redoButton.disabled = redoStack.length === 0;
 
         elements.brushSizeSpan.textContent = brushSize;
-        elements.charDisplay.textContent = activeCharacter;
 
         const colorSwatches = elements.toolbar.querySelectorAll('.color-swatch');
         colorSwatches.forEach(swatch => {
@@ -141,54 +140,6 @@ const PaintUI = (() => {
         viewGroup.append(elements.gridButton);
 
         elements.toolbar.append(toolGroup, brushGroup, colorGroup, actionGroup, viewGroup);
-    }
-
-    function _showCharModal() {
-        const charModalBody = Utils.createElement('div', { className: 'paint-modal-body', style: { display: 'flex', 'flex-wrap': 'wrap', gap: '5px' } });
-        const chars = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'.split('');
-
-        chars.forEach(char => {
-            const charButton = Utils.createElement('button', { textContent: char, className: 'btn' });
-            charButton.addEventListener('click', () => {
-                eventCallbacks.onCharSelect(char);
-                ModalManager.hide();
-            });
-            charModalBody.appendChild(charButton);
-        });
-
-        ModalManager.request({
-            context: 'graphical-input',
-            title: 'Select Character',
-            bodyElement: charModalBody,
-            hideInput: true,
-            hideConfirm: true,
-            cancelText: 'Close',
-            onCancel: () => ModalManager.hide()
-        });
-    }
-
-    function _showFindReplaceModal() {
-        const findInput = Utils.createElement('input', { type: 'text', maxLength: 1, placeholder: 'Find Char' });
-        const replaceInput = Utils.createElement('input', { type: 'text', maxLength: 1, placeholder: 'Replace Char' });
-
-        const body = Utils.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } }, [
-            Utils.createElement('p', { textContent: 'Replace all occurrences of a character.' }),
-            findInput,
-            replaceInput
-        ]);
-
-        ModalManager.request({
-            context: 'graphical-input',
-            messageLines: ['Find and Replace'],
-            bodyElement: body,
-            hideInput: true,
-            confirmText: 'Replace All',
-            onConfirm: () => {
-                const findChar = findInput.value[0];
-                const replaceChar = replaceInput.value[0];
-                eventCallbacks.onReplaceAll(findChar, replaceChar);
-            },
-        });
     }
 
     function _attachEventListeners() {
