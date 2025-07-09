@@ -30,9 +30,7 @@ const PaintUI = (() => {
     }
 
     function hideAndReset() {
-        if (elements.container) {
-            AppLayerManager.hide();
-        }
+        AppLayerManager.hide();
         elements = {};
         eventCallbacks = {};
         canvasDimensions = { width: 0, height: 0 };
@@ -62,7 +60,7 @@ const PaintUI = (() => {
     }
 
     function updateToolbar(state) {
-        const { currentTool, undoStack, redoStack, brushSize, activeCharacter, activeColor, isGridVisible } = state;
+        const { currentTool, undoStack, redoStack, brushSize, activeColor, isGridVisible } = state;
         const toolButtons = elements.toolbar.querySelectorAll('.tool-btn');
         toolButtons.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tool === currentTool);
@@ -83,7 +81,7 @@ const PaintUI = (() => {
 
     function updateStatusBar(state) {
         if (!elements.statusBar) return;
-        const { currentTool, activeColor, brushSize, isDirty, mouseCoords } = state;
+        const { currentTool, brushSize, isDirty, mouseCoords } = state;
         const dirtyIndicator = isDirty ? ' *' : '';
         const coordsText = mouseCoords.x !== -1 ? `[${mouseCoords.x}, ${mouseCoords.y}]` : '';
         elements.statusBar.textContent = `Tool: ${currentTool} | Char: ${state.activeCharacter} | Brush: ${brushSize} | ${coordsText}${dirtyIndicator}`;

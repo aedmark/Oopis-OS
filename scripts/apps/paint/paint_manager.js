@@ -326,22 +326,20 @@ const PaintManager = (() => {
         if (!state.isActive) return;
 
         if (state.isDirty) {
-            // Use the terminal's modal system correctly.
             const confirmed = await new Promise(resolve => {
                 ModalManager.request({
-                    context: 'terminal', // Use the 'terminal' context
+                    context: 'graphical',
                     messageLines: ["You have unsaved changes. Save before exiting?"],
                     confirmText: "Save & Exit",
                     cancelText: "Discard & Exit",
                     onConfirm: async () => {
                         await callbacks.onSaveRequest();
-                        resolve(true); // Resolve after saving
+                        resolve(true);
                     },
                     onCancel: async () => {
-                        // Ask for a second confirmation before discarding changes.
                         const discardConfirmed = await new Promise(res => {
                             ModalManager.request({
-                                context: 'terminal',
+                                context: 'graphical',
                                 messageLines: ["Are you sure you want to discard all changes?"],
                                 onConfirm: () => res(true),
                                 onCancel: () => res(false)
@@ -354,7 +352,7 @@ const PaintManager = (() => {
 
             if (!confirmed) {
                 await OutputManager.appendToOutput("Exit cancelled.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
-                return; // Abort exit if user cancelled discard
+                return;
             }
         }
 
