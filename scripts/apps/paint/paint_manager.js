@@ -206,7 +206,7 @@ const PaintManager = (() => {
             if (state.undoStack.length > 1) {
                 state.redoStack.push(state.undoStack.pop());
                 state.canvasData = JSON.parse(state.undoStack.at(-1));
-                PaintUI.renderCanvas(state.canvasData);
+                PaintUI.renderCanvas(state.canvasData, state.canvasDimensions);
                 PaintUI.updateToolbar(state);
             }
         },
@@ -215,7 +215,7 @@ const PaintManager = (() => {
                 const nextState = state.redoStack.pop();
                 state.undoStack.push(nextState);
                 state.canvasData = JSON.parse(nextState);
-                PaintUI.renderCanvas(state.canvasData);
+                PaintUI.renderCanvas(state.canvasData, state.canvasDimensions);
                 PaintUI.updateToolbar(state);
             }
         },
@@ -229,23 +229,27 @@ const PaintManager = (() => {
             state.startCoords = coords;
             if (state.currentTool === 'pencil' || state.currentTool === 'eraser') {
                 const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
-                _applyBrush(coords.x, coords.y, char, state.currentColor);
+                const color = state.currentTool === 'eraser' ? '#000000' : state.currentColor;
+                _applyBrush(coords.x, coords.y, char, color);
             }
         },
         onCanvasMouseMove: (coords) => {
             if (!state.isDrawing) return;
 
+            const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
+            const color = state.currentTool === 'eraser' ? '#000000' : state.currentColor;
+
+
             if (state.currentTool === 'pencil' || state.currentTool === 'eraser') {
-                const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
-                const affected = _drawLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, state.currentColor);
+                const affected = _drawLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
                 PaintUI.updateCanvas(affected);
                 state.startCoords = coords; // Update start for continuous lines
             } else {
                 let previewCells = [];
                 if (state.currentTool === 'line') {
-                    previewCells = _drawLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, state.currentCharacter, state.currentColor);
+                    previewCells = _drawLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
                 } else if (state.currentTool === 'rect') {
-                    previewCells = _drawRect(state.startCoords.x, state.startCoords.y, coords.x, coords.y, state.currentCharacter, state.currentColor);
+                    previewCells = _drawRect(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
                 }
                 PaintUI.updatePreviewCanvas(previewCells);
             }
@@ -256,11 +260,14 @@ const PaintManager = (() => {
             state.isDrawing = false;
             PaintUI.updatePreviewCanvas([]); // Clear preview
 
+            const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
+            const color = state.currentTool === 'eraser' ? '#000000' : state.currentColor;
+
             let affectedCells = [];
             if (state.currentTool === 'line') {
-                affectedCells = _drawLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, state.currentCharacter, state.currentColor);
+                affectedCells = _drawLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
             } else if (state.currentTool === 'rect') {
-                affectedCells = _drawRect(state.startCoords.x, state.startCoords.y, coords.x, coords.y, state.currentCharacter, state.currentColor);
+                affectedCells = _drawRect(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
             }
 
             if (affectedCells.length > 0) {

@@ -57,7 +57,7 @@ const PaintUI = (() => {
         // --- Assemble & Show ---
         elements.container.append(toolbar, mainArea, elements.statusBar);
 
-        _renderInitialCanvas(initialState.canvasData, initialState.canvasDimensions);
+        renderInitialCanvas(initialState.canvasData, initialState.canvasDimensions);
         updateToolbar(initialState);
         updateStatusBar(initialState);
         _addEventListeners();
@@ -72,7 +72,7 @@ const PaintUI = (() => {
         managerCallbacks = {};
     }
 
-    function _renderInitialCanvas(canvasData, dimensions) {
+    function renderInitialCanvas(canvasData, dimensions) {
         elements.canvas.innerHTML = '';
         elements.previewCanvas.innerHTML = '';
 
@@ -203,8 +203,8 @@ const PaintUI = (() => {
                 switch (e.key.toLowerCase()) {
                     case 's': e.preventDefault(); managerCallbacks.onSaveRequest(); break;
                     case 'o': e.preventDefault(); managerCallbacks.onExitRequest(); break;
-                    case 'z': e.preventDefault(); e.shiftKey ? managerCallbacks.onRedoRequest() : managerCallbacks.onUndoRequest(); break;
-                    case 'y': e.preventDefault(); managerCallbacks.onRedoRequest(); break;
+                    case 'z': e.preventDefault(); e.shiftKey ? managerCallbacks.onRedo() : managerCallbacks.onUndo(); break;
+                    case 'y': e.preventDefault(); managerCallbacks.onRedo(); break;
                 }
             } else {
                 switch (e.key.toLowerCase()) {
@@ -221,5 +221,5 @@ const PaintUI = (() => {
         elements.container.setAttribute('tabindex', '-1');
     }
 
-    return { buildAndShow, hideAndReset, renderCanvas, updateCanvas, updatePreviewCanvas, updateToolbar, updateStatusBar, toggleGrid };
+    return { buildAndShow, hideAndReset, updateCanvas, updatePreviewCanvas, updateToolbar, updateStatusBar, toggleGrid, renderCanvas: renderInitialCanvas };
 })();
