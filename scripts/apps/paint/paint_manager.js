@@ -92,6 +92,11 @@ const PaintManager = (() => {
             PaintUI.updateToolbar(state);
             PaintUI.updateStatusBar(state);
         },
+        onCharSelect: (char) => {
+            state.activeCharacter = char;
+            PaintUI.updateToolbar(state);
+            PaintUI.updateStatusBar(state);
+        },
         onBrushSizeChange: (delta) => {
             const newSize = state.brushSize + delta;
             state.brushSize = Math.max(1, Math.min(newSize, 5));

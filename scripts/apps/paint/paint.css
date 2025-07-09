@@ -112,3 +112,8 @@
     border-color: var(--color-accent-lime);
     box-shadow: 0 0 8px var(--color-accent-lime);
 }
+
+.color-swatch.active {
+    border-width: 2px;
+    border-color: var(--color-accent-lime);
+}

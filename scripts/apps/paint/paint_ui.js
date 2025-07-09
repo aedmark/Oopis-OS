@@ -3,24 +3,16 @@ const PaintUI = (() => {
 
     let elements = {};
     let eventCallbacks = {};
-    let canvasDimensions = { width: 0, height: 0 }; // Caches canvas dimensions for coordinate calculation
+    let canvasDimensions = { width: 0, height: 0 };
 
-    /**
-     * Creates all DOM elements for the paint application and displays them.
-     * @param {object} initialState - The initial state from PaintManager.
-     * @param {object} callbacks - The callbacks object from PaintManager.
-     */
     function buildAndShow(initialState, callbacks) {
         eventCallbacks = callbacks;
-        canvasDimensions = initialState.canvasDimensions; // Store dimensions on build
+        canvasDimensions = initialState.canvasDimensions;
 
-        // Create main container
         elements.container = Utils.createElement('div', { id: 'paint-container' });
 
-        // Create and assemble toolbar
-        _buildToolbar();
+        _buildToolbar(initialState);
 
-        // Create canvas and status bar
         elements.canvasWrapper = Utils.createElement('div', { id: 'paint-canvas-wrapper' });
         elements.canvas = Utils.createElement('div', { id: 'paint-canvas' });
         elements.statusBar = Utils.createElement('div', { id: 'paint-statusbar' });
@@ -32,15 +24,11 @@ const PaintUI = (() => {
 
         AppLayerManager.show(elements.container);
 
-        // Initial render based on state from manager
         renderCanvas(initialState);
         updateToolbar(initialState);
         updateStatusBar(initialState);
     }
 
-    /**
-     * Removes the UI from the DOM and clears all element references.
-     */
     function hideAndReset() {
         if (elements.container) {
             AppLayerManager.hide();
@@ -50,17 +38,15 @@ const PaintUI = (() => {
         canvasDimensions = { width: 0, height: 0 };
     }
 
-    /**
-     * Renders the entire canvas based on the state's canvasData.
-     * @param {object} state - The current state from PaintManager.
-     */
     function renderCanvas(state) {
         const { canvasData, canvasDimensions, zoomLevel } = state;
         if (!elements.canvas) return;
 
-        elements.canvas.innerHTML = ''; // Clear existing canvas
+        elements.canvas.innerHTML = '';
         elements.canvas.style.gridTemplateColumns = `repeat(${canvasDimensions.width}, 1fr)`;
         elements.canvas.style.gridTemplateRows = `repeat(${canvasDimensions.height}, 1fr)`;
+        elements.canvas.style.fontSize = `${zoomLevel / 100}em`;
+
 
         for (let y = 0; y < canvasDimensions.height; y++) {
             for (let x = 0; x < canvasDimensions.width; x++) {
@@ -77,12 +63,8 @@ const PaintUI = (() => {
         }
     }
 
-    /**
-     * Updates the toolbar UI to reflect the current application state.
-     * @param {object} state - The current state from PaintManager.
-     */
     function updateToolbar(state) {
-        const { currentTool, undoStack, redoStack } = state;
+        const { currentTool, undoStack, redoStack, brushSize, activeCharacter, activeColor, isGridVisible } = state;
         const toolButtons = elements.toolbar.querySelectorAll('.tool-btn');
         toolButtons.forEach(btn => {
             if (btn.dataset.tool === currentTool) {
@@ -94,12 +76,22 @@ const PaintUI = (() => {
 
         elements.undoButton.disabled = undoStack.length <= 1;
         elements.redoButton.disabled = redoStack.length === 0;
+
+        elements.brushSizeSpan.textContent = brushSize;
+        elements.charDisplay.textContent = activeCharacter;
+
+        const colorSwatches = elements.toolbar.querySelectorAll('.color-swatch');
+        colorSwatches.forEach(swatch => {
+            if (swatch.dataset.color === activeColor) {
+                swatch.classList.add('active');
+            } else {
+                swatch.classList.remove('active');
+            }
+        });
+
+        elements.gridButton.classList.toggle('active', isGridVisible);
     }
 
-    /**
-     * Updates the status bar text.
-     * @param {object} state - The current state from PaintManager.
-     */
     function updateStatusBar(state) {
         if (!elements.statusBar) return;
         const { currentTool, activeColor, brushSize, zoomLevel, isDirty } = state;
@@ -107,30 +99,83 @@ const PaintUI = (() => {
         elements.statusBar.textContent = `Tool: ${currentTool} | Color: ${activeColor} | Brush: ${brushSize} | Zoom: ${zoomLevel}%${dirtyIndicator}`;
     }
 
-    /**
-     * Toggles the CSS class that shows or hides the grid overlay.
-     * @param {boolean} isVisible - Whether the grid should be visible.
-     */
     function toggleGrid(isVisible) {
         if (!elements.canvasWrapper) return;
         elements.canvasWrapper.classList.toggle('paint-canvas-wrapper--grid-active', isVisible);
     }
 
-    function _buildToolbar() {
+    function _buildToolbar(initialState) {
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' });
 
+        // Tool Group
+        const toolGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         const pencilButton = Utils.createElement('button', { textContent: 'Pencil', className: 'tool-btn paint-toolbar__button', 'data-tool': 'pencil' });
         pencilButton.addEventListener('click', () => eventCallbacks.onToolSelect('pencil'));
-
         const eraserButton = Utils.createElement('button', { textContent: 'Eraser', className: 'tool-btn paint-toolbar__button', 'data-tool': 'eraser' });
         eraserButton.addEventListener('click', () => eventCallbacks.onToolSelect('eraser'));
+        toolGroup.append(pencilButton, eraserButton);
 
+        // Brush Size Group
+        const brushGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
+        const brushMinusButton = Utils.createElement('button', { textContent: '-', className: 'paint-toolbar__button' });
+        brushMinusButton.addEventListener('click', () => eventCallbacks.onBrushSizeChange(-1));
+        elements.brushSizeSpan = Utils.createElement('span', { textContent: initialState.brushSize, className: 'paint-toolbar__button' });
+        const brushPlusButton = Utils.createElement('button', { textContent: '+', className: 'paint-toolbar__button' });
+        brushPlusButton.addEventListener('click', () => eventCallbacks.onBrushSizeChange(1));
+        brushGroup.append(brushMinusButton, elements.brushSizeSpan, brushPlusButton);
+
+        // Character Group
+        const charGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
+        elements.charDisplay = Utils.createElement('button', { textContent: initialState.activeCharacter, className: 'paint-toolbar__button' });
+        elements.charDisplay.addEventListener('click', () => _showCharModal());
+        charGroup.append(elements.charDisplay);
+
+        // Color Group
+        const colorGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
+        const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'];
+        colors.forEach(color => {
+            const swatch = Utils.createElement('button', { className: 'color-swatch paint-toolbar__button', style: { backgroundColor: color }, 'data-color': color });
+            swatch.addEventListener('click', () => eventCallbacks.onColorSelect(color));
+            colorGroup.appendChild(swatch);
+        });
+
+        // Action Group
+        const actionGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         elements.undoButton = Utils.createElement('button', { textContent: 'Undo', className: 'paint-toolbar__button' });
         elements.redoButton = Utils.createElement('button', { textContent: 'Redo', className: 'paint-toolbar__button' });
         elements.undoButton.addEventListener('click', () => eventCallbacks.onUndo());
         elements.redoButton.addEventListener('click', () => eventCallbacks.onRedo());
+        actionGroup.append(elements.undoButton, elements.redoButton);
 
-        elements.toolbar.append(pencilButton, eraserButton, elements.undoButton, elements.redoButton);
+        // View Group
+        const viewGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
+        elements.gridButton = Utils.createElement('button', { textContent: 'Grid', className: 'paint-toolbar__button' });
+        elements.gridButton.addEventListener('click', () => eventCallbacks.onGridToggle());
+        viewGroup.append(elements.gridButton);
+
+        elements.toolbar.append(toolGroup, brushGroup, charGroup, colorGroup, actionGroup, viewGroup);
+    }
+
+    function _showCharModal() {
+        const charModalBody = Utils.createElement('div', { className: 'paint-modal-body' });
+        const chars = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'.split('');
+
+        chars.forEach(char => {
+            const charButton = Utils.createElement('button', { textContent: char, className: 'paint-toolbar__button' });
+            charButton.addEventListener('click', () => {
+                eventCallbacks.onCharSelect(char);
+                ModalManager.hide();
+            });
+            charModalBody.appendChild(charButton);
+        });
+
+        ModalManager.request({
+            context: 'graphical',
+            title: 'Select Character',
+            body: charModalBody,
+            hideConfirm: true,
+            cancelText: "Close"
+        });
     }
 
     function _attachEventListeners() {
@@ -141,8 +186,9 @@ const PaintUI = (() => {
             }
         });
         document.body.addEventListener('mouseup', (e) => {
-            // We need to call mouse up even if it's outside the canvas to stop drawing.
-            _handleMouseEvent(e, eventCallbacks.onCanvasMouseUp, true);
+            if (state.isDrawing) {
+                _handleMouseEvent(e, eventCallbacks.onCanvasMouseUp, true);
+            }
         });
     }
 
