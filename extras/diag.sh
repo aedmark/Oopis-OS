@@ -398,12 +398,12 @@ echo ""
 echo "===== Phase 8.6: Testing Network & System Documentation Commands ====="
 delay 400
 echo "--- Test: wget and curl ---"
-wget -O license.txt https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt
-cat license.txt
-rm license.txt
-curl https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt > license_curl.txt
-cat license_curl.txt
-rm license_curl.txt
+wget -O wget.txt https://raw.githubusercontent.com/aedmark/Oopis-OS/refs/heads/master/docs/LICENSE.txt
+cat wget.txt
+rm wget.txt
+curl https://raw.githubusercontent.com/aedmark/Oopis-OS/refs/heads/master/docs/LICENSE.txt > oopis_curl.txt
+cat oopis_curl.txt
+rm oopis_curl.txt
 echo "--- Test: man and help ---"
 man ls
 help cp
@@ -545,7 +545,7 @@ listusers
 delay 700
 echo "---------------------------------------------------------------------"
 echo ""
-echo "      ===== OopisOS Core Test Suite v3.7 Complete ======="
+echo "      ===== OopisOS Core Test Suite v4.0 Complete ======="
 echo " "
 delay 500
 echo "  ======================================================"

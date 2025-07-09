@@ -25,7 +25,7 @@ const ChidiApp = {
         this.callbacks = callbacks;
 
         const chidiElement = this.createModal();
-        AppLayerManager.show(chidiElement);
+        AppLayerManager.show(chidiElement); // Directive: Use AppLayerManager to show the UI.
 
         this.cacheDOMElements();
         this._populateFileDropdown();
@@ -43,8 +43,9 @@ const ChidiApp = {
     close() {
         if (!this.state.isModalOpen) return;
 
-        AppLayerManager.hide();
+        AppLayerManager.hide(); // Directive: Use AppLayerManager to hide the UI.
 
+        // Reset state
         this.state = {
             loadedFiles: [],
             currentIndex: -1,
@@ -60,8 +61,11 @@ const ChidiApp = {
     },
 
     createModal() {
-        const appContainer = document.createElement('div');
-        appContainer.id = 'chidi-console-panel';
+        // This function now just creates the element, it doesn't manage its visibility.
+        const appContainer = Utils.createElement('div', {
+            id: 'chidi-console-panel',
+            className: 'chidi-console-panel'
+        });
         appContainer.innerHTML = this.getHTML();
         return appContainer;
     },
@@ -84,9 +88,7 @@ const ChidiApp = {
             messageBox: get('chidi-messageBox'),
             loader: get('chidi-loader'),
             mainTitle: get('chidi-mainTitle'),
-            fileCountDisplay: get('chidi-fileCountDisplay'),
-            askInputContainer: get('chidi-ask-input-container'),
-            askInput: get('chidi-ask-input'),
+            fileCountDisplay: get('chidi-fileCountDisplay')
         };
     },
 
@@ -110,13 +112,12 @@ const ChidiApp = {
 
         if (currentFile) {
             this.elements.mainTitle.textContent = currentFile.name.replace(/\.md$/i, '');
-            this.elements.markdownDisplay.className = 'chidi-markdown-content'; // Reset class
+            this.elements.markdownDisplay.className = 'chidi-markdown-content';
 
             if (currentFile.name.toLowerCase().endsWith('.txt')) {
                 this.elements.markdownDisplay.innerHTML = `<pre>${currentFile.content || ''}</pre>`;
             } else {
                 try {
-                    // Reverted to default marked.parse() without custom renderer
                     this.elements.markdownDisplay.innerHTML = marked.parse(currentFile.content);
                 } catch (error) {
                     this.elements.markdownDisplay.innerHTML = `<p class="chidi-error-text">Error rendering Markdown for ${currentFile.name}.</p>`;
@@ -131,7 +132,7 @@ const ChidiApp = {
 
     _populateFileDropdown() {
         const panel = this.elements.selectorPanel;
-        panel.innerHTML = ''; // Clear previous items
+        panel.innerHTML = '';
 
         if (this.state.loadedFiles.length === 0) {
             this.elements.selectorTrigger.textContent = "No Files";
@@ -152,7 +153,7 @@ const ChidiApp = {
 
             item.addEventListener('click', () => {
                 this._selectFileByIndex(index);
-                this._toggleDropdown(false); // Hide panel on selection
+                this._toggleDropdown(false);
             });
 
             panel.appendChild(item);
@@ -177,7 +178,6 @@ const ChidiApp = {
 
         document.addEventListener('keydown', (e) => {
             if (!this.isActive()) return;
-
             if (e.key === 'Escape') {
                 if (this.elements.selectorPanel.classList.contains('hidden')) {
                     this.close();
@@ -185,16 +185,13 @@ const ChidiApp = {
                     this._toggleDropdown(false);
                 }
             }
-
             if (!this.elements.selectorPanel.classList.contains('hidden')) {
                 this._handleKeyboardNavigation(e);
             }
         });
 
         document.addEventListener('click', (e) => {
-            if (!this.isActive() || this.elements.selectorPanel.classList.contains('hidden')) {
-                return;
-            }
+            if (!this.isActive() || this.elements.selectorPanel.classList.contains('hidden')) return;
             if (!this.elements.customSelector.contains(e.target)) {
                 this._toggleDropdown(false);
             }
@@ -212,10 +209,6 @@ const ChidiApp = {
         });
 
         this.elements.studyBtn.addEventListener('click', async () => {
-            if (this.state.isAskingMode) {
-                this._exitQuestionMode();
-                return;
-            }
             const currentFile = this.getCurrentFile();
             if (!currentFile) return;
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${currentFile.content}`;
@@ -226,18 +219,24 @@ const ChidiApp = {
             this.appendAiOutput("Suggested Questions", questions);
         });
 
+        // Directive: Use ModalManager for asking questions.
         this.elements.askBtn.addEventListener('click', async () => {
-            if (this.state.isAskingMode) {
-                await this._submitQuestion();
-            } else {
-                this._enterQuestionMode();
-            }
-        });
+            if (!this.getCurrentFile()) return;
+            const userQuestion = await new Promise(resolve => {
+                ModalManager.request({
+                    context: 'graphical-input',
+                    messageLines: ["Ask a question about all loaded documents:"],
+                    placeholder: "e.g., What is the main point of the security document?",
+                    confirmText: "Ask AI",
+                    onConfirm: (value) => resolve(value),
+                    onCancel: () => resolve(null)
+                });
+            });
 
-        this.elements.askInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                await this._submitQuestion();
+            if (userQuestion && userQuestion.trim() !== '') {
+                await this._submitQuestion(userQuestion);
+            } else {
+                this.showMessage("Question cancelled.", true);
             }
         });
     },
@@ -245,13 +244,11 @@ const ChidiApp = {
     _toggleDropdown(forceState) {
         const panel = this.elements.selectorPanel;
         const shouldBeVisible = typeof forceState === 'boolean' ? forceState : panel.classList.contains('hidden');
-
         if (shouldBeVisible) {
             const triggerRect = this.elements.selectorTrigger.getBoundingClientRect();
             const consoleRect = document.getElementById('chidi-console-panel').getBoundingClientRect();
             const maxHeight = consoleRect.bottom - triggerRect.bottom - 10;
             panel.style.maxHeight = `${maxHeight}px`;
-
             panel.classList.remove('hidden');
             const selected = panel.querySelector('.selected') || panel.firstChild;
             if (selected) selected.focus();
@@ -263,9 +260,7 @@ const ChidiApp = {
     _handleKeyboardNavigation(e) {
         const items = Array.from(this.elements.selectorPanel.querySelectorAll('.chidi-selector-item'));
         if (items.length === 0) return;
-
         const currentIndex = items.findIndex(item => item === document.activeElement);
-
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             const nextIndex = (currentIndex + 1) % items.length;
@@ -280,84 +275,38 @@ const ChidiApp = {
         }
     },
 
-    _enterQuestionMode() {
-        if (!this.getCurrentFile()) return;
-        this.state.isAskingMode = true;
-
-        this.elements.markdownDisplay.classList.add('chidi-hidden');
-        this.elements.askInputContainer.classList.remove('chidi-hidden');
-        this.elements.askInput.value = '';
-        this.elements.askInput.focus();
-
-        this.elements.askBtn.textContent = 'Submit';
-        this.elements.studyBtn.textContent = 'Cancel';
-
-        this.elements.summarizeBtn.disabled = true;
-        this.elements.exportBtn.disabled = true;
-        this.elements.selectorTrigger.disabled = true;
-
-
-        this.showMessage("Ask a question about all loaded files.", true);
-    },
-
-    _exitQuestionMode() {
-        this.state.isAskingMode = false;
-
-        this.elements.askInputContainer.classList.add('chidi-hidden');
-        this.elements.markdownDisplay.classList.remove('chidi-hidden');
-
-        this.elements.askBtn.textContent = 'Ask';
-        this.elements.studyBtn.textContent = 'Study';
-
-        this.updateUI();
-
-        this.showMessage("Question mode cancelled.", true);
-    },
-
-    async _submitQuestion() {
-        const userQuestion = this.elements.askInput.value.trim();
-        if (!userQuestion) return;
-
-        this._exitQuestionMode();
+    async _submitQuestion(userQuestion) {
         this.toggleLoader(true);
         this.showMessage(`Analyzing ${this.state.loadedFiles.length} files for relevance...`);
-
         try {
             const questionLower = userQuestion.toLowerCase();
             const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how', 'and', 'or', 'but']);
             const allWords = questionLower.split(/[\s!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~]+/).filter(Boolean);
             const keywords = allWords.filter(word => word.length > 2 && !stopWords.has(word));
-
             const bigrams = [];
             for (let i = 0; i < allWords.length - 1; i++) {
                 bigrams.push(allWords[i] + ' ' + allWords[i + 1]);
             }
-
             if (keywords.length === 0 && bigrams.length === 0) {
                 this.toggleLoader(false);
                 this.showMessage("Your question is too generic. Please be more specific.", true);
                 this.appendAiOutput("Refine Your Question", "Please ask a more specific question so I can find relevant documents for you.");
                 return;
             }
-
             const currentFile = this.getCurrentFile();
             const otherFiles = this.state.loadedFiles.filter(file => file.path !== currentFile.path);
-
             const scoredFiles = otherFiles.map(file => {
                 let score = 0;
                 const contentLower = file.content.toLowerCase();
                 const nameLower = file.name.toLowerCase();
-
                 bigrams.forEach(phrase => {
                     score += (contentLower.match(new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length * 10;
                 });
-
                 keywords.forEach(keyword => {
                     if (nameLower.includes(keyword)) {
                         score += 15;
                     }
                 });
-
                 const headerRegex = /^(#+)\s+(.*)/gm;
                 let match;
                 while ((match = headerRegex.exec(file.content)) !== null) {
@@ -368,54 +317,37 @@ const ChidiApp = {
                         }
                     });
                 }
-
                 keywords.forEach(keyword => {
                     score += (contentLower.match(new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
                 });
-
-                return {
-                    file,
-                    score
-                };
+                return { file, score };
             });
-
             scoredFiles.sort((a, b) => b.score - a.score);
-
             const MAX_CONTEXT_FILES = 5;
             const relevantFiles = [currentFile];
             const uniquePaths = new Set([currentFile.path]);
-
             scoredFiles.slice(0, MAX_CONTEXT_FILES - 1).forEach(item => {
                 if (item.score > 0 && !uniquePaths.has(item.file.path)) {
                     relevantFiles.push(item.file);
                     uniquePaths.add(item.file.path);
                 }
             });
-
             this.showMessage(`Found ${relevantFiles.length} relevant files. Asking Gemini...`);
-
             let promptContext = "Based on the following documents, please provide a comprehensive answer to the user's question. Prioritize information from the first document if it is relevant, but use all provided documents to form your answer.\n\n";
             relevantFiles.forEach(file => {
                 promptContext += `--- START OF DOCUMENT: ${file.name} ---\n\n${file.content}\n\n--- END OF DOCUMENT: ${file.name} ---\n\n`;
             });
-
             const finalPrompt = `${promptContext}User's Question: "${userQuestion}"`;
-
             this.appendAiOutput(
                 "Constructed Prompt for Gemini",
                 "The following block contains the exact context and question being sent to the AI for analysis.\n\n\`\`\`text\n" + finalPrompt + "\n\`\`\`"
             );
-
             const finalAnswer = await this.callGeminiApi([{
                 role: 'user',
-                parts: [{
-                    text: finalPrompt
-                }]
+                parts: [{ text: finalPrompt }]
             }]);
-
             const fileNames = relevantFiles.map(item => item.name).join(', ');
             this.appendAiOutput(`Answer for "${userQuestion}" (based on: ${fileNames})`, finalAnswer || "Could not generate a final answer based on the provided documents.");
-
         } catch (e) {
             this.showMessage(`An unexpected error occurred: ${e.message}`, true);
             this.appendAiOutput("Error", `An unexpected error occurred during processing: ${e.message}`);
@@ -429,7 +361,7 @@ const ChidiApp = {
         if (!isNaN(index) && index >= 0 && index < this.state.loadedFiles.length) {
             this.state.currentIndex = index;
             this.updateUI();
-            this._populateFileDropdown(); // Re-populate to update the 'selected' class
+            this._populateFileDropdown();
         }
     },
 
@@ -449,9 +381,8 @@ const ChidiApp = {
     },
 
     appendAiOutput(title, content) {
-        const outputBlock = document.createElement('div');
-        outputBlock.className = 'chidi-ai-output';
-        outputBlock.innerHTML = marked.parse(`### ${title}\n\n${content}`);
+        const outputBlock = Utils.createElement('div', { className: 'chidi-ai-output' });
+        outputBlock.innerHTML = DOMPurify.sanitize(marked.parse(`### ${title}\n\n${content}`));
         this.elements.markdownDisplay.appendChild(outputBlock);
         outputBlock.scrollIntoView({
             behavior: 'smooth',
@@ -470,15 +401,12 @@ const ChidiApp = {
         const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY, "Gemini API Key");
         const provider = 'gemini';
         const model = Config.API.LLM_PROVIDERS[provider].defaultModel;
-
         const result = await Utils.callLlmApi(provider, model, chatHistory, apiKey);
-
         if (!result.success) {
             this.showMessage(`Error: ${result.error}`, true);
             this.appendAiOutput("API Error", `Failed to get a response. Details: ${result.error}`);
             return "";
         }
-
         this.showMessage("Response received.", true);
         return result.answer;
     },
@@ -486,7 +414,6 @@ const ChidiApp = {
     _packageSessionAsHTML() {
         const currentFile = this.getCurrentFile();
         if (!currentFile) return "";
-
         const content = this.elements.markdownDisplay.innerHTML;
         const title = `Chidi Session: ${currentFile.name}`;
         const styles = `
@@ -521,9 +448,7 @@ const ChidiApp = {
             this.showMessage("Error: No session to save.", true);
             return;
         }
-
         const defaultFilename = `chidi_session_${new Date().toISOString().split('T')[0]}.html`;
-
         const filename = await new Promise(resolve => {
             ModalManager.request({
                 context: 'graphical-input',
@@ -535,44 +460,36 @@ const ChidiApp = {
                 onCancel: () => resolve(null)
             });
         });
-
         if (!filename) {
             this.showMessage("Save cancelled.", true);
             return;
         }
-
         const htmlContent = this._packageSessionAsHTML();
         if (!htmlContent) {
             this.showMessage("Error: Could not package session for saving.", true);
             return;
         }
-
         try {
             const absPath = FileSystemManager.getAbsolutePath(filename);
             const currentUser = UserManager.getCurrentUser().name;
             const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-
             if (!primaryGroup) {
                 this.showMessage("Critical Error: Cannot determine primary group. Save failed.", true);
                 return;
             }
-
             const saveResult = await FileSystemManager.createOrUpdateFile(
                 absPath,
                 htmlContent,
                 { currentUser, primaryGroup }
             );
-
             if (!saveResult.success) {
                 this.showMessage(`Error: ${saveResult.error}`, true);
                 return;
             }
-
             if (!(await FileSystemManager.save())) {
                 this.showMessage("Critical Error: Failed to persist file system changes.", true);
                 return;
             }
-
             this.showMessage(`Session saved to '${filename}'.`, true);
         } catch (e) {
             this.showMessage(`An unexpected error occurred during save: ${e.message}`, true);
@@ -585,15 +502,11 @@ const ChidiApp = {
             this.showMessage("Error: No file to export.", true);
             return;
         }
-
         const html = this._packageSessionAsHTML();
         if (!html) return;
-
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentFile.name.replace(/\.(md|txt)$/, '')}_session.html`;
+        const a = Utils.createElement('a', { href: url, download: `${currentFile.name.replace(/\.(md|txt)$/, '')}_session.html` });
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -617,18 +530,11 @@ const ChidiApp = {
                         <button id="chidi-suggestQuestionsBtn" class="chidi-btn" title="Suggest questions about the document">Study</button>
                         <button id="chidi-askAllFilesBtn" class="chidi-btn" title="Ask a question across all loaded documents">Ask</button>
                     </div>
-                    
                 </div>
             </header>
-
             <main id="chidi-markdownDisplay" class="chidi-markdown-content">
                 <p class="chidi-placeholder-text">Awaiting file selection...</p>
             </main>
-
-            <div id="chidi-ask-input-container" class="chidi-ask-container chidi-hidden">
-                <textarea id="chidi-ask-input" class="chidi-ask-textarea" placeholder="Ask a question across all loaded documents... (Press Enter to submit)"></textarea>
-            </div>
-            
             <footer class="chidi-status-readout">
                 <div id="chidi-fileCountDisplay" class="chidi-status-item">🖹 0</div>
                 <div id="chidi-messageBox" class="chidi-status-message">֎ Standby.</div>

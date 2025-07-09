@@ -28,7 +28,7 @@
             }
             const newMode = parseInt(modeArg, 8);
 
-            if (currentUser !== "root" && node.owner !== currentUser) {
+            if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
                 return {
                     success: false,
                     error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,

@@ -164,7 +164,7 @@ const PaintUI = (() => {
         elements.rectBtn.addEventListener('click', () => managerCallbacks.onToolSelect('rect'));
 
         // Color selection
-        document.querySelectorAll('.paint-color-swatch').forEach(swatch => {
+        elements.container.querySelectorAll('.paint-color-swatch').forEach(swatch => {
             swatch.addEventListener('click', () => managerCallbacks.onColorSelect(swatch.dataset.color));
         });
 

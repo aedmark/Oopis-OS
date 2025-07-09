@@ -10,7 +10,6 @@
 *.appimage
 *.exe
 /release/
-/docs/
 /.idea/
 *.xml
 /.testing/

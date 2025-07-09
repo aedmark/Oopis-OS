@@ -33,6 +33,11 @@ const UserManager = (() => {
         return users[username]?.primaryGroup || null;
     }
 
+    async function userExists(username) {
+        const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
+        return users.hasOwnProperty(username);
+    }
+
     async function register(username, password) {
         const formatValidation = Utils.validateUsernameFormat(username);
         if (!formatValidation.isValid)
@@ -41,13 +46,7 @@ const UserManager = (() => {
                 error: formatValidation.error,
             };
 
-        const users = StorageManager.loadItem(
-            Config.STORAGE_KEYS.USER_CREDENTIALS,
-            "User list",
-            {}
-        );
-
-        if (users[username])
+        if (await userExists(username))
             return {
                 success: false,
                 error: `User '${username}' already exists.`,
@@ -63,6 +62,12 @@ const UserManager = (() => {
 
         GroupManager.createGroup(username);
         GroupManager.addUserToGroup(username, username);
+
+        const users = StorageManager.loadItem(
+            Config.STORAGE_KEYS.USER_CREDENTIALS,
+            "User list",
+            {}
+        );
 
         users[username] = {
             passwordHash: passwordHash,
@@ -153,7 +158,7 @@ const UserManager = (() => {
     async function changePassword(actorUsername, targetUsername, oldPassword, newPassword) {
         const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
 
-        if (!users[targetUsername]) {
+        if (!await userExists(targetUsername)) {
             return { success: false, error: `User '${targetUsername}' not found.` };
         }
 
@@ -338,5 +343,6 @@ const UserManager = (() => {
         changePassword,
         initializeDefaultUsers,
         getPrimaryGroupForUser,
+        userExists
     };
 })();

@@ -161,7 +161,6 @@ const EditorManager = (() => {
 
             // Re-run find to keep matches fresh
             state.findState.matches = _findMatches(state.findState.query, state.currentContent, state.findState.isCaseSensitive, state.findState.isRegex);
-            state.findState.currentIndex = -1;
 
             // Update UI elements
             EditorUI.updateFindUI(state.findState);
@@ -216,35 +215,17 @@ const EditorManager = (() => {
         onFindNext: () => {
             if (state.findState.matches.length > 0) {
                 state.findState.currentIndex = (state.findState.currentIndex + 1) % state.findState.matches.length;
+                EditorUI.updateFindUI(state.findState); // Update the UI with the new index
                 EditorUI.highlightMatch(state.findState.matches[state.findState.currentIndex]);
             }
         },
         onFindPrev: () => {
             if (state.findState.matches.length > 0) {
                 state.findState.currentIndex = (state.findState.currentIndex - 1 + state.findState.matches.length) % state.findState.matches.length;
+                EditorUI.updateFindUI(state.findState); // Update the UI with the new index
                 EditorUI.highlightMatch(state.findState.matches[state.findState.currentIndex]);
             }
         },
-        onReplace: (replaceTerm) => {
-            const { matches, currentIndex } = state.findState;
-            if (currentIndex === -1 || !matches[currentIndex]) return;
-            const match = matches[currentIndex];
-            const newContent = state.currentContent.substring(0, match.start) + replaceTerm + state.currentContent.substring(match.end);
-            EditorUI.setContent(newContent); // This will trigger onContentUpdate and a re-find
-        },
-        onReplaceAll: (replaceTerm) => {
-            const { matches } = state.findState;
-            if (matches.length === 0) return;
-            let newContent = state.currentContent;
-            let offset = 0;
-            for (const match of matches) {
-                const start = match.start + offset;
-                const end = match.end + offset;
-                newContent = newContent.substring(0, start) + replaceTerm + newContent.substring(end);
-                offset += replaceTerm.length - (end - start);
-            }
-            EditorUI.setContent(newContent);
-        }
     };
 
     return { enter, exit, isActive: () => state.isActive };

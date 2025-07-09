@@ -74,11 +74,8 @@ const EditorUI = (() => {
 
     function _buildFindBar() {
         elements.findInput = Utils.createElement('input', { type: 'text', placeholder: 'Find...', className: 'editor-find-input' });
-        elements.replaceInput = Utils.createElement('input', { type: 'text', placeholder: 'Replace...', className: 'editor-find-input' });
         elements.findNextButton = Utils.createElement('button', { className: 'btn', textContent: 'Next' });
         elements.findPrevButton = Utils.createElement('button', { className: 'btn', textContent: 'Prev' });
-        elements.replaceButton = Utils.createElement('button', { className: 'btn', textContent: 'Replace' });
-        elements.replaceAllButton = Utils.createElement('button', { className: 'btn', textContent: 'All' });
         elements.findCloseButton = Utils.createElement('button', { className: 'btn', textContent: '×' });
         elements.findInfo = Utils.createElement('span', { className: 'editor-find-info' });
         elements.findError = Utils.createElement('span', { className: 'editor-find-error' });
@@ -87,7 +84,6 @@ const EditorUI = (() => {
 
         elements.findBar = Utils.createElement('div', { className: 'editor-findbar hidden' }, [
             elements.findInput, elements.findPrevButton, elements.findNextButton, elements.findInfo,
-            elements.replaceInput, elements.replaceButton, elements.replaceAllButton,
             elements.caseSensitiveToggle, elements.regexToggle, elements.findError,
             elements.findCloseButton
         ]);
@@ -102,7 +98,9 @@ const EditorUI = (() => {
     function _render(state) {
         elements.fileName.textContent = state.currentFilePath;
         elements.textArea.value = state.currentContent;
+        // Conditionally show/hide UI elements based on the file mode
         elements.formattingToolbar.classList.toggle('hidden', state.fileMode !== 'markdown');
+        elements.previewButton.classList.toggle('hidden', state.fileMode !== 'markdown' && state.fileMode !== 'html');
         updateStatusBar(state);
         updateLineNumbers(state.currentContent);
         renderPreview(state.fileMode, state.currentContent);
@@ -156,7 +154,8 @@ const EditorUI = (() => {
     function applySettings(settings) {
         if (!elements.textArea) return;
         elements.textArea.style.whiteSpace = settings.wordWrap ? 'pre-wrap' : 'pre';
-        elements.textArea.style.wordBreak = settings.wordWrap ? 'break-all' : 'normal';
+        elements.textArea.style.overflowWrap = settings.wordWrap ? 'break-word' : 'normal';
+        elements.textArea.style.wordBreak = 'normal';
         elements.wordWrapButton.classList.toggle('active', settings.wordWrap);
     }
 
@@ -227,7 +226,6 @@ const EditorUI = (() => {
 
     function highlightMatch(match) {
         if (!elements.textArea || !match) return;
-        elements.textArea.focus();
         elements.textArea.setSelectionRange(match.start, match.end);
         const lines = elements.textArea.value.substring(0, match.start).split('\n').length;
         const lineHeight = elements.textArea.scrollHeight / elements.textArea.value.split('\n').length;
@@ -269,20 +267,44 @@ const EditorUI = (() => {
         elements.previewButton.addEventListener('click', () => managerCallbacks.onToggleViewMode());
 
         // Find Bar
+        // Find Bar
         const triggerFind = () => {
             managerCallbacks.onFind(elements.findInput.value, {
                 isCaseSensitive: elements.caseSensitiveToggle.classList.contains('active'),
                 isRegex: elements.regexToggle.classList.contains('active')
             });
         };
+
+        // Trigger a find ONLY when the user types in the input box.
         elements.findInput.addEventListener('input', triggerFind);
-        elements.findInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); managerCallbacks.onFindNext(); }});
+
+        // Handle Enter key for quick navigation.
+        elements.findInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // If there are matches, go to the next one. If not, trigger a new find.
+                if (managerCallbacks.getState && managerCallbacks.getState().findState.matches.length > 0) {
+                    managerCallbacks.onFindNext();
+                } else {
+                    triggerFind();
+                }
+            }
+        });
+
+        // Navigation buttons should NOT trigger a new search.
         elements.findNextButton.addEventListener('click', () => managerCallbacks.onFindNext());
         elements.findPrevButton.addEventListener('click', () => managerCallbacks.onFindPrev());
-        elements.replaceButton.addEventListener('click', () => managerCallbacks.onReplace(elements.replaceInput.value));
-        elements.replaceAllButton.addEventListener('click', () => managerCallbacks.onReplaceAll(elements.replaceInput.value));
-        elements.caseSensitiveToggle.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); triggerFind(); });
-        elements.regexToggle.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); triggerFind(); });
+
+        // Toggles SHOULD trigger a find to update matches based on new criteria.
+        elements.caseSensitiveToggle.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            triggerFind();
+        });
+        elements.regexToggle.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            triggerFind();
+        });
+
         elements.findCloseButton.addEventListener('click', () => elements.findBar.classList.add('hidden'));
 
         // Keyboard shortcuts

@@ -35,12 +35,7 @@
                 };
             }
 
-            const users = StorageManager.loadItem(
-                Config.STORAGE_KEYS.USER_CREDENTIALS,
-                "User list",
-                {}
-            );
-            if (!users[username] && username !== Config.USER.DEFAULT_NAME) {
+            if (!await UserManager.userExists(username) && username !== Config.USER.DEFAULT_NAME) {
                 return {
                     success: false,
                     error: `usermod: user '${username}' does not exist.`,

@@ -1,4 +1,4 @@
-# OopisOS v3.7: Your Friendly Neighborhood LLM Edition
+# OopisOS v4.0: Your Friendly Neighborhood LLM Edition
 
 ```
    /$$$$$$                      /$$            /$$$$$$   /$$$$$$

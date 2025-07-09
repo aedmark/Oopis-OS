@@ -55,26 +55,10 @@
     border-radius: var(--border-radius-sm);
     overflow-y: auto;
     line-height: 1.6;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-accent-green) var(--color-background-darkest);
 }
 
 .chidi-markdown-content>*+* {
     margin-top: var(--spacing-md);
-}
-
-#chidi-markdownDisplay::-webkit-scrollbar {
-    width: 8px;
-}
-
-#chidi-markdownDisplay::-webkit-scrollbar-track {
-    background: var(--color-background-darkest);
-}
-
-#chidi-markdownDisplay::-webkit-scrollbar-thumb {
-    background-color: var(--color-accent-green);
-    border-radius: 4px;
-    border: 2px solid var(--color-background-darkest);
 }
 
 .chidi-markdown-content h1,

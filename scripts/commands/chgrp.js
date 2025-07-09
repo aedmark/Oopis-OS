@@ -12,7 +12,7 @@
             const pathInfo = validatedPaths[1];
             const node = pathInfo.node;
 
-            if (currentUser !== "root" && node.owner !== currentUser) {
+            if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
                 return {
                     success: false,
                     error: `chgrp: changing group of '${pathInfo.resolvedPath}': Operation not permitted`,

@@ -9,13 +9,7 @@
             const { args, currentUser } = context;
             const targetUser = args.length > 0 ? args[0] : currentUser;
 
-            const users = StorageManager.loadItem(
-                Config.STORAGE_KEYS.USER_CREDENTIALS,
-                "User list",
-                {}
-            );
-
-            if (!users[targetUser] && targetUser !== Config.USER.DEFAULT_NAME) {
+            if (!await UserManager.userExists(targetUser) && targetUser !== Config.USER.DEFAULT_NAME) {
                 return {
                     success: false,
                     error: `groups: user '${targetUser}' does not exist`,

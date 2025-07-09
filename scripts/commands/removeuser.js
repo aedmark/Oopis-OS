@@ -38,8 +38,7 @@
                 };
             }
 
-            const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
-            if (!users.hasOwnProperty(usernameToRemove)) {
+            if (!await UserManager.userExists(usernameToRemove)) {
                 return {
                     success: true,
                     output: `removeuser: User '${usernameToRemove}' does not exist. No action taken.`,

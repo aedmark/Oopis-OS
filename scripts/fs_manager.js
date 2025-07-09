@@ -764,6 +764,17 @@ MESSAGES.WELCOME_SUFFIX=!`;
             success: true
         };
     }
+
+    /**
+     * Checks if a user has administrative rights to modify a node's metadata (owner/permissions).
+     * @param {object} node The filesystem node in question.
+     * @param {string} username The name of the user attempting the action.
+     * @returns {boolean} True if the user is the owner or root.
+     */
+    function canUserModifyNode(node, username) {
+        return username === 'root' || node.owner === username;
+    }
+
     return {
         createUserHomeDirectory,
         save,
@@ -785,5 +796,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         _createNewDirectoryNode,
         deleteNodeRecursive,
         createOrUpdateFile,
+        canUserModifyNode,
     };
 })();

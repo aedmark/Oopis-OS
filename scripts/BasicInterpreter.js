@@ -47,6 +47,10 @@ class BasicInterpreter {
 
         let currentIndex = sortedLines.indexOf(this.programCounter);
 
+        // --- SOLUTION: Step Governor ---
+        const MAX_STEPS_PER_YIELD = 1000;
+        let stepCounter = 0;
+
         while (currentIndex < sortedLines.length && currentIndex > -1) {
             this.programCounter = sortedLines[currentIndex];
             const pcBeforeExecute = this.programCounter;
@@ -67,6 +71,13 @@ class BasicInterpreter {
                 currentIndex = newIndex;
             } else {
                 currentIndex++;
+            }
+
+            // --- SOLUTION: Yielding Mechanism ---
+            stepCounter++;
+            if (stepCounter >= MAX_STEPS_PER_YIELD) {
+                await new Promise(resolve => setTimeout(resolve, 0)); // Yield to event loop
+                stepCounter = 0;
             }
         }
     }

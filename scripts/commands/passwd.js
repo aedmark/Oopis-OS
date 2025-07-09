@@ -19,8 +19,7 @@
                 return { success: false, error: "passwd: you may only change your own password." };
             }
 
-            const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
-            if (!users[targetUsername]) {
+            if (!await UserManager.userExists(targetUsername)) {
                 return { success: false, error: `passwd: user '${targetUsername}' does not exist.` };
             }
 
