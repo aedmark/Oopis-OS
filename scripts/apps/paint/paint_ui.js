@@ -22,7 +22,6 @@ const PaintUI = (() => {
 
         _attachEventListeners();
 
-        // Show the fully constructed container using the correct manager
         AppLayerManager.show(elements.container);
 
         renderCanvas(initialState);
@@ -31,12 +30,9 @@ const PaintUI = (() => {
     }
 
     function hideAndReset() {
-        // Hide the application layer
         if (elements.container) {
             AppLayerManager.hide();
         }
-
-        // Reset internal state
         elements = {};
         eventCallbacks = {};
         canvasDimensions = { width: 0, height: 0 };
@@ -124,11 +120,6 @@ const PaintUI = (() => {
         brushPlusButton.addEventListener('click', () => eventCallbacks.onBrushSizeChange(1));
         brushGroup.append(brushMinusButton, elements.brushSizeSpan, brushPlusButton);
 
-        const charGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
-        elements.charDisplay = Utils.createElement('button', { textContent: initialState.activeCharacter, className: 'paint-toolbar__button' });
-        elements.charDisplay.addEventListener('click', () => _showCharModal());
-        charGroup.append(elements.charDisplay);
-
         const colorGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'];
         colors.forEach(color => {
@@ -137,22 +128,19 @@ const PaintUI = (() => {
             colorGroup.appendChild(swatch);
         });
 
-        const findReplaceButton = Utils.createElement('button', { textContent: 'Find/Replace', className: 'paint-toolbar__button' });
-        findReplaceButton.addEventListener('click', () => _showFindReplaceModal());
-
         const actionGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         elements.undoButton = Utils.createElement('button', { textContent: 'Undo', className: 'paint-toolbar__button' });
         elements.redoButton = Utils.createElement('button', { textContent: 'Redo', className: 'paint-toolbar__button' });
         elements.undoButton.addEventListener('click', () => eventCallbacks.onUndo());
         elements.redoButton.addEventListener('click', () => eventCallbacks.onRedo());
-        actionGroup.append(elements.undoButton, elements.redoButton, findReplaceButton);
+        actionGroup.append(elements.undoButton, elements.redoButton);
 
         const viewGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         elements.gridButton = Utils.createElement('button', { textContent: 'Grid', className: 'paint-toolbar__button' });
         elements.gridButton.addEventListener('click', () => eventCallbacks.onGridToggle());
         viewGroup.append(elements.gridButton);
 
-        elements.toolbar.append(toolGroup, brushGroup, charGroup, colorGroup, actionGroup, viewGroup);
+        elements.toolbar.append(toolGroup, brushGroup, colorGroup, actionGroup, viewGroup);
     }
 
     function _showCharModal() {
