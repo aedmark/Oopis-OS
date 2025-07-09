@@ -16,6 +16,8 @@ const PaintManager = (() => {
         redoStack: [],
         isGridVisible: false,
         isDrawing: false,
+        startCoords: null, // For shape drawing
+        previewCanvasData: null // For shape previews
     };
 
     function _resetState() {
@@ -34,6 +36,8 @@ const PaintManager = (() => {
             redoStack: [],
             isGridVisible: false,
             isDrawing: false,
+            startCoords: null,
+            previewCanvasData: null
         };
     }
 
@@ -50,34 +54,75 @@ const PaintManager = (() => {
         return data;
     }
 
-    function _drawAt({ x, y }) {
-        const halfBrush = Math.floor(state.brushSize / 2);
+    function _setCell(x, y, data, tool, char, color) {
+        if (y >= 0 && y < state.canvasDimensions.height && x >= 0 && x < state.canvasDimensions.width) {
+            const cell = data[y][x];
+            const newChar = tool === 'eraser' ? ' ' : char;
+            const newColor = tool === 'eraser' ? '#FFFFFF' : color;
+            const newBg = '#000000';
+
+            if (cell.char !== newChar || cell.fg !== newColor || cell.bg !== newBg) {
+                cell.char = newChar;
+                cell.fg = newColor;
+                cell.bg = newBg;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _drawAt(coords, data, tool, char, color, brushSize) {
+        const halfBrush = Math.floor(brushSize / 2);
         let changed = false;
 
         for (let i = -halfBrush; i <= halfBrush; i++) {
             for (let j = -halfBrush; j <= halfBrush; j++) {
-                const currentX = x + j;
-                const currentY = y + i;
-
-                if (currentY >= 0 && currentY < state.canvasDimensions.height && currentX >= 0 && currentX < state.canvasDimensions.width) {
-                    const cell = state.canvasData[currentY][currentX];
-                    const newChar = state.currentTool === 'eraser' ? ' ' : state.activeCharacter;
-                    const newColor = state.currentTool === 'eraser' ? '#FFFFFF' : state.activeColor;
-                    const newBg = '#000000';
-
-                    if (cell.char !== newChar || cell.fg !== newColor || cell.bg !== newBg) {
-                        cell.char = newChar;
-                        cell.fg = newColor;
-                        cell.bg = newBg;
-                        changed = true;
-                    }
+                if (_setCell(coords.x + j, coords.y + i, data, tool, char, color)) {
+                    changed = true;
                 }
             }
         }
-        if (changed) {
-            PaintUI.renderCanvas(state);
-            state.isDirty = true;
-            PaintUI.updateStatusBar(state);
+        return changed;
+    }
+
+    // Bresenham's line algorithm
+    function _drawLine(start, end, data, tool, char, color) {
+        let { x: x1, y: y1 } = start;
+        let { x: x2, y: y2 } = end;
+        const dx = Math.abs(x2 - x1);
+        const dy = -Math.abs(y2 - y1);
+        const sx = x1 < x2 ? 1 : -1;
+        const sy = y1 < y2 ? 1 : -1;
+        let err = dx + dy;
+
+        while (true) {
+            _setCell(x1, y1, data, tool, char, color);
+            if (x1 === x2 && y1 === y2) break;
+            const e2 = 2 * err;
+            if (e2 >= dy) {
+                err += dy;
+                x1 += sx;
+            }
+            if (e2 <= dx) {
+                err += dx;
+                y1 += sy;
+            }
+        }
+    }
+
+    function _drawRect(start, end, data, tool, char, color) {
+        const x1 = Math.min(start.x, end.x);
+        const y1 = Math.min(start.y, end.y);
+        const x2 = Math.max(start.x, end.x);
+        const y2 = Math.max(start.y, end.y);
+
+        for (let x = x1; x <= x2; x++) {
+            _setCell(x, y1, data, tool, char, color);
+            _setCell(x, y2, data, tool, char, color);
+        }
+        for (let y = y1; y <= y2; y++) {
+            _setCell(x1, y, data, tool, char, color);
+            _setCell(x2, y, data, tool, char, color);
         }
     }
 
@@ -103,12 +148,6 @@ const PaintManager = (() => {
             PaintUI.updateToolbar(state);
             PaintUI.updateStatusBar(state);
         },
-        onZoomChange: (delta) => {
-            const newZoom = state.zoomLevel + delta;
-            state.zoomLevel = Math.max(25, Math.min(newZoom, 400));
-            PaintUI.renderCanvas(state);
-            PaintUI.updateStatusBar(state);
-        },
         onGridToggle: () => {
             state.isGridVisible = !state.isGridVisible;
             PaintUI.updateToolbar(state);
@@ -116,23 +155,54 @@ const PaintManager = (() => {
         },
         onCanvasMouseDown: (coords) => {
             state.isDrawing = true;
-            _drawAt(coords);
+            _saveUndoState();
+
+            if (state.currentTool === 'pencil' || state.currentTool === 'eraser') {
+                if (_drawAt(coords, state.canvasData, state.currentTool, state.activeCharacter, state.activeColor, state.brushSize)) {
+                    PaintUI.renderCanvas(state);
+                    state.isDirty = true;
+                    PaintUI.updateStatusBar(state);
+                }
+            } else if (['line', 'rect'].includes(state.currentTool)) {
+                state.startCoords = coords;
+                state.previewCanvasData = JSON.parse(JSON.stringify(state.canvasData));
+            }
         },
         onCanvasMouseMove: (coords) => {
-            if (state.isDrawing) {
-                _drawAt(coords);
+            if (!state.isDrawing) return;
+
+            if (state.currentTool === 'pencil' || state.currentTool === 'eraser') {
+                if (_drawAt(coords, state.canvasData, state.currentTool, state.activeCharacter, state.activeColor, state.brushSize)) {
+                    PaintUI.renderCanvas(state);
+                    state.isDirty = true;
+                    PaintUI.updateStatusBar(state);
+                }
+            } else if (['line', 'rect'].includes(state.currentTool) && state.startCoords) {
+                state.previewCanvasData = JSON.parse(JSON.stringify(state.canvasData));
+                const drawFunc = state.currentTool === 'line' ? _drawLine : _drawRect;
+                drawFunc(state.startCoords, coords, state.previewCanvasData, state.currentTool, state.activeCharacter, state.activeColor);
+                PaintUI.renderCanvas({ ...state, canvasData: state.previewCanvasData });
             }
         },
         onCanvasMouseUp: (coords) => {
-            if (state.isDrawing) {
-                state.isDrawing = false;
+            if (!state.isDrawing) return;
+            state.isDrawing = false;
+
+            if (['line', 'rect'].includes(state.currentTool) && state.startCoords) {
+                const drawFunc = state.currentTool === 'line' ? _drawLine : _drawRect;
+                drawFunc(state.startCoords, coords, state.canvasData, state.currentTool, state.activeCharacter, state.activeColor);
+                PaintUI.renderCanvas(state);
+                state.isDirty = true;
                 _saveUndoState();
             }
+
+            state.startCoords = null;
+            state.previewCanvasData = null;
         },
         onUndo: () => {
             if (state.undoStack.length > 1) {
                 state.redoStack.push(state.undoStack.pop());
-                state.canvasData = JSON.parse(JSON.stringify(state.undoStack[state.undoStack.length - 1]));
+                state.canvasData = JSON.parse(JSON.stringify(state.undoStack.at(-1)));
                 PaintUI.renderCanvas(state);
                 PaintUI.updateToolbar(state);
             }
@@ -144,6 +214,24 @@ const PaintManager = (() => {
                 state.canvasData = JSON.parse(JSON.stringify(nextState));
                 PaintUI.renderCanvas(state);
                 PaintUI.updateToolbar(state);
+            }
+        },
+        onReplaceAll: (findChar, replaceChar) => {
+            if (!findChar || !replaceChar || findChar === replaceChar) return;
+            let changed = false;
+            state.canvasData.forEach(row => {
+                row.forEach(cell => {
+                    if (cell.char === findChar) {
+                        cell.char = replaceChar;
+                        changed = true;
+                    }
+                });
+            });
+            if (changed) {
+                PaintUI.renderCanvas(state);
+                state.isDirty = true;
+                _saveUndoState();
+                PaintUI.updateStatusBar(state);
             }
         },
         onSaveRequest: async () => {
@@ -169,15 +257,20 @@ const PaintManager = (() => {
         }
     };
 
-    function _saveUndoState() {
-        if (!state.isDirty) return; // Don't save state if nothing changed
-        state.redoStack = [];
+    const debouncedSaveUndo = Utils.debounce(() => {
         state.undoStack.push(JSON.parse(JSON.stringify(state.canvasData)));
         if (state.undoStack.length > 50) {
             state.undoStack.shift();
         }
+        state.redoStack = [];
         PaintUI.updateToolbar(state);
+    }, 500);
+
+
+    function _saveUndoState() {
+        debouncedSaveUndo();
     }
+
 
     function enter(filePath, fileContent) {
         if (state.isActive) {

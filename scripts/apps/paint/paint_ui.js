@@ -39,14 +39,12 @@ const PaintUI = (() => {
     }
 
     function renderCanvas(state) {
-        const { canvasData, canvasDimensions, zoomLevel } = state;
+        const { canvasData, canvasDimensions } = state;
         if (!elements.canvas) return;
 
         elements.canvas.innerHTML = '';
         elements.canvas.style.gridTemplateColumns = `repeat(${canvasDimensions.width}, 1fr)`;
         elements.canvas.style.gridTemplateRows = `repeat(${canvasDimensions.height}, 1fr)`;
-        elements.canvas.style.fontSize = `${zoomLevel / 100}em`;
-
 
         for (let y = 0; y < canvasDimensions.height; y++) {
             for (let x = 0; x < canvasDimensions.width; x++) {
@@ -94,9 +92,9 @@ const PaintUI = (() => {
 
     function updateStatusBar(state) {
         if (!elements.statusBar) return;
-        const { currentTool, activeColor, brushSize, zoomLevel, isDirty } = state;
+        const { currentTool, activeColor, brushSize, isDirty } = state;
         const dirtyIndicator = isDirty ? ' *' : '';
-        elements.statusBar.textContent = `Tool: ${currentTool} | Color: ${activeColor} | Brush: ${brushSize} | Zoom: ${zoomLevel}%${dirtyIndicator}`;
+        elements.statusBar.textContent = `Tool: ${currentTool} | Char: ${state.activeCharacter} | Color: ${activeColor} | Brush: ${brushSize}${dirtyIndicator}`;
     }
 
     function toggleGrid(isVisible) {
@@ -107,15 +105,20 @@ const PaintUI = (() => {
     function _buildToolbar(initialState) {
         elements.toolbar = Utils.createElement('div', { id: 'paint-toolbar' });
 
-        // Tool Group
-        const toolGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
-        const pencilButton = Utils.createElement('button', { textContent: 'Pencil', className: 'tool-btn paint-toolbar__button', 'data-tool': 'pencil' });
-        pencilButton.addEventListener('click', () => eventCallbacks.onToolSelect('pencil'));
-        const eraserButton = Utils.createElement('button', { textContent: 'Eraser', className: 'tool-btn paint-toolbar__button', 'data-tool': 'eraser' });
-        eraserButton.addEventListener('click', () => eventCallbacks.onToolSelect('eraser'));
-        toolGroup.append(pencilButton, eraserButton);
+        const createToolButton = (text, tool) => {
+            const btn = Utils.createElement('button', { textContent: text, className: 'tool-btn paint-toolbar__button', 'data-tool': tool });
+            btn.addEventListener('click', () => eventCallbacks.onToolSelect(tool));
+            return btn;
+        };
 
-        // Brush Size Group
+        const toolGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
+        toolGroup.append(
+            createToolButton('Pencil', 'pencil'),
+            createToolButton('Eraser', 'eraser'),
+            createToolButton('Line', 'line'),
+            createToolButton('Rect', 'rect')
+        );
+
         const brushGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         const brushMinusButton = Utils.createElement('button', { textContent: '-', className: 'paint-toolbar__button' });
         brushMinusButton.addEventListener('click', () => eventCallbacks.onBrushSizeChange(-1));
@@ -124,13 +127,11 @@ const PaintUI = (() => {
         brushPlusButton.addEventListener('click', () => eventCallbacks.onBrushSizeChange(1));
         brushGroup.append(brushMinusButton, elements.brushSizeSpan, brushPlusButton);
 
-        // Character Group
         const charGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         elements.charDisplay = Utils.createElement('button', { textContent: initialState.activeCharacter, className: 'paint-toolbar__button' });
         elements.charDisplay.addEventListener('click', () => _showCharModal());
         charGroup.append(elements.charDisplay);
 
-        // Color Group
         const colorGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'];
         colors.forEach(color => {
@@ -139,15 +140,16 @@ const PaintUI = (() => {
             colorGroup.appendChild(swatch);
         });
 
-        // Action Group
+        const findReplaceButton = Utils.createElement('button', { textContent: 'Find/Replace', className: 'paint-toolbar__button' });
+        findReplaceButton.addEventListener('click', () => _showFindReplaceModal());
+
         const actionGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         elements.undoButton = Utils.createElement('button', { textContent: 'Undo', className: 'paint-toolbar__button' });
         elements.redoButton = Utils.createElement('button', { textContent: 'Redo', className: 'paint-toolbar__button' });
         elements.undoButton.addEventListener('click', () => eventCallbacks.onUndo());
         elements.redoButton.addEventListener('click', () => eventCallbacks.onRedo());
-        actionGroup.append(elements.undoButton, elements.redoButton);
+        actionGroup.append(elements.undoButton, elements.redoButton, findReplaceButton);
 
-        // View Group
         const viewGroup = Utils.createElement('div', { className: 'paint-toolbar__group' });
         elements.gridButton = Utils.createElement('button', { textContent: 'Grid', className: 'paint-toolbar__button' });
         elements.gridButton.addEventListener('click', () => eventCallbacks.onGridToggle());
@@ -157,11 +159,11 @@ const PaintUI = (() => {
     }
 
     function _showCharModal() {
-        const charModalBody = Utils.createElement('div', { className: 'paint-modal-body' });
+        const charModalBody = Utils.createElement('div', { className: 'paint-modal-body', style: { display: 'flex', 'flex-wrap': 'wrap', gap: '5px' } });
         const chars = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'.split('');
 
         chars.forEach(char => {
-            const charButton = Utils.createElement('button', { textContent: char, className: 'paint-toolbar__button' });
+            const charButton = Utils.createElement('button', { textContent: char, className: 'btn' });
             charButton.addEventListener('click', () => {
                 eventCallbacks.onCharSelect(char);
                 ModalManager.hide();
@@ -170,11 +172,38 @@ const PaintUI = (() => {
         });
 
         ModalManager.request({
-            context: 'graphical',
+            context: 'graphical-input',
             title: 'Select Character',
-            body: charModalBody,
+            bodyElement: charModalBody,
+            hideInput: true,
             hideConfirm: true,
-            cancelText: "Close"
+            cancelText: 'Close',
+            onCancel: () => ModalManager.hide()
+        });
+    }
+
+    function _showFindReplaceModal() {
+        const findInput = Utils.createElement('input', { type: 'text', maxLength: 1, placeholder: 'Find Char' });
+        const replaceInput = Utils.createElement('input', { type: 'text', maxLength: 1, placeholder: 'Replace Char' });
+
+        const body = Utils.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } }, [
+            Utils.createElement('p', { textContent: 'Replace all occurrences of a character.' }),
+            findInput,
+            replaceInput
+        ]);
+
+        ModalManager.request({
+            context: 'graphical-input',
+            messageLines: ['Find and Replace'],
+            bodyElement: body,
+            hideInput: true,
+            confirmText: 'Replace All',
+            onConfirm: () => {
+                const findChar = findInput.value[0];
+                const replaceChar = replaceInput.value[0];
+                eventCallbacks.onReplaceAll(findChar, replaceChar);
+                ModalManager.hide();
+            }
         });
     }
 
