@@ -22,6 +22,7 @@ const PaintUI = (() => {
 
         _attachEventListeners();
 
+        // Show the fully constructed container using the correct manager
         AppLayerManager.show(elements.container);
 
         renderCanvas(initialState);
@@ -30,9 +31,12 @@ const PaintUI = (() => {
     }
 
     function hideAndReset() {
+        // Hide the application layer
         if (elements.container) {
             AppLayerManager.hide();
         }
+
+        // Reset internal state
         elements = {};
         eventCallbacks = {};
         canvasDimensions = { width: 0, height: 0 };
