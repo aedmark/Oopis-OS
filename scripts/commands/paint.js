@@ -4,11 +4,12 @@
     const paintCommandDefinition = {
         commandName: "paint",
         argValidation: {
-            exact: 1,
-            error: "a filename is required. Usage: paint <filename.oopic>"
+            max: 1,
+            error: "Usage: paint [filename.oopic]"
         },
         pathValidation: [{
             argIndex: 0,
+            optional: true, // It's optional, a new file can be created.
             options: {
                 allowMissing: true,
                 expectedType: 'file'
@@ -22,7 +23,7 @@
                 return { success: false, error: "paint: Can only be run in interactive mode." };
             }
 
-            // Verify that the new, required modules are loaded.
+            // Verify that the required application modules are present.
             if (typeof PaintManager === 'undefined' || typeof PaintUI === 'undefined') {
                 return {
                     success: false,
@@ -30,32 +31,30 @@
                 };
             }
 
-            const pathInfo = validatedPaths[0];
-            const filePath = pathInfo ? pathInfo.resolvedPath : (args[0] || null);
+            const pathArg = args[0] || `untitled-${new Date().getTime()}.oopic`;
+            const pathInfo = validatedPaths[0] || FileSystemManager.validatePath("paint", pathArg, { allowMissing: true });
+            const filePath = pathInfo.resolvedPath;
             let fileContent = "";
 
+            if (Utils.getFileExtension(filePath) !== 'oopic') {
+                return { success: false, error: `paint: can only edit .oopic files.` };
+            }
+
             if (pathInfo && pathInfo.node) {
-                // Ensure we are only opening .oopic files
-                if (Utils.getFileExtension(filePath) !== 'oopic') {
-                    return { success: false, error: `paint: can only edit .oopic files.` };
-                }
-                // Check read permissions before trying to load content
+                // Check read permissions before trying to load content.
                 if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
                     return { success: false, error: `paint: '${filePath}': Permission denied` };
                 }
                 fileContent = pathInfo.node.content || "";
-            } else if (filePath && Utils.getFileExtension(filePath) !== 'oopic') {
-                // Ensure new files also have the correct extension
-                return { success: false, error: `paint: new file must have .oopic extension.` };
             }
 
             // The command's only job is to call the manager's entry point.
-            await PaintManager.enter(filePath, fileContent);
+            PaintManager.enter(filePath, fileContent);
 
             // The command succeeds by launching the app. The app itself now handles its own lifecycle.
             return {
                 success: true,
-                output: ""
+                output: "" // The UI appears instantly, no need for a message.
             };
         }
     };
@@ -72,30 +71,18 @@ DESCRIPTION
        by 24 characters high.
 
        If a <filename> is provided, it will be opened. If it does not
-       exist, it will be created upon saving. Files should have the
+       exist, it will be created upon saving. Files must have the
        '.oopic' extension.
 
-CONTROLS
-       Mouse
-              Click or click-and-drag on the canvas to draw with the
-              selected tool, character, and color.
-
-       Keyboard
-              P - Select the Pencil tool.
-              E - Select the Eraser tool.
-              1-6 - Select a color from the palette.
-              Any other character key - Set the drawing character.
-
 KEYBOARD SHORTCUTS
-       Ctrl+S
-              Save the current artwork and exit the editor.
-       Ctrl+O
-              Exit the editor. If there are unsaved changes, you will be
-              prompted to confirm before discarding them.
-       Ctrl+Z
-              Undo the last stroke.
-       Ctrl+Y / Ctrl+Shift+Z
-              Redo the last undone stroke.`;
+       P - Pencil      E - Eraser      L - Line      R - Rect
+       G - Toggle Grid
+       1-7 - Select Color (Red, Green, Blue, Yellow, Magenta, Cyan, White)
+
+       Ctrl+S - Save and Exit
+       Ctrl+O - Exit (prompts if unsaved)
+       Ctrl+Z - Undo
+       Ctrl+Y - Redo`;
 
     CommandRegistry.register("paint", paintCommandDefinition, paintDescription, paintHelpText);
 })();

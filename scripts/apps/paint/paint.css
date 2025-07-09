@@ -1,0 +1,138 @@
+/* OopisOS v4.0 Paint Style Sheet */
+/* ========================================================================== */
+
+.paint-container {
+    display: flex;
+    flex-direction: column;
+    width: 95%;
+    height: 95%;
+    max-width: 1400px;
+    background-color: var(--color-background-dark);
+    border: var(--border-width-thick) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    font-family: var(--font-family-mono), monospace;
+    color: var(--color-text-secondary);
+    box-shadow: var(--shadow-drop-medium);
+    overflow: hidden;
+    user-select: none;
+}
+
+.paint-toolbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-background-medium);
+    border-bottom: var(--border-width) solid var(--color-border-secondary);
+}
+
+.paint-tool-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-xs);
+}
+
+.paint-tool-group .btn, .paint-color-swatch {
+    border-radius: var(--border-radius-sm);
+    border: 1px solid transparent;
+}
+
+.paint-tool-group .btn.active {
+    background-color: var(--color-accent-green);
+    color: var(--color-background-darkest);
+    border-color: var(--color-accent-green);
+}
+
+.paint-color-swatch {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.paint-color-swatch.active {
+    border-color: #fff;
+    box-shadow: 0 0 5px #fff;
+}
+
+.paint-brush-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.paint-brush-size {
+    width: 40px;
+    text-align: center;
+    background-color: var(--color-background-darkest);
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-primary);
+}
+
+.paint-char-selector {
+    width: 40px;
+    height: 28px;
+    text-align: center;
+    background-color: var(--color-background-darkest);
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-lg);
+}
+
+.paint-main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000;
+    min-height: 0;
+    overflow: auto; /* For zoom */
+}
+
+.paint-canvas-container {
+    position: relative;
+    background-color: #111;
+}
+
+.paint-canvas, .paint-preview-canvas {
+    display: grid;
+    font-family: 'VT323', monospace;
+    font-size: 20px; /* This determines the cell size */
+    line-height: 1;
+    cursor: crosshair;
+}
+
+.paint-preview-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.paint-canvas.grid-visible {
+    background-image:
+            linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 1ch 1em; /* Align grid to character size */
+}
+
+.paint-canvas-cell {
+    width: 1ch;
+    height: 1em;
+    text-align: center;
+    white-space: pre;
+    color: #fff;
+}
+
+.paint-statusbar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-xs) var(--spacing-md);
+    background-color: var(--color-background-medium);
+    border-top: var(--border-width) solid var(--color-border-secondary);
+}
