@@ -1,4 +1,4 @@
-# OopisOS Security Policy v3.5
+# OopisOS Security Policy v4.0
 
 ## I. Philosophy
 
