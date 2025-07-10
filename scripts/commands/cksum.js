@@ -1,10 +1,26 @@
+// Corrected File: aedmark/oopis-os-dev/Oopis-OS-DEV-d433f2298e4704d53000b05f98b059a46e2196eb/scripts/commands/cksum.js
 (() => {
     "use strict";
 
     const cksumCommandDefinition = {
         commandName: "cksum",
+        isInputStream: true, // ADDED
         flagDefinitions: [],
         coreLogic: async (context) => {
+            // MODIFIED
+            const {args, inputItems, inputError} = context;
+
+            if (inputError) {
+                return {success: false, error: "cksum: No readable input provided or permission denied."};
+            }
+
+            // MODIFIED
+            const input = inputItems.map(item => item.content).join('\\n');
+
+            if (input === null || input === undefined) {
+                return {success: false, error: "cksum: No readable input provided."};
+            }
+
             const crc32 = (str) => {
                 const table = [];
                 for (let i = 0; i < 256; i++) {
@@ -21,30 +37,13 @@
                 return (crc ^ -1) >>> 0;
             };
 
-            const processContent = (content, fileName) => {
-                const checksum = crc32(content);
-                const byteCount = content.length;
-                if (fileName && fileName !== 'stdin') {
-                    return `${checksum} ${byteCount} ${fileName}`;
-                }
-                return `${checksum} ${byteCount}`;
-            };
-
-            const outputLines = [];
-            let hadError = false;
-
-            for await (const item of Utils.generateInputContent(context)) {
-                if (!item.success) {
-                    outputLines.push(item.error);
-                    hadError = true;
-                    continue;
-                }
-                outputLines.push(processContent(item.content, item.sourceName));
-            }
+            const checksum = crc32(input);
+            const byteCount = input.length;
+            const fileName = inputItems.length === 1 && inputItems[0].sourceName !== 'stdin' ? `${inputItems[0].sourceName}` : '';
 
             return {
-                success: !hadError,
-                output: outputLines.join('\n')
+                success: true,
+                output: `${checksum} ${byteCount}${fileName}`
             };
         }
     };

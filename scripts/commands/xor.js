@@ -1,8 +1,3 @@
-/*
-    Xor's purpose is purely educational, demonstrating a simple XOR cipher.
-    It provides no real security (but someday it might!)
-*/
-
 (() => {
     "use strict";
 
@@ -17,40 +12,20 @@
 
     const xorCommandDefinition = {
         commandName: "xor",
+        isInputStream: true,
+        firstFileArgIndex: 1,
         coreLogic: async (context) => {
-            const { args, options, currentUser } = context;
+            const {args, options, inputItems, inputError} = context;
 
-            let inputData = "";
-            let password = null;
-            let filePath = null;
-
-            if (args.length === 2) {
-                password = args[0];
-                filePath = args[1];
-            } else if (args.length === 1) {
-                if (options.stdinContent !== null) {
-                    password = args[0];
-                } else {
-                    filePath = args[0];
-                }
+            if (inputError) {
+                return {success: false, error: "xor: No readable input provided or permission denied."};
             }
 
-            if (filePath) {
-                const pathValidation = FileSystemManager.validatePath("xor", filePath, { expectedType: 'file' });
-                if (pathValidation.error) {
-                    return { success: false, error: pathValidation.error };
-                }
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    return { success: false, error: `xor: cannot read '${filePath}': Permission denied` };
-                }
-                inputData = pathValidation.node.content || "";
-            } else if (options.stdinContent !== null) {
-                inputData = options.stdinContent;
-            } else {
-                return { success: false, error: "xor: requires data from a file or standard input" };
-            }
+            const inputData = inputItems.map(item => item.content).join('\n');
 
-            if (password === null) {
+            let password = args[0];
+
+            if (password === null || password === undefined) {
                 if (!options.isInteractive) {
                     return { success: false, error: "xor: password must be provided as an argument in non-interactive mode." };
                 }

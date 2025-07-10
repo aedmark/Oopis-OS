@@ -3,40 +3,38 @@
 
     const catCommandDefinition = {
         commandName: "cat",
+        isInputStream: true, // Correctly declares that it handles input streams
         flagDefinitions: [
             { name: "numberLines", short: "-n", long: "--number" }
         ],
-        pathValidation: [
-            { argIndex: 0, optional: true, options: { expectedType: 'file' } }
-        ],
+        // pathValidation is no longer needed here as the stream processor handles it.
         coreLogic: async (context) => {
-            const { flags } = context;
-            const outputParts = [];
-            let lineCounter = 1;
-            let hadError = false;
+            const {flags, inputItems, inputError} = context;
 
-            const processAndNumberContent = (content) => {
-                if (!flags.numberLines) {
-                    return content;
-                }
-                const lines = content.split('\n');
-                const processedLines = (lines.at(-1) === '' ? lines.slice(0, -1) : lines);
-                return processedLines.map(line => `     ${lineCounter++}  ${line}`).join('\n');
-            };
-
-            for await (const item of Utils.generateInputContent(context)) {
-                if (!item.success) {
-                    outputParts.push(item.error);
-                    hadError = true;
-                    continue;
-                }
-                outputParts.push(processAndNumberContent(item.content));
+            // The CommandExecutor now provides an error flag for input stream issues.
+            if (inputError) {
+                return {success: false, error: "cat: Could not read one or more sources."};
             }
 
-            return {
-                success: !hadError,
-                output: outputParts.join('\n')
-            };
+            // The inputItems array contains the content from all sources (stdin or files).
+            const input = inputItems.map(item => item.content).join('');
+
+            if (input === null) {
+                return {success: true, output: ""}; // Handle no input gracefully.
+            }
+
+            if (!flags.numberLines) {
+                return {success: true, output: input};
+            }
+
+            // The rest of the logic remains the same but now operates on a guaranteed input string.
+            let lineCounter = 1;
+            const lines = input.split('\n');
+            // Handles files that may or may not have a trailing newline.
+            const processedLines = (lines.length > 0 && lines.at(-1) === '' ? lines.slice(0, -1) : lines);
+            const numberedOutput = processedLines.map(line => `     ${String(lineCounter++).padStart(5)}  ${line}`).join('\n');
+
+            return {success: true, output: numberedOutput};
         },
     };
 
@@ -52,12 +50,13 @@ DESCRIPTION
        If no files are specified, cat reads from standard input. This makes
        it useful in pipelines for displaying the output of other commands.
 
+OPTIONS
+       -n, --number
+              Number all output lines, starting from 1.
+
 EXAMPLES
        cat file1.txt
               Displays the content of file1.txt.
-
-       cat file1.txt file2.txt
-              Displays the content of file1.txt followed by file2.txt.
 
        cat file1.txt file2.txt > newfile.txt
               Concatenates file1.txt and file2.txt and writes the
@@ -65,9 +64,7 @@ EXAMPLES
               
        ls -l | cat
               Displays the output of the 'ls -l' command, demonstrating
-              how cat handles piped input.
-       -n, --number
-              Number all output lines, starting from 1.`;
+              how cat handles piped input.`;
 
     CommandRegistry.register("cat", catCommandDefinition, catDescription, catHelpText);
 })();

@@ -1,9 +1,3 @@
-/**
- * @file Manages the DOM and user interaction for the OopisOS text editor.
- * This module is the "hands" of the editor; it only renders state and forwards events.
- * @author Andrew Edmark
- * @author Gemini
- */
 const EditorUI = (() => {
     "use strict";
 
@@ -13,80 +7,110 @@ const EditorUI = (() => {
     function buildAndShow(initialState, callbacks) {
         managerCallbacks = callbacks;
 
-        elements.container = Utils.createElement('div', { id: 'editor-container', className: 'editor-container' });
+        // --- Create Main Structure ---
+        elements.container = Utils.createElement('div', {id: 'editor-container', className: 'editor-container'});
 
-        // Header and Toolbar
-        elements.fileName = Utils.createElement('div', { className: 'editor-filename' });
-        elements.wordWrapButton = Utils.createElement('button', { className: 'btn', textContent: 'Wrap' });
-        elements.previewButton = Utils.createElement('button', { className: 'btn', textContent: 'Preview' });
-        elements.findButton = Utils.createElement('button', { className: 'btn', textContent: 'Find' });
+        // --- Header ---
+        elements.titleInput = Utils.createElement('input', {
+            id: 'editor-title',
+            className: 'editor-title-input',
+            type: 'text',
+            value: initialState.currentFilePath || 'Untitled'
+        });
+        const header = Utils.createElement('header', {className: 'editor-header'}, [elements.titleInput]);
 
-        // Build the formatting toolbar (initially hidden)
-        _buildFormattingToolbar();
+        // --- Toolbar ---
+        elements.saveBtn = Utils.createElement('button', {className: 'btn', textContent: '💾'});
+        elements.exitBtn = Utils.createElement('button', {className: 'btn', textContent: 'Exit'});
+        elements.previewBtn = Utils.createElement('button', {className: 'btn', textContent: 'View️'});
+        elements.undoBtn = Utils.createElement('button', {className: 'btn', textContent: '↩'});
+        elements.redoBtn = Utils.createElement('button', {className: 'btn', textContent: '↪'});
+        elements.wordWrapBtn = Utils.createElement('button', {className: 'btn', textContent: 'Wrap'});
 
-        const rightToolbar = Utils.createElement('div', { className: 'editor-toolbar' }, [elements.findButton, elements.wordWrapButton, elements.previewButton]);
-        elements.header = Utils.createElement('header', { className: 'editor-header' }, [elements.fileName, elements.formattingToolbar, rightToolbar]);
+        const toolbarGroup = Utils.createElement('div', {className: 'editor-toolbar-group'}, [elements.previewBtn, elements.wordWrapBtn, elements.undoBtn, elements.redoBtn, elements.saveBtn, elements.exitBtn]);
+        const toolbar = Utils.createElement('div', {className: 'editor-toolbar'}, [toolbarGroup]);
 
 
-        // Find/Replace Bar
-        _buildFindBar();
+        // --- Main Area ---
+        elements.textarea = Utils.createElement('textarea', {
+            id: 'editor-textarea',
+            className: 'editor-textarea',
+        });
+        elements.textarea.value = initialState.currentContent;
+        elements.preview = Utils.createElement('div', {id: 'editor-preview', className: 'editor-preview'});
+        elements.main = Utils.createElement('main', {className: 'editor-main'}, [elements.textarea, elements.preview]);
 
-        // Main content area
-        elements.lineNumbers = Utils.createElement('div', { className: 'editor-linenumbers' });
-        elements.textArea = Utils.createElement('textarea', { className: 'editor-textarea', spellcheck: 'false' });
-        const editorWrapper = Utils.createElement('div', { className: 'editor-pane-wrapper' }, [elements.lineNumbers, elements.textArea]);
-        elements.previewPane = Utils.createElement('div', { className: 'editor-preview' });
-        elements.mainArea = Utils.createElement('main', { className: 'editor-main' }, [editorWrapper, elements.previewPane]);
+        // --- Footer ---
+        elements.dirtyStatus = Utils.createElement('span', {id: 'editor-dirty-status'});
+        elements.statusMessage = Utils.createElement('span', {id: 'editor-status-message'});
+        const footer = Utils.createElement('footer', {className: 'editor-footer'}, [elements.dirtyStatus, elements.statusMessage]);
 
-        // Status Bar
-        elements.statusBar = Utils.createElement('div', { className: 'editor-statusbar' });
-        elements.statusFileName = Utils.createElement('span');
-        elements.statusDirty = Utils.createElement('span', { className: 'editor-dirty-indicator' });
-        elements.statusInfo = Utils.createElement('span');
-        elements.statusBar.append(elements.statusFileName, elements.statusDirty, elements.statusInfo);
-
-        elements.container.append(elements.header, elements.findBar, elements.mainArea, elements.statusBar);
+        // --- Assemble ---
+        elements.container.append(header, toolbar, elements.main, footer);
 
         _addEventListeners();
-        _render(initialState);
+        updateDirtyStatus(initialState.isDirty);
+        updateWindowTitle(initialState.currentFilePath);
+        setWordWrap(initialState.wordWrap);
+        setViewMode(initialState.viewMode, initialState.fileMode, initialState.currentContent);
 
-        AppLayerManager.show(elements.container);
-        elements.textArea.focus();
+        AppLayerManager.show(elements.container); // Use AppLayerManager to display
+        elements.textarea.focus();
     }
 
-    function _buildFormattingToolbar() {
-        const createButton = (text, title, action) => {
-            const button = Utils.createElement('button', { className: 'btn', textContent: text, title });
-            button.addEventListener('click', action);
-            return button;
-        };
+    function renderPreview(content, mode) {
+        if (!elements.preview) return;
 
-        elements.formattingToolbar = Utils.createElement('div', { className: 'editor-toolbar editor-format-toolbar hidden' }, [
-            createButton('B', 'Bold (Ctrl+B)', () => _wrapSelection('**')),
-            createButton('I', 'Italic (Ctrl+I)', () => _wrapSelection('*')),
-            createButton('H', 'Heading (Ctrl+H)', () => _prefixLine('# ')),
-            createButton('“', 'Blockquote', () => _prefixLine('> ')),
-            createButton('🔗', 'Link', () => _insertLink()),
-            createButton('img', 'Image', () => _insertImage()),
-        ]);
+        // Ensure a predictable, clean slate for rendering.
+        elements.preview.innerHTML = '';
+
+        if (mode === 'markdown') {
+            elements.preview.innerHTML = DOMPurify.sanitize(marked.parse(content));
+        } else if (mode === 'html') {
+            // Create and append a new iframe for each render to ensure a clean context
+            const iframe = Utils.createElement('iframe', {style: 'width: 100%; height: 100%; border: none;'});
+            elements.preview.appendChild(iframe);
+
+            // Access contentWindow *after* appending to the DOM
+            const iframeDoc = iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(DOMPurify.sanitize(content)); // Sanitize before writing
+            iframeDoc.close();
+        }
     }
 
 
-    function _buildFindBar() {
-        elements.findInput = Utils.createElement('input', { type: 'text', placeholder: 'Find...', className: 'editor-find-input' });
-        elements.findNextButton = Utils.createElement('button', { className: 'btn', textContent: 'Next' });
-        elements.findPrevButton = Utils.createElement('button', { className: 'btn', textContent: 'Prev' });
-        elements.findCloseButton = Utils.createElement('button', { className: 'btn', textContent: '×' });
-        elements.findInfo = Utils.createElement('span', { className: 'editor-find-info' });
-        elements.findError = Utils.createElement('span', { className: 'editor-find-error' });
-        elements.caseSensitiveToggle = Utils.createElement('button', { className: 'btn', textContent: 'Aa', title: 'Case Sensitive' });
-        elements.regexToggle = Utils.createElement('button', { className: 'btn', textContent: '.*', title: 'Use Regular Expression' });
+    function setViewMode(viewMode, fileMode, content) {
+        if (!elements.preview || !elements.textarea || !elements.main) return;
 
-        elements.findBar = Utils.createElement('div', { className: 'editor-findbar hidden' }, [
-            elements.findInput, elements.findPrevButton, elements.findNextButton, elements.findInfo,
-            elements.caseSensitiveToggle, elements.regexToggle, elements.findError,
-            elements.findCloseButton
-        ]);
+        elements.previewBtn.disabled = fileMode === 'text';
+
+        if (fileMode === 'text') {
+            viewMode = 'edit'; // Force editor-only mode for plain text
+        }
+
+        elements.textarea.style.display = 'none';
+        elements.preview.style.display = 'none';
+        elements.main.classList.remove('editor-main--split', 'editor-main--full');
+
+        switch (viewMode) {
+            case 'edit':
+                elements.textarea.style.display = 'block';
+                elements.main.classList.add('editor-main--full');
+                break;
+            case 'preview':
+                elements.preview.style.display = 'block';
+                elements.main.classList.add('editor-main--full');
+                renderPreview(content, fileMode);
+                break;
+            case 'split':
+            default:
+                elements.textarea.style.display = 'block';
+                elements.preview.style.display = 'block';
+                elements.main.classList.add('editor-main--split');
+                renderPreview(content, fileMode);
+                break;
+        }
     }
 
     function hideAndReset() {
@@ -95,249 +119,92 @@ const EditorUI = (() => {
         managerCallbacks = {};
     }
 
-    function _render(state) {
-        elements.fileName.textContent = state.currentFilePath;
-        elements.textArea.value = state.currentContent;
-        // Conditionally show/hide UI elements based on the file mode
-        elements.formattingToolbar.classList.toggle('hidden', state.fileMode !== 'markdown');
-        elements.previewButton.classList.toggle('hidden', state.fileMode !== 'markdown' && state.fileMode !== 'html');
-        updateStatusBar(state);
-        updateLineNumbers(state.currentContent);
-        renderPreview(state.fileMode, state.currentContent);
-        applySettings(state.editorSettings);
-        applyViewMode(state.viewMode);
+    function updateDirtyStatus(isDirty) {
+        if (elements.dirtyStatus) {
+            elements.dirtyStatus.textContent = isDirty ? 'UNSAVED' : 'SAVED';
+            elements.dirtyStatus.style.color = isDirty ? 'var(--color-warning)' : 'var(--color-success)';
+        }
     }
 
-    function updateStatusBar(state) {
-        if (!elements.statusFileName || !state) return; // Added a check for the state object itself
+    function updateWindowTitle(filePath) {
+        if (elements.titleInput) {
+            elements.titleInput.value = filePath || 'Untitled';
+        }
+    }
 
-        elements.statusFileName.textContent = state.currentFilePath || '...';
-        elements.statusDirty.textContent = state.isDirty ? '*' : '';
-
-        // Ensure currentContent is a string before calling .split on it.
-        const content = state.currentContent || "";
-        const lineCount = content.split('\n').length;
-        const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
-        const cursorPos = elements.textArea ? `Ln ${elements.textArea.value.substring(0, elements.textArea.selectionStart).split('\n').length}, Col ${elements.textArea.selectionStart - elements.textArea.value.lastIndexOf('\n', elements.textArea.selectionStart - 1)}` : '';
-
-        elements.statusInfo.textContent = `Lines: ${lineCount} | Words: ${wordCount} | ${cursorPos}`;
-
-        if (state.statusMessage) {
-            elements.statusInfo.textContent += ` | ${state.statusMessage}`;
+    function updateStatusMessage(message) {
+        if (elements.statusMessage) {
+            elements.statusMessage.textContent = message;
             setTimeout(() => {
-                // Check if state is still valid before clearing the message
-                if (elements.statusInfo && state && !state.statusMessage.startsWith("Error")) {
-                    updateStatusBar({ ...state, statusMessage: null });
-                }
+                if (elements.statusMessage) elements.statusMessage.textContent = '';
             }, 3000);
         }
     }
 
-
-    function updateLineNumbers(content) {
-        if (!elements.lineNumbers) return;
-        const lineCount = content.split('\n').length || 1;
-        elements.lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join('');
-    }
-
-    function renderPreview(fileMode, content) {
-        if (!elements.previewPane) return;
-        if (fileMode === 'markdown') {
-            elements.previewPane.innerHTML = DOMPurify.sanitize(marked.parse(content));
-        } else if (fileMode === 'html') {
-            elements.previewPane.innerHTML = `<iframe srcdoc="${DOMPurify.sanitize(content)}" class="editor-html-preview" sandbox></iframe>`;
-        } else {
-            elements.previewPane.innerHTML = '';
-        }
-    }
-
-    function applySettings(settings) {
-        if (!elements.textArea) return;
-        elements.textArea.style.whiteSpace = settings.wordWrap ? 'pre-wrap' : 'pre';
-        elements.textArea.style.overflowWrap = settings.wordWrap ? 'break-word' : 'normal';
-        elements.textArea.style.wordBreak = 'normal';
-        elements.wordWrapButton.classList.toggle('active', settings.wordWrap);
-    }
-
-    function applyViewMode(viewMode) {
-        if (!elements.mainArea) return;
-        elements.mainArea.dataset.viewMode = viewMode;
-        elements.previewButton.classList.toggle('active', viewMode !== 'editor');
-    }
-
     function setContent(content) {
-        if (!elements.textArea) return;
-        const cursorPos = elements.textArea.selectionStart;
-        elements.textArea.value = content;
-        elements.textArea.selectionStart = elements.textArea.selectionEnd = cursorPos;
-        managerCallbacks.onContentUpdate(content);
-    }
-
-    function _wrapSelection(wrapper, defaultText = 'text') {
-        const { textArea } = elements;
-        const start = textArea.selectionStart;
-        const end = textArea.selectionEnd;
-        const text = textArea.value;
-        const selectedText = text.substring(start, end);
-
-        const textToInsert = selectedText || defaultText;
-        const newText = `${text.substring(0, start)}${wrapper}${textToInsert}${wrapper}${text.substring(end)}`;
-
-        setContent(newText);
-
-        // After setting content, re-focus and select the inserted text
-        setTimeout(() => {
-            textArea.focus();
-            if (selectedText) {
-                textArea.setSelectionRange(start + wrapper.length, start + wrapper.length + selectedText.length);
-            } else {
-                textArea.setSelectionRange(start + wrapper.length, start + wrapper.length + defaultText.length);
-            }
-        }, 0);
-    }
-
-    function _prefixLine(prefix) {
-        const { textArea } = elements;
-        const start = textArea.selectionStart;
-        const text = textArea.value;
-        const lineStart = text.lastIndexOf('\n', start - 1) + 1;
-
-        const newText = `${text.substring(0, lineStart)}${prefix}${text.substring(lineStart)}`;
-        setContent(newText);
-
-        setTimeout(() => {
-            textArea.focus();
-            textArea.setSelectionRange(start + prefix.length, start + prefix.length);
-        }, 0);
-    }
-
-    async function _insertLink() {
-        const url = await new Promise(r => ModalManager.request({ context: 'graphical-input', messageLines: ["Enter URL:"], onConfirm: r, onCancel: () => r(null)}));
-        if(!url) return;
-        _wrapSelection(`[`, `link text](${url})`);
-    }
-
-    async function _insertImage() {
-        const url = await new Promise(r => ModalManager.request({ context: 'graphical-input', messageLines: ["Enter Image URL:"], onConfirm: r, onCancel: () => r(null)}));
-        if(!url) return;
-        _wrapSelection(`![`, `alt text](${url})`);
-    }
-
-
-    function highlightMatch(match) {
-        if (!elements.textArea || !match) return;
-        elements.textArea.setSelectionRange(match.start, match.end);
-        const lines = elements.textArea.value.substring(0, match.start).split('\n').length;
-        const lineHeight = elements.textArea.scrollHeight / elements.textArea.value.split('\n').length;
-        elements.textArea.scrollTop = (lines - 5) * lineHeight;
-    }
-
-    function updateFindUI(findState) {
-        const { matches, currentIndex, error } = findState;
-        if (matches.length > 0) {
-            elements.findInfo.textContent = `${currentIndex + 1} / ${matches.length}`;
-            elements.findInfo.classList.remove('no-match');
-        } else {
-            elements.findInfo.textContent = 'No results';
-            elements.findInfo.classList.add('no-match');
+        if (elements.textarea) {
+            elements.textarea.value = content;
         }
-        if (error) {
-            elements.findError.textContent = error;
-            elements.findError.classList.add('visible');
-        } else {
-            elements.findError.classList.remove('visible');
+    }
+
+    function setWordWrap(enabled) {
+        if (elements.textarea) {
+            elements.textarea.style.whiteSpace = enabled ? 'pre-wrap' : 'pre';
+            elements.textarea.style.wordBreak = enabled ? 'break-all' : 'normal';
+            elements.wordWrapBtn.classList.toggle('active', enabled);
         }
     }
 
     function _addEventListeners() {
-        elements.textArea.addEventListener('input', () => managerCallbacks.onContentUpdate(elements.textArea.value));
-        elements.textArea.addEventListener('scroll', () => { elements.lineNumbers.scrollTop = elements.textArea.scrollTop; });
-        elements.textArea.addEventListener('keyup', () => updateStatusBar(managerCallbacks.getState ? managerCallbacks.getState() : {}));
-        elements.textArea.addEventListener('click', () => updateStatusBar(managerCallbacks.getState ? managerCallbacks.getState() : {}));
-
-        // Toolbar
-        elements.findButton.addEventListener('click', () => {
-            elements.findBar.classList.toggle('hidden');
-            if (!elements.findBar.classList.contains('hidden')) {
-                elements.findInput.focus();
-                elements.findInput.select();
-            }
-        });
-        elements.wordWrapButton.addEventListener('click', () => managerCallbacks.onToggleWordWrap());
-        elements.previewButton.addEventListener('click', () => managerCallbacks.onToggleViewMode());
-
-        // Find Bar
-        // Find Bar
-        const triggerFind = () => {
-            managerCallbacks.onFind(elements.findInput.value, {
-                isCaseSensitive: elements.caseSensitiveToggle.classList.contains('active'),
-                isRegex: elements.regexToggle.classList.contains('active')
-            });
-        };
-
-        // Trigger a find ONLY when the user types in the input box.
-        elements.findInput.addEventListener('input', triggerFind);
-
-        // Handle Enter key for quick navigation.
-        elements.findInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                // If there are matches, go to the next one. If not, trigger a new find.
-                if (managerCallbacks.getState && managerCallbacks.getState().findState.matches.length > 0) {
-                    managerCallbacks.onFindNext();
-                } else {
-                    triggerFind();
-                }
-            }
+        elements.textarea.addEventListener('input', () => {
+            managerCallbacks.onContentChange(elements.textarea.value);
         });
 
-        // Navigation buttons should NOT trigger a new search.
-        elements.findNextButton.addEventListener('click', () => managerCallbacks.onFindNext());
-        elements.findPrevButton.addEventListener('click', () => managerCallbacks.onFindPrev());
+        elements.saveBtn.addEventListener('click', () => managerCallbacks.onSaveRequest());
+        elements.exitBtn.addEventListener('click', () => managerCallbacks.onExitRequest());
+        elements.previewBtn.addEventListener('click', () => managerCallbacks.onTogglePreview());
+        elements.undoBtn.addEventListener('click', () => managerCallbacks.onUndo());
+        elements.redoBtn.addEventListener('click', () => managerCallbacks.onRedo());
+        elements.wordWrapBtn.addEventListener('click', () => managerCallbacks.onWordWrapToggle());
 
-        // Toggles SHOULD trigger a find to update matches based on new criteria.
-        elements.caseSensitiveToggle.addEventListener('click', (e) => {
-            e.currentTarget.classList.toggle('active');
-            triggerFind();
-        });
-        elements.regexToggle.addEventListener('click', (e) => {
-            e.currentTarget.classList.toggle('active');
-            triggerFind();
-        });
-
-        elements.findCloseButton.addEventListener('click', () => elements.findBar.classList.add('hidden'));
-
-        // Keyboard shortcuts
-        elements.container.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', (e) => {
+            if (!EditorManager.isActive()) return;
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key.toLowerCase()) {
-                    case 's': e.preventDefault(); managerCallbacks.onSaveRequest(); break;
-                    case 'o': e.preventDefault(); managerCallbacks.onExitRequest(); break;
-                    case 'z': e.preventDefault(); e.shiftKey ? managerCallbacks.onRedoRequest() : managerCallbacks.onUndoRequest(); break;
-                    case 'y': e.preventDefault(); managerCallbacks.onRedoRequest(); break;
-                    case 'p': e.preventDefault(); managerCallbacks.onToggleViewMode(); break;
-                    case 'f':
+                    case 's':
                         e.preventDefault();
-                        elements.findBar.classList.toggle('hidden');
-                        if (!elements.findBar.classList.contains('hidden')) {
-                            elements.findInput.focus();
-                            elements.findInput.select();
-                        }
+                        managerCallbacks.onSaveRequest();
                         break;
-                    case 'b': e.preventDefault(); _wrapSelection('**'); break;
-                    case 'i': e.preventDefault(); _wrapSelection('*'); break;
-                    case 'h': e.preventDefault(); _prefixLine('# '); break;
-                }
-            } else if (e.key === 'Escape') {
-                if (!elements.findBar.classList.contains('hidden')) {
-                    e.preventDefault();
-                    elements.findBar.classList.add('hidden');
-                } else {
-                    managerCallbacks.onExitRequest();
+                    case 'o':
+                        e.preventDefault();
+                        managerCallbacks.onExitRequest();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        managerCallbacks.onTogglePreview();
+                        break;
+                    case 'z':
+                        e.preventDefault();
+                        e.shiftKey ? managerCallbacks.onRedo() : managerCallbacks.onUndo();
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        managerCallbacks.onRedo();
+                        break;
                 }
             }
         });
     }
 
-    return { buildAndShow, hideAndReset, updateStatusBar, setContent, applySettings, applyViewMode, renderPreview, updateLineNumbers, highlightMatch, updateFindUI };
+    return {
+        buildAndShow,
+        hideAndReset,
+        updateDirtyStatus,
+        updateStatusMessage,
+        updateWindowTitle,
+        setViewMode,
+        renderPreview,
+        setContent,
+        setWordWrap
+    };
 })();

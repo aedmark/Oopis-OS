@@ -1,11 +1,53 @@
 const CommandExecutor = (() => {
   "use strict";
-  let scriptExecutionInProgress = false;
   let backgroundProcessIdCounter = 0;
   let activeJobs = {};
   const commands = {};
   const loadingPromises = {};
 
+  async function* _generateInputContent(context, firstFileArgIndex = 0) {
+    const {args, options, currentUser} = context;
+
+    if (options.stdinContent !== null && options.stdinContent !== undefined) {
+      const pathsFromStdin = options.stdinContent.trim().split('\n');
+      for (const pathArg of pathsFromStdin) {
+        if (!pathArg) continue;
+        const pathValidation = FileSystemManager.validatePath("input stream", pathArg, {expectedType: 'file'});
+        if (pathValidation.error) {
+          yield {success: false, error: pathValidation.error, sourceName: pathArg};
+          continue;
+        }
+
+        if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
+          yield {success: false, error: `Permission denied: ${pathArg}`, sourceName: pathArg};
+          continue;
+        }
+
+        yield {success: true, content: pathValidation.node.content || "", sourceName: pathArg};
+      }
+      return;
+    }
+
+    const fileArgs = args.slice(firstFileArgIndex);
+    if (fileArgs.length === 0) {
+      return;
+    }
+
+    for (const pathArg of fileArgs) {
+      const pathValidation = FileSystemManager.validatePath("input stream", pathArg, {expectedType: 'file'});
+      if (pathValidation.error) {
+        yield {success: false, error: pathValidation.error, sourceName: pathArg};
+        continue;
+      }
+
+      if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
+        yield {success: false, error: `Permission denied: ${pathArg}`, sourceName: pathArg};
+        continue;
+      }
+
+      yield {success: true, content: pathValidation.node.content || "", sourceName: pathArg};
+    }
+  }
 
 
   function createCommandHandler(definition) {
@@ -87,6 +129,34 @@ const CommandExecutor = (() => {
         validatedPaths,
         signal: options.signal,
       };
+
+      if (definition.isInputStream) {
+        const inputParts = [];
+        let hadError = false;
+        let fileCount = 0;
+        let firstSourceName = null;
+
+        const firstFileArgIndex = definition.firstFileArgIndex || 0;
+
+        for await (const item of _generateInputContent(context, firstFileArgIndex)) {
+          fileCount++;
+          if (firstSourceName === null) firstSourceName = item.sourceName;
+
+          if (!item.success) {
+            await OutputManager.appendToOutput(item.error, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+            hadError = true;
+          } else {
+            inputParts.push({content: item.content, sourceName: item.sourceName});
+          }
+        }
+
+        context.inputItems = inputParts;
+        context.inputError = hadError;
+        context.inputFileCount = fileCount;
+        context.firstSourceName = firstSourceName;
+      }
+
+
       return definition.coreLogic(context);
     };
     handler.definition = definition;
@@ -548,7 +618,7 @@ const CommandExecutor = (() => {
   async function processSingleCommand(rawCommandText, options = {}) {
     const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
 
-    if (scriptExecutionInProgress && isInteractive && !ModalManager.isAwaiting()) {
+    if (options.scriptingContext && isInteractive && !ModalManager.isAwaiting()) {
       await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
       return { success: false, error: "Script execution in progress." };
     }
@@ -634,7 +704,7 @@ const CommandExecutor = (() => {
       overallResult = result;
     }
 
-    if (isInteractive && !scriptExecutionInProgress) {
+    if (isInteractive && !scriptingContext) {
       await _finalizeInteractiveModeUI(rawCommandText);
     }
 
@@ -645,20 +715,10 @@ const CommandExecutor = (() => {
     return commands;
   }
 
-  function isScriptRunning() {
-    return scriptExecutionInProgress;
-  }
-
-  function setScriptExecutionInProgress(status) {
-    scriptExecutionInProgress = status;
-  }
-
   return {
     initialize: () => {},
     processSingleCommand,
     getCommands,
-    isScriptRunning,
-    setScriptExecutionInProgress,
     getActiveJobs,
     killJob,
     _ensureCommandLoaded,

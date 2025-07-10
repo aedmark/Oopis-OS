@@ -1,32 +1,34 @@
+// Corrected File: aedmark/oopis-os-dev/Oopis-OS-DEV-d433f2298e4704d53000b05f98b059a46e2196eb/scripts/commands/wc.js
 (() => {
     "use strict";
 
     const wcCommandDefinition = {
         commandName: "wc",
+        isInputStream: true, // ADDED
         flagDefinitions: [
             { name: "lines", short: "-l", long: "--lines" },
             { name: "words", short: "-w", long: "--words" },
             { name: "bytes", short: "-c", long: "--bytes" },
         ],
         coreLogic: async (context) => {
-            const { args, flags } = context;
+            // MODIFIED: Destructures correct context properties.
+            const {args, flags, inputItems, inputError} = context;
+
+            if (inputError) {
+                return {success: false, error: "wc: No readable input provided or permission denied."};
+            }
+
+            // MODIFIED: Processes the inputItems array.
+            const input = inputItems.map(item => item.content).join('\\n');
+
+            if (input === null || input === undefined) {
+                return {success: false, error: "wc: No readable input provided."};
+            }
 
             const showAll = !flags.lines && !flags.words && !flags.bytes;
             const showLines = showAll || flags.lines;
             const showWords = showAll || flags.words;
             const showBytes = showAll || flags.bytes;
-
-            const totals = { lines: 0, words: 0, bytes: 0 };
-            const outputLines = [];
-            let hadError = false;
-            let fileCount = 0;
-
-            const getCounts = (content) => {
-                const bytes = content.length;
-                const lines = (content.match(/\n/g) || []).length;
-                const words = content.trim() === '' ? 0 : content.trim().split(/\s+/).length;
-                return { lines, words, bytes };
-            };
 
             const formatOutput = (counts, name) => {
                 let line = " ";
@@ -37,30 +39,26 @@
                 return line;
             };
 
-            for await (const item of Utils.generateInputContent(context)) {
-                if (!item.success) {
-                    outputLines.push(item.error);
-                    hadError = true;
-                    continue;
-                }
-
-                const counts = getCounts(item.content);
-                outputLines.push(formatOutput(counts, item.sourceName === 'stdin' ? '' : item.sourceName));
-
-                totals.lines += counts.lines;
-                totals.words += counts.words;
-                totals.bytes += counts.bytes;
-                fileCount++;
+            // Corrected line counting for empty inputs
+            const lineCount = input ? (input.match(/\\n/g) || []).length : 0;
+            if (input && !input.endsWith('\\n') && input.length > 0) {
+                // lineCount++; // This behavior is debatable, but common. Let's stick to newline counting.
             }
 
-            if (fileCount > 1) {
-                outputLines.push(formatOutput(totals, "total"));
-            }
+
+            const counts = {
+                lines: lineCount,
+                words: input.trim() === '' ? 0 : input.trim().split(/\\s+/).length,
+                bytes: input.length
+            };
+
+            // Simplified to show a single total count, filename display is omitted for piped input.
+            const fileName = inputItems.length === 1 && inputItems[0].sourceName !== 'stdin' ? inputItems[0].sourceName : '';
+            const output = formatOutput(counts, fileName);
 
             return {
-                success: !hadError,
-                output: outputLines.join('\n'),
-                error: hadError ? "One or more files could not be processed." : null
+                success: true,
+                output: output,
             };
         }
     };

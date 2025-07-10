@@ -1,6 +1,36 @@
 const Utils = (() => {
     "use strict";
 
+    function extractComments(content, fileExtension) {
+        let comments = [];
+        let regex;
+
+        switch (fileExtension) {
+            case 'js':
+                regex = /(\/\*[\s\S]*?\*\/|\/\/.+)/g;
+                break;
+            case 'sh':
+                regex = /(^|\s)#. +/g;
+                break;
+            default:
+                return ""; // Return empty for unsupported types
+        }
+
+        const matches = content.match(regex);
+        if (matches) {
+            comments = matches.map(comment => {
+                if (comment.startsWith('/*')) {
+                    // Clean up multi-line comment markers
+                    return comment.replace(/^\/\*+/, '').replace(/\*\/$/, '').trim();
+                } else {
+                    // Clean up single-line comment markers
+                    return comment.replace(/^\/\//, '').replace(/^#/, '').trim();
+                }
+            });
+        }
+        return comments.join('\n');
+    }
+
     function debounce(func, delay) {
         let timeout;
         return function(...args) {
@@ -8,34 +38,6 @@ const Utils = (() => {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(context, args), delay);
         };
-    }
-
-    async function* generateInputContent(context) {
-        const { args, options, currentUser } = context;
-
-        if (options.stdinContent !== null && options.stdinContent !== undefined) {
-            yield { success: true, content: options.stdinContent, sourceName: 'stdin' };
-            return;
-        }
-
-        if (args.length === 0) {
-            return;
-        }
-
-        for (const pathArg of args) {
-            const pathValidation = FileSystemManager.validatePath("input stream", pathArg, { expectedType: 'file' });
-            if (pathValidation.error) {
-                yield { success: false, error: pathValidation.error, sourceName: pathArg };
-                continue;
-            }
-
-            if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                yield { success: false, error: `Permission denied: ${pathArg}`, sourceName: pathArg };
-                continue;
-            }
-
-            yield { success: true, content: pathValidation.node.content || "", sourceName: pathArg };
-        }
     }
 
     function getCharacterDimensions(fontStyle = '16px "VT323"') {
@@ -354,7 +356,6 @@ const Utils = (() => {
     }
 
     return {
-        generateInputContent,
         getCharacterDimensions,
         calculateSHA256,
         formatConsoleArgs,
@@ -369,6 +370,7 @@ const Utils = (() => {
         callLlmApi,
         globToRegex,
         debounce,
+        extractComments
     };
 })();
 

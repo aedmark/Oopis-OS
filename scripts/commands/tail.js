@@ -3,15 +3,25 @@
 
     const tailCommandDefinition = {
         commandName: "tail",
+        isInputStream: true,
         flagDefinitions: [
             { name: "lines", short: "-n", long: "--lines", takesValue: true },
             { name: "bytes", short: "-c", long: "--bytes", takesValue: true },
         ],
         coreLogic: async (context) => {
-            const { args, flags } = context;
+            const {flags, inputItems, inputError} = context; // Now uses inputItems
+
+            if (inputError) {
+                return {success: false, error: "tail: No readable input provided."};
+            }
+            const input = inputItems.map(item => item.content).join('\n');
 
             if (flags.lines && flags.bytes) {
                 return { success: false, error: "tail: cannot use both -n and -c" };
+            }
+
+            if (input === null) {
+                return {success: false, error: "tail: No readable input provided."};
             }
 
             let lineCount = 10;
@@ -32,36 +42,16 @@
                 byteCount = bytesResult.value;
             }
 
-            const processContent = (content) => {
-                if (byteCount !== null) {
-                    return content.substring(content.length - byteCount);
-                }
-                const lines = content.split('\n');
+            let output;
+            if (byteCount !== null) {
+                output = input.substring(input.length - byteCount);
+            } else {
+                const lines = input.split('\n');
                 const relevantLines = lines.at(-1) === '' ? lines.slice(0, -1) : lines;
-                return relevantLines.slice(-lineCount).join('\n');
-            };
-
-            const outputParts = [];
-            let fileCount = 0;
-
-            for await (const item of Utils.generateInputContent(context)) {
-                if (!item.success) {
-                    outputParts.push(item.error);
-                    continue;
-                }
-
-                if (args.length > 1) {
-                    if (fileCount > 0) {
-                        outputParts.push('');
-                    }
-                    outputParts.push(`==> ${item.sourceName} <==`);
-                }
-
-                outputParts.push(processContent(item.content));
-                fileCount++;
+                output = relevantLines.slice(-lineCount).join('\n');
             }
 
-            return { success: true, output: outputParts.join('\n') };
+            return {success: true, output: output};
         },
     };
 

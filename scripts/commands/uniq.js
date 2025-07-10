@@ -1,42 +1,44 @@
+// Corrected File: aedmark/oopis-os-dev/Oopis-OS-DEV-d433f2298e4704d53000b05f98b059a46e2196eb/scripts/commands/uniq.js
 (() => {
     "use strict";
 
     const uniqCommandDefinition = {
         commandName: "uniq",
+        isInputStream: true, // ADDED: Declares compliance with the new architecture.
         flagDefinitions: [
             { name: "count", short: "-c", long: "--count" },
             { name: "repeated", short: "-d", long: "--repeated" },
             { name: "unique", short: "-u", long: "--unique" },
         ],
         argValidation: {
-            max: 1,
+            max: 1, // No change needed here.
         },
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context;
+            // MODIFIED: Destructures the correct properties.
+            const {flags, inputItems, inputError} = context;
 
             if (flags.repeated && flags.unique) {
                 return { success: false, error: "uniq: printing only unique and repeated lines is mutually exclusive" };
             }
 
-            let lines = [];
-            if (args.length > 0) {
-                const pathArg = args[0];
-                const pathValidation = FileSystemManager.validatePath("uniq", pathArg, { expectedType: 'file' });
-                if (pathValidation.error) {
-                    return { success: false, error: pathValidation.error };
-                }
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    return { success: false, error: `uniq: cannot read '${pathArg}': Permission denied` };
-                }
-                lines = (pathValidation.node.content || '').split('\n');
-            } else if (options.stdinContent !== null) {
-                lines = options.stdinContent.split('\n');
+            // ADDED: Handles input stream errors.
+            if (inputError) {
+                return {success: false, error: "uniq: No readable input provided or permission denied."};
             }
 
-            if (lines.length === 0) {
-                return { success: true, output: "" };
+            // MODIFIED: Processes the inputItems array.
+            const input = inputItems.map(item => item.content).join('\\n');
+
+            if (input === null || input === undefined) {
+                return {success: true, output: ""};
             }
 
+            let lines = input.split('\\n');
+
+            if (lines.length === 0 || (lines.length === 1 && lines[0] === '')) {
+                return {success: true, output: ""};
+            }
+            // The rest of the core logic remains sound and operates on the corrected 'lines' variable.
             const outputLines = [];
             let currentLine = lines[0];
             let count = 1;
@@ -69,7 +71,7 @@
                 outputLines.push(currentLine);
             }
 
-            return { success: true, output: outputLines.join('\n') };
+            return {success: true, output: outputLines.join('\\n')};
         }
     };
 

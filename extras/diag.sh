@@ -1,7 +1,7 @@
 #!/bin/oopis_shell
 
-# OopisOS Core Test Suite v3.7 - "The Gauntlet, Now With More Gauntlet"
-echo "===== OopisOS Core Test Suite v3.7 Initializing ====="
+# OopisOS Core Test Suite v4.0 - "The Gauntlet, Now With More Gauntlet"
+echo "===== OopisOS Core Test Suite v4.0 Initializing ====="
 echo "This script tests all non-interactive core functionality, now with maximum paranoia."
 echo "---------------------------------------------------------------------"
 echo ""
@@ -25,9 +25,9 @@ cd /home/diagUser/diag_workspace
 delay 400
 echo "---------------------------------------------------------------------"
 
-# --- Phase 1.5: Create All Diagnostic Assets ---
+# --- Phase 2: Create All Diagnostic Assets ---
 echo ""
-echo "--- Phase 1.5: Creating diagnostic assets ---"
+echo "--- Phase 2: Creating diagnostic assets ---"
 # Basic FS assets
 mkdir -p src mv_test_dir overwrite_dir find_test/subdir zip_test/nested_dir "a dir with spaces"
 mkdir -p recursive_test/level2/level3
@@ -71,9 +71,9 @@ echo "Asset creation complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 2: Core FS Commands & Flags (Expanded) ---
+# --- Phase 3: Core FS Commands & Flags (Expanded) ---
 echo ""
-echo "===== Phase 2: Testing Core FS Commands (Expanded) ====="
+echo "===== Phase 3: Testing Core FS Commands (Expanded) ====="
 delay 400
 echo "--- Test: diff, cp -p, mv ---"
 diff diff_a.txt diff_b.txt
@@ -101,9 +101,9 @@ delay 700
 echo "---------------------------------------------------------------------"
 
 
-# --- Phase 3: Group Permissions and Ownership (Expanded) ---
+# --- Phase 4: Group Permissions and Ownership (Expanded) ---
 echo ""
-echo "===== Phase 3: Testing Group Permissions & Ownership (Expanded) ====="
+echo "===== Phase 4: Testing Group Permissions & Ownership (Expanded) ====="
 delay 400
 login root mcgoopis
 groupadd testgroup
@@ -146,9 +146,9 @@ cd /home/diagUser/diag_workspace
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 4: Sudo & Security Model ---
+# --- Phase 5: Sudo & Security Model ---
 echo ""
-echo "===== Phase 4: Testing Sudo & Security Model ====="
+echo "===== Phase 5: Testing Sudo & Security Model ====="
 delay 400
 login root mcgoopis
 useradd sudouser
@@ -187,9 +187,9 @@ delay 700
 echo "---------------------------------------------------------------------"
 
 
-# --- Phase 5: Advanced Scripting & Process Management ---
+# --- Phase 6: Advanced Scripting & Process Management ---
 echo ""
-echo "===== Phase 5: Testing Scripting & Process Management ====="
+echo "===== Phase 6: Testing Scripting & Process Management ====="
 delay 400
 echo "--- Test: Script argument passing ---"
 run ./arg_test.sh first "second arg" third
@@ -203,9 +203,9 @@ ps
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 6: Advanced Data Processing & Text Utilities ---
+# --- Phase 7: Advanced Data Processing & Text Utilities ---
 echo ""
-echo "===== Phase 6: Testing Data Processing & Text Utilities ======="
+echo "===== Phase 7: Testing Data Processing & Text Utilities ======="
 delay 400
 echo "--- Test: sort (-n, -r, -u) ---"
 sort -r sort_test.txt
@@ -228,9 +228,9 @@ echo "xargs deletion verified."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 7: find and Archival Commands ---
+# --- Phase 8: find and Archival Commands ---
 echo ""
-echo "===== Phase 7: Testing 'find' and Archival (zip/unzip) ====="
+echo "===== Phase 8: Testing 'find' and Archival (zip/unzip) ====="
 delay 400
 echo "--- Test: find by name, type, and permissions ---"
 find find_test -name "*.tmp"
@@ -244,9 +244,9 @@ ls -R zip_test
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 7.5: Pager and Calculator Tests ---
+# --- Phase 9: Pager and Calculator Tests ---
 echo ""
-echo "===== Phase 7.5: Testing Pager and Calculator Tests ====="
+echo "===== Phase 9: Testing Pager and Calculator Tests ====="
 delay 400
 echo "--- Test: bc command (pipe and argument) ---"
 echo "5 * (10 - 2) / 4" | bc
@@ -265,9 +265,9 @@ echo "Input redirection test complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 7.6: Data Transformation & Integrity Commands ---
+# --- Phase 10: Data Transformation & Integrity Commands ---
 echo ""
-echo "===== Phase 7.6: Testing Data Transformation & Integrity Commands ====="
+echo "===== Phase 10: Testing Data Transformation & Integrity Commands ====="
 delay 400
 echo "--- Test: rmdir ---"
 mkdir empty_dir
@@ -285,12 +285,19 @@ base64 -d b64_encoded.txt
 rm b64_test.txt b64_encoded.txt
 echo "base64 tests complete."
 delay 400
-echo "--- Test: ocrypt (encrypt/decrypt) ---"
-echo "Harmony and order." > ocrypt_test.txt
-ocrypt diag_pass ocrypt_test.txt > ocrypt_encrypted.txt
-ocrypt diag_pass ocrypt_encrypted.txt
-rm ocrypt_test.txt ocrypt_encrypted.txt
-echo "ocrypt tests complete."
+echo "--- Test: xor (encrypt/decrypt) ---"
+echo "Harmony and order." > xor_test.txt
+xor diag_pass xor_test.txt > xor_encrypted.txt
+xor diag_pass xor_encrypted.txt
+rm xor_test.txt xor_encrypted.txt
+echo "xor tests complete."
+delay 400
+echo "--- Test: ocrypt (secure encrypt/decrypt) ---"
+echo "A truly secure message." > ocrypt_test.txt
+ocrypt -e diag_secure_pass ocrypt_test.txt
+ocrypt -d diag_secure_pass ocrypt_test.txt | grep "A truly secure message."
+rm ocrypt_test.txt
+echo "ocrypt secure tests complete."
 delay 400
 echo "--- Test: cksum and sync ---"
 echo "A well-written program is its own Heaven." > cksum_test.txt
@@ -314,9 +321,9 @@ echo "csplit test complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 7.7: Testing Underrepresented Commands (Data/System) ---
+# --- Phase 11: Testing Underrepresented Commands (Data/System) ---
 echo ""
-echo "===== Phase 7.7: Testing Underrepresented Commands (Data/System) ====="
+echo "===== Phase 11: Testing Underrepresented Commands (Data/System) ====="
 delay 400
 echo "--- Test: uniq (-d, -u) ---"
 sort uniq_test.txt | uniq -d
@@ -338,9 +345,9 @@ delay 700
 echo "---------------------------------------------------------------------"
 
 
-# --- Phase 8: Shell & Session Commands ---
+# --- Phase 12: Shell & Session Commands ---
 echo ""
-echo "===== Phase 8: Testing Shell & Session Commands ====="
+echo "===== Phase 12: Testing Shell & Session Commands ====="
 delay 400
 echo "--- Test: date ---"
 date
@@ -368,9 +375,9 @@ cat screen.log
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 8.5: Testing User & State Management ---
+# --- Phase 13: Testing User & State Management ---
 echo ""
-echo "===== Phase 8.5: Testing User & State Management ====="
+echo "===== Phase 13: Testing User & State Management ====="
 delay 400
 echo "--- Test: su and logout ---"
 login root mcgoopis
@@ -393,9 +400,9 @@ echo "User & State Management tests complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 8.6: Testing Network & System Documentation Commands ---
+# --- Phase 14: Testing Network & System Documentation Commands ---
 echo ""
-echo "===== Phase 8.6: Testing Network & System Documentation Commands ====="
+echo "===== Phase 14: Testing Network & System Documentation Commands ====="
 delay 400
 echo "--- Test: wget and curl ---"
 wget -O wget.txt https://raw.githubusercontent.com/aedmark/Oopis-OS/refs/heads/master/docs/LICENSE.txt
@@ -416,9 +423,9 @@ delay 700
 echo "---------------------------------------------------------------------"
 
 
-# --- Phase 9: Edge Case Gauntlet (Expanded) ---
+# --- Phase 15: Edge Case Gauntlet (Expanded) ---
 echo ""
-echo "===== Phase 9: Testing Edge Cases & Complex Scenarios (Expanded) ====="
+echo "===== Phase 15: Testing Edge Cases & Complex Scenarios (Expanded) ====="
 delay 400
 
 echo "--- Test: Filenames with spaces ---"
@@ -492,9 +499,9 @@ delay 700
 
 echo "---------------------------------------------------------------------"
 
-# --- Phase 9.5: Paranoid Security & Edge Case Testing ---
+# --- Phase 16: Paranoid Security & Edge Case Testing ---
 echo ""
-echo "===== Phase 9.5: Testing Paranoid Security & Edge Cases ====="
+echo "===== Phase 16: Testing Paranoid Security & Edge Cases ====="
 delay 400
 echo "--- Test: Advanced 'awk' with BEGIN/END blocks ---"
 echo -e "10 alpha\n20 bravo\n30 charlie" > awk_data.txt
@@ -525,7 +532,7 @@ delay 700
 echo "---------------------------------------------------------------------"
 
 
-# --- Phase 10: Final Cleanup ---
+# --- Phase 17: Final Cleanup ---
 echo ""
 echo "--- Phase 10: Final Cleanup ---"
 cd /

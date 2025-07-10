@@ -1,3 +1,5 @@
+// scripts/apps/paint/paint_manager.js
+
 const PaintManager = (() => {
     "use strict";
 
@@ -17,9 +19,16 @@ const PaintManager = (() => {
         gridVisible: false,
         isDrawing: false,
         startCoords: null,
+        lastCoords: null,
         undoStack: [],
         redoStack: [],
-        statusMessage: 'Ready'
+        statusMessage: 'Ready',
+        zoomLevel: 100,
+        ZOOM_MIN: 50,
+        ZOOM_MAX: 200,
+        ZOOM_STEP: 10,
+        selection: null,
+        clipboard: null,
     };
 
     const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'];
@@ -34,7 +43,6 @@ const PaintManager = (() => {
 
         loadContent(fileContent);
 
-        // Store the initial full state for the first undo
         state.undoStack.push(JSON.stringify(state.canvasData));
 
         PaintUI.buildAndShow(state, callbacks);
@@ -60,7 +68,7 @@ const PaintManager = (() => {
 
     function _performExit() {
         PaintUI.hideAndReset();
-        state = {}; // Reset state
+        state = {};
     }
 
     // --- Content & File Handling ---
@@ -157,6 +165,113 @@ const PaintManager = (() => {
         return affectedCells;
     }
 
+    function _getCellsForEllipse(xc, yc, rx, ry, char, color) {
+        if (rx < 0 || ry < 0) return [];
+        const allPoints = [];
+
+        function plotPoints(x, y) {
+            allPoints.push(..._getCellsInBrush(xc + x, yc + y, char, color));
+            allPoints.push(..._getCellsInBrush(xc - x, yc + y, char, color));
+            allPoints.push(..._getCellsInBrush(xc + x, yc - y, char, color));
+            allPoints.push(..._getCellsInBrush(xc - x, yc - y, char, color));
+        }
+
+        let x = 0;
+        let y = ry;
+        let rx2 = rx * rx;
+        let ry2 = ry * ry;
+        let twoRx2 = 2 * rx2;
+        let twoRy2 = 2 * ry2;
+        let p;
+        let px = 0;
+        let py = twoRx2 * y;
+
+        // Region 1
+        plotPoints(x, y);
+        p = Math.round(ry2 - (rx2 * ry) + (0.25 * rx2));
+        while (px < py) {
+            x++;
+            px += twoRy2;
+            if (p < 0) {
+                p += ry2 + px;
+            } else {
+                y--;
+                py -= twoRx2;
+                p += ry2 + px - py;
+            }
+            plotPoints(x, y);
+        }
+
+        // Region 2
+        p = Math.round(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2);
+        while (y > 0) {
+            y--;
+            py -= twoRx2;
+            if (p > 0) {
+                p += rx2 - py;
+            } else {
+                x++;
+                px += twoRy2;
+                p += rx2 - py + px;
+            }
+            plotPoints(x, y);
+        }
+
+        const uniqueCells = [];
+        const seen = new Set();
+        for (const cell of allPoints) {
+            const key = `${cell.x},${cell.y}`;
+            if (!seen.has(key)) {
+                uniqueCells.push(cell);
+                seen.add(key);
+            }
+        }
+        return uniqueCells;
+    }
+
+    // MODIFICATION: Flood Fill algorithm
+    function _getCellsForFill(startX, startY, fillColor, fillChar) {
+        const {width, height} = state.canvasDimensions;
+        if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
+            return [];
+        }
+
+        const targetColor = state.canvasData[startY][startX].color;
+        const targetChar = state.canvasData[startY][startX].char;
+
+        if (targetColor === fillColor && targetChar === fillChar) {
+            return []; // No need to fill if the target is already the fill color/char
+        }
+
+        const affectedCells = [];
+        const queue = [[startX, startY]];
+        const visited = new Set([`${startX},${startY}`]);
+
+        while (queue.length > 0) {
+            const [x, y] = queue.shift();
+
+            if (x < 0 || x >= width || y < 0 || y >= height) {
+                continue;
+            }
+
+            const currentCell = state.canvasData[y][x];
+            if (currentCell.color === targetColor && currentCell.char === targetChar) {
+                affectedCells.push({x, y, char: fillChar, color: fillColor});
+
+                const neighbors = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+                for (const [nx, ny] of neighbors) {
+                    const key = `${nx},${ny}`;
+                    if (!visited.has(key)) {
+                        queue.push([nx, ny]);
+                        visited.add(key);
+                    }
+                }
+            }
+        }
+        return affectedCells;
+    }
+
+
     function _applyCellsToData(cells) {
         const preState = JSON.stringify(state.canvasData);
         cells.forEach(cell => {
@@ -172,19 +287,38 @@ const PaintManager = (() => {
     function _pushToUndoStack(patch) {
         if (patch) {
             state.undoStack.push(patch);
-            if (state.undoStack.length > 50) { // Keep history manageable
+            if (state.undoStack.length > 50) {
                 state.undoStack.shift();
             }
-            state.redoStack = []; // Clear redo stack on new action
+            state.redoStack = [];
             state.isDirty = true;
             PaintUI.updateToolbar(state);
             PaintUI.updateStatusBar(state);
         }
     }
 
+    function _copySelectionToClipboard() {
+        if (!state.selection) return;
+        const {x, y, width, height} = state.selection;
+        const clipboardData = [];
+        for (let i = 0; i < height; i++) {
+            const row = [];
+            for (let j = 0; j < width; j++) {
+                row.push(state.canvasData[y + i][x + j]);
+            }
+            clipboardData.push(row);
+        }
+        state.clipboard = clipboardData;
+    }
+
+
     // --- UI Callbacks ---
     const callbacks = {
         onToolSelect: (tool) => {
+            if (state.currentTool === 'select' && tool !== 'select') {
+                state.selection = null;
+                PaintUI.hideSelectionRect();
+            }
             state.currentTool = tool;
             PaintUI.updateToolbar(state);
             PaintUI.updateStatusBar(state);
@@ -203,7 +337,7 @@ const PaintManager = (() => {
             PaintUI.updateStatusBar(state);
         },
         onUndo: () => {
-            if (state.undoStack.length > 1) { // The first element is always the full state
+            if (state.undoStack.length > 1) {
                 const patch = state.undoStack.pop();
                 state.redoStack.push(patch);
                 state.canvasData = JSON.parse(PatchUtils.applyInverse(JSON.stringify(state.canvasData), patch));
@@ -229,19 +363,43 @@ const PaintManager = (() => {
             PaintUI.toggleGrid(state.gridVisible);
         },
         onCanvasMouseDown: (coords) => {
+            if (state.currentTool === 'fill') {
+                const char = state.currentCharacter;
+                const color = state.currentColor;
+                const fillCells = _getCellsForFill(coords.x, coords.y, color, char);
+                if (fillCells.length > 0) {
+                    const patch = _applyCellsToData(fillCells);
+                    _pushToUndoStack(patch);
+                    PaintUI.updateCanvas(fillCells);
+                }
+                return;
+            }
             state.isDrawing = true;
             state.startCoords = coords;
+            state.lastCoords = coords;
         },
         onCanvasMouseMove: (coords) => {
+            state.lastCoords = coords;
+
             const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
             const color = state.currentTool === 'eraser' ? '#000000' : state.currentColor;
 
             let previewCells = [];
             if (state.isDrawing) {
-                if (state.currentTool === 'line') {
+                if (state.currentTool === 'select') {
+                    const x = Math.min(state.startCoords.x, coords.x);
+                    const y = Math.min(state.startCoords.y, coords.y);
+                    const width = Math.abs(state.startCoords.x - coords.x) + 1;
+                    const height = Math.abs(state.startCoords.y - coords.y) + 1;
+                    PaintUI.showSelectionRect({x, y, width, height});
+                } else if (state.currentTool === 'line') {
                     previewCells = _getCellsForLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
                 } else if (state.currentTool === 'rect') {
                     previewCells = _getCellsForRect(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
+                } else if (state.currentTool === 'circle') {
+                    const rx = Math.abs(state.startCoords.x - coords.x);
+                    const ry = Math.abs(state.startCoords.y - coords.y);
+                    previewCells = _getCellsForEllipse(state.startCoords.x, state.startCoords.y, rx, ry, char, color);
                 } else if (state.currentTool === 'pencil' || state.currentTool === 'eraser') {
                     const cells = _getCellsForLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
                     const patch = _applyCellsToData(cells);
@@ -249,7 +407,7 @@ const PaintManager = (() => {
                     PaintUI.updateCanvas(cells);
                     state.startCoords = coords;
                 }
-            } else {
+            } else if (state.currentTool !== 'select') {
                 previewCells = _getCellsInBrush(coords.x, coords.y, char, color);
             }
 
@@ -258,27 +416,107 @@ const PaintManager = (() => {
         },
         onCanvasMouseUp: (coords) => {
             if (!state.isDrawing) return;
+
+            const endCoords = coords || state.lastCoords;
+
             state.isDrawing = false;
             PaintUI.updatePreviewCanvas([]);
 
-            const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
-            const color = state.currentTool === 'eraser' ? '#000000' : state.currentColor;
+            if (state.currentTool === 'select' && state.startCoords) {
+                const x = Math.min(state.startCoords.x, endCoords.x);
+                const y = Math.min(state.startCoords.y, endCoords.y);
+                const width = Math.abs(state.startCoords.x - endCoords.x) + 1;
+                const height = Math.abs(state.startCoords.y - endCoords.y) + 1;
+                state.selection = {x, y, width, height};
+            } else if (state.currentTool !== 'select') {
+                if (!state.startCoords || !endCoords) {
+                    state.startCoords = null;
+                    state.lastCoords = null;
+                    return;
+                }
 
-            let finalCells = [];
-            if (state.currentTool === 'line') {
-                finalCells = _getCellsForLine(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
-            } else if (state.currentTool === 'rect') {
-                finalCells = _getCellsForRect(state.startCoords.x, state.startCoords.y, coords.x, coords.y, char, color);
+                const char = state.currentTool === 'eraser' ? ' ' : state.currentCharacter;
+                const color = state.currentTool === 'eraser' ? '#000000' : state.currentColor;
+
+                let finalCells = [];
+                if (state.currentTool === 'line') {
+                    finalCells = _getCellsForLine(state.startCoords.x, state.startCoords.y, endCoords.x, endCoords.y, char, color);
+                } else if (state.currentTool === 'rect') {
+                    finalCells = _getCellsForRect(state.startCoords.x, state.startCoords.y, endCoords.x, endCoords.y, char, color);
+                } else if (state.currentTool === 'circle') {
+                    const rx = Math.abs(state.startCoords.x - endCoords.x);
+                    const ry = Math.abs(state.startCoords.y - endCoords.y);
+                    finalCells = _getCellsForEllipse(state.startCoords.x, state.startCoords.y, rx, ry, char, color);
+                }
+
+                if (finalCells.length > 0) {
+                    const patch = _applyCellsToData(finalCells);
+                    _pushToUndoStack(patch);
+                    PaintUI.updateCanvas(finalCells);
+                }
             }
 
-            if (finalCells.length > 0) {
-                const patch = _applyCellsToData(finalCells);
+
+            state.startCoords = null;
+            state.lastCoords = null;
+        },
+        onCut: () => {
+            _copySelectionToClipboard();
+            const {x, y, width, height} = state.selection;
+            const erasedCells = [];
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    erasedCells.push({x: x + j, y: y + i, char: ' ', color: '#000000'});
+                }
+            }
+            if (erasedCells.length > 0) {
+                const patch = _applyCellsToData(erasedCells);
                 _pushToUndoStack(patch);
-                PaintUI.updateCanvas(finalCells);
+                PaintUI.updateCanvas(erasedCells);
+            }
+            state.selection = null;
+            PaintUI.hideSelectionRect();
+        },
+
+        onCopy: () => {
+            _copySelectionToClipboard();
+            state.selection = null;
+            PaintUI.hideSelectionRect();
+        },
+
+        onPaste: () => {
+            if (!state.clipboard || !state.lastCoords) return;
+            const pasteX = state.lastCoords.x;
+            const pasteY = state.lastCoords.y;
+            const pastedCells = [];
+
+            for (let i = 0; i < state.clipboard.length; i++) {
+                for (let j = 0; j < state.clipboard[i].length; j++) {
+                    pastedCells.push({
+                        x: pasteX + j,
+                        y: pasteY + i,
+                        ...state.clipboard[i][j]
+                    });
+                }
+            }
+            if (pastedCells.length > 0) {
+                const patch = _applyCellsToData(pastedCells);
+                _pushToUndoStack(patch);
+                PaintUI.updateCanvas(pastedCells);
             }
         },
         onSaveRequest: saveContent,
         onExitRequest: exit,
+        onZoomIn: () => {
+            state.zoomLevel = Math.min(state.ZOOM_MAX, state.zoomLevel + state.ZOOM_STEP);
+            PaintUI.updateZoom(state.zoomLevel);
+            PaintUI.updateStatusBar(state);
+        },
+        onZoomOut: () => {
+            state.zoomLevel = Math.max(state.ZOOM_MIN, state.zoomLevel - state.ZOOM_STEP);
+            PaintUI.updateZoom(state.zoomLevel);
+            PaintUI.updateStatusBar(state);
+        }
     };
 
     return { enter, exit, isActive: () => state.isActive };

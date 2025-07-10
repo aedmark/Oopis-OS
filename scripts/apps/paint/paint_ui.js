@@ -1,3 +1,5 @@
+// scripts/apps/paint/paint_ui.js
+
 const PaintUI = (() => {
     "use strict";
 
@@ -11,13 +13,21 @@ const PaintUI = (() => {
         elements.container = Utils.createElement('div', { id: 'paint-container', className: 'paint-container' });
 
         // --- Toolbar ---
-        const createToolBtn = (name, key) => Utils.createElement('button', { id: `paint-tool-${name}`, className: 'btn', textContent: name.charAt(0).toUpperCase() + name.slice(1), title: `${name} (${key.toUpperCase()})` });
+        const createToolBtn = (name, key, label) => Utils.createElement('button', {
+            id: `paint-tool-${name}`,
+            className: 'btn',
+            textContent: label,
+            title: `${name.charAt(0).toUpperCase() + name.slice(1)} (${key.toUpperCase()})`
+        });
 
         const toolGroup = Utils.createElement('div', { className: 'paint-tool-group' }, [
-            elements.pencilBtn = createToolBtn('pencil', 'p'),
-            elements.eraserBtn = createToolBtn('eraser', 'e'),
-            elements.lineBtn = createToolBtn('line', 'l'),
-            elements.rectBtn = createToolBtn('rect', 'r')
+            elements.pencilBtn = createToolBtn('pencil', 'p', '✎'),
+            elements.eraserBtn = createToolBtn('eraser', 'e', '✐'),
+            elements.lineBtn = createToolBtn('line', 'l', '—'),
+            elements.rectBtn = createToolBtn('rect', 'r', '▢'),
+            elements.circleBtn = createToolBtn('circle', 'c', '◯'),
+            elements.fillBtn = createToolBtn('fill', 'f', '⛁'),
+            elements.selectBtn = createToolBtn('select', 's', '⬚'),
         ]);
 
         const colorSwatches = initialState.PALETTE.map(color =>
@@ -32,17 +42,61 @@ const PaintUI = (() => {
 
         elements.charInput = Utils.createElement('input', { type: 'text', className: 'paint-char-selector', value: initialState.currentCharacter, maxLength: 1 });
 
-        elements.undoBtn = Utils.createElement('button', { className: 'btn', textContent: 'Undo' });
-        elements.redoBtn = Utils.createElement('button', { className: 'btn', textContent: 'Redo' });
-        elements.gridBtn = Utils.createElement('button', { className: 'btn', textContent: 'Grid' });
+        elements.undoBtn = Utils.createElement('button', {className: 'btn', textContent: '↩'});
+        elements.redoBtn = Utils.createElement('button', {className: 'btn', textContent: '↪'});
+        elements.gridBtn = Utils.createElement('button', {className: 'btn', textContent: '▦'});
         const historyGroup = Utils.createElement('div', { className: 'paint-tool-group' }, [elements.undoBtn, elements.redoBtn, elements.gridBtn]);
 
-        const toolbar = Utils.createElement('header', { className: 'paint-toolbar' }, [ toolGroup, colorGroup, brushGroup, elements.charInput, historyGroup ]);
+        elements.cutBtn = Utils.createElement('button', {className: 'btn', textContent: 'Cut', title: 'Cut (Ctrl+X)'});
+        elements.copyBtn = Utils.createElement('button', {
+            className: 'btn',
+            textContent: 'Copy',
+            title: 'Copy (Ctrl+C)'
+        });
+        elements.pasteBtn = Utils.createElement('button', {
+            className: 'btn',
+            textContent: 'Paste',
+            title: 'Paste (Ctrl+V)'
+        });
+        const clipboardGroup = Utils.createElement('div', {className: 'paint-tool-group'}, [elements.cutBtn, elements.copyBtn, elements.pasteBtn]);
+
+        elements.zoomInBtn = Utils.createElement('button', {
+            className: 'btn',
+            textContent: '➕'
+        });
+        elements.zoomOutBtn = Utils.createElement('button', {
+            className: 'btn',
+            textContent: '➖'
+        });
+        const zoomGroup = Utils.createElement('div', {className: 'paint-tool-group'}, [elements.zoomOutBtn, elements.zoomInBtn]);
+
+        // MODIFICATION: Add exit button and spacer
+        const toolbarSpacer = Utils.createElement('div', {style: 'flex-grow: 1;'});
+        elements.exitBtn = Utils.createElement('button', {
+            id: 'paint-exit-btn',
+            className: 'btn',
+            textContent: '✕',
+            title: 'Exit Application'
+        });
+
+
+        const toolbar = Utils.createElement('header', {className: 'paint-toolbar'}, [
+            toolGroup,
+            colorGroup,
+            brushGroup,
+            elements.charInput,
+            historyGroup,
+            clipboardGroup,
+            zoomGroup,
+            toolbarSpacer,
+            elements.exitBtn
+        ]);
 
         // --- Canvas ---
         elements.canvas = Utils.createElement('div', { className: 'paint-canvas', id: 'paint-canvas' });
         elements.previewCanvas = Utils.createElement('div', { className: 'paint-preview-canvas', id: 'paint-preview-canvas' });
-        const canvasContainer = Utils.createElement('div', { className: 'paint-canvas-container' }, [elements.canvas, elements.previewCanvas]);
+        elements.selectionRect = Utils.createElement('div', {className: 'paint-selection-rect hidden'});
+        const canvasContainer = Utils.createElement('div', {className: 'paint-canvas-container'}, [elements.canvas, elements.previewCanvas, elements.selectionRect]);
         const mainArea = Utils.createElement('main', { className: 'paint-main' }, [canvasContainer]);
 
         // --- Status Bar ---
@@ -50,8 +104,9 @@ const PaintUI = (() => {
         elements.statusChar = Utils.createElement('span');
         elements.statusBrush = Utils.createElement('span');
         elements.statusCoords = Utils.createElement('span');
+        elements.statusZoom = Utils.createElement('span');
         elements.statusBar = Utils.createElement('footer', { className: 'paint-statusbar' }, [
-            elements.statusTool, elements.statusChar, elements.statusBrush, elements.statusCoords
+            elements.statusTool, elements.statusChar, elements.statusBrush, elements.statusCoords, elements.statusZoom
         ]);
 
         // --- Assemble & Show ---
@@ -60,6 +115,7 @@ const PaintUI = (() => {
         renderInitialCanvas(initialState.canvasData, initialState.canvasDimensions);
         updateToolbar(initialState);
         updateStatusBar(initialState);
+        updateZoom(initialState.zoomLevel);
         _addEventListeners();
 
         AppLayerManager.show(elements.container);
@@ -123,7 +179,7 @@ const PaintUI = (() => {
     }
 
     function updateToolbar(state) {
-        ['pencil', 'eraser', 'line', 'rect'].forEach(tool => {
+        ['pencil', 'eraser', 'line', 'rect', 'circle', 'fill', 'select'].forEach(tool => {
             elements[`${tool}Btn`].classList.toggle('active', state.currentTool === tool);
         });
         document.querySelectorAll('.paint-color-swatch').forEach(swatch => {
@@ -140,13 +196,48 @@ const PaintUI = (() => {
         elements.statusChar.textContent = `Char: ${state.currentCharacter}`;
         elements.statusBrush.textContent = `Brush: ${state.brushSize}`;
         elements.statusCoords.textContent = coords ? `Coords: ${coords.x}, ${coords.y}` : '';
+        elements.statusZoom.textContent = `Zoom: ${state.zoomLevel}%`;
     }
 
     function toggleGrid(visible) {
         elements.canvas.classList.toggle('grid-visible', visible);
     }
 
+    function updateZoom(zoomLevel) {
+        const baseFontSize = 20;
+        const newSize = baseFontSize * (zoomLevel / 100);
+        const gridShouldBeVisible = zoomLevel >= 70 && managerCallbacks.isGridVisible ? managerCallbacks.isGridVisible() : false;
+
+        if (elements.canvas) {
+            elements.canvas.style.fontSize = `${newSize}px`;
+            elements.canvas.classList.toggle('grid-visible', gridShouldBeVisible);
+        }
+        if (elements.previewCanvas) {
+            elements.previewCanvas.style.fontSize = `${newSize}px`;
+        }
+    }
+
+    function showSelectionRect(rect) {
+        if (!elements.selectionRect) return;
+        const charWidth = elements.canvas.firstChild.offsetWidth;
+        const charHeight = elements.canvas.firstChild.offsetHeight;
+
+        elements.selectionRect.style.left = `${rect.x * charWidth}px`;
+        elements.selectionRect.style.top = `${rect.y * charHeight}px`;
+        elements.selectionRect.style.width = `${rect.width * charWidth}px`;
+        elements.selectionRect.style.height = `${rect.height * charHeight}px`;
+        elements.selectionRect.classList.remove('hidden');
+    }
+
+    function hideSelectionRect() {
+        if (elements.selectionRect) {
+            elements.selectionRect.classList.add('hidden');
+        }
+    }
+
+
     function _getCoordsFromEvent(e) {
+        if (!elements.canvas || !elements.canvas.firstChild) return null;
         const rect = elements.canvas.getBoundingClientRect();
         const charWidth = elements.canvas.firstChild.offsetWidth;
         const charHeight = elements.canvas.firstChild.offsetHeight;
@@ -162,6 +253,9 @@ const PaintUI = (() => {
         elements.eraserBtn.addEventListener('click', () => managerCallbacks.onToolSelect('eraser'));
         elements.lineBtn.addEventListener('click', () => managerCallbacks.onToolSelect('line'));
         elements.rectBtn.addEventListener('click', () => managerCallbacks.onToolSelect('rect'));
+        elements.circleBtn.addEventListener('click', () => managerCallbacks.onToolSelect('circle'));
+        elements.fillBtn.addEventListener('click', () => managerCallbacks.onToolSelect('fill'));
+        elements.selectBtn.addEventListener('click', () => managerCallbacks.onToolSelect('select'));
 
         // Color selection
         elements.container.querySelectorAll('.paint-color-swatch').forEach(swatch => {
@@ -179,6 +273,18 @@ const PaintUI = (() => {
         elements.redoBtn.addEventListener('click', () => managerCallbacks.onRedo());
         elements.gridBtn.addEventListener('click', () => managerCallbacks.onToggleGrid());
 
+        elements.cutBtn.addEventListener('click', () => managerCallbacks.onCut());
+        elements.copyBtn.addEventListener('click', () => managerCallbacks.onCopy());
+        elements.pasteBtn.addEventListener('click', () => managerCallbacks.onPaste());
+
+
+        // Zoom
+        elements.zoomInBtn.addEventListener('click', () => managerCallbacks.onZoomIn());
+        elements.zoomOutBtn.addEventListener('click', () => managerCallbacks.onZoomOut());
+
+        // MODIFICATION: Add exit button listener
+        elements.exitBtn.addEventListener('click', () => managerCallbacks.onExitRequest());
+
         // Canvas mouse events
         elements.canvas.addEventListener('mousedown', (e) => {
             const coords = _getCoordsFromEvent(e);
@@ -189,22 +295,49 @@ const PaintUI = (() => {
             if(coords) managerCallbacks.onCanvasMouseMove(coords);
         });
         document.addEventListener('mouseup', (e) => {
-            // Listen on document to catch mouse-ups outside canvas
-            const coords = _getCoordsFromEvent(e);
-            if(coords) managerCallbacks.onCanvasMouseUp(coords);
+            managerCallbacks.onCanvasMouseUp(null);
         });
-        elements.canvas.addEventListener('mouseleave', () => updateStatusBar({ currentTool: elements.statusTool.textContent, currentCharacter: elements.statusChar.textContent, brushSize: elements.statusBrush.textContent}));
+        elements.canvas.addEventListener('mouseleave', () => updateStatusBar({
+            currentTool: elements.statusTool.textContent.split(': ')[1],
+            currentCharacter: elements.statusChar.textContent.split(': ')[1],
+            brushSize: elements.statusBrush.textContent.split(': ')[1],
+            zoomLevel: parseInt(elements.statusZoom.textContent.replace(/\D/g, ''))
+        }));
 
         // Keyboard shortcuts
         elements.container.addEventListener('keydown', (e) => {
-            if(e.target.tagName === 'INPUT') return; // Don't hijack input fields
+            if (e.target.tagName === 'INPUT') return;
 
             if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
                 switch (e.key.toLowerCase()) {
-                    case 's': e.preventDefault(); managerCallbacks.onSaveRequest(); break;
-                    case 'o': e.preventDefault(); managerCallbacks.onExitRequest(); break;
-                    case 'z': e.preventDefault(); e.shiftKey ? managerCallbacks.onRedo() : managerCallbacks.onUndo(); break;
-                    case 'y': e.preventDefault(); managerCallbacks.onRedo(); break;
+                    case 's':
+                        managerCallbacks.onSaveRequest();
+                        break;
+                    case 'o':
+                        managerCallbacks.onExitRequest();
+                        break;
+                    case 'z':
+                        e.shiftKey ? managerCallbacks.onRedo() : managerCallbacks.onUndo();
+                        break;
+                    case 'y':
+                        managerCallbacks.onRedo();
+                        break;
+                    case '=':
+                        managerCallbacks.onZoomIn();
+                        break;
+                    case '-':
+                        managerCallbacks.onZoomOut();
+                        break;
+                    case 'x':
+                        managerCallbacks.onCut();
+                        break;
+                    case 'c':
+                        managerCallbacks.onCopy();
+                        break;
+                    case 'v':
+                        managerCallbacks.onPaste();
+                        break;
                 }
             } else {
                 switch (e.key.toLowerCase()) {
@@ -212,14 +345,34 @@ const PaintUI = (() => {
                     case 'e': managerCallbacks.onToolSelect('eraser'); break;
                     case 'l': managerCallbacks.onToolSelect('line'); break;
                     case 'r': managerCallbacks.onToolSelect('rect'); break;
+                    case 'c':
+                        managerCallbacks.onToolSelect('circle');
+                        break;
+                    case 'f':
+                        managerCallbacks.onToolSelect('fill');
+                        break;
+                    case 's':
+                        managerCallbacks.onToolSelect('select');
+                        break;
                     case 'g': managerCallbacks.onToggleGrid(); break;
                     case 'escape': managerCallbacks.onExitRequest(); break;
                 }
             }
         });
-        // Make container focusable
         elements.container.setAttribute('tabindex', '-1');
     }
 
-    return { buildAndShow, hideAndReset, updateCanvas, updatePreviewCanvas, updateToolbar, updateStatusBar, toggleGrid, renderCanvas: renderInitialCanvas };
+    return {
+        buildAndShow,
+        hideAndReset,
+        updateCanvas,
+        updatePreviewCanvas,
+        updateToolbar,
+        updateStatusBar,
+        toggleGrid,
+        updateZoom,
+        renderCanvas: renderInitialCanvas,
+        showSelectionRect,
+        hideSelectionRect
+    };
 })();

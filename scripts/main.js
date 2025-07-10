@@ -1,3 +1,4 @@
+// aedmark/oopis-os-dev/Oopis-OS-DEV-e5518cea540819416617bfa81def39b31b5d26d1/scripts/main.js
 let DOM = {};
 
 function initializeTerminalEventListeners() {
@@ -50,10 +51,11 @@ function initializeTerminalEventListeners() {
       return;
     }
 
-    if (CommandExecutor.isScriptRunning()) {
-      e.preventDefault();
-      return;
-    }
+      // This block was removed as it is now handled by the CommandExecutor and run command logic.
+      // if (CommandExecutor.isScriptRunning()) {
+      //   e.preventDefault();
+      //   return;
+      // }
 
     switch (e.key) {
       case "Enter":

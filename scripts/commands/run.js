@@ -1,3 +1,4 @@
+// aedmark/oopis-os-dev/Oopis-OS-DEV-e5518cea540819416617bfa81def39b31b5d26d1/scripts/commands/run.js
 (() => {
     "use strict";
 
@@ -35,7 +36,7 @@
             if (!scriptNode.content) {
                 return { success: true, output: `run: Script '${scriptPathArg}' is empty.` };
             }
-            if (CommandExecutor.isScriptRunning() && options.isInteractive) {
+            if (options.scriptingContext && options.isInteractive) {
                 return { success: false, error: "run: Cannot execute a script while another is already running in interactive mode." };
             }
 
@@ -55,7 +56,6 @@
 
             EnvironmentManager.push();
             if (isTopLevelCall) {
-                CommandExecutor.setScriptExecutionInProgress(true);
                 if (options.isInteractive) TerminalUI.setInputState(false);
             }
 
@@ -125,7 +125,6 @@
                 EnvironmentManager.pop();
 
                 if (isTopLevelCall) {
-                    CommandExecutor.setScriptExecutionInProgress(false);
                     if (options.isInteractive) {
                         TerminalUI.setInputState(true);
                     }

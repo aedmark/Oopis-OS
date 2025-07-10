@@ -24,7 +24,7 @@
 
             const ms = parsedArg.value;
 
-            if (options.isInteractive && !CommandExecutor.isScriptRunning()) {
+            if (options.isInteractive && !options.scriptingContext) {
                 await OutputManager.appendToOutput(`Delaying for ${ms}ms...`);
             }
 
@@ -50,7 +50,7 @@
             try {
                 await Promise.race([delayPromise, abortPromise]);
 
-                if (options.isInteractive && !CommandExecutor.isScriptRunning()) {
+                if (options.isInteractive && !options.scriptingContext) {
                     await OutputManager.appendToOutput(`Delay complete.`);
                 }
                 return { success: true, output: "" };

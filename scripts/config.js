@@ -6,7 +6,7 @@ const Config = (() => {
     const defaultConfig = {
         DATABASE: {
             NAME: "OopisOsDB",
-            VERSION: 1,
+            VERSION: 4,
             FS_STORE_NAME: "FileSystemsStore",
             UNIFIED_FS_KEY: "OopisOS_SharedFS",
         },
@@ -146,13 +146,13 @@ const Config = (() => {
                 },
                 'ollama': {
                     url: "http://localhost:11434/api/generate",
-                    defaultModel: "gemma3:12b"
+                    defaultModel: "gemma3"
                 }
             }
         },
         COMMANDS_MANIFEST: [
             "adventure", "alias", "awk", "backup", "basic", "bc", "cat", "cd", "check_fail",
-            "chgrp", "chidi", "chmod", "chown","cksum", "clear", "clearfs", "cp", "csplit",
+            "chgrp", "chidi", "chmod", "chown", "cksum", "clear", "clearfs", "code", "cp", "csplit",
             "curl", "date", "delay", "df", "diff", "du", "echo", "edit", "explore",
             "export", "find", "gemini", "grep", "groupadd", "groupdel",
             "groups", "head", "help", "history", "kill", "less", "listusers",

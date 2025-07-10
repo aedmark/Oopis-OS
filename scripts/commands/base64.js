@@ -1,42 +1,25 @@
-
 (() => {
     "use strict";
 
     const base64CommandDefinition = {
         commandName: "base64",
+        isInputStream: true,
         flagDefinitions: [
             { name: "decode", short: "-d", long: "--decode" }
         ],
         argValidation: {
             max: 1,
         },
-        pathValidation: [
-            {
-                argIndex: 0,
-                optional: true,
-                options: { expectedType: 'file' }
-            }
-        ],
-        permissionChecks: [
-            {
-                pathArgIndex: 0,
-                permissions: ["read"]
-            }
-        ],
         coreLogic: async (context) => {
-            const { args, flags, options, validatedPaths, currentUser } = context;
+            const {flags, inputItems, inputError} = context;
 
-            let inputData = "";
+            if (inputError) {
+                return {success: false, error: "base64: No readable input provided."};
+            }
 
-            if (args.length > 0) {
-                const pathInfo = validatedPaths[0];
-                if (pathInfo.error) {
-                    return { success: false, error: pathInfo.error };
-                }
-                inputData = pathInfo.node.content || "";
-            } else if (options.stdinContent !== null) {
-                inputData = options.stdinContent;
-            } else {
+            const inputData = inputItems.map(item => item.content).join('\n');
+
+            if (inputData === null || inputData === undefined) {
                 return { success: true, output: "" };
             }
 

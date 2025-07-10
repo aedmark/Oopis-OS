@@ -4,105 +4,73 @@
     const editCommandDefinition = {
         commandName: "edit",
         argValidation: {
-            exact: 1,
-            error: "expects exactly one filename.",
+            max: 1,
+            error: "Usage: edit [filepath]"
         },
         pathValidation: [{
             argIndex: 0,
+            optional: true,
             options: {
                 allowMissing: true,
-                disallowRoot: true,
-                expectedType: "file",
-            },
-        }, ],
-        permissionChecks: [{
-            pathArgIndex: 0,
-            permissions: ["read"],
-        }, ],
-
+                expectedType: 'file'
+            }
+        }],
         coreLogic: async (context) => {
-            const {
-                options,
-                currentUser,
-                validatedPaths
-            } = context;
+            const {args, options, currentUser, validatedPaths} = context;
 
             if (!options.isInteractive) {
-                return {
-                    success: false,
-                    error: "edit: Can only be run in interactive mode.",
-                };
+                return {success: false, error: "edit: Can only be run in interactive mode."};
             }
 
-            // Ensure the new Editor modules are available
             if (typeof EditorManager === 'undefined' || typeof EditorUI === 'undefined') {
-                return {
-                    success: false,
-                    error: "edit: The new Editor V2 application modules are not loaded."
-                };
+                return {success: false, error: "edit: The editor application modules are not loaded."};
             }
 
-            const pathInfo = validatedPaths[0];
-            const resolvedPath = pathInfo.resolvedPath;
-            const content = pathInfo.node ? pathInfo.node.content || "" : "";
+            const pathArg = args.length > 0 ? args[0] : null;
+            let fileNode = null;
+            let resolvedPath = null;
 
-            // Check write permission for existing files
-            if (pathInfo.node && !FileSystemManager.hasPermission(pathInfo.node, currentUser, "write")) {
-                await OutputManager.appendToOutput(
-                    `edit: Warning: File '${resolvedPath}' is read-only. You will not be able to save changes.`, {
-                        typeClass: Config.CSS_CLASSES.WARNING_MSG
-                    }
-                );
+            if (pathArg) {
+                const pathInfo = validatedPaths[0];
+                if (pathInfo.error) {
+                    return {success: false, error: `edit: ${pathInfo.error}`};
+                }
+                if (pathInfo.node && !FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
+                    return {success: false, error: `edit: cannot read file '${pathArg}': Permission denied`};
+                }
+                fileNode = pathInfo.node;
+                resolvedPath = pathInfo.resolvedPath;
             }
 
-            // A callback to be executed by the editor when it closes
-            const onEditorExit = () => {
-                // This function can be used to perform actions after the editor closes,
-                // like refreshing the terminal prompt or displaying a message.
-                // For now, it does nothing, but the hook is in place.
-            };
+            const fileContent = fileNode ? fileNode.content : "";
+            EditorManager.enter(resolvedPath, fileContent);
 
-            // Launch the new editor
-            EditorManager.enter(resolvedPath, content, onEditorExit);
-
-            // The command itself returns immediately after launching the app.
-            // The editor now manages its own lifecycle.
-            return {
-                success: true,
-                output: "" // Suppress the "Opening editor..." message as the UI is now instant
-            };
-        },
+            return {success: true, output: ""};
+        }
     };
 
-    const editDescription = "Opens a file in the V2 full-screen text editor.";
+    const editDescription = "A powerful, context-aware text and code editor.";
+    const editHelpText = `Usage: edit [filepath]
 
-    const editHelpText = `Usage: edit <filename>
-
-Open a file in the OopisOS full-screen text editor.
+Launches the OopisOS text editor.
 
 DESCRIPTION
-       The edit command launches a powerful, full-screen text editor for
-       creating and modifying files. If <filename> does not exist, it will
-       be created upon saving.
+       The 'edit' command opens a powerful, full-screen modal application for creating
+       and editing files. It intelligently adapts its interface based on the file type.
+
+       - If a filepath is provided, it opens that file.
+       - If the file does not exist, a new empty file will be created with that name upon saving.
+       - If no filepath is given, it opens a new, untitled document.
+
+MODES
+       - Markdown (.md): Activates a live preview and a formatting toolbar.
+       - HTML (.html): Activates a live, sandboxed preview of the rendered HTML.
+       - Other (e.g., .txt, .js, .sh): Provides a clean, standard text editing experience.
 
 KEYBOARD SHORTCUTS
-       Ctrl+S
-              Save the current content and exit the editor.
-       Ctrl+O
-              Exit the editor. If there are unsaved changes, you will be
-              prompted to confirm before discarding them.
-       Ctrl+Z
-              Undo the last action.
-       Ctrl+Y / Ctrl+Shift+Z
-              Redo the last undone action.
-       Esc
-              Exit the editor (prompts if unsaved).
-
-PERMISSIONS
-       You must have read permission on a file to open it. To save changes,
-       you must have write permission on the file. If creating a new file,
-       you must have write permission in the parent directory.`;
-
+       Ctrl+S: Save       Ctrl+O: Exit
+       Ctrl+P: Toggle Preview    Ctrl+B: Bold
+       Ctrl+I: Italic      Ctrl+K: Insert Link`;
 
     CommandRegistry.register("edit", editCommandDefinition, editDescription, editHelpText);
 })();
