@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Library of Babel v0.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #d4d4d4;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        textarea {
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+        }
+
+        .button-style {
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem; /* rounded-md */
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease;
+        }
+
+        .button-style:focus {
+            outline: none;
+            /* Unified focus ring, Tailwind dark: variants can also be used if needed */
+            box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.5); /* emerald-400 focus ring */
+        }
+
+        .button-primary {
+            background-color: #059669; /* emerald-600 */
+            color: #ffffff;
+        }
+
+        .button-primary:hover {
+            background-color: #06b6d4; /* cyan-500 for hover in the unified dark theme */
+        }
+
+        .button-secondary {
+            background-color: #4b5563; /* gray-600 */
+            color: #e5e7eb; /* gray-200 */
+        }
+
+        .button-secondary:hover {
+            background-color: #52525b; /* stone-600 */
+        }
+
+        .full-screen-mode {
+            overflow: hidden;
+        }
+
+        #previewArea h1, #previewArea h2, #previewArea h3, #previewArea h4, #previewArea h5, #previewArea h6 {
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        #previewArea h1 {
+            font-size: 2em;
+        }
+
+        #previewArea h2 {
+            font-size: 1.5em;
+        }
+
+        #previewArea h3 {
+            font-size: 1.25em;
+        }
+
+        #previewArea p {
+            margin-bottom: 1em;
+            line-height: 1.7;
+        }
+
+        #previewArea ul, #previewArea ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        #previewArea ul {
+            list-style-type: disc;
+        }
+
+        #previewArea ol {
+            list-style-type: decimal;
+        }
+
+        #previewArea ul li input[type="checkbox"] {
+            margin-right: 0.5em;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            padding: 1.5rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 90%;
+            width: 750px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close-button {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: none;
+            border: none;
+            font-size: 1.75rem;
+            cursor: pointer;
+            color: #a1a1aa;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .modal-close-button:hover {
+            color: #f87171;
+        }
+
+        .markdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+            margin-bottom: 1.5em;
+        }
+
+        .markdown-table th, .markdown-table td {
+            border: 1px solid #52525b;
+            padding: 0.75em;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .markdown-table th {
+            background-color: #4b5563;
+            font-weight: 600;
+        }
+
+        .markdown-table td code {
+            white-space: pre-wrap;
+            font-size: 0.9em;
+        }
+
+        .markdown-table .effect-cell input[type="checkbox"] {
+            margin-right: 0.25em;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen bg-gray-100 dark:bg-stone-950">
+<div class="container mx-auto p-4 sm:p-6 lg:p-8 flex-grow flex flex-col items-center justify-center">
+    <div class="w-full max-w-4xl bg-white dark:bg-stone-900 rounded-xl shadow-2xl p-5 sm:p-8 flex flex-col transition-all duration-300 ease-in-out">
+        <div class="mb-4">
+            <input
+                    type="text"
+                    id="documentTitle"
+                    class="w-full p-3 border border-gray-300 rounded-lg text-xl font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
+                           dark:bg-stone-800 dark:border-stone-700 dark:text-white dark:placeholder-stone-400
+                           bg-gray-50 text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                    placeholder="Document Title"
+            /></div>
+
+        <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+            <div class="flex gap-1">
+                <button id="fontSizeDecrease" class="button-style button-secondary text-sm" title="Decrease font size">
+                    <i class="fas fa-minus"></i>A
+                </button>
+                <button id="fontSizeIncrease" class="button-style button-secondary text-sm" title="Increase font size">
+                    <i class="fas fa-plus"></i>A
+                </button>
+            </div>
+            <div class="flex flex-wrap gap-2 justify-end">
+                <button id="togglePreview" class="button-style button-secondary" title="Toggle Preview"><i
+                        class="fas fa-eye mr-1"></i>Preview
+                </button>
+                <button id="showMarkdownHelp" class="button-style button-secondary" title="Markdown Help"><i
+                        class="fas fa-question-circle mr-1"></i>Help
+                </button>
+                <button id="toggleFullScreen" class="button-style button-primary" title="Toggle Full Screen"><i
+                        class="fas fa-expand mr-1"></i>Full Screen
+                </button>
+                <button id="exportText" class="button-style button-primary" title="Export as Markdown"><i
+                        class="fas fa-file-download mr-1"></i>Export
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-1 mb-4 p-2 bg-gray-100 dark:bg-stone-800 rounded-md">
+            <button id="formatBold" class="button-style button-secondary text-sm" title="Bold (Ctrl+B)"><i
+                    class="fas fa-bold"></i></button>
+            <button id="formatItalic" class="button-style button-secondary text-sm" title="Italic (Ctrl+I)"><i
+                    class="fas fa-italic"></i></button>
+            <button id="formatStrikethrough" class="button-style button-secondary text-sm" title="Strikethrough"><i
+                    class="fas fa-strikethrough"></i></button>
+            <button id="formatH1" class="button-style button-secondary text-sm" title="Heading 1"><i
+                    class="fas fa-heading mr-1"></i>1
+            </button>
+            <button id="formatH2" class="button-style button-secondary text-sm" title="Heading 2"><i
+                    class="fas fa-heading mr-1"></i>2
+            </button>
+            <button id="formatH3" class="button-style button-secondary text-sm" title="Heading 3"><i
+                    class="fas fa-heading mr-1"></i>3
+            </button>
+            <button id="formatLink" class="button-style button-secondary text-sm" title="Insert Link (Ctrl+K)"><i
+                    class="fas fa-link"></i></button>
+            <button id="formatBlockquote" class="button-style button-secondary text-sm" title="Blockquote"><i
+                    class="fas fa-quote-right"></i></button>
+            <button id="formatCode" class="button-style button-secondary text-sm" title="Code Block"><i
+                    class="fas fa-code"></i></button>
+            <button id="formatList" class="button-style button-secondary text-sm" title="Unordered List"><i
+                    class="fas fa-list-ul"></i></button>
+            <button id="formatOrderedList" class="button-style button-secondary text-sm" title="Ordered List"><i
+                    class="fas fa-list-ol"></i></button>
+            <button id="formatTaskList" class="button-style button-secondary text-sm" title="Task List"><i
+                    class="fas fa-tasks"></i></button>
+            <button id="formatTable" class="button-style button-secondary text-sm" title="Insert Table"><i
+                    class="fas fa-table"></i></button>
+            <button id="formatHR" class="button-style button-secondary text-sm" title="Horizontal Rule"><i
+                    class="fas fa-ruler-horizontal"></i></button>
+        </div>
+
+        <div class="relative flex-grow">
+                <textarea
+                        id="writingArea"
+                        class="w-full h-96 p-4 border border-gray-300 dark:border-stone-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg leading-relaxed bg-white dark:bg-stone-800 dark:text-gray-100"
+                        placeholder="Start writing your masterpiece..."
+                        spellcheck="true"
+                ></textarea>
+            <div
+                    id="previewArea"
+                    class="hidden w-full h-96 p-4 border border-gray-300 dark:border-stone-700 rounded-lg overflow-y-auto bg-white dark:bg-stone-800 dark:text-gray-100 prose dark:prose-invert max-w-none"
+                    style="font-size: 18px;">
+            </div>
+        </div>
+
+        <div class="mt-4 flex justify-between items-center text-sm text-stone-600 dark:text-stone-400">
+            <div class="flex space-x-4">
+                <span id="wordCount" class="font-medium">Words: 0</span>
+                <span id="charCount" class="font-medium">Characters: 0</span>
+            </div>
+            <div class="text-xs">
+                Auto-Save: <span id="autoSaveStatus" class="font-semibold">Never</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="markdownHelpModal" class="modal-overlay">
+    <div class="modal-content bg-white dark:bg-stone-800 dark:text-gray-100">
+        <button class="modal-close-button" id="closeMarkdownHelp" title="Close">&times;</button>
+        <h2 class="text-2xl font-bold mb-6 text-emerald-600 dark:text-emerald-400">Markdown Formatting Guide</h2>
+        <p class="mb-4 text-base">Here are some common Markdown syntax examples:</p>
+
+        <div class="max-h-[60vh] overflow-y-auto pr-2">
+            <table class="markdown-table">
+                <thead>
+                <tr>
+                    <th>Syntax</th>
+                    <th class="w-1/3">Effect</th>
+                    <th>Example / Notes</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><code># Heading 1</code></td>
+                    <td class="effect-cell"><h1 class="text-2xl font-bold my-0 text-emerald-500 dark:text-emerald-400">
+                        Heading 1</h1></td>
+                    <td>Largest heading</td>
+                </tr>
+                <tr>
+                    <td><code>## Heading 2</code></td>
+                    <td class="effect-cell"><h2 class="text-xl font-bold my-0 text-emerald-500 dark:text-emerald-400">
+                        Heading 2</h2></td>
+                    <td>Second largest</td>
+                </tr>
+                <tr>
+                    <td><code>### Heading 3</code></td>
+                    <td class="effect-cell"><h3 class="text-lg font-bold my-0 text-emerald-500 dark:text-emerald-400">
+                        Heading 3</h3></td>
+                    <td>Third largest</td>
+                </tr>
+                <tr>
+                    <td><code>**bold text**</code> or <br><code>__bold text__</code></td>
+                    <td class="effect-cell"><strong>bold text</strong></td>
+                    <td>Bold emphasis</td>
+                </tr>
+                <tr>
+                    <td><code>*italic text*</code> or <br><code>_italic text_</code></td>
+                    <td class="effect-cell"><em>italic text</em></td>
+                    <td>Italic emphasis</td>
+                </tr>
+                <tr>
+                    <td><code>~~strikethrough~~</code></td>
+                    <td class="effect-cell">
+                        <del>strikethrough</del>
+                    </td>
+                    <td>Strikethrough text</td>
+                </tr>
+                <tr>
+                    <td><code>- List item</code><br><code>* List item</code><br><code>+ List item</code></td>
+                    <td class="effect-cell">
+                        <ul>
+                            <li>List item</li>
+                        </ul>
+                    </td>
+                    <td>Unordered list</td>
+                </tr>
+                <tr>
+                    <td><code>1. First item</code><br><code>2. Second item</code></td>
+                    <td class="effect-cell">
+                        <ol>
+                            <li>First item</li>
+                            <li>Second item</li>
+                        </ol>
+                    </td>
+                    <td>Ordered list</td>
+                </tr>
+                <tr>
+                    <td><code>- [ ] Task item</code></td>
+                    <td class="effect-cell">
+                        <ul class="list-none pl-0">
+                            <li class="flex items-center"><input type="checkbox" disabled
+                                                                 class="mr-2 form-checkbox text-emerald-500 bg-stone-700 border-stone-600">Task
+                                item
+                            </li>
+                        </ul>
+                    </td>
+                    <td>Unchecked task</td>
+                </tr>
+                <tr>
+                    <td><code>- [x] Done task</code></td>
+                    <td class="effect-cell">
+                        <ul class="list-none pl-0">
+                            <li class="flex items-center"><input type="checkbox" checked disabled
+                                                                 class="mr-2 form-checkbox text-emerald-500 bg-stone-700 border-stone-600">Done
+                                task
+                            </li>
+                        </ul>
+                    </td>
+                    <td>Checked task</td>
+                </tr>
+                <tr>
+                    <td><code>`inline code`</code></td>
+                    <td class="effect-cell"><code class="bg-stone-700 text-rose-400 px-1 py-0.5 rounded">inline
+                        code</code></td>
+                    <td>Inline code snippet</td>
+                </tr>
+                <tr>
+                    <td><code>```language<br>code block<br>```</code></td>
+                    <td class="effect-cell">
+                        <pre class="bg-stone-700 p-2 rounded text-sm my-0"><code>code block</code></pre>
+                    </td>
+                    <td>Fenced code block</td>
+                </tr>
+                <tr>
+                    <td><code>&gt; Blockquote</code></td>
+                    <td class="effect-cell">
+                        <blockquote class="border-l-4 border-stone-600 pl-2 italic my-0">Blockquote</blockquote>
+                    </td>
+                    <td>Blockquote section</td>
+                </tr>
+                <tr>
+                    <td><code>[Link Text](url)</code></td>
+                    <td class="effect-cell"><a href="#" class="text-emerald-400 underline">Link Text</a></td>
+                    <td>Hyperlink</td>
+                </tr>
+                <tr>
+                    <td><code>![Alt Text](image_url)</code></td>
+                    <td class="effect-cell"><em>(Image will be displayed)</em></td>
+                    <td>Image embedding</td>
+                </tr>
+                <tr>
+                    <td><code>---</code> or `***` or `___`</td>
+                    <td class="effect-cell">
+                        <hr class="my-2 border-stone-600">
+                    </td>
+                    <td>Horizontal rule</td>
+                </tr>
+                <tr>
+                    <td>
+                                <pre class="text-xs whitespace-pre-wrap bg-transparent p-0 m-0"><code>| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1.1 | Cell 1.2 |
+| Cell 2.1 | Cell 2.2 |</code></pre>
+                    </td>
+                    <td class="effect-cell">
+                        <table class="border border-collapse border-stone-600 my-0 text-sm">
+                            <thead>
+                            <tr>
+                                <th class="border p-1 bg-stone-700">Header 1</th>
+                                <th class="border p-1 bg-stone-700">Header 2</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td class="border p-1">Cell 1.1</td>
+                                <td class="border p-1">Cell 1.2</td>
+                            </tr>
+                            <tr>
+                                <td class="border p-1">Cell 2.1</td>
+                                <td class="border p-1">Cell 2.2</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td>Basic table structure</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="mt-6 text-xs text-stone-500 dark:text-stone-400">For more advanced Markdown, refer to online guides
+            like the <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank" rel="noopener noreferrer"
+                        class="text-emerald-400 underline">Markdown Guide Cheat Sheet</a>.</p>
+    </div>
+</div>
+
+<script>
+    // --- DOM Element Selection ---
+    const writingArea = document.getElementById('writingArea');
+    const previewArea = document.getElementById('previewArea');
+    const documentTitleInput = document.getElementById('documentTitle');
+    const wordCountSpan = document.getElementById('wordCount');
+    const charCountSpan = document.getElementById('charCount');
+    const togglePreviewButton = document.getElementById('togglePreview');
+    const showMarkdownHelpButton = document.getElementById('showMarkdownHelp');
+    const closeMarkdownHelpButton = document.getElementById('closeMarkdownHelp');
+    const markdownHelpModal = document.getElementById('markdownHelpModal');
+    const toggleFullScreenButton = document.getElementById('toggleFullScreen');
+    const fontSizeIncreaseButton = document.getElementById('fontSizeIncrease');
+    const fontSizeDecreaseButton = document.getElementById('fontSizeDecrease');
+    const exportTextButton = document.getElementById('exportText');
+    const autoSaveStatus = document.getElementById('autoSaveStatus');
+
+    // Markdown Toolbar Buttons
+    const formatBoldButton = document.getElementById('formatBold');
+    const formatItalicButton = document.getElementById('formatItalic');
+    const formatStrikethroughButton = document.getElementById('formatStrikethrough');
+    const formatH1Button = document.getElementById('formatH1');
+    const formatH2Button = document.getElementById('formatH2');
+    const formatH3Button = document.getElementById('formatH3');
+    const formatLinkButton = document.getElementById('formatLink');
+    const formatBlockquoteButton = document.getElementById('formatBlockquote');
+    const formatCodeButton = document.getElementById('formatCode');
+    const formatListButton = document.getElementById('formatList');
+    const formatOrderedListButton = document.getElementById('formatOrderedList');
+    const formatTaskListButton = document.getElementById('formatTaskList');
+    const formatTableButton = document.getElementById('formatTable');
+    const formatHRButton = document.getElementById('formatHR');
+
+    // --- State Variables ---
+    let currentFontSize = 18;
+    let isPreviewMode = false;
+    const EDITOR_SETTINGS_KEY = 'distractionFreeWriterSettings_v4.20';
+
+    // --- Debounce Function ---
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+
+    // --- Core Functions ---
+    function updateCounts() {
+        const text = writingArea.value;
+        const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+        const characters = text.length;
+        wordCountSpan.textContent = `Words: ${words}`;
+        charCountSpan.textContent = `Characters: ${characters}`;
+    }
+
+    function renderMarkdown() {
+        if (marked && typeof marked.parse === 'function') {
+            marked.use({breaks: false, gfm: true});
+            previewArea.innerHTML = marked.parse(writingArea.value);
+        } else {
+            previewArea.innerHTML = "<p>Error: Markdown parser (marked.js) not loaded.</p>";
+            console.error("marked.parse is not available.");
+        }
+        previewArea.style.fontSize = `${currentFontSize}px`;
+    }
+
+    function saveContent() {
+        const settings = {
+            content: writingArea.value,
+            fontSize: currentFontSize,
+            previewMode: isPreviewMode,
+            title: documentTitleInput.value
+        };
+        try {
+            localStorage.setItem(EDITOR_SETTINGS_KEY, JSON.stringify(settings));
+            autoSaveStatus.textContent = `${new Date().toLocaleTimeString()}`;
+        } catch (e) {
+            console.error("Error saving to localStorage:", e);
+            autoSaveStatus.textContent = "Error saving";
+        }
+    }
+
+    function loadContent() {
+        try {
+            const savedSettingsJSON = localStorage.getItem(EDITOR_SETTINGS_KEY);
+            if (!savedSettingsJSON) {
+                saveContent(); // Save initial default state
+                return;
+            }
+
+            const settings = JSON.parse(savedSettingsJSON);
+
+            writingArea.value = settings.content || "";
+            currentFontSize = parseInt(settings.fontSize, 10) || 18;
+            writingArea.style.fontSize = `${currentFontSize}px`;
+            previewArea.style.fontSize = `${currentFontSize}px`;
+            isPreviewMode = settings.previewMode === true;
+            togglePreviewButton.innerHTML = `<i class="fas ${isPreviewMode ? 'fa-edit' : 'fa-eye'} mr-1"></i> ${isPreviewMode ? 'Edit' : 'Preview'}`;
+            writingArea.classList.toggle('hidden', isPreviewMode);
+            previewArea.classList.toggle('hidden', !isPreviewMode);
+            documentTitleInput.value = settings.title || "";
+
+        } catch (e) {
+            console.error("Error loading from localStorage:", e);
+            // Fallback if loading fails
+        } finally {
+            updateCounts();
+            renderMarkdown();
+        }
+    }
+
+    // --- Markdown Toolbar Function ---
+    function applyMarkdownFormatting(prefix, suffix = '', placeholder = '', linePrefixAction = false) {
+        const textarea = writingArea;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const originalValue = textarea.value;
+
+        let textBeforeSelection = originalValue.substring(0, start);
+        let selectedText = originalValue.substring(start, end);
+        let textAfterSelection = originalValue.substring(end);
+
+        let newTextValue;
+        let newCursorPos = start;
+
+        if (linePrefixAction) {
+            let lineStartIndex = textBeforeSelection.lastIndexOf('\n') + 1;
+            const currentLineContent = originalValue.substring(lineStartIndex, originalValue.indexOf('\n', lineStartIndex) === -1 ? originalValue.length : originalValue.indexOf('\n', lineStartIndex));
+
+            if (currentLineContent.startsWith(prefix)) {
+                textBeforeSelection = originalValue.substring(0, lineStartIndex);
+                const textAfterPrefix = originalValue.substring(lineStartIndex + prefix.length);
+                newTextValue = textBeforeSelection + textAfterPrefix;
+                newCursorPos = Math.max(0, start - prefix.length);
+            } else {
+                textBeforeSelection = originalValue.substring(0, lineStartIndex);
+                const textFromLineStart = originalValue.substring(lineStartIndex);
+                newTextValue = textBeforeSelection + prefix + textFromLineStart;
+                newCursorPos = start + prefix.length;
+            }
+            if (selectedText.length > 0 && newTextValue.length > originalValue.length) {
+                textarea.value = newTextValue;
+                textarea.selectionStart = newCursorPos;
+                textarea.selectionEnd = newCursorPos + selectedText.length;
+            } else if (selectedText.length > 0 && newTextValue.length < originalValue.length) {
+                textarea.value = newTextValue;
+                textarea.selectionStart = newCursorPos;
+                textarea.selectionEnd = Math.max(newCursorPos, newCursorPos + selectedText.length - prefix.length);
+            } else {
+                textarea.value = newTextValue;
+                textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+            }
+        } else {
+            if (selectedText) {
+                newTextValue = `${textBeforeSelection}${prefix}${selectedText}${suffix}${textAfterSelection}`;
+                newCursorPos = start + prefix.length;
+                textarea.value = newTextValue;
+                textarea.selectionStart = newCursorPos;
+                textarea.selectionEnd = newCursorPos + selectedText.length;
+            } else {
+                newTextValue = `${textBeforeSelection}${prefix}${placeholder}${suffix}${textAfterSelection}`;
+                newCursorPos = start + prefix.length + placeholder.length;
+                textarea.value = newTextValue;
+                textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+            }
+        }
+
+        textarea.focus();
+        debouncedUpdateCounts();
+        debouncedRenderMarkdown();
+        debouncedSaveContent();
+    }
+
+    // --- Event Listeners ---
+    const debouncedRenderMarkdown = debounce(renderMarkdown, 400);
+    const debouncedSaveContent = debounce(saveContent, 1000);
+    const debouncedUpdateCounts = debounce(updateCounts, 200);
+
+    documentTitleInput.addEventListener('input', debouncedSaveContent);
+    writingArea.addEventListener('input', () => {
+        debouncedUpdateCounts();
+        debouncedRenderMarkdown();
+        debouncedSaveContent();
+    });
+
+    writingArea.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            let handled = true;
+            switch (e.key.toLowerCase()) {
+                case 'b':
+                    formatBoldButton.click();
+                    break;
+                case 'i':
+                    formatItalicButton.click();
+                    break;
+                case 'k':
+                    formatLinkButton.click();
+                    break;
+                default:
+                    handled = false;
+                    break;
+            }
+            if (handled) e.preventDefault();
+        }
+    });
+
+    togglePreviewButton.addEventListener('click', () => {
+        isPreviewMode = !isPreviewMode;
+        writingArea.classList.toggle('hidden', isPreviewMode);
+        previewArea.classList.toggle('hidden', !isPreviewMode);
+        togglePreviewButton.innerHTML = `<i class="fas ${isPreviewMode ? 'fa-edit' : 'fa-eye'} mr-1"></i> ${isPreviewMode ? 'Edit' : 'Preview'}`;
+        if (isPreviewMode) renderMarkdown(); else writingArea.focus();
+        saveContent();
+    });
+
+    showMarkdownHelpButton.addEventListener('click', () => markdownHelpModal.classList.add('active'));
+    closeMarkdownHelpButton.addEventListener('click', () => markdownHelpModal.classList.remove('active'));
+    markdownHelpModal.addEventListener('click', (e) => {
+        if (e.target === markdownHelpModal) markdownHelpModal.classList.remove('active');
+    });
+
+    toggleFullScreenButton.addEventListener('click', () => {
+        const mainWrapper = document.querySelector('.w-full.max-w-4xl');
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => {
+                document.body.classList.add('full-screen-mode');
+                if (mainWrapper) mainWrapper.classList.add('h-screen', 'max-w-full', 'rounded-none', 'shadow-none');
+                const dynamicHeight = 'calc(100vh - 220px)';
+                writingArea.style.height = dynamicHeight;
+                previewArea.style.height = dynamicHeight;
+                if (!isPreviewMode) writingArea.focus();
+            }).catch(err => console.error(`Fullscreen error: ${err.message}`));
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        const mainWrapper = document.querySelector('.w-full.max-w-4xl');
+        if (!document.fullscreenElement) {
+            document.body.classList.remove('full-screen-mode');
+            if (mainWrapper) mainWrapper.classList.remove('h-screen', 'max-w-full', 'rounded-none', 'shadow-none');
+            writingArea.style.height = '24rem';
+            previewArea.style.height = '24rem';
+        }
+    });
+
+    fontSizeIncreaseButton.addEventListener('click', () => {
+        currentFontSize = Math.min(currentFontSize + 2, 48);
+        writingArea.style.fontSize = `${currentFontSize}px`;
+        previewArea.style.fontSize = `${currentFontSize}px`;
+        saveContent();
+    });
+    fontSizeDecreaseButton.addEventListener('click', () => {
+        currentFontSize = Math.max(currentFontSize - 2, 10);
+        writingArea.style.fontSize = `${currentFontSize}px`;
+        previewArea.style.fontSize = `${currentFontSize}px`;
+        saveContent();
+    });
+
+    exportTextButton.addEventListener('click', () => {
+        let title = documentTitleInput.value.trim() || 'untitled-document';
+        const fileName = title.replace(/[^a-zA-Z0-9-_]/g, '_') + '.md';
+        const blob = new Blob([writingArea.value], {type: 'text/markdown;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    });
+
+    const tableTemplate = `| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n\n`;
+
+    formatBoldButton.addEventListener('click', () => applyMarkdownFormatting('**', '**', 'bold text'));
+    formatItalicButton.addEventListener('click', () => applyMarkdownFormatting('*', '*', 'italic text'));
+    formatStrikethroughButton.addEventListener('click', () => applyMarkdownFormatting('~~', '~~', 'strikethrough'));
+    formatH1Button.addEventListener('click', () => applyMarkdownFormatting('# ', '', 'Heading 1', true));
+    formatH2Button.addEventListener('click', () => applyMarkdownFormatting('## ', '', 'Heading 2', true));
+    formatH3Button.addEventListener('click', () => applyMarkdownFormatting('### ', '', 'Heading 3', true));
+    formatLinkButton.addEventListener('click', () => applyMarkdownFormatting('[', '](url)', 'Link Text'));
+    formatBlockquoteButton.addEventListener('click', () => applyMarkdownFormatting('> ', '', 'Quote', true));
+    formatCodeButton.addEventListener('click', () => applyMarkdownFormatting('```\n', '\n```', 'code block'));
+    formatListButton.addEventListener('click', () => applyMarkdownFormatting('- ', '', 'List item', true));
+    formatOrderedListButton.addEventListener('click', () => applyMarkdownFormatting('1. ', '', 'List item', true));
+    formatTaskListButton.addEventListener('click', () => applyMarkdownFormatting('- [ ] ', '', 'Task item', true));
+    formatTableButton.addEventListener('click', () => applyMarkdownFormatting(tableTemplate, '', '', false));
+    formatHRButton.addEventListener('click', () => applyMarkdownFormatting('\n---\n\n', '', '', false));
+
+    // --- Initialization ---
+    window.addEventListener('load', () => {
+        loadContent();
+        if (!isPreviewMode) writingArea.focus();
+    });
+
+</script>
+</body>
+</html>
