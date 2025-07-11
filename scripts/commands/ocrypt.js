@@ -101,7 +101,7 @@
             { name: "decrypt", short: "-d", long: "--decrypt" }
         ],
         coreLogic: async (context) => {
-            const { args, flags, options, currentUser } = context;
+            const {args, flags, options, currentUser} = context;
 
             if ((!flags.encrypt && !flags.decrypt) || (flags.encrypt && flags.decrypt)) {
                 return { success: false, error: "ocrypt: You must specify exactly one of -e (encrypt) or -d (decrypt)." };

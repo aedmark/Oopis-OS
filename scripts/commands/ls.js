@@ -246,7 +246,7 @@
             { argIndex: 0, optional: true, options: { allowMissing: false } }
         ],
         coreLogic: async (context) => {
-            const { args, flags, currentUser, options } = context;
+            const {args, flags, currentUser, options} = context;
 
             const effectiveFlags = { ...flags };
             if (options && !options.isInteractive && !effectiveFlags.long && !effectiveFlags.oneColumn) {

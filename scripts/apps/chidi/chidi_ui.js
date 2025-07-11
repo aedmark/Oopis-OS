@@ -1,3 +1,4 @@
+// REFACTORED: aedmark/oopis-os-dev/Oopis-OS-DEV-cbc33c0961be0b361f0e88490da8362b6de6b93c/scripts/apps/chidi/chidi_ui.js
 const ChidiUI = (() => {
     "use strict";
 
@@ -7,14 +8,72 @@ const ChidiUI = (() => {
     function buildAndShow(initialState, cb) {
         callbacks = cb;
 
-        const appContainer = Utils.createElement('div', {id: 'chidi-console-panel'});
-        appContainer.innerHTML = _getHTML();
+        // --- Programmatic UI Construction ---
+        const header = Utils.createElement('header', {className: 'chidi-console-header'},
+            Utils.createElement('div', {id: 'chidi-custom-selector'},
+                Utils.createElement('button', {id: 'chidi-selector-trigger', className: 'chidi-btn chidi-select'}),
+                Utils.createElement('div', {id: 'chidi-selector-panel', className: 'chidi-selector-panel hidden'})
+            ),
+            Utils.createElement('h1', {id: 'chidi-mainTitle', textContent: 'chidi.md'}),
+            Utils.createElement('div', {className: 'chidi-control-group'},
+                Utils.createElement('button', {
+                    id: 'chidi-summarizeBtn',
+                    className: 'chidi-btn',
+                    textContent: 'Summarize'
+                }),
+                Utils.createElement('button', {
+                    id: 'chidi-suggestQuestionsBtn',
+                    className: 'chidi-btn',
+                    textContent: 'Study'
+                }),
+                Utils.createElement('button', {id: 'chidi-askAllFilesBtn', className: 'chidi-btn', textContent: 'Ask'}),
+                Utils.createElement('button', {
+                    id: 'chidi-autolink-btn',
+                    className: 'chidi-btn',
+                    textContent: 'Auto-Link Summary'
+                })
+            )
+        );
+
+        const mainContent = Utils.createElement('main', {
+            id: 'chidi-markdownDisplay',
+            className: 'chidi-markdown-content'
+        });
+
+        const footer = Utils.createElement('footer', {className: 'chidi-status-readout'},
+            Utils.createElement('div', {id: 'chidi-fileCountDisplay', className: 'chidi-status-item'}),
+            Utils.createElement('div', {id: 'chidi-messageBox', className: 'chidi-status-message'}),
+            Utils.createElement('div', {className: 'chidi-control-group'},
+                Utils.createElement('div', {id: 'chidi-loader', className: 'chidi-loader chidi-hidden'}),
+                Utils.createElement('button', {
+                    id: 'chidi-verbose-toggle-btn',
+                    className: 'chidi-btn',
+                    textContent: 'Log: Off'
+                }),
+                Utils.createElement('button', {
+                    id: 'chidi-saveSessionBtn',
+                    className: 'chidi-btn',
+                    textContent: 'Save'
+                }),
+                Utils.createElement('button', {id: 'chidi-exportBtn', className: 'chidi-btn', textContent: 'Export'}),
+                Utils.createElement('button', {
+                    id: 'chidi-closeBtn',
+                    className: 'chidi-btn chidi-exit-btn',
+                    textContent: 'Exit'
+                })
+            )
+        );
+
+        const appContainer = Utils.createElement('div', {id: 'chidi-console-panel'}, header, mainContent, footer);
+        // --- End Programmatic UI Construction ---
+
         AppLayerManager.show(appContainer);
 
         _cacheDOMElements();
         _setupEventListeners();
         update(initialState);
     }
+
 
     function hideAndReset() {
         AppLayerManager.hide();
@@ -34,6 +93,7 @@ const ChidiUI = (() => {
         elements.summarizeBtn.disabled = !hasFiles;
         elements.studyBtn.disabled = !hasFiles;
         elements.askBtn.disabled = !hasFiles;
+        elements.autoLinkBtn.disabled = !hasFiles;
 
         _populateFileDropdown(state.loadedFiles, state.currentIndex);
 
@@ -65,6 +125,7 @@ const ChidiUI = (() => {
             summarizeBtn: get('chidi-summarizeBtn'),
             studyBtn: get('chidi-suggestQuestionsBtn'),
             askBtn: get('chidi-askAllFilesBtn'),
+            autoLinkBtn: get('chidi-autolink-btn'),
             saveSessionBtn: get('chidi-saveSessionBtn'),
             verboseToggleBtn: get('chidi-verbose-toggle-btn'),
             exportBtn: get('chidi-exportBtn'),
@@ -96,6 +157,8 @@ const ChidiUI = (() => {
             });
             if (userQuestion) callbacks.onAsk(userQuestion);
         });
+
+        elements.autoLinkBtn.addEventListener('click', () => callbacks.onAutoLink());
 
         elements.summarizeBtn.addEventListener('click', () => callbacks.onSummarize());
         elements.studyBtn.addEventListener('click', () => callbacks.onStudy());
@@ -167,35 +230,6 @@ const ChidiUI = (() => {
         const title = `Chidi Session: ${currentFile.name}`;
         const styles = "body{background-color:#0d0d0d;color:#e4e4e7;font-family:'VT323',monospace;line-height:1.6;padding:2rem}h1,h2,h3{border-bottom:1px solid #444;padding-bottom:.3rem;color:#60a5fa}a{color:#34d399}pre{white-space:pre-wrap;background-color:#000;padding:1rem;border-radius:4px}.chidi-ai-output{border-top:2px dashed #60a5fa;margin-top:2rem;padding-top:1rem}";
         return `<!DOCTYPE html><html lang="en"><head><title>${title}</title><style>${styles}</style></head><body><h1>${title}</h1>${content}</body></html>`;
-    }
-
-    function _getHTML() {
-        return `
-            <header class="chidi-console-header">
-                <div id="chidi-custom-selector">
-                    <button id="chidi-selector-trigger" class="chidi-btn chidi-select"></button>
-                    <div id="chidi-selector-panel" class="chidi-selector-panel hidden"></div>
-                </div>
-                <h1 id="chidi-mainTitle">chidi.md</h1>
-                <div class="chidi-control-group">
-                    <button id="chidi-summarizeBtn" class="chidi-btn">Summarize</button>
-                    <button id="chidi-suggestQuestionsBtn" class="chidi-btn">Study</button>
-                    <button id="chidi-askAllFilesBtn" class="chidi-btn">Ask</button>
-                </div>
-            </header>
-            <main id="chidi-markdownDisplay" class="chidi-markdown-content"></main>
-            <footer class="chidi-status-readout">
-                <div id="chidi-fileCountDisplay" class="chidi-status-item"></div>
-                <div id="chidi-messageBox" class="chidi-status-message"></div>
-                <div class="chidi-control-group">
-                    <div id="chidi-loader" class="chidi-loader chidi-hidden"></div>
-                    <button id="chidi-verbose-toggle-btn" class="chidi-btn">Log: Off</button>
-                    <button id="chidi-saveSessionBtn" class="chidi-btn">Save</button>
-                    <button id="chidi-exportBtn" class="chidi-btn">Export</button>
-                    <button id="chidi-closeBtn" class="chidi-btn chidi-exit-btn">Exit</button>
-                </div>
-            </footer>
-        `;
     }
 
     return {buildAndShow, hideAndReset, update, showMessage, appendAiOutput, toggleLoader, packageSessionAsHTML};

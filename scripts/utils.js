@@ -262,7 +262,7 @@ const Utils = (() => {
                 body = JSON.stringify({ contents: conversation });
                 break;
             case 'ollama':
-                url = url.replace('/generate', '/chat');
+                url = url.replace('/generate', '/chat'); // Use the chat endpoint for ollama
                 body = JSON.stringify({ model: model || providerConfig.defaultModel, messages: chatMessages, stream: false });
                 break;
             case 'llm-studio':

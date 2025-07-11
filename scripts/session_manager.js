@@ -47,11 +47,11 @@ const EnvironmentManager = (() => {
     }
 
     function getAll() {
-        return { ..._getActiveEnv() };
+        return {..._getActiveEnv()};
     }
 
     function load(vars) {
-        envStack[envStack.length - 1] = { ...(vars || {}) };
+        envStack[envStack.length - 1] = {...(vars || {})};
     }
 
     function clear() {
@@ -130,6 +130,7 @@ const HistoryManager = (() => {
             );
         historyIndex = commandHistory.length;
     }
+
     return {
         add,
         getPrevious,

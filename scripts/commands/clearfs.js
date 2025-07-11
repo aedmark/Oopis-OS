@@ -8,7 +8,7 @@
         },
 
         coreLogic: async (context) => {
-            const { options, currentUser } = context;
+            const {options, currentUser} = context;
             if (!options.isInteractive) {
                 return {
                     success: false,

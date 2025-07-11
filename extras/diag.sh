@@ -531,6 +531,152 @@ echo "Redirection tests complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
+# --- Phase X: Filesystem Torture & I/O Gauntlet ---
+echo ""
+echo "===== Phase X: Testing Filesystem Torture & I/O Gauntlet ====="
+delay 400
+
+echo "--- Test: Handling of obnoxious filenames ---"
+mkdir -p "./a directory with spaces and.. special'chars!"
+touch "./a directory with spaces and.. special'chars!/-leading_dash.txt"
+echo "obnoxious" > "./a directory with spaces and.. special'chars!/test.txt"
+ls -l "./a directory with spaces and.. special'chars!"
+cat "./a directory with spaces and.. special'chars!/test.txt"
+rm -r -f "./a directory with spaces and.. special'chars!"
+check_fail "ls './a directory with spaces and.. special'chars!'"
+echo "Obnoxious filename tests complete."
+delay 400
+
+echo "--- Test: 'find' with complex -exec and permission checks ---"
+mkdir -p find_torture/ro_subdir
+echo "find me" > find_torture/file.txt
+echo "don't find me" > find_torture/file.tmp
+echo "cant touch this" > find_torture/ro_subdir/secret.txt
+login root mcgoopis
+chmod 500 /home/diagUser/diag_workspace/find_torture/ro_subdir # Executable but not readable for diagUser
+login diagUser testpass
+cd /home/diagUser/diag_workspace
+# This find should succeed on .txt but fail to cat the secret.txt due to read permissions
+find ./find_torture -name "*.txt" -exec cat {} \;
+# This should fail because we can't write the output file
+check_fail "find ./find_torture -name '*.txt' -exec echo '{}' > ./find_torture/ro_subdir/output.log \;"
+# Cleanup
+login root mcgoopis
+rm -r -f /home/diagUser/diag_workspace/find_torture
+login diagUser testpass
+cd /home/diagUser/diag_workspace
+echo "Complex find tests complete."
+delay 700
+
+echo "--- Test: Nested redirection and command substitution simulation ---"
+echo "ls -l" > cmd.sh
+chmod 700 cmd.sh
+# We can't do real command substitution, but we can simulate the I/O flow
+run ./cmd.sh > ls_output.txt
+cat ls_output.txt | grep "cmd.sh" | wc -l
+rm cmd.sh ls_output.txt
+echo "Redirection simulation test complete."
+delay 400
+echo "---------------------------------------------------------------------"
+
+# --- Test: Hyper-specific sudo permissions ---
+login root mcgoopis
+
+# Grant 'limitedsudo' the ability to run the 'cat' command, and nothing else.
+echo 'limitedsudo cat' >> /etc/sudoers
+useradd limitedsudo
+testpass
+testpass
+
+chmod 701 /home/diagUser
+
+# Create the specific file this user is meant to read.
+echo "TOP SECRET" > /home/diagUser/diag_workspace/specific_file.txt
+
+login limitedsudo testpass
+cd /home/diagUser/diag_workspace
+
+# This should SUCCEED because the user can run 'cat'
+echo "Attempting to run allowed command ('cat') on a file..."
+sudo cat /home/diagUser/diag_workspace/specific_file.txt
+testpass
+
+# This should FAIL because the user is not allowed to run 'ls'
+echo "Attempting to run disallowed command ('ls')... (This should fail)"
+check_fail "sudo ls /"
+
+# Cleanup
+login root mcgoopis
+removeuser -f limitedsudo
+# Clean up the sudoers file properly
+grep -v "limitedsudo" /etc/sudoers > sudoers.tmp
+mv sudoers.tmp /etc/sudoers
+rm /home/diagUser/diag_workspace/specific_file.txt
+login diagUser testpass
+
+echo "Specific sudo tests complete."
+delay 400
+login root mcgoopis
+removeuser -r -f limitedsudo
+# Clean up the sudoers file properly
+grep -v "limitedsudo" /etc/sudoers > sudoers.tmp; mv sudoers.tmp /etc/sudoers
+delay 400
+
+echo "--- Test: File ownership vs. permissions paradox ---"
+useradd paradoxuser
+testpass
+testpass
+touch paradox.txt
+chown paradoxuser paradox.txt
+# Now, paradoxuser owns the file but has no permissions to read it.
+chmod 000 paradox.txt
+login paradoxuser testpass
+cd /home/diagUser/diag_workspace
+# This MUST fail. Ownership doesn't override permissions.
+check_fail "cat paradox.txt"
+echo "Permission paradox test complete."
+delay 400
+login root mcgoopis
+removeuser -r -f paradoxuser
+rm paradox.txt
+login diagUser testpass
+cd /home/diagUser/diag_workspace
+delay 700
+echo "---------------------------------------------------------------------"
+
+# --- Phase Z: Process & State Integrity Under Stress ---
+echo ""
+echo "===== Phase Z: Testing Process & State Integrity Under Stress ====="
+delay 400
+
+echo "--- Test: Background process race condition ---"
+# This is a simple race condition test. The final content is non-deterministic,
+# but the key is that the OS doesn't crash.
+echo "one" > race.txt &
+echo "two" > race.txt &
+echo "three" > race.txt &
+delay 500 # Give background jobs a moment to (hopefully) complete
+echo "Race condition test initiated. Final content of race.txt:"
+cat race.txt
+rm race.txt
+echo "Race condition test complete."
+delay 400
+
+echo "--- Test: State save/load integrity ---"
+echo "pre-save" > state_integrity.txt
+savestate
+rm state_integrity.txt
+mkdir -p new_dir_post_save
+echo "post-save" > new_dir_post_save/another.txt
+loadstate
+YES
+# After loading, the original file should exist and the new directory should NOT.
+ls state_integrity.txt
+check_fail "ls new_dir_post_save"
+rm state_integrity.txt
+echo "State integrity tests complete."
+delay 700
+echo "---------------------------------------------------------------------"
 
 # --- Phase 17: Final Cleanup ---
 echo ""

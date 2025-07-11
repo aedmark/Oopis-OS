@@ -1,3 +1,5 @@
+// scripts/apps/chidi/chidi_manager.js
+
 const ChidiManager = (() => {
     "use strict";
 
@@ -9,6 +11,8 @@ const ChidiManager = (() => {
         isModalOpen: false,
         isVerbose: false,
         conversationHistory: [],
+        provider: 'gemini',
+        model: null,
     };
 
     const callbacks = {
@@ -21,13 +25,15 @@ const ChidiManager = (() => {
             if (!currentFile) return;
 
             ChidiUI.toggleLoader(true);
-            ChidiUI.showMessage("Contacting Gemini API...");
+            ChidiUI.showMessage(`Contacting ${state.provider} API...`);
 
             const contentToSummarize = currentFile.isCode
                 ? Utils.extractComments(currentFile.content, Utils.getFileExtension(currentFile.name))
                 : currentFile.content;
             const prompt = `Please provide a concise summary of the following document:\n\n---\n\n${contentToSummarize}`;
-            const summary = await _callGeminiApi([{role: 'user', parts: [{text: prompt}]}]);
+
+            // Pass the provider to the API call
+            const summary = await _callLlmApi([{role: 'user', parts: [{text: prompt}]}]);
 
             ChidiUI.toggleLoader(false);
             ChidiUI.appendAiOutput("Summary", summary);
@@ -37,13 +43,15 @@ const ChidiManager = (() => {
             if (!currentFile) return;
 
             ChidiUI.toggleLoader(true);
-            ChidiUI.showMessage("Contacting Gemini API...");
+            ChidiUI.showMessage(`Contacting ${state.provider} API...`);
 
             const contentForQuestions = currentFile.isCode
                 ? Utils.extractComments(currentFile.content, Utils.getFileExtension(currentFile.name))
                 : currentFile.content;
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${contentForQuestions}`;
-            const questions = await _callGeminiApi([{role: 'user', parts: [{text: prompt}]}]);
+
+            // Pass the provider to the API call
+            const questions = await _callLlmApi([{role: 'user', parts: [{text: prompt}]}]);
 
             ChidiUI.toggleLoader(false);
             ChidiUI.appendAiOutput("Suggested Questions", questions);
@@ -89,6 +97,50 @@ const ChidiManager = (() => {
         },
         onClose: () => {
             close();
+        },
+        onAutoLink: async () => {
+            ChidiUI.toggleLoader(true);
+            ChidiUI.showMessage("Analyzing documents for key concepts...");
+
+            const allContent = state.loadedFiles.map(f => f.content).join('\n\n---\n\n');
+
+            const conceptsPrompt = `From the following text, extract a list of up to 15 key concepts, names, and technical terms. Return ONLY a comma-separated list.
+
+            TEXT:
+            ${allContent}`;
+
+            const conceptsResult = await _callLlmApi([{role: 'user', parts: [{text: conceptsPrompt}]}]);
+            if (!conceptsResult) {
+                ChidiUI.toggleLoader(false);
+                ChidiUI.showMessage("Failed to extract key concepts.");
+                return;
+            }
+            const keyConcepts = conceptsResult.split(',').map(c => c.trim());
+
+            ChidiUI.showMessage("Generating cross-referenced summary...");
+
+            const summaryPrompt = `The following key concepts have been identified in a set of documents: ${keyConcepts.join(', ')}.
+
+            Please write a concise, one-paragraph summary of the document set below. Your main goal is to naturally incorporate as many of the key concepts as possible.
+
+            DOCUMENT SET:
+            ${allContent}`;
+
+            const summaryResult = await _callLlmApi([{role: 'user', parts: [{text: summaryPrompt}]}]);
+            if (!summaryResult) {
+                ChidiUI.toggleLoader(false);
+                ChidiUI.showMessage("Failed to generate summary.");
+                return;
+            }
+
+            let linkedSummary = summaryResult;
+            keyConcepts.forEach(concept => {
+                const regex = new RegExp(`\\b(${concept})\\b`, 'gi');
+                linkedSummary = linkedSummary.replace(regex, '[[<b>$1</b>]]');
+            });
+
+            ChidiUI.toggleLoader(false);
+            ChidiUI.appendAiOutput("Auto-Linked Summary", linkedSummary);
         }
     };
 
@@ -102,6 +154,9 @@ const ChidiManager = (() => {
             isCode: ['js', 'sh'].includes(Utils.getFileExtension(file.name))
         }));
         state.currentIndex = state.loadedFiles.length > 0 ? 0 : -1;
+
+        if (launchOptions.provider) state.provider = launchOptions.provider;
+        if (launchOptions.model) state.model = launchOptions.model;
 
         if (launchOptions.isNewSession) {
             state.conversationHistory = [];
@@ -140,7 +195,7 @@ const ChidiManager = (() => {
             ChidiUI.appendAiOutput("Constructed Prompt", `The following block contains the context and question being sent to the AI.\n\n\`\`\`text\n${fullPrompt}\n\`\`\``);
         }
 
-        const finalAnswer = await _callGeminiApi(historyForApi);
+        const finalAnswer = await _callLlmApi(historyForApi);
 
         if (finalAnswer) {
             state.conversationHistory.push({role: 'model', parts: [{text: finalAnswer}]});
@@ -152,7 +207,6 @@ const ChidiManager = (() => {
     }
 
     function _findRelevantFiles(userQuestion) {
-        // This is a simplified keyword search; a real implementation would use embeddings.
         const questionLower = userQuestion.toLowerCase();
         const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how', 'and', 'or', 'but']);
         const keywords = questionLower.split(/[\s\W]+/).filter(word => word.length > 2 && !stopWords.has(word));
@@ -176,9 +230,20 @@ const ChidiManager = (() => {
         return relevantFiles.length > 0 ? relevantFiles : [currentFile];
     }
 
-    async function _callGeminiApi(chatHistory) {
-        const apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-        const result = await Utils.callLlmApi('gemini', null, chatHistory, apiKey);
+    // Rename this function to be more generic
+    async function _callLlmApi(chatHistory) {
+        let apiKey = null;
+        // Only get the API key if the provider is Gemini
+        if (state.provider === 'gemini') {
+            apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
+            if (!apiKey) {
+                ChidiUI.showMessage("Error: Gemini API key not found.", true);
+                ChidiUI.appendAiOutput("API Error", "A Gemini API key is required for this operation. Please run the `gemini` command once to set it up.");
+                return "";
+            }
+        }
+
+        const result = await Utils.callLlmApi(state.provider, state.model, chatHistory, apiKey);
         if (!result.success) {
             ChidiUI.showMessage(`Error: ${result.error}`, true);
             ChidiUI.appendAiOutput("API Error", `Failed to get a response. Details: ${result.error}`);

@@ -23,7 +23,7 @@
         ],
 
         coreLogic: async (context) => {
-            const { options } = context;
+            const {options} = context;
             const pathInfo = context.validatedPaths[0];
 
             if (FileSystemManager.getCurrentPath() === pathInfo.resolvedPath) {

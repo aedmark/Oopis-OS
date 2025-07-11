@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const {app, BrowserWindow, ipcMain, dialog} = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -46,13 +46,13 @@ function createWindow() {
 app.whenReady().then(() => {
     // IPC handler for the backup command
     ipcMain.handle('dialog:showSaveDialog', async (event, options) => {
-        const { filePath } = await dialog.showSaveDialog(options);
+        const {filePath} = await dialog.showSaveDialog(options);
         return filePath;
     });
 
     // IPC handler for the restore command
     ipcMain.handle('dialog:showOpenDialog', async (event, options) => {
-        const { filePaths } = await dialog.showOpenDialog(options);
+        const {filePaths} = await dialog.showOpenDialog(options);
         return filePaths && filePaths.length > 0 ? filePaths[0] : null;
     });
 

@@ -8,24 +8,10 @@ const CommandExecutor = (() => {
   async function* _generateInputContent(context, firstFileArgIndex = 0) {
     const {args, options, currentUser} = context;
 
+      // CORRECTED LOGIC: Prioritize stdinContent as direct input.
     if (options.stdinContent !== null && options.stdinContent !== undefined) {
-      const pathsFromStdin = options.stdinContent.trim().split('\n');
-      for (const pathArg of pathsFromStdin) {
-        if (!pathArg) continue;
-        const pathValidation = FileSystemManager.validatePath("input stream", pathArg, {expectedType: 'file'});
-        if (pathValidation.error) {
-          yield {success: false, error: pathValidation.error, sourceName: pathArg};
-          continue;
-        }
-
-        if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-          yield {success: false, error: `Permission denied: ${pathArg}`, sourceName: pathArg};
-          continue;
-        }
-
-        yield {success: true, content: pathValidation.node.content || "", sourceName: pathArg};
-      }
-      return;
+        yield {success: true, content: options.stdinContent, sourceName: 'stdin'};
+        return; // Stop further processing if we have piped input
     }
 
     const fileArgs = args.slice(firstFileArgIndex);
@@ -322,7 +308,7 @@ const CommandExecutor = (() => {
       output: "",
     };
     if (pipeline.inputRedirectFile) {
-      const pathValidation = FileSystemManager.validatePath("input redirection", pipeline.inputRedirectFile, { expectedType: 'file' });
+        const pathValidation = FileSystemManager.validatePath("input redirection", pipeline.inputRedirectFile, {expectedType: 'file'});
       if (pathValidation.error) {
         return { success: false, error: pathValidation.error };
       }
@@ -516,7 +502,7 @@ const CommandExecutor = (() => {
           if (!pipeline.isBackground)
             await OutputManager.appendToOutput(
                 `Redirection error: could not determine primary group for user '${user}'.`,
-                { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+                {typeClass: Config.CSS_CLASSES.ERROR_MSG}
             );
           return {
             success: false,
@@ -616,10 +602,10 @@ const CommandExecutor = (() => {
   }
 
   async function processSingleCommand(rawCommandText, options = {}) {
-    const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
+      const {isInteractive = true, scriptingContext = null, suppressOutput = false} = options;
 
     if (options.scriptingContext && isInteractive && !ModalManager.isAwaiting()) {
-      await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+        await OutputManager.appendToOutput("Script execution in progress. Input suspended.", {typeClass: Config.CSS_CLASSES.WARNING_MSG});
       return { success: false, error: "Script execution in progress." };
     }
     if (ModalManager.isAwaiting()) {
@@ -633,7 +619,7 @@ const CommandExecutor = (() => {
     try {
       commandToParse = await _preprocessCommandString(rawCommandText);
     } catch (e) {
-      await OutputManager.appendToOutput(e.message, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+        await OutputManager.appendToOutput(e.message, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: false, error: e.message };
     }
@@ -655,7 +641,7 @@ const CommandExecutor = (() => {
     try {
       commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
     } catch (e) {
-      await OutputManager.appendToOutput(e.message || "Command parse error.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+        await OutputManager.appendToOutput(e.message || "Command parse error.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: false, error: e.message || "Command parse error." };
     }
@@ -678,21 +664,29 @@ const CommandExecutor = (() => {
         const jobId = ++backgroundProcessIdCounter;
         pipeline.jobId = jobId;
         const abortController = new AbortController();
-        activeJobs[jobId] = { id: jobId, command: cmdToEcho, abortController };
-        await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+          activeJobs[jobId] = {id: jobId, command: cmdToEcho, abortController};
+          await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
 
         setTimeout(async () => {
           try {
-            const bgResult = await _executePipeline(pipeline, { isInteractive: false, signal: abortController.signal, scriptingContext, suppressOutput: true });
+              const bgResult = await _executePipeline(pipeline, {
+                  isInteractive: false,
+                  signal: abortController.signal,
+                  scriptingContext,
+                  suppressOutput: true
+              });
             const statusMsg = `[Job ${pipeline.jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
-            await OutputManager.appendToOutput(statusMsg, { typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG, isBackground: true });
+              await OutputManager.appendToOutput(statusMsg, {
+                  typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG,
+                  isBackground: true
+              });
           } finally {
             delete activeJobs[jobId];
           }
         }, 0);
         result = { success: true };
       } else {
-        result = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
+          result = await _executePipeline(pipeline, {isInteractive, signal: null, scriptingContext, suppressOutput});
       }
 
       if (!result) {

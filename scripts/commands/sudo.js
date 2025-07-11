@@ -8,12 +8,12 @@
             error: "usage: sudo <command> [args ...]"
         },
         coreLogic: async (context) => {
-            const { args, currentUser, options } = context;
+            const {args, currentUser, options} = context;
             const commandToRun = args[0];
             const fullCommandStr = args.join(' ');
 
             if (currentUser === 'root') {
-                return await CommandExecutor.processSingleCommand(fullCommandStr, { isInteractive: options.isInteractive });
+                return await CommandExecutor.processSingleCommand(fullCommandStr, {isInteractive: options.isInteractive});
             }
 
             if (!SudoManager.canUserRunCommand(currentUser, commandToRun) && !SudoManager.canUserRunCommand(currentUser, 'ALL')) {
@@ -42,7 +42,7 @@
                             }, 1000);
                         }
                     },
-                    () => resolve({ success: true, output: "" }),
+                    () => resolve({success: true, output: ""}),
                     true,
                     options
                 );

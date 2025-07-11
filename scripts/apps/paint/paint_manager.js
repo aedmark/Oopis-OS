@@ -229,7 +229,7 @@ const PaintManager = (() => {
         return uniqueCells;
     }
 
-    // MODIFICATION: Flood Fill algorithm
+    // Flood Fill algorithm
     function _getCellsForFill(startX, startY, fillColor, fillChar) {
         const {width, height} = state.canvasDimensions;
         if (startX < 0 || startX >= width || startY < 0 || startY >= height) {

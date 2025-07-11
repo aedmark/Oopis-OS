@@ -6,7 +6,7 @@ const Config = (() => {
     const defaultConfig = {
         DATABASE: {
             NAME: "OopisOsDB",
-            VERSION: 4,
+            VERSION: 5,
             FS_STORE_NAME: "FileSystemsStore",
             UNIFIED_FS_KEY: "OopisOS_SharedFS",
         },
@@ -146,7 +146,7 @@ const Config = (() => {
                 },
                 'ollama': {
                     url: "http://localhost:11434/api/generate",
-                    defaultModel: "gemma3"
+                    defaultModel: "gemma3:12b"
                 }
             }
         },

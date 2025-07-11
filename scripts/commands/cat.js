@@ -3,15 +3,13 @@
 
     const catCommandDefinition = {
         commandName: "cat",
-        isInputStream: true, // Correctly declares that it handles input streams
+        isInputStream: true, // It correctly handles input streams
         flagDefinitions: [
             { name: "numberLines", short: "-n", long: "--number" }
         ],
-        // pathValidation is no longer needed here as the stream processor handles it.
         coreLogic: async (context) => {
             const {flags, inputItems, inputError} = context;
 
-            // The CommandExecutor now provides an error flag for input stream issues.
             if (inputError) {
                 return {success: false, error: "cat: Could not read one or more sources."};
             }
@@ -19,7 +17,7 @@
             // The inputItems array contains the content from all sources (stdin or files).
             const input = inputItems.map(item => item.content).join('');
 
-            if (input === null) {
+            if (input === null || input === undefined) {
                 return {success: true, output: ""}; // Handle no input gracefully.
             }
 
@@ -27,11 +25,10 @@
                 return {success: true, output: input};
             }
 
-            // The rest of the logic remains the same but now operates on a guaranteed input string.
             let lineCounter = 1;
+            // Correctly handle splitting and potential trailing newlines
             const lines = input.split('\n');
-            // Handles files that may or may not have a trailing newline.
-            const processedLines = (lines.length > 0 && lines.at(-1) === '' ? lines.slice(0, -1) : lines);
+            const processedLines = (lines.length > 0 && lines[lines.length - 1] === '') ? lines.slice(0, -1) : lines;
             const numberedOutput = processedLines.map(line => `     ${String(lineCounter++).padStart(5)}  ${line}`).join('\n');
 
             return {success: true, output: numberedOutput};

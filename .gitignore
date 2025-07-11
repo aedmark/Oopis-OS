@@ -13,3 +13,4 @@
 /.idea/
 *.xml
 /.testing/
+/package-lock.json

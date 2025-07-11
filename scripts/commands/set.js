@@ -5,7 +5,7 @@
         commandName: "set",
 
         coreLogic: async (context) => {
-            const { args } = context;
+            const {args} = context;
 
             if (args.length === 0) {
                 const allVars = EnvironmentManager.getAll();

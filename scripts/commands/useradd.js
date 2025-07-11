@@ -9,7 +9,7 @@
         },
 
         coreLogic: async (context) => {
-            const { args, options } = context;
+            const {args, options} = context;
             const username = args[0];
 
             const userCheck = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
@@ -22,7 +22,7 @@
                     Config.MESSAGES.PASSWORD_PROMPT,
                     async (firstPassword) => {
                         if (firstPassword.trim() === "") {
-                            resolve({ success: false, error: Config.MESSAGES.EMPTY_PASSWORD_NOT_ALLOWED });
+                            resolve({success: false, error: Config.MESSAGES.EMPTY_PASSWORD_NOT_ALLOWED});
                             return;
                         }
 
@@ -30,24 +30,32 @@
                             Config.MESSAGES.PASSWORD_CONFIRM_PROMPT,
                             async (confirmedPassword) => {
                                 if (firstPassword !== confirmedPassword) {
-                                    resolve({ success: false, error: Config.MESSAGES.PASSWORD_MISMATCH });
+                                    resolve({success: false, error: Config.MESSAGES.PASSWORD_MISMATCH});
                                     return;
                                 }
                                 const registerResult = await UserManager.register(username, firstPassword);
                                 resolve(registerResult);
                             },
-                            () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
+                            () => resolve({
+                                success: true,
+                                output: Config.MESSAGES.OPERATION_CANCELLED,
+                                messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG
+                            }),
                             true,
                             options
                         );
                     },
-                    () => resolve({ success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG }),
+                    () => resolve({
+                        success: true,
+                        output: Config.MESSAGES.OPERATION_CANCELLED,
+                        messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG
+                    }),
                     true,
                     options
                 );
             }).then(result => {
                 if (result.success && result.message) {
-                    return { success: true, output: result.message, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
+                    return {success: true, output: result.message, messageType: Config.CSS_CLASSES.SUCCESS_MSG};
                 }
                 return result;
             });

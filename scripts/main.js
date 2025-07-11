@@ -63,7 +63,7 @@ function initializeTerminalEventListeners() {
         TabCompletionManager.resetCycle();
         await CommandExecutor.processSingleCommand(
             TerminalUI.getCurrentInputValue(),
-            { isInteractive: true }
+            {isInteractive: true}
         );
         break;
       case "ArrowUp":

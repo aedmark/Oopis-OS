@@ -116,7 +116,7 @@ const ModalManager = (() => {
         const buttonContainer = Utils.createElement("div", { className: "modal-dialog__buttons" }, [confirmButton, cancelButton]);
         const messageContainer = Utils.createElement("div");
         messageLines.forEach(line => {
-            messageContainer.appendChild(Utils.createElement("p", { textContent: line }));
+            messageContainer.appendChild(Utils.createElement("p", {textContent: line}));
         });
 
         const modalDialog = Utils.createElement("div", { className: "modal-dialog" }, [messageContainer, inputField, buttonContainer]);
@@ -132,9 +132,9 @@ const ModalManager = (() => {
             return;
         }
         isAwaitingTerminalInput = true;
-        activeModalContext = { onConfirm: options.onConfirm, onCancel: options.onCancel, data: options.data || {} };
-        options.messageLines.forEach((line) => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
-        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
+        activeModalContext = {onConfirm: options.onConfirm, onCancel: options.onCancel, data: options.data || {}};
+        options.messageLines.forEach((line) => void OutputManager.appendToOutput(line, {typeClass: 'text-warning'}));
+        void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, {typeClass: 'text-subtle'});
 
         const inputLineContainer = document.querySelector('.terminal__input-line');
         if (inputLineContainer) inputLineContainer.classList.remove('hidden');
@@ -152,8 +152,8 @@ const ModalManager = (() => {
             const inputLine = options.options.stdinContent.trim().split('\n')[0];
             const promptEcho = `${document.getElementById('prompt-container').textContent} `;
 
-            options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
-            void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
+            options.messageLines.forEach(line => void OutputManager.appendToOutput(line, {typeClass: 'text-warning'}));
+            void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, {typeClass: 'text-subtle'});
             void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
 
             if (inputLine.toUpperCase() === 'YES') {
@@ -178,8 +178,8 @@ const ModalManager = (() => {
             }
 
             if (inputLine !== null) {
-                options.messageLines.forEach(line => void OutputManager.appendToOutput(line, { typeClass: 'text-warning' }));
-                void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, { typeClass: 'text-subtle' });
+                options.messageLines.forEach(line => void OutputManager.appendToOutput(line, {typeClass: 'text-warning'}));
+                void OutputManager.appendToOutput(Config.MESSAGES.CONFIRMATION_PROMPT, {typeClass: 'text-subtle'});
                 const promptEcho = `${document.getElementById('prompt-container').textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${inputLine}`);
                 if (inputLine.toUpperCase() === 'YES') {
@@ -215,7 +215,7 @@ const ModalManager = (() => {
             if (typeof activeModalContext.onCancel === "function") {
                 await activeModalContext.onCancel(activeModalContext.data);
             } else {
-                await OutputManager.appendToOutput(Config.MESSAGES.OPERATION_CANCELLED, { typeClass: 'text-subtle' });
+                await OutputManager.appendToOutput(Config.MESSAGES.OPERATION_CANCELLED, {typeClass: 'text-subtle'});
             }
         }
         isAwaitingTerminalInput = false;
@@ -232,7 +232,7 @@ const TerminalUI = (() => {
     let _isObscuredInputMode = false;
 
     function updatePrompt() {
-        const user = UserManager.getCurrentUser() || { name: Config.USER.DEFAULT_NAME };
+        const user = UserManager.getCurrentUser() || {name: Config.USER.DEFAULT_NAME};
         const ps1 = EnvironmentManager.get('PS1');
         const promptContainer = document.getElementById('prompt-container');
         if (!promptContainer) return;
@@ -324,6 +324,7 @@ const TerminalUI = (() => {
             }
             return foundNode;
         }
+
         if (element.childNodes.length === 0 && position === 0) {
             range.setStart(element, 0);
             range.collapse(true);
@@ -372,14 +373,14 @@ const TerminalUI = (() => {
         } else {
             start = end = getCurrentInputValue().length;
         }
-        return { start, end };
+        return {start, end};
     }
 
     function handlePaste(pastedText) {
         if (!_isAwaitingInput || !_inputContext) return;
 
         const selection = TerminalUI.getSelection();
-        let { start, end } = selection;
+        let {start, end} = selection;
 
         let inputArray = Array.from(_inputContext.currentInput);
         inputArray.splice(start, end - start, pastedText);
@@ -419,7 +420,7 @@ const ModalInputManager = (() => {
         if (options.stdinContent) {
             const inputLine = options.stdinContent.trim().split('\n')[0];
             if (promptMessage) {
-                void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+                void OutputManager.appendToOutput(promptMessage, {typeClass: 'text-subtle'});
             }
             const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
             const promptEcho = `${document.getElementById('prompt-container').textContent} `;
@@ -440,20 +441,20 @@ const ModalInputManager = (() => {
             }
             if (inputLine !== null) {
                 if (promptMessage) {
-                    void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+                    void OutputManager.appendToOutput(promptMessage, {typeClass: 'text-subtle'});
                 }
                 const echoInput = isObscured ? '*'.repeat(inputLine.length) : inputLine;
                 const promptEcho = `${document.getElementById('prompt-container').textContent} `;
                 void OutputManager.appendToOutput(`${promptEcho}${echoInput}`);
                 onInputReceivedCallback(inputLine);
             } else {
-                void OutputManager.appendToOutput("Script ended while awaiting input.", { typeClass: 'text-error' });
+                void OutputManager.appendToOutput("Script ended while awaiting input.", {typeClass: 'text-error'});
                 if (onCancelledCallback) onCancelledCallback();
             }
             return;
         }
         if (_isAwaitingInput) {
-            void OutputManager.appendToOutput("Another modal input prompt is already pending.", { typeClass: 'text-warning' });
+            void OutputManager.appendToOutput("Another modal input prompt is already pending.", {typeClass: 'text-warning'});
             if (onCancelledCallback) onCancelledCallback();
             return;
         }
@@ -468,7 +469,7 @@ const ModalInputManager = (() => {
         if (inputLineContainer) inputLineContainer.classList.remove('hidden');
 
         if (promptMessage) {
-            void OutputManager.appendToOutput(promptMessage, { typeClass: 'text-subtle' });
+            void OutputManager.appendToOutput(promptMessage, {typeClass: 'text-subtle'});
         }
         TerminalUI.clearInput();
         TerminalUI.setInputState(true, isObscured);
@@ -496,7 +497,7 @@ const ModalInputManager = (() => {
         if (!_isAwaitingInput) return;
         let inputArray = Array.from(_inputContext.currentInput);
         const selection = TerminalUI.getSelection();
-        let { start, end } = selection;
+        let {start, end} = selection;
         if (key === "Backspace") {
             if (start === end && start > 0) {
                 inputArray.splice(start - 1, 1);
@@ -524,7 +525,7 @@ const ModalInputManager = (() => {
         if (!_isAwaitingInput || !_inputContext) return;
 
         const selection = TerminalUI.getSelection();
-        let { start, end } = selection;
+        let {start, end} = selection;
 
         let inputArray = Array.from(_inputContext.currentInput);
         inputArray.splice(start, end - start, pastedText);
@@ -582,9 +583,9 @@ const TabCompletionManager = (() => {
         let inQuote = null;
         for (let i = 0; i < textBeforeCursor.length; i++) {
             const char = textBeforeCursor[i];
-            if (inQuote && char === inQuote && textBeforeCursor[i-1] !== '\\') {
+            if (inQuote && char === inQuote && textBeforeCursor[i - 1] !== '\\') {
                 inQuote = null;
-            } else if (!inQuote && (char === '"' || char === "'") && (i === 0 || textBeforeCursor[i-1] === ' ' || textBeforeCursor[i-1] === undefined)) {
+            } else if (!inQuote && (char === '"' || char === "'") && (i === 0 || textBeforeCursor[i - 1] === ' ' || textBeforeCursor[i - 1] === undefined)) {
                 inQuote = char;
             }
 
@@ -612,7 +613,7 @@ const TabCompletionManager = (() => {
     }
 
     async function _getSuggestionsFromProvider(context) {
-        const { currentWordPrefix, isCompletingCommand, commandName } = context;
+        const {currentWordPrefix, isCompletingCommand, commandName} = context;
         let suggestions = [];
 
         if (isCompletingCommand) {
@@ -637,8 +638,7 @@ const TabCompletionManager = (() => {
                 suggestions = userNames
                     .filter((name) => name.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                     .sort();
-            }
-            else if (commandDefinition.pathValidation) {
+            } else if (commandDefinition.pathValidation) {
                 const lastSlashIndex = currentWordPrefix.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR);
                 const pathPrefixForFS = lastSlashIndex !== -1 ? currentWordPrefix.substring(0, lastSlashIndex + 1) : "";
                 const segmentToMatchForFS = lastSlashIndex !== -1 ? currentWordPrefix.substring(lastSlashIndex + 1) : currentWordPrefix;
@@ -669,7 +669,7 @@ const TabCompletionManager = (() => {
             const suggestions = await _getSuggestionsFromProvider(context);
             if (!suggestions || suggestions.length === 0) {
                 resetCycle();
-                return { textToInsert: null };
+                return {textToInsert: null};
             }
             if (suggestions.length === 1) {
                 const completion = suggestions[0];
@@ -683,7 +683,7 @@ const TabCompletionManager = (() => {
                 let newText = textBefore + finalCompletion + textAfter;
 
                 resetCycle();
-                return { textToInsert: newText, newCursorPos: (textBefore + finalCompletion).length };
+                return {textToInsert: newText, newCursorPos: (textBefore + finalCompletion).length};
             }
 
             const lcp = findLongestCommonPrefix(suggestions);
@@ -693,17 +693,20 @@ const TabCompletionManager = (() => {
                 let newText = textBefore + lcp + textAfter;
 
                 lastCompletionInput = newText;
-                return { textToInsert: newText, newCursorPos: (textBefore + lcp).length };
+                return {textToInsert: newText, newCursorPos: (textBefore + lcp).length};
             } else {
                 suggestionsCache = suggestions;
                 cycleIndex = -1;
                 lastCompletionInput = fullInput;
                 const promptText = `${document.getElementById('prompt-container').textContent} `;
-                void OutputManager.appendToOutput(`${promptText}${fullInput}`, { isCompletionSuggestion: true });
-                void OutputManager.appendToOutput(suggestionsCache.join("    "), { typeClass: 'text-subtle', isCompletionSuggestion: true });
+                void OutputManager.appendToOutput(`${promptText}${fullInput}`, {isCompletionSuggestion: true});
+                void OutputManager.appendToOutput(suggestionsCache.join("    "), {
+                    typeClass: 'text-subtle',
+                    isCompletionSuggestion: true
+                });
                 const outputDiv = document.getElementById('output');
                 if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
-                return { textToInsert: null };
+                return {textToInsert: null};
             }
         } else {
             cycleIndex = (cycleIndex + 1) % suggestionsCache.length;
@@ -717,9 +720,10 @@ const TabCompletionManager = (() => {
             let newText = textBefore + completionText + textAfter;
 
             lastCompletionInput = newText;
-            return { textToInsert: newText, newCursorPos: (textBefore + completionText).length };
+            return {textToInsert: newText, newCursorPos: (textBefore + completionText).length};
         }
     }
+
     return {
         handleTab,
         resetCycle,
@@ -775,7 +779,7 @@ const AppLayerManager = (() => {
 
         if (terminalOutput) terminalOutput.classList.remove('hidden');
         if (terminalInputContainer) terminalInputContainer.classList.remove('hidden');
-        
+
         // These calls ensure the prompt is redrawn and the view is correct.
         TerminalUI.updatePrompt();
         if (terminalOutput) {

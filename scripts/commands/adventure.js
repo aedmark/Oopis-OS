@@ -178,11 +178,11 @@
                     };
                 }
 
-                if (typeof AdventureCreator === 'undefined' || !AdventureCreator.enter) {
+                if (typeof Adventure_create === 'undefined' || !Adventure_create.enter) {
                     return { success: false, error: "AdventureCreator module not found. Catastrophic blueprint failure." };
                 }
 
-                AdventureCreator.enter(filename, initialData, context);
+                Adventure_create.enter(filename, initialData, context);
                 return { success: true, output: "" };
             }
 

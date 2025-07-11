@@ -3,24 +3,22 @@
 
     const grepCommandDefinition = {
         commandName: "grep",
-        isInputStream: true, // Correctly declare as an input stream consumer
-        firstFileArgIndex: 1,
         flagDefinitions: [
             { name: "ignoreCase", short: "-i", long: "--ignore-case" },
             { name: "invertMatch", short: "-v", long: "--invert-match" },
             { name: "lineNumber", short: "-n", long: "--line-number" },
             { name: "count", short: "-c", long: "--count" },
-            {name: "recursive", short: "-R", long: "--recursive"}, // Recursive is a special case
+            {name: "recursive", short: "-R", long: "--recursive", aliases: ["-r"]},
         ],
         coreLogic: async (context) => {
-            const {args, flags, currentUser, inputItems, inputError} = context;
+            const {args, flags, currentUser, options} = context;
 
             if (args.length === 0) {
                 return { success: false, error: "grep: missing pattern" };
             }
 
-            // The pattern is now the first argument, file paths are handled by the stream
             const patternStr = args[0];
+            const filePaths = args.slice(1);
             let regex;
 
             try {
@@ -30,16 +28,14 @@
             }
 
             const outputLines = [];
-            let hadError = false;
+            let totalMatches = 0;
 
-            // This function remains the same, but will be called for each input source.
-            const processContent = (content, filePathForDisplay, totalSources) => {
+            const processContent = (content, filePathForDisplay, displayFileName) => {
                 const lines = content.split("\n");
                 let fileMatchCount = 0;
-                let currentFileLines = [];
+                let fileOutput = [];
 
                 lines.forEach((line, index) => {
-                    // Avoid processing the empty string that results from a trailing newline
                     if (index === lines.length - 1 && line === "") return;
 
                     const isMatch = regex.test(line);
@@ -49,62 +45,114 @@
                         fileMatchCount++;
                         if (!flags.count) {
                             let outputLine = "";
-                            // Only prefix with filename if there are multiple sources
-                            if (filePathForDisplay && totalSources > 1) {
+                            if (displayFileName) {
                                 outputLine += `${filePathForDisplay}:`;
                             }
                             if (flags.lineNumber) {
                                 outputLine += `${index + 1}:`;
                             }
                             outputLine += line;
-                            currentFileLines.push(outputLine);
+                            fileOutput.push(outputLine);
                         }
                     }
                 });
 
                 if (flags.count) {
                     let countOutput = "";
-                    if (filePathForDisplay && totalSources > 1) {
+                    if (displayFileName) {
                         countOutput += `${filePathForDisplay}:`;
                     }
                     countOutput += fileMatchCount;
                     outputLines.push(countOutput);
                 } else {
-                    outputLines.push(...currentFileLines);
+                    outputLines.push(...fileOutput);
                 }
+                totalMatches += fileMatchCount;
             };
 
-            // Handle recursive search separately as it needs to traverse the FS
-            if (flags.recursive) {
-                const searchRecursively = async (currentPath) => {
-                    // ... (recursive logic does not need to change)
-                };
-                const filePathsArgs = args.slice(1);
-                for (const pathArg of filePathsArgs) {
-                    await searchRecursively(FileSystemManager.getAbsolutePath(pathArg, FileSystemManager.getCurrentPath()));
-                }
+            async function searchDirectory(directoryPath) {
+                const dirNode = FileSystemManager.getNodeByPath(directoryPath);
+                if (!dirNode || dirNode.type !== 'directory') return;
 
-            } else {
-                if (inputError) {
-                    return {success: false, error: "grep: Could not read one or more sources."};
-                }
-
-                // Process each item from the input stream
-                for (const item of inputItems) {
-                    processContent(item.content, item.sourceName, inputItems.length);
+                const children = Object.keys(dirNode.children).sort();
+                for (const childName of children) {
+                    const childPath = FileSystemManager.getAbsolutePath(childName, directoryPath);
+                    const childNode = dirNode.children[childName];
+                    if (childNode.type === 'directory') {
+                        await searchDirectory(childPath);
+                    } else if (childNode.type === 'file') {
+                        if (FileSystemManager.hasPermission(childNode, currentUser, "read")) {
+                            processContent(childNode.content || "", childPath, true);
+                        }
+                    }
                 }
             }
 
+
+            if (filePaths.length > 0) {
+                for (const pathArg of filePaths) {
+                    const pathInfo = FileSystemManager.validatePath("grep", pathArg);
+                    if (pathInfo.error) {
+                        outputLines.push(pathInfo.error);
+                        continue;
+                    }
+                    if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
+                        outputLines.push(`grep: ${pathArg}: Permission denied`);
+                        continue;
+                    }
+
+                    if (pathInfo.node.type === 'directory' && flags.recursive) {
+                        await searchDirectory(pathInfo.resolvedPath);
+                    } else if (pathInfo.node.type === 'directory' && !flags.recursive) {
+                        outputLines.push(`grep: ${pathArg}: is a directory`);
+                    } else {
+                        processContent(pathInfo.node.content, pathArg, filePaths.length > 1);
+                    }
+                }
+            } else if (options.stdinContent !== null) {
+                processContent(options.stdinContent, '(standard input)', false);
+            } else {
+                return {success: false, error: "grep: missing operand"};
+            }
+
             return {
-                success: !hadError,
+                success: true,
                 output: outputLines.join("\n"),
             };
         },
     };
 
-    // The description and help text remain unchanged.
     const grepDescription = "Searches for a pattern in files or standard input.";
-    const grepHelpText = `...`; // Help text is omitted for brevity but remains the same.
+    const grepHelpText = `Usage: grep [OPTION]... PATTERN [FILE]...
+Search for PATTERN in each FILE or standard input.
+
+DESCRIPTION
+       The grep command searches for lines containing a match to the given
+       PATTERN. When a line matches, it is printed.
+
+OPTIONS
+       -i, --ignore-case
+              Ignore case distinctions in patterns and data.
+       -v, --invert-match
+              Invert the sense of matching, to select non-matching lines.
+       -n, --line-number
+              Prefix each line of output with the 1-based line number
+              within its input file.
+       -c, --count
+              Suppress normal output; instead print a count of matching lines
+              for each input file.
+       -R, -r, --recursive
+              Read all files under each directory, recursively.
+
+EXAMPLES
+       grep "error" /data/logs/system.log
+              Finds all lines containing "error" in the system log.
+              
+       ls | grep ".txt"
+              Lists only the files in the current directory that contain ".txt".
+
+       grep -R "TODO" /home/Guest/src
+              Recursively searches for "TODO" in the 'src' directory.`;
 
     CommandRegistry.register("grep", grepCommandDefinition, grepDescription, grepHelpText);
 })();

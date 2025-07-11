@@ -23,7 +23,7 @@
                 return { success: false, error: "basic: Cannot be run in a non-interactive mode." };
             }
 
-            if (typeof BasicManager === 'undefined' || typeof BasicUI === 'undefined' || typeof BasicInterpreter === 'undefined') {
+            if (typeof BasicManager === 'undefined' || typeof BasicUI === 'undefined' || typeof Basic_interp === 'undefined') {
                 return { success: false, error: "basic: The BASIC application modules are not loaded." };
             }
 

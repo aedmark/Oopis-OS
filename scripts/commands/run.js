@@ -22,7 +22,7 @@
             },
         ],
         coreLogic: async (context) => {
-            const { args, options, signal } = context;
+            const {args, options, signal} = context;
             const scriptPathArg = args[0];
             const scriptArgs = args.slice(1);
             const scriptNode = context.validatedPaths[0].node;
@@ -64,7 +64,7 @@
 
             try {
                 if (scriptingContext.recursionDepth > MAX_RECURSION_DEPTH) {
-                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum recursion depth (${MAX_RECURSION_DEPTH}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum recursion depth (${MAX_RECURSION_DEPTH}). Terminating.`, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
                     overallScriptSuccess = false;
                 } else {
                     let programCounter = 0;
@@ -74,13 +74,13 @@
 
                         if (scriptingContext.steps.count++ > MAX_SCRIPT_STEPS) {
                             overallScriptSuccess = false;
-                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
                             break;
                         }
 
                         if (signal?.aborted) {
                             overallScriptSuccess = false;
-                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, { typeClass: Config.CSS_CLASSES.WARNING_MSG });
+                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, {typeClass: Config.CSS_CLASSES.WARNING_MSG});
                             if (scriptingContext.cancelCallback) scriptingContext.cancelCallback();
                             break;
                         }
@@ -103,12 +103,15 @@
                             processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
                         }
 
-                        const result = await CommandExecutor.processSingleCommand(processedLine.trim(), { isInteractive: false, scriptingContext });
+                        const result = await CommandExecutor.processSingleCommand(processedLine.trim(), {
+                            isInteractive: false,
+                            scriptingContext
+                        });
                         programCounter = scriptingContext.currentLineIndex + 1;
 
                         if (!result || !result.success) {
                             const errorMsg = `Script '${scriptPathArg}' error on line ${lineToExecuteIndex + 1}: ${rawScriptLines[lineToExecuteIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
-                            await OutputManager.appendToOutput(errorMsg, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                            await OutputManager.appendToOutput(errorMsg, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
                             overallScriptSuccess = false;
                             break;
                         }

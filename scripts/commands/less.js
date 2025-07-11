@@ -2,14 +2,15 @@
     "use strict";
     const lessCommandDefinition = {
         commandName: "less",
-        argValidation: { max: 1 },
-        pathValidation: [{ argIndex: 0, options: { expectedType: 'file' }, optional: true }],
-        permissionChecks: [{ pathArgIndex: 0, permissions: ["read"] }],
+        isInputStream: true,
         coreLogic: async (context) => {
-            const { args, options, validatedPaths } = context;
-            const content = args.length > 0
-                ? (validatedPaths[0] && validatedPaths[0].node ? validatedPaths[0].node.content : null)
-                : options.stdinContent;
+            const {options, inputItems, inputError} = context;
+
+            if (inputError) {
+                return {success: false, error: "less: Could not read one or more sources."};
+            }
+
+            const content = inputItems.map(item => item.content).join('\n');
 
             if (content === null || content === undefined) {
                 return { success: true, output: "" };
@@ -45,5 +46,5 @@ EXAMPLES
         less very_long_document.txt
                Displays the document and allows scrolling in both directions.`;
 
-    CommandRegistry.register("less", lessCommandDefinition, lessHelpText, lessDescription);
+    CommandRegistry.register("less", lessCommandDefinition, lessDescription, lessHelpText);
 })();

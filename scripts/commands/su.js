@@ -9,7 +9,7 @@
         },
 
         coreLogic: async (context) => {
-            const { args, options } = context;
+            const {args, options} = context;
             const targetUser = args.length > 0 ? args[0] : "root";
             const providedPassword = args.length > 1 ? args[1] : null;
             const result = await UserManager.su(targetUser, providedPassword, options);

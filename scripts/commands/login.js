@@ -11,7 +11,7 @@
         },
 
         coreLogic: async (context) => {
-            const { args, options } = context;
+            const {args, options} = context;
             const username = args[0];
             const providedPassword = args.length === 2 ? args[1] : null;
 

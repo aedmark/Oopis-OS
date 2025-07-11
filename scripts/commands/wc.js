@@ -11,14 +11,14 @@
             { name: "bytes", short: "-c", long: "--bytes" },
         ],
         coreLogic: async (context) => {
-            // MODIFIED: Destructures correct context properties.
+            //  Destructures correct context properties.
             const {args, flags, inputItems, inputError} = context;
 
             if (inputError) {
                 return {success: false, error: "wc: No readable input provided or permission denied."};
             }
 
-            // MODIFIED: Processes the inputItems array.
+            // Processes the inputItems array.
             const input = inputItems.map(item => item.content).join('\\n');
 
             if (input === null || input === undefined) {
@@ -39,12 +39,10 @@
                 return line;
             };
 
-            // Corrected line counting for empty inputs
             const lineCount = input ? (input.match(/\\n/g) || []).length : 0;
             if (input && !input.endsWith('\\n') && input.length > 0) {
                 // lineCount++; // This behavior is debatable, but common. Let's stick to newline counting.
             }
-
 
             const counts = {
                 lines: lineCount,
