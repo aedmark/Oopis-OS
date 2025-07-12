@@ -6,13 +6,13 @@ const Config = (() => {
     const defaultConfig = {
         DATABASE: {
             NAME: "OopisOsDB",
-            VERSION: 4,
+            VERSION: 42,
             FS_STORE_NAME: "FileSystemsStore",
             UNIFIED_FS_KEY: "OopisOS_SharedFS",
         },
         OS: {
             NAME: "OopisOs",
-            VERSION: "4.0",
+            VERSION: "4.2",
             DEFAULT_HOST_NAME: "OopisOs",
         },
         USER: {
@@ -146,7 +146,7 @@ const Config = (() => {
                 },
                 'ollama': {
                     url: "http://localhost:11434/api/generate",
-                    defaultModel: "gemma3:12b"
+                    defaultModel: "gemma3:latest"
                 }
             }
         },

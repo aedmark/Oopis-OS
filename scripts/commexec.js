@@ -7,6 +7,13 @@ const CommandExecutor = (() => {
   const commands = {};
   const loadingPromises = {};
 
+  async function precacheCommonCommands() {
+    await _ensureCommandLoaded('ls');
+    await _ensureCommandLoaded('cd');
+    await _ensureCommandLoaded('cat');
+    await _ensureCommandLoaded('rm');
+  }
+
   async function* _generateInputContent(context, firstFileArgIndex = 0) {
     const {args, options, currentUser} = context;
 
@@ -250,10 +257,13 @@ const CommandExecutor = (() => {
     return activeJobs;
   }
 
-  function killJob(jobId) {
+  async function killJob(jobId) {
     const job = activeJobs[jobId];
     if (job && job.abortController) {
       job.abortController.abort("Killed by user command.");
+      if (job.promise) {
+        await job.promise.catch(() => {}); // Wait for the job to fully terminate
+      }
       MessageBusManager.unregisterJob(jobId);
       delete activeJobs[jobId];
       return {
@@ -606,10 +616,10 @@ const CommandExecutor = (() => {
   }
 
   async function processSingleCommand(rawCommandText, options = {}) {
-    const {isInteractive = true, scriptingContext = null, suppressOutput = false} = options;
+    const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
 
     if (options.scriptingContext && isInteractive && !ModalManager.isAwaiting()) {
-      await OutputManager.appendToOutput("Script execution in progress. Input suspended.", {typeClass: Config.CSS_CLASSES.WARNING_MSG});
+      await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
       return { success: false, error: "Script execution in progress." };
     }
     if (ModalManager.isAwaiting()) {
@@ -623,7 +633,7 @@ const CommandExecutor = (() => {
     try {
       commandToParse = await _preprocessCommandString(rawCommandText);
     } catch (e) {
-      await OutputManager.appendToOutput(e.message, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+      await OutputManager.appendToOutput(e.message, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: false, error: e.message };
     }
@@ -645,7 +655,7 @@ const CommandExecutor = (() => {
     try {
       commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
     } catch (e) {
-      await OutputManager.appendToOutput(e.message || "Command parse error.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+      await OutputManager.appendToOutput(e.message || "Command parse error.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: false, error: e.message || "Command parse error." };
     }
@@ -669,31 +679,33 @@ const CommandExecutor = (() => {
         pipeline.jobId = jobId;
         MessageBusManager.registerJob(jobId);
         const abortController = new AbortController();
-        activeJobs[jobId] = {id: jobId, command: cmdToEcho, abortController};
-        await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
 
-        setTimeout(async () => {
-          try {
-            const bgResult = await _executePipeline(pipeline, {
-              isInteractive: false,
-              signal: abortController.signal,
-              scriptingContext,
-              suppressOutput: true
-            });
-            const statusMsg = `[Job ${pipeline.jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
-            await OutputManager.appendToOutput(statusMsg, {
-              typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG,
-              isBackground: true
-            });
-          } finally {
-            delete activeJobs[jobId];
-            MessageBusManager.unregisterJob(jobId);
-          }
-        }, 0);
+        const jobPromise = _executePipeline(pipeline, {
+          isInteractive: false,
+          signal: abortController.signal,
+          scriptingContext,
+          suppressOutput: true
+        }).finally(() => {
+          delete activeJobs[jobId];
+          MessageBusManager.unregisterJob(jobId);
+        });
+
+        activeJobs[jobId] = { id: jobId, command: cmdToEcho, abortController, promise: jobPromise };
+        await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+
+        jobPromise.then(bgResult => {
+          const statusMsg = `[Job ${pipeline.jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
+          OutputManager.appendToOutput(statusMsg, {
+            typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG,
+            isBackground: true
+          });
+        });
+
         result = { success: true };
       } else {
-        result = await _executePipeline(pipeline, {isInteractive, signal: null, scriptingContext, suppressOutput});
+        result = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
       }
+
 
       if (!result) {
         const err = `Critical: Pipeline execution returned an undefined result.`;
@@ -722,5 +734,6 @@ const CommandExecutor = (() => {
     getActiveJobs,
     killJob,
     _ensureCommandLoaded,
+    precacheCommonCommands
   };
 })();

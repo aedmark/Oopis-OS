@@ -9,12 +9,13 @@
 RULES:
 - Do not add any greetings.
 - If no commands are needed (e.g., a general knowledge question), respond with the direct answer. DO NOT generate a plan.
+- If the user's request is ambiguous, ask for clarification.
 - ONLY use the commands and flags explicitly listed in the "Tool Manifest" below. Do not deviate.
 - Each command must be simple and stand-alone. You CANNOT use command substitution or other advanced shell syntax.
 - When using a command with an argument that contains spaces (like a filename), you MUST enclose that argument in double quotes. For example: cat "My File.txt".
 
 --- TOOL MANIFEST ---
-ls [-l, -a, -R], cat, grep [-i, -v, -n, -R], find [path] -name [pattern] -type [f|d], tree, pwd, head [-n], tail [-n], wc, touch, xargs, shuf, tail, csplit, awk, sort, echo
+ls [-l, -a, -R], cat, grep [-i, -v, -n, -R], find [path] -name [pattern] -type [f|d], tree, pwd, head [-n], tail [-n], wc, touch, xargs, shuf, tail, csplit, awk, sort, echo, man, help, set, history, mkdir
 --- END MANIFEST ---
 
 To process multiple files, you must first list them, and then process each file with a separate command in the plan.`;
@@ -119,8 +120,26 @@ RULES:
 
             if (shouldUseToolUseLogic) {
 
-                const lsResult = await CommandExecutor.processSingleCommand("ls -l", {suppressOutput: true});
-                const localContext = `Current directory content:\n${lsResult.output || '(empty)'}`;
+                // NEW: Build a richer, persistent context
+                const pwdResult = await CommandExecutor.processSingleCommand("pwd", { suppressOutput: true });
+                const lsResult = await CommandExecutor.processSingleCommand("ls -la", { suppressOutput: true });
+                const historyResult = await CommandExecutor.processSingleCommand("history", { suppressOutput: true });
+                const setResult = await CommandExecutor.processSingleCommand("set", { suppressOutput: true });
+
+                const localContext = `
+## OopisOS Session Context ##
+Current Directory:
+${pwdResult.output || '(unknown)'}
+
+Directory Listing:
+${lsResult.output || '(empty)'}
+
+Recent Commands:
+${historyResult.output || '(none)'}
+
+Environment Variables:
+${setResult.output || '(none)'}
+`;
                 const plannerPrompt = `User Prompt: "${userPrompt}"\n\n${localContext}`;
 
                 const plannerConversation = [...conversationHistory, { role: "user", parts: [{ text: plannerPrompt }] }];
@@ -177,6 +196,22 @@ RULES:
                 const commandsToExecute = planText.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
                 if (flags.verbose && options.isInteractive) {
                     await OutputManager.appendToOutput(`AI's Plan:\n${commandsToExecute.map(c => `- ${c}`).join('\n')}`, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
+                }
+
+                if (!flags.confirm && options.isInteractive) {
+                    const confirmed = await new Promise(resolve => {
+                        ModalManager.request({
+                            context: 'terminal',
+                            messageLines: ["The AI has proposed the following plan:", ...commandsToExecute.map(c => `  - ${c}`), "Execute this plan?"],
+                            onConfirm: () => resolve(true),
+                            onCancel: () => resolve(false)
+                        });
+                    });
+
+                    if (!confirmed) {
+                        await OutputManager.appendToOutput("Execution cancelled by user.", { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+                        return { success: true, output: "" };
+                    }
                 }
 
                 for (const commandStr of commandsToExecute) {

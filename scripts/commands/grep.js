@@ -1,129 +1,127 @@
-(() => {
-    "use strict";
+const grepCommandDefinition = {
+    commandName: "grep",
+    flagDefinitions: [
+        { name: "ignoreCase", short: "-i", long: "--ignore-case" },
+        { name: "invertMatch", short: "-v", long: "--invert-match" },
+        { name: "lineNumber", short: "-n", long: "--line-number" },
+        { name: "count", short: "-c", long: "--count" },
+        {name: "recursive", short: "-R", long: "--recursive", aliases: ["-r"]},
+        { name: "extendedRegex", short: "-E", long: "--extended-regexp" }
+    ],
+    coreLogic: async (context) => {
+        const {args, flags, currentUser, options} = context;
 
-    const grepCommandDefinition = {
-        commandName: "grep",
-        flagDefinitions: [
-            { name: "ignoreCase", short: "-i", long: "--ignore-case" },
-            { name: "invertMatch", short: "-v", long: "--invert-match" },
-            { name: "lineNumber", short: "-n", long: "--line-number" },
-            { name: "count", short: "-c", long: "--count" },
-            {name: "recursive", short: "-R", long: "--recursive", aliases: ["-r"]},
-        ],
-        coreLogic: async (context) => {
-            const {args, flags, currentUser, options} = context;
+        if (args.length === 0) {
+            return { success: false, error: "grep: missing pattern" };
+        }
 
-            if (args.length === 0) {
-                return { success: false, error: "grep: missing pattern" };
-            }
+        const patternStr = args[0];
+        const filePaths = args.slice(1);
+        let regex;
 
-            const patternStr = args[0];
-            const filePaths = args.slice(1);
-            let regex;
+        try {
+            regex = new RegExp(patternStr, flags.ignoreCase ? "i" : "");
+        } catch (e) {
+            return { success: false, error: `grep: invalid regular expression '${patternStr}': ${e.message}` };
+        }
 
-            try {
-                regex = new RegExp(patternStr, flags.ignoreCase ? "i" : "");
-            } catch (e) {
-                return { success: false, error: `grep: invalid regular expression '${patternStr}': ${e.message}` };
-            }
+        const outputLines = [];
+        let totalMatches = 0;
 
-            const outputLines = [];
-            let totalMatches = 0;
+        const processContent = (content, filePathForDisplay, displayFileName) => {
+            const lines = content.split("\n");
+            let fileMatchCount = 0;
+            let fileOutput = [];
 
-            const processContent = (content, filePathForDisplay, displayFileName) => {
-                const lines = content.split("\n");
-                let fileMatchCount = 0;
-                let fileOutput = [];
+            lines.forEach((line, index) => {
+                if (index === lines.length - 1 && line === "") return;
 
-                lines.forEach((line, index) => {
-                    if (index === lines.length - 1 && line === "") return;
+                const isMatch = regex.test(line);
+                const effectiveMatch = flags.invertMatch ? !isMatch : isMatch;
 
-                    const isMatch = regex.test(line);
-                    const effectiveMatch = flags.invertMatch ? !isMatch : isMatch;
-
-                    if (effectiveMatch) {
-                        fileMatchCount++;
-                        if (!flags.count) {
-                            let outputLine = "";
-                            if (displayFileName) {
-                                outputLine += `${filePathForDisplay}:`;
-                            }
-                            if (flags.lineNumber) {
-                                outputLine += `${index + 1}:`;
-                            }
-                            outputLine += line;
-                            fileOutput.push(outputLine);
+                if (effectiveMatch) {
+                    fileMatchCount++;
+                    if (!flags.count) {
+                        let outputLine = "";
+                        if (displayFileName) {
+                            outputLine += `${filePathForDisplay}:`;
                         }
-                    }
-                });
-
-                if (flags.count) {
-                    let countOutput = "";
-                    if (displayFileName) {
-                        countOutput += `${filePathForDisplay}:`;
-                    }
-                    countOutput += fileMatchCount;
-                    outputLines.push(countOutput);
-                } else {
-                    outputLines.push(...fileOutput);
-                }
-                totalMatches += fileMatchCount;
-            };
-
-            async function searchDirectory(directoryPath) {
-                const dirNode = FileSystemManager.getNodeByPath(directoryPath);
-                if (!dirNode || dirNode.type !== 'directory') return;
-
-                const children = Object.keys(dirNode.children).sort();
-                for (const childName of children) {
-                    const childPath = FileSystemManager.getAbsolutePath(childName, directoryPath);
-                    const childNode = dirNode.children[childName];
-                    if (childNode.type === 'directory') {
-                        await searchDirectory(childPath);
-                    } else if (childNode.type === 'file') {
-                        if (FileSystemManager.hasPermission(childNode, currentUser, "read")) {
-                            processContent(childNode.content || "", childPath, true);
+                        if (flags.lineNumber) {
+                            outputLine += `${index + 1}:`;
                         }
+                        outputLine += line;
+                        fileOutput.push(outputLine);
                     }
                 }
-            }
+            });
 
-
-            if (filePaths.length > 0) {
-                for (const pathArg of filePaths) {
-                    const pathInfo = FileSystemManager.validatePath("grep", pathArg);
-                    if (pathInfo.error) {
-                        outputLines.push(pathInfo.error);
-                        continue;
-                    }
-                    if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
-                        outputLines.push(`grep: ${pathArg}: Permission denied`);
-                        continue;
-                    }
-
-                    if (pathInfo.node.type === 'directory' && flags.recursive) {
-                        await searchDirectory(pathInfo.resolvedPath);
-                    } else if (pathInfo.node.type === 'directory' && !flags.recursive) {
-                        outputLines.push(`grep: ${pathArg}: is a directory`);
-                    } else {
-                        processContent(pathInfo.node.content, pathArg, filePaths.length > 1);
-                    }
+            if (flags.count) {
+                let countOutput = "";
+                if (displayFileName) {
+                    countOutput += `${filePathForDisplay}:`;
                 }
-            } else if (options.stdinContent !== null) {
-                processContent(options.stdinContent, '(standard input)', false);
+                countOutput += fileMatchCount;
+                outputLines.push(countOutput);
             } else {
-                return {success: false, error: "grep: missing operand"};
+                outputLines.push(...fileOutput);
             }
+            totalMatches += fileMatchCount;
+        };
 
-            return {
-                success: true,
-                output: outputLines.join("\n"),
-            };
-        },
-    };
+        async function searchDirectory(directoryPath) {
+            const dirNode = FileSystemManager.getNodeByPath(directoryPath);
+            if (!dirNode || dirNode.type !== 'directory') return;
 
-    const grepDescription = "Searches for a pattern in files or standard input.";
-    const grepHelpText = `Usage: grep [OPTION]... PATTERN [FILE]...
+            const children = Object.keys(dirNode.children).sort();
+            for (const childName of children) {
+                const childPath = FileSystemManager.getAbsolutePath(childName, directoryPath);
+                const childNode = dirNode.children[childName];
+                if (childNode.type === 'directory') {
+                    await searchDirectory(childPath);
+                } else if (childNode.type === 'file') {
+                    if (FileSystemManager.hasPermission(childNode, currentUser, "read")) {
+                        processContent(childNode.content || "", childPath, true);
+                    }
+                }
+            }
+        }
+
+
+        if (filePaths.length > 0) {
+            for (const pathArg of filePaths) {
+                const pathInfo = FileSystemManager.validatePath("grep", pathArg);
+                if (pathInfo.error) {
+                    outputLines.push(pathInfo.error);
+                    continue;
+                }
+                if (!FileSystemManager.hasPermission(pathInfo.node, currentUser, "read")) {
+                    outputLines.push(`grep: ${pathArg}: Permission denied`);
+                    continue;
+                }
+
+                if (pathInfo.node.type === 'directory' && flags.recursive) {
+                    await searchDirectory(pathInfo.resolvedPath);
+                } else if (pathInfo.node.type === 'directory' && !flags.recursive) {
+                    outputLines.push(`grep: ${pathArg}: is a directory`);
+                } else {
+                    processContent(pathInfo.node.content, pathArg, filePaths.length > 1);
+                }
+            }
+        } else if (options.stdinContent !== null) {
+            processContent(options.stdinContent, '(standard input)', false);
+        } else {
+            return {success: false, error: "grep: missing operand"};
+        }
+
+        return {
+            success: true,
+            output: outputLines.join("\n"),
+        };
+    },
+};
+
+const grepDescription = "Searches for a pattern in files or standard input.";
+const grepHelpText = `Usage: grep [OPTION]... PATTERN [FILE]...
 Search for PATTERN in each FILE or standard input.
 
 DESCRIPTION
@@ -143,6 +141,8 @@ OPTIONS
               for each input file.
        -R, -r, --recursive
               Read all files under each directory, recursively.
+       -E, --extended-regexp
+              Interpret PATTERN as an extended regular expression.
 
 EXAMPLES
        grep "error" /data/logs/system.log
@@ -154,5 +154,4 @@ EXAMPLES
        grep -R "TODO" /home/Guest/src
               Recursively searches for "TODO" in the 'src' directory.`;
 
-    CommandRegistry.register("grep", grepCommandDefinition, grepDescription, grepHelpText);
-})();
+CommandRegistry.register("grep", grepCommandDefinition, grepDescription, grepHelpText);

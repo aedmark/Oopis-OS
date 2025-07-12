@@ -1,3 +1,5 @@
+// scripts/apps/gemini_chat/gemini_chat_manager.js
+
 const GeminiChatManager = (() => {
     "use strict";
 
@@ -10,14 +12,35 @@ const GeminiChatManager = (() => {
         model: null, // Default model
     };
 
-    function enter(provider, model) {
+    async function enter(provider, model) {
         if (state.isActive) return;
 
         state = { ...defaultState };
         state.isActive = true;
         state.provider = provider || 'gemini';
         state.model = model || null;
-        
+
+        // NEW: Gather and prepend context at the start of the session
+        const pwdResult = await CommandExecutor.processSingleCommand("pwd", { suppressOutput: true });
+        const lsResult = await CommandExecutor.processSingleCommand("ls -la", { suppressOutput: true });
+        const historyResult = await CommandExecutor.processSingleCommand("history", { suppressOutput: true });
+
+        const systemContext = `You are a helpful assistant operating inside a browser-based simulated OS called OopisOS. The user has opened this chat interface. Below is the context of their current terminal session. Use it to inform your answers.
+
+## OopisOS Session Context ##
+Current Directory:
+${pwdResult.output || '(unknown)'}
+
+Directory Listing (ls -la):
+${lsResult.output || '(empty)'}
+
+Recent Command History:
+${historyResult.output || '(none)'}
+`;
+        // Prepend the context to the conversation history as a system message.
+        // This is sent only once at the beginning of the conversation.
+        state.conversationHistory.push({ role: 'system', parts: [{ text: systemContext }] });
+
         GeminiChatUI.buildAndShow({
             onSendMessage: _sendMessage,
             onExit: exit
@@ -28,7 +51,7 @@ const GeminiChatManager = (() => {
         if (!state.isActive) return;
 
         GeminiChatUI.hideAndReset();
-        state = {}; 
+        state = {};
     }
 
     async function _sendMessage(userInput) {
@@ -47,12 +70,12 @@ const GeminiChatManager = (() => {
             if (!apiKey) {
                 GeminiChatUI.toggleLoader(false);
                 GeminiChatUI.appendMessage("Error: Gemini API key not set. Please run the `gemini` command in the terminal once to set it.", 'ai');
-                // Remove the user message from history so they can try again after setting the key
-                state.conversationHistory.pop(); 
+                state.conversationHistory.pop();
                 return;
             }
         }
-        
+
+        // The conversation history now naturally includes the system context at the beginning
         const result = await Utils.callLlmApi(state.provider, state.model, state.conversationHistory, apiKey, null);
 
         GeminiChatUI.toggleLoader(false);
@@ -64,8 +87,7 @@ const GeminiChatManager = (() => {
         } else {
             const errorMessage = `AI Error: ${result.error}`;
             GeminiChatUI.appendMessage(errorMessage, 'ai');
-            // Remove the user's message from history on failure
-            state.conversationHistory.pop(); 
+            state.conversationHistory.pop();
         }
     }
 

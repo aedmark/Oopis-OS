@@ -1,3 +1,5 @@
+// scripts/apps/editor/editor_manager.js
+
 const EditorManager = (() => {
     "use strict";
 
@@ -13,27 +15,26 @@ const EditorManager = (() => {
         viewMode: 'split', // 'edit', 'split', 'preview'
         undoStack: [],
         redoStack: [],
-        wordWrap: false
+        wordWrap: false,
+        onSaveCallback: null, // Task 3.3: Add onSaveCallback
     };
 
-    function enter(filePath, fileContent) {
+    function enter(filePath, fileContent, onSaveCallback = null) {
         if (state.isActive) return;
 
         state = {...defaultState};
         state.isActive = true;
         state.currentFilePath = filePath;
+        state.onSaveCallback = onSaveCallback;
 
-        // Corrected: Normalize line endings to prevent rendering issues.
         const normalizedContent = (fileContent || "").replace(/\r\n|\r/g, "\n");
         state.originalContent = normalizedContent;
         state.currentContent = normalizedContent;
 
         state.fileMode = _getFileMode(filePath);
 
-        // Initial state for undo
         state.undoStack.push(state.currentContent);
 
-        // Load word wrap preference
         state.wordWrap = StorageManager.loadItem(Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, "Editor Word Wrap", false);
 
         EditorUI.buildAndShow(state, callbacks);
@@ -70,7 +71,6 @@ const EditorManager = (() => {
             state.isDirty = state.currentContent !== state.originalContent;
             EditorUI.updateDirtyStatus(state.isDirty);
 
-            // Debounced push to undo stack
             _debouncedPushUndo(newContent);
 
             if (state.viewMode !== 'edit') {
@@ -117,6 +117,9 @@ const EditorManager = (() => {
                 state.isDirty = false;
                 EditorUI.updateDirtyStatus(false);
                 EditorUI.updateStatusMessage(`File saved to ${savePath}`);
+                if (typeof state.onSaveCallback === 'function') {
+                    await state.onSaveCallback(savePath);
+                }
             } else {
                 EditorUI.updateStatusMessage(`Error: ${saveResult.error || "Failed to save file system changes."}`);
             }

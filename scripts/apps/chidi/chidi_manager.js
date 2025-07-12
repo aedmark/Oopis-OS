@@ -13,6 +13,9 @@ const ChidiManager = (() => {
         conversationHistory: [],
         provider: 'gemini',
         model: null,
+        // NEW: State for conversational context
+        sessionContext: "",
+        isFirstQuestion: true,
     };
 
     const callbacks = {
@@ -32,7 +35,6 @@ const ChidiManager = (() => {
                 : currentFile.content;
             const prompt = `Please provide a concise summary of the following document:\n\n---\n\n${contentToSummarize}`;
 
-            // Pass the provider to the API call
             const summary = await _callLlmApi([{role: 'user', parts: [{text: prompt}]}]);
 
             ChidiUI.toggleLoader(false);
@@ -50,14 +52,19 @@ const ChidiManager = (() => {
                 : currentFile.content;
             const prompt = `Based on the following document, what are some insightful questions a user might ask?\n\n---\n\n${contentForQuestions}`;
 
-            // Pass the provider to the API call
             const questions = await _callLlmApi([{role: 'user', parts: [{text: prompt}]}]);
 
             ChidiUI.toggleLoader(false);
             ChidiUI.appendAiOutput("Suggested Questions", questions);
         },
+        // MODIFIED: This is now the entry point for all questions.
         onAsk: async (userQuestion) => {
-            await _submitQuestion(userQuestion);
+            if (state.isFirstQuestion) {
+                await _submitQuestionWithRelevance(userQuestion);
+                state.isFirstQuestion = false;
+            } else {
+                await _submitQuestionWithHistory(userQuestion);
+            }
         },
         onSaveSession: async (filename) => {
             const htmlContent = ChidiUI.packageSessionAsHTML(state);
@@ -102,13 +109,7 @@ const ChidiManager = (() => {
             ChidiUI.toggleLoader(true);
             ChidiUI.showMessage("Analyzing documents for key concepts...");
 
-            const allContent = state.loadedFiles.map(f => f.content).join('\n\n---\n\n');
-
-            const conceptsPrompt = `From the following text, extract a list of up to 15 key concepts, names, and technical terms. Return ONLY a comma-separated list.
-
-            TEXT:
-            ${allContent}`;
-
+            const conceptsPrompt = `From the following text, extract a list of up to 15 key concepts, names, and technical terms. Return ONLY a comma-separated list.\n\nTEXT:\n${state.sessionContext}`;
             const conceptsResult = await _callLlmApi([{role: 'user', parts: [{text: conceptsPrompt}]}]);
             if (!conceptsResult) {
                 ChidiUI.toggleLoader(false);
@@ -119,13 +120,7 @@ const ChidiManager = (() => {
 
             ChidiUI.showMessage("Generating cross-referenced summary...");
 
-            const summaryPrompt = `The following key concepts have been identified in a set of documents: ${keyConcepts.join(', ')}.
-
-            Please write a concise, one-paragraph summary of the document set below. Your main goal is to naturally incorporate as many of the key concepts as possible.
-
-            DOCUMENT SET:
-            ${allContent}`;
-
+            const summaryPrompt = `The following key concepts have been identified in a set of documents: ${keyConcepts.join(', ')}.\n\nPlease write a concise, one-paragraph summary of the document set below. Your main goal is to naturally incorporate as many of the key concepts as possible.\n\nDOCUMENT SET:\n${state.sessionContext}`;
             const summaryResult = await _callLlmApi([{role: 'user', parts: [{text: summaryPrompt}]}]);
             if (!summaryResult) {
                 ChidiUI.toggleLoader(false);
@@ -147,7 +142,7 @@ const ChidiManager = (() => {
     function launch(initialFiles, launchOptions) {
         if (state.isModalOpen) return;
 
-        state = {...defaultState};
+        state = {...defaultState}; // Reset state completely on launch
         state.isModalOpen = true;
         state.loadedFiles = initialFiles.map(file => ({
             ...file,
@@ -155,33 +150,40 @@ const ChidiManager = (() => {
         }));
         state.currentIndex = state.loadedFiles.length > 0 ? 0 : -1;
 
+        // NEW: Establish the persistent session context
+        state.sessionContext = state.loadedFiles.map(file => `--- START OF DOCUMENT: ${file.name} ---\n\n${file.content}\n\n--- END OF DOCUMENT ---`).join('\n\n');
+
         if (launchOptions.provider) state.provider = launchOptions.provider;
         if (launchOptions.model) state.model = launchOptions.model;
 
+        // MODIFIED: -n flag clears history AND resets the conversational state
         if (launchOptions.isNewSession) {
             state.conversationHistory = [];
+            state.isFirstQuestion = true;
         }
 
         ChidiUI.buildAndShow(state, callbacks);
-        ChidiUI.showMessage(launchOptions.isNewSession
-            ? "New session started. AI interaction history is cleared."
-            : `Chidi.md initialized. ${state.loadedFiles.length} files loaded for analysis.`, true);
+        const initialMessage = launchOptions.isNewSession
+            ? `New session started. Analyzing ${state.loadedFiles.length} files. Ask a follow-up question.`
+            : `Chidi.md initialized. Analyzing ${state.loadedFiles.length} files. Ask a follow-up question.`;
+        ChidiUI.showMessage(initialMessage, true);
     }
 
     function close() {
         if (!state.isModalOpen) return;
-        state = {};
+        state = {}; // Reset state on close
         ChidiUI.hideAndReset();
     }
 
-    async function _submitQuestion(userQuestion) {
+    // RENAMED & MODIFIED: This handles the first question with relevance scoring
+    async function _submitQuestionWithRelevance(userQuestion) {
         ChidiUI.toggleLoader(true);
         ChidiUI.showMessage(`Analyzing ${state.loadedFiles.length} files for relevance...`);
 
         state.conversationHistory.push({role: 'user', parts: [{text: userQuestion}]});
 
         const relevantFiles = _findRelevantFiles(userQuestion);
-        let promptContext = "Based on the following documents and our previous conversation, please provide a comprehensive answer.\n\n";
+        let promptContext = "Based on the following documents, please provide a comprehensive answer.\n\n";
 
         relevantFiles.forEach(file => {
             const contentForPrompt = file.isCode ? Utils.extractComments(file.content, Utils.getFileExtension(file.name)) : file.content;
@@ -189,10 +191,10 @@ const ChidiManager = (() => {
         });
 
         const fullPrompt = `${promptContext}User's Question: "${userQuestion}"`;
-        const historyForApi = [...state.conversationHistory.slice(0, -1), {role: 'user', parts: [{text: fullPrompt}]}];
+        const historyForApi = [{role: 'user', parts: [{text: fullPrompt}]}]; // First question has no history
 
         if (state.isVerbose) {
-            ChidiUI.appendAiOutput("Constructed Prompt", `The following block contains the context and question being sent to the AI.\n\n\`\`\`text\n${fullPrompt}\n\`\`\``);
+            ChidiUI.appendAiOutput("Constructed Prompt (First Question)", `The following block contains the context and question being sent to the AI.\n\n\`\`\`text\n${fullPrompt}\n\`\`\``);
         }
 
         const finalAnswer = await _callLlmApi(historyForApi);
@@ -206,7 +208,38 @@ const ChidiManager = (() => {
         ChidiUI.toggleLoader(false);
     }
 
+    // NEW: This function handles subsequent questions using the full session context
+    async function _submitQuestionWithHistory(userQuestion) {
+        ChidiUI.toggleLoader(true);
+        ChidiUI.showMessage("Considering full context for follow-up...");
+
+        state.conversationHistory.push({role: 'user', parts: [{text: userQuestion}]});
+
+        // The prompt now includes the persistent session context and the full conversation history
+        const fullPrompt = `Continue this conversation, keeping the context of these files in mind.\n\nFULL FILE CONTEXT:\n${state.sessionContext}`;
+
+        // We send the full history, with the new instruction prepended to the latest user message
+        const userTurn = state.conversationHistory.at(-1);
+        const modifiedUserTurn = { role: 'user', parts: [{ text: `${fullPrompt}\n\nUser's follow-up: "${userTurn.parts[0].text}"` }] };
+        const historyForApi = [...state.conversationHistory.slice(0, -1), modifiedUserTurn];
+
+        if (state.isVerbose) {
+            ChidiUI.appendAiOutput("Constructed Prompt (Follow-up)", `The following block contains the context and question being sent to the AI.\n\n\`\`\`text\n${modifiedUserTurn.parts[0].text}\n\`\`\``);
+        }
+
+        const finalAnswer = await _callLlmApi(historyForApi);
+
+        if (finalAnswer) {
+            state.conversationHistory.push({role: 'model', parts: [{text: finalAnswer}]});
+        }
+
+        ChidiUI.appendAiOutput(`Answer for "${userQuestion}"`, finalAnswer || "Could not generate an answer based on the provided context.");
+        ChidiUI.toggleLoader(false);
+    }
+
+
     function _findRelevantFiles(userQuestion) {
+        // This function remains unchanged for the first question's relevance scoring.
         const questionLower = userQuestion.toLowerCase();
         const stopWords = new Set(['a', 'an', 'the', 'is', 'in', 'of', 'for', 'to', 'what', 'who', 'where', 'when', 'why', 'how', 'and', 'or', 'but']);
         const keywords = questionLower.split(/[\s\W]+/).filter(word => word.length > 2 && !stopWords.has(word));
@@ -230,10 +263,8 @@ const ChidiManager = (() => {
         return relevantFiles.length > 0 ? relevantFiles : [currentFile];
     }
 
-    // Rename this function to be more generic
     async function _callLlmApi(chatHistory) {
         let apiKey = null;
-        // Only get the API key if the provider is Gemini
         if (state.provider === 'gemini') {
             apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
             if (!apiKey) {

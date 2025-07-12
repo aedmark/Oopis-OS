@@ -1,3 +1,5 @@
+// scripts/commands/visudo.js
+
 (() => {
     "use strict";
 
@@ -22,7 +24,7 @@
 
             if (!sudoersNode) {
                 const primaryGroup = UserManager.getPrimaryGroupForUser('root');
-                const content = "# /etc/sudoers\n#\n# This file controls who can run what as root.\n\nroot    ALL\n%root   ALL\n";
+                const content = "# /etc/sudoers\n#\n# This file controls who can run what as root.\n\nroot    ALL\n%root   ALL\nDefaults timestamp_timeout=15\n";
                 const saveResult = await FileSystemManager.createOrUpdateFile(
                     sudoersPath,
                     content,

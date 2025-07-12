@@ -19,7 +19,8 @@
                 };
             }
 
-            const result = CommandExecutor.killJob(jobId);
+            // The 'await' keyword is added here.
+            const result = await CommandExecutor.killJob(jobId);
 
             return {
                 success: result.success,

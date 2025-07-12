@@ -8,6 +8,7 @@ const PaintManager = (() => {
 
     const defaultState = {
         isActive: false,
+        isLocked: false, // Task 1.1: Lock to prevent race conditions
         currentFilePath: null,
         canvasData: [],
         canvasDimensions: { width: 80, height: 24 },
@@ -313,6 +314,7 @@ const PaintManager = (() => {
     // --- UI Callbacks ---
     const callbacks = {
         onToolSelect: (tool) => {
+            if (state.isLocked) return;
             if (state.currentTool === 'select' && tool !== 'select') {
                 state.selection = null;
                 PaintUI.hideSelectionRect();
@@ -361,6 +363,9 @@ const PaintManager = (() => {
             PaintUI.toggleGrid(state.gridVisible);
         },
         onCanvasMouseDown: (coords) => {
+            if (state.isLocked) return;
+            state.isLocked = true;
+
             if (state.currentTool === 'fill') {
                 const char = state.currentCharacter;
                 const color = state.currentColor;
@@ -370,6 +375,7 @@ const PaintManager = (() => {
                     _pushToUndoStack(patch);
                     PaintUI.updateCanvas(fillCells);
                 }
+                state.isLocked = false;
                 return;
             }
             state.isDrawing = true;
@@ -430,6 +436,7 @@ const PaintManager = (() => {
                 if (!state.startCoords || !endCoords) {
                     state.startCoords = null;
                     state.lastCoords = null;
+                    state.isLocked = false;
                     return;
                 }
 
@@ -454,9 +461,9 @@ const PaintManager = (() => {
                 }
             }
 
-
             state.startCoords = null;
             state.lastCoords = null;
+            state.isLocked = false;
         },
         onCut: () => {
             _copySelectionToClipboard();

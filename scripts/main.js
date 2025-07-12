@@ -174,6 +174,7 @@ window.onload = async () => {
     SessionManager.initializeStack();
 
     CommandExecutor.initialize();
+    await CommandExecutor.precacheCommonCommands();
 
     SessionManager.loadAutomaticState(Config.USER.DEFAULT_NAME);
 

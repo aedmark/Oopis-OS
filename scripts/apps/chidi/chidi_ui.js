@@ -42,7 +42,7 @@ const ChidiUI = (() => {
 
         const footer = Utils.createElement('footer', {className: 'chidi-status-readout'},
             Utils.createElement('div', {id: 'chidi-fileCountDisplay', className: 'chidi-status-item'}),
-            Utils.createElement('div', {id: 'chidi-messageBox', className: 'chidi-status-message'}),
+            Utils.createElement('div', {id: 'chidi-messageBox', className: 'chidi-status-message'}), // This is our new indicator
             Utils.createElement('div', {className: 'chidi-control-group'},
                 Utils.createElement('div', {id: 'chidi-loader', className: 'chidi-loader chidi-hidden'}),
                 Utils.createElement('button', {
@@ -88,6 +88,9 @@ const ChidiUI = (() => {
         const currentFile = hasFiles ? state.loadedFiles[state.currentIndex] : null;
 
         elements.fileCountDisplay.textContent = `🖹 ${state.loadedFiles.length}`;
+        // NEW: Update status message to reflect session state
+        elements.messageBox.textContent = `Analyzing ${state.loadedFiles.length} files. Ask a follow-up question.`;
+
         elements.exportBtn.disabled = !hasFiles;
         elements.saveSessionBtn.disabled = !hasFiles;
         elements.summarizeBtn.disabled = !hasFiles;
