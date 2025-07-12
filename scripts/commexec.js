@@ -1,3 +1,5 @@
+// /scripts/commexec.js
+
 const CommandExecutor = (() => {
   "use strict";
   let backgroundProcessIdCounter = 0;
@@ -8,10 +10,10 @@ const CommandExecutor = (() => {
   async function* _generateInputContent(context, firstFileArgIndex = 0) {
     const {args, options, currentUser} = context;
 
-      // CORRECTED LOGIC: Prioritize stdinContent as direct input.
+    // CORRECTED LOGIC: Prioritize stdinContent as direct input.
     if (options.stdinContent !== null && options.stdinContent !== undefined) {
-        yield {success: true, content: options.stdinContent, sourceName: 'stdin'};
-        return; // Stop further processing if we have piped input
+      yield {success: true, content: options.stdinContent, sourceName: 'stdin'};
+      return; // Stop further processing if we have piped input
     }
 
     const fileArgs = args.slice(firstFileArgIndex);
@@ -252,6 +254,7 @@ const CommandExecutor = (() => {
     const job = activeJobs[jobId];
     if (job && job.abortController) {
       job.abortController.abort("Killed by user command.");
+      MessageBusManager.unregisterJob(jobId);
       delete activeJobs[jobId];
       return {
         success: true,
@@ -308,7 +311,7 @@ const CommandExecutor = (() => {
       output: "",
     };
     if (pipeline.inputRedirectFile) {
-        const pathValidation = FileSystemManager.validatePath("input redirection", pipeline.inputRedirectFile, {expectedType: 'file'});
+      const pathValidation = FileSystemManager.validatePath("input redirection", pipeline.inputRedirectFile, {expectedType: 'file'});
       if (pathValidation.error) {
         return { success: false, error: pathValidation.error };
       }
@@ -336,12 +339,13 @@ const CommandExecutor = (() => {
     const nowISO = new Date().toISOString();
     for (let i = 0; i < pipeline.segments.length; i++) {
       const segment = pipeline.segments[i];
+      const execOptions = { isInteractive, scriptingContext };
+      if (pipeline.isBackground) {
+        execOptions.jobId = pipeline.jobId;
+      }
       lastResult = await _executeCommandHandler(
           segment,
-          {
-            isInteractive,
-            scriptingContext
-          },
+          execOptions,
           currentStdin,
           signal
       );
@@ -602,10 +606,10 @@ const CommandExecutor = (() => {
   }
 
   async function processSingleCommand(rawCommandText, options = {}) {
-      const {isInteractive = true, scriptingContext = null, suppressOutput = false} = options;
+    const {isInteractive = true, scriptingContext = null, suppressOutput = false} = options;
 
     if (options.scriptingContext && isInteractive && !ModalManager.isAwaiting()) {
-        await OutputManager.appendToOutput("Script execution in progress. Input suspended.", {typeClass: Config.CSS_CLASSES.WARNING_MSG});
+      await OutputManager.appendToOutput("Script execution in progress. Input suspended.", {typeClass: Config.CSS_CLASSES.WARNING_MSG});
       return { success: false, error: "Script execution in progress." };
     }
     if (ModalManager.isAwaiting()) {
@@ -619,7 +623,7 @@ const CommandExecutor = (() => {
     try {
       commandToParse = await _preprocessCommandString(rawCommandText);
     } catch (e) {
-        await OutputManager.appendToOutput(e.message, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+      await OutputManager.appendToOutput(e.message, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: false, error: e.message };
     }
@@ -641,7 +645,7 @@ const CommandExecutor = (() => {
     try {
       commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
     } catch (e) {
-        await OutputManager.appendToOutput(e.message || "Command parse error.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+      await OutputManager.appendToOutput(e.message || "Command parse error.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
       return { success: false, error: e.message || "Command parse error." };
     }
@@ -663,30 +667,32 @@ const CommandExecutor = (() => {
         pipeline.isBackground = true;
         const jobId = ++backgroundProcessIdCounter;
         pipeline.jobId = jobId;
+        MessageBusManager.registerJob(jobId);
         const abortController = new AbortController();
-          activeJobs[jobId] = {id: jobId, command: cmdToEcho, abortController};
-          await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
+        activeJobs[jobId] = {id: jobId, command: cmdToEcho, abortController};
+        await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, {typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG});
 
         setTimeout(async () => {
           try {
-              const bgResult = await _executePipeline(pipeline, {
-                  isInteractive: false,
-                  signal: abortController.signal,
-                  scriptingContext,
-                  suppressOutput: true
-              });
+            const bgResult = await _executePipeline(pipeline, {
+              isInteractive: false,
+              signal: abortController.signal,
+              scriptingContext,
+              suppressOutput: true
+            });
             const statusMsg = `[Job ${pipeline.jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
-              await OutputManager.appendToOutput(statusMsg, {
-                  typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG,
-                  isBackground: true
-              });
+            await OutputManager.appendToOutput(statusMsg, {
+              typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG,
+              isBackground: true
+            });
           } finally {
             delete activeJobs[jobId];
+            MessageBusManager.unregisterJob(jobId);
           }
         }, 0);
         result = { success: true };
       } else {
-          result = await _executePipeline(pipeline, {isInteractive, signal: null, scriptingContext, suppressOutput});
+        result = await _executePipeline(pipeline, {isInteractive, signal: null, scriptingContext, suppressOutput});
       }
 
       if (!result) {

@@ -5,16 +5,10 @@ const BasicUI = (() => {
 
     function buildLayout(cb) {
         callbacks = cb;
-        elements.output = Utils.createElement('div', {id: 'basic-app-output', className: 'basic-app__output'});
-        elements.input = Utils.createElement('input', {
-            id: 'basic-app-input',
-            className: 'basic-app__input',
-            type: 'text',
-            spellcheck: 'false',
-            autocapitalize: 'none'
-        });
-        const inputContainer = Utils.createElement('div', {className: 'basic-app__input-line'},
-            Utils.createElement('span', {textContent: '>'}),
+        elements.output = Utils.createElement('div', { id: 'basic-app-output', className: 'basic-app__output' });
+        elements.input = Utils.createElement('input', { id: 'basic-app-input', className: 'basic-app__input', type: 'text', spellcheck: 'false', autocapitalize: 'none' });
+        const inputContainer = Utils.createElement('div', { className: 'basic-app__input-line' },
+            Utils.createElement('span', { textContent: '>' }),
             elements.input
         );
 
@@ -22,18 +16,15 @@ const BasicUI = (() => {
             className: 'basic-app__exit-btn',
             textContent: '×',
             title: 'Exit BASIC (EXIT)',
-            eventListeners: {click: () => callbacks.onExit()}
+            eventListeners: { click: () => callbacks.onExit() }
         });
 
-        const header = Utils.createElement('header', {className: 'basic-app__header'},
-            Utils.createElement('h2', {className: 'basic-app__title', textContent: 'Oopis BASIC v1.0'}),
+        const header = Utils.createElement('header', { className: 'basic-app__header' },
+            Utils.createElement('h2', { className: 'basic-app__title', textContent: 'Oopis BASIC v1.0' }),
             elements.exitBtn
         );
 
-        elements.container = Utils.createElement('div', {
-            id: 'basic-app-container',
-            className: 'basic-app__container'
-        }, header, elements.output, inputContainer);
+        elements.container = Utils.createElement('div', { id: 'basic-app-container', className: 'basic-app__container' }, header, elements.output, inputContainer);
 
         elements.input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -72,7 +63,7 @@ const BasicUI = (() => {
         callbacks = {};
     }
 
-    return {buildLayout, write, writeln, focusInput, reset};
+    return { buildLayout, write, writeln, focusInput, reset };
 })();
 
 
@@ -276,7 +267,7 @@ const BasicManager = (() => {
         const currentUser = UserManager.getCurrentUser().name;
         const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
 
-        const saveResult = await FileSystemManager.createOrUpdateFile(absPath, content, {currentUser, primaryGroup});
+        const saveResult = await FileSystemManager.createOrUpdateFile(absPath, content, { currentUser, primaryGroup });
         if (saveResult.success) {
             if (await FileSystemManager.save()) {
                 loadOptions.path = savePath;
@@ -306,7 +297,7 @@ const BasicManager = (() => {
             return;
         }
         _loadContentIntoBuffer(node.content);
-        loadOptions = {path: path, content: node.content};
+        loadOptions = { path: path, content: node.content };
         BasicUI.writeln("OK");
     }
 
@@ -317,5 +308,5 @@ const BasicManager = (() => {
         }
     }
 
-    return {enter, exit, isActive: () => isActive};
+    return { enter, exit, isActive: () => isActive };
 })();

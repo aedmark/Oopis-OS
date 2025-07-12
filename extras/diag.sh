@@ -15,6 +15,9 @@ testpass
 testpass
 mkdir -p /home/diagUser/diag_workspace/
 chown diagUser /home/diagUser/diag_workspace/
+groupadd testgroup
+chgrp testgroup /home/diagUser/diag_workspace/
+chmod 775 /home/diagUser/diag_workspace/
 delay 500
 login diagUser testpass
 echo "Current User (expected: diagUser):"
@@ -98,6 +101,13 @@ ls -lr
 echo "--- Test: cat -n ---"
 cat -n diff_a.txt
 delay 700
+echo "--- Test: cd into a file (should fail) ---"
+delay 200
+echo "this is a file" > not_a_directory.txt
+delay 300
+check_fail "cd not_a_directory.txt"
+delay 200
+rm not_a_directory.txt
 echo "---------------------------------------------------------------------"
 
 
@@ -106,7 +116,6 @@ echo ""
 echo "===== Phase 4: Testing Group Permissions & Ownership (Expanded) ====="
 delay 400
 login root mcgoopis
-groupadd testgroup
 useradd testuser
 testpass
 testpass
@@ -414,10 +423,6 @@ rm oopis_curl.txt
 echo "--- Test: man and help ---"
 man ls
 help cp
-# --- Test: backup and export (execution check) ---
-echo "Verifying backup and export commands can be initiated from a script (will trigger downloads)..."
-# backup
-# export text_file.txt
 echo "Network & Docs tests complete."
 delay 700
 echo "---------------------------------------------------------------------"
@@ -678,9 +683,171 @@ echo "State integrity tests complete."
 delay 700
 echo "---------------------------------------------------------------------"
 
-# --- Phase 17: Final Cleanup ---
 echo ""
-echo "--- Phase 10: Final Cleanup ---"
+echo "===== Phase Alpha: Core Command & Flag Behavior ====="
+delay 400
+
+echo "--- Test: diff Command ---"
+echo -e "line one\nline two\nline three" > diff_a.txt
+echo -e "line one\nline 2\nline three" > diff_b.txt
+diff diff_a.txt diff_b.txt
+rm diff_a.txt diff_b.txt
+echo "diff test complete."
+delay 400
+
+echo "--- Test: cp -p (Preserve Permissions) ---"
+touch preserve_perms.txt
+chmod 700 preserve_perms.txt
+cp -p preserve_perms.txt preserve_copy.sh
+echo "Verifying preserved permissions:"
+ls -l preserve_perms.txt preserve_copy.sh
+rm preserve_perms.txt preserve_copy.sh
+echo "cp -p test complete."
+delay 400
+
+echo "--- Test: touch with Time-Stamping ---"
+touch -d "1 day ago" old_file.txt
+touch -t 202305201200.30 specific_time.txt
+echo "Verifying timestamps:"
+ls -l old_file.txt specific_time.txt
+rm old_file.txt specific_time.txt
+echo "touch timestamp test complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+echo ""
+echo "===== Phase Beta: Group Permissions & Sudo ====="
+delay 400
+
+login root mcgoopis
+echo "--- Test: Group Permissions ---"
+groupadd testgroup
+useradd testuser
+testpass
+testpass
+usermod -aG testgroup testuser
+touch group_test_file.txt
+chown diagUser group_test_file.txt
+chgrp testgroup group_test_file.txt
+chmod 664 group_test_file.txt
+login testuser testpass
+cd /home/diagUser/diag_workspace
+echo "Appending to file as group member (should succeed)..."
+echo "appended" >> group_test_file.txt
+cat group_test_file.txt
+login Guest
+cd /home/diagUser/diag_workspace
+echo "Appending to file as Guest (should fail)..."
+check_fail "echo 'appended by guest' >> group_test_file.txt"
+login root mcgoopis
+removeuser -f testuser
+groupdel testgroup
+rm group_test_file.txt
+echo "Group permissions test complete."
+delay 400
+
+echo "--- Test: sudo with Granular Permissions ---"
+useradd sudouser2
+testpass
+testpass
+echo "sudouser2 ALL=(ALL) /bin/ls" >> /etc/sudoers
+login sudouser2 testpass
+echo "Running allowed sudo command (sudo ls)..."
+sudo ls /home/root
+testpass
+echo "Running disallowed sudo command (sudo rm)..."
+check_fail "sudo rm -f /some/file"
+login root mcgoopis
+removeuser -f sudouser2
+grep -v "sudouser2" /etc/sudoers > sudoers.tmp && mv sudoers.tmp /etc/sudoers
+echo "Granular sudo test complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+echo ""
+echo "===== Phase Delta: Advanced Data & Process Management ====="
+delay 400
+login diagUser testpass
+cd /home/diagUser/diag_workspace
+
+echo "--- Test: sort Flags ---"
+echo -e "10\n2\napple\nbanana\napple" > sort_test.txt
+echo "Numeric sort:"
+sort -n sort_test.txt
+echo "Reverse sort:"
+sort -r sort_test.txt
+echo "Unique sort:"
+sort -u sort_test.txt
+rm sort_test.txt
+echo "sort test complete."
+delay 400
+
+echo "--- Test: find with -exec and -delete ---"
+mkdir find_exec_test
+touch find_exec_test/test.exec
+touch find_exec_test/test.noexec
+echo "Changing permissions with find -exec..."
+find ./find_exec_test -name "*.exec" -exec chmod 777 {} \;
+ls -l find_exec_test
+echo "Deleting with find -delete..."
+find ./find_exec_test -name "*.noexec" -delete
+ls -l find_exec_test
+rm -r find_exec_test
+echo "find actions test complete."
+delay 400
+
+echo "--- Test: Pagers (more, less) Non-Interactive ---"
+echo -e "line 1\nline 2\nline 3" > pager_test.txt
+echo "Piping to 'more'..."
+cat pager_test.txt | more | wc -l
+echo "Piping to 'less'..."
+cat pager_test.txt | less | wc -l
+rm pager_test.txt
+echo "Pager test complete."
+delay 400
+
+echo "--- Test: Input Redirection (<) ---"
+echo "Redirected input" > input_redir.txt
+cat < input_redir.txt
+rm input_redir.txt
+echo "Input redirection test complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+
+echo ""
+echo "===== Phase Theta: Filesystem Integrity & Edge Cases ====="
+delay 400
+
+echo "--- Test: rmdir on Non-Empty Directory ---"
+mkdir non_empty_dir
+touch non_empty_dir/file.txt
+check_fail "rmdir non_empty_dir"
+rm -r non_empty_dir
+echo "rmdir on non-empty test complete."
+delay 400
+
+echo "--- Test: File I/O with Special Characters ---"
+mkdir "a directory with spaces and.. special'chars!"
+touch "a directory with spaces and.. special'chars!/-leading_dash.txt"
+echo "Special content" > "a directory with spaces and.. special'chars!/-leading_dash.txt"
+cat "a directory with spaces and.. special'chars!/-leading_dash.txt"
+rm -r "a directory with spaces and.. special'chars!"
+echo "Special characters test complete."
+delay 400
+
+echo "--- Test: xargs with Quoted Arguments ---"
+touch "a file with spaces.tmp"
+ls *.tmp | xargs -I {} mv {} {}.bak
+ls "*.bak"
+rm "*.bak"
+echo "xargs with quotes test complete."
+delay 700
+echo "---------------------------------------------------------------------"
+
+# --- Phase Omega: Final Cleanup ---
+echo ""
+echo "--- Phase Omega: Final Cleanup ---"
 cd /
 login root mcgoopis
 delay 300

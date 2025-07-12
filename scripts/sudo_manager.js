@@ -98,7 +98,15 @@ const SudoManager = (() => {
         if (userPermissions.trim() === 'ALL') return true;
 
         const allowedCommands = userPermissions.split(',').map(cmd => cmd.trim());
-        return allowedCommands.includes(commandToRun);
+
+        for (const allowed of allowedCommands) {
+            if (allowed === commandToRun || allowed.endsWith('/' + commandToRun)) {
+                return true;
+            }
+        }
+
+        // Return false if no permissions match after checking all possibilities.
+        return false;
     }
 
     return {

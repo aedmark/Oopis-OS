@@ -30,10 +30,13 @@ const PaintUI = (() => {
             elements.selectBtn = createToolBtn('select', 's', '⬚'),
         ]);
 
-        const colorSwatches = initialState.PALETTE.map(color =>
-            Utils.createElement('div', { className: 'paint-color-swatch', style: { backgroundColor: color }, 'data-color': color })
-        );
-        const colorGroup = Utils.createElement('div', { className: 'paint-tool-group' }, colorSwatches);
+        elements.colorPicker = Utils.createElement('input', {
+            type: 'color',
+            id: 'paint-color-picker',
+            className: 'paint-color-picker',
+            title: 'Select Color'
+        });
+        const colorGroup = Utils.createElement('div', { className: 'paint-tool-group' }, [elements.colorPicker]);
 
         elements.brushSizeInput = Utils.createElement('input', { type: 'number', className: 'paint-brush-size', value: initialState.brushSize, min: 1, max: 5 });
         const brushSizeUp = Utils.createElement('button', { className: 'btn', textContent: '+' });
@@ -70,7 +73,6 @@ const PaintUI = (() => {
         });
         const zoomGroup = Utils.createElement('div', {className: 'paint-tool-group'}, [elements.zoomOutBtn, elements.zoomInBtn]);
 
-        // MODIFICATION: Add exit button and spacer
         const toolbarSpacer = Utils.createElement('div', {style: 'flex-grow: 1;'});
         elements.exitBtn = Utils.createElement('button', {
             id: 'paint-exit-btn',
@@ -182,9 +184,7 @@ const PaintUI = (() => {
         ['pencil', 'eraser', 'line', 'rect', 'circle', 'fill', 'select'].forEach(tool => {
             elements[`${tool}Btn`].classList.toggle('active', state.currentTool === tool);
         });
-        document.querySelectorAll('.paint-color-swatch').forEach(swatch => {
-            swatch.classList.toggle('active', swatch.dataset.color === state.currentColor);
-        });
+        elements.colorPicker.value = state.currentColor;
         elements.brushSizeInput.value = state.brushSize;
         elements.charInput.value = state.currentCharacter;
         elements.undoBtn.disabled = state.undoStack.length <= 1;
@@ -258,9 +258,7 @@ const PaintUI = (() => {
         elements.selectBtn.addEventListener('click', () => managerCallbacks.onToolSelect('select'));
 
         // Color selection
-        elements.container.querySelectorAll('.paint-color-swatch').forEach(swatch => {
-            swatch.addEventListener('click', () => managerCallbacks.onColorSelect(swatch.dataset.color));
-        });
+        elements.colorPicker.addEventListener('input', (e) => managerCallbacks.onColorSelect(e.target.value));
 
         // Brush & Char
         elements.brushSizeInput.addEventListener('change', (e) => managerCallbacks.onBrushSizeChange(parseInt(e.target.value, 10)));

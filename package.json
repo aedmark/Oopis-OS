@@ -1,0 +1,48 @@
+{
+  "name": "oopisos",
+  "version": "4.0.0",
+  "description": "OopisOS Pocket",
+  "keywords": [
+    "OS"
+  ],
+  "homepage": "https://github.com/aedmark/oopis-os#readme",
+  "bugs": {
+    "url": "https://github.com/aedmark/oopis-os/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aedmark/oopis-os.git"
+  },
+  "license": "MIT",
+  "author": "Andrew Edmark & Gemini <oopismcgoopis@gmail.com> (https://oopisos.com/)",
+  "main": "electron.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.oopisos.app",
+    "productName": "OopisOS",
+    "files": [
+      "**/*",
+      "!{dist,release,build}",
+      "!*.{map,ts,md}",
+      "!**/*.{o,h}"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "icon": "icons/"
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  }
+}

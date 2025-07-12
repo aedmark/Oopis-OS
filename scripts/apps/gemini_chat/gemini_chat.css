@@ -1,0 +1,110 @@
+/* Gemini Chat Application Styles */
+#gemini-chat-container {
+    display: flex;
+    flex-direction: column;
+    width: 95%;
+    max-width: 900px;
+    height: 95%;
+    background-color: var(--color-background-dark);
+    border: var(--border-width-thick) solid var(--color-border-primary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-drop-medium);
+    font-family: var(--font-family-sans), sans-serif;
+    color: var(--color-text-secondary);
+}
+
+.gemini-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border-secondary);
+    color: var(--color-info);
+}
+
+.gemini-chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.gemini-chat-message {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-lg);
+    max-width: 80%;
+    line-height: 1.6;
+}
+
+.gemini-chat-message.user {
+    background-color: var(--color-info);
+    color: var(--color-background-darkest);
+    align-self: flex-end;
+    border-bottom-right-radius: var(--border-radius-sm);
+}
+
+.gemini-chat-message.ai {
+    background-color: var(--color-background-medium);
+    color: var(--color-text-primary);
+    align-self: flex-start;
+    border-bottom-left-radius: var(--border-radius-sm);
+}
+
+.gemini-chat-message.ai p:last-child {
+    margin-bottom: 0;
+}
+
+.gemini-chat-form {
+    display: flex;
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border-secondary);
+}
+
+.gemini-chat-input {
+    flex-grow: 1;
+    background-color: var(--color-background-light);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+    color: var(--color-text-primary);
+    outline: none;
+}
+
+.gemini-chat-input:focus {
+    border-color: var(--color-info);
+}
+
+.gemini-chat-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+}
+
+.gemini-chat-loader span {
+    width: 10px;
+    height: 10px;
+    background-color: var(--color-info);
+    border-radius: 50%;
+    animation: gemini-loader-blink 1.4s infinite both;
+}
+
+.gemini-chat-loader span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.gemini-chat-loader span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes gemini-loader-blink {
+    0% { opacity: 0.2; }
+    20% { opacity: 1; }
+    100% { opacity: 0.2; }
+}

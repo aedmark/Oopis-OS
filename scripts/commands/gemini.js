@@ -31,18 +31,32 @@ RULES:
     const geminiCommandDefinition = {
         commandName: "gemini",
         flagDefinitions: [
+            { name: "chat", short: "-c", long: "--chat" },
             { name: "new", short: "-n", long: "--new" },
             { name: "verbose", short: "-v", long: "--verbose" },
             { name: "provider", short: "-p", long: "--provider", takesValue: true },
             { name: "model", short: "-m", long: "--model", takesValue: true },
-            { name: "forceToolUse", short: "-f", long: "--force", description: "Force the Gemini tool-use logic (planner/synthesizer) for any provider." } // NEW FLAG
+            { name: "forceToolUse", short: "-f", long: "--force", description: "Force the Gemini tool-use logic (planner/synthesizer) for any provider." }
         ],
-        argValidation: {
-            min: 1,
-            error: 'Insufficient arguments. Usage: gemini [-p provider] [-m model] "<prompt>"',
-        },
+        // No arg validation if chat flag is present
         coreLogic: async (context) => {
             const {args, options, flags} = context;
+            
+            if (flags.chat) {
+                if (!options.isInteractive) {
+                    return { success: false, error: "gemini: Chat mode can only be run in interactive mode." };
+                }
+                if (typeof GeminiChatManager === 'undefined') {
+                    return { success: false, error: "gemini: The GeminiChatManager module is not loaded." };
+                }
+                // Pass provider and model flags to the chat manager
+                GeminiChatManager.enter(flags.provider, flags.model);
+                return { success: true, output: "" };
+            }
+            
+            if (args.length === 0) {
+                return { success: false, error: 'Insufficient arguments. Usage: gemini [-p provider] [-m model] "<prompt>"'};
+            }
 
             let provider = flags.provider || 'gemini';
             const originalProvider = provider;
@@ -226,7 +240,7 @@ RULES:
 
     const geminiDescription = "Engages in a context-aware conversation with a configured AI model.";
 
-    const geminiHelpText = `Usage: gemini [-n|--new] [-v|--verbose] [-p provider] [-m model] [-f|--force] "<prompt>"
+    const geminiHelpText = `Usage: gemini [-c | --chat] [-n|--new] [-v|--verbose] [-p provider] [-m model] [-f|--force] "<prompt>"
 
 Engage in a context-aware conversation with an AI model.
 
@@ -244,6 +258,11 @@ DESCRIPTION
        default 'gemini' provider and notify you.
 
        The entire prompt, if it contains spaces, must be enclosed in double quotes.
+
+MODES
+       -c, --chat
+              Launches the full-screen Gemini Chat application for an interactive
+              conversational experience.
 
 PROVIDERS & MODELS
        -p, --provider   Specify the provider (e.g., 'ollama', 'gemini').
@@ -267,18 +286,10 @@ OPTIONS
               provider for this orchestration.
 
 EXAMPLES
+       gemini -c
+              Launches the interactive chat application.
        gemini "Summarize my README.md and list any scripts in this directory"
               (Uses Google Gemini, leveraging its tool-use capabilities)
-
-       gemini -p ollama "Tell me a story about a sentient terminal."
-              (Sends raw prompt to your local Ollama model)
-
-       gemini -p ollama -f "Summarize my README.md using my local LLM's tool-use."
-              (Attempts to use the local Ollama model for planning and synthesizing
-              commands to answer the question).
-
-       gemini -p ollama -m codellama "Explain the script ./diag.sh"
-              (Sends raw prompt to a specific local model via Ollama)
 `;
 
     CommandRegistry.register("gemini", geminiCommandDefinition, geminiDescription, geminiHelpText);

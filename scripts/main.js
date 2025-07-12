@@ -51,11 +51,11 @@ function initializeTerminalEventListeners() {
       return;
     }
 
-      // This block was removed as it is now handled by the CommandExecutor and run command logic.
-      // if (CommandExecutor.isScriptRunning()) {
-      //   e.preventDefault();
-      //   return;
-      // }
+    // This block was removed as it is now handled by the CommandExecutor and run command logic.
+    // if (CommandExecutor.isScriptRunning()) {
+    //   e.preventDefault();
+    //   return;
+    // }
 
     switch (e.key) {
       case "Enter":

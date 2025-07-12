@@ -31,13 +31,11 @@ const PaintManager = (() => {
         clipboard: null,
     };
 
-    const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'];
-
     // --- Core Lifecycle ---
     function enter(filePath, fileContent) {
         if (state.isActive) return;
 
-        state = { ...defaultState, PALETTE };
+        state = { ...defaultState };
         state.isActive = true;
         state.currentFilePath = filePath;
 

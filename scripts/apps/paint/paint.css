@@ -38,7 +38,7 @@
     padding: var(--spacing-xs);
 }
 
-.paint-tool-group .btn, .paint-color-swatch {
+.paint-tool-group .btn, .paint-color-picker {
     border-radius: var(--border-radius-sm);
     border: 1px solid transparent;
 }
@@ -49,15 +49,23 @@
     border-color: var(--color-accent-green);
 }
 
-.paint-color-swatch {
-    width: 24px;
+.paint-color-picker {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 36px;
     height: 24px;
+    background-color: transparent;
+    border: none;
     cursor: pointer;
 }
-
-.paint-color-swatch.active {
-    border-color: #fff;
-    box-shadow: 0 0 5px #fff;
+.paint-color-picker::-webkit-color-swatch {
+    border-radius: 3px;
+    border: 1px solid var(--color-border-primary);
+}
+.paint-color-picker::-moz-color-swatch {
+    border-radius: 3px;
+    border: 1px solid var(--color-border-primary);
 }
 
 .paint-brush-controls {
@@ -132,7 +140,7 @@
     color: #fff;
 }
 
-/* MODIFICATION: Styles for selection rectangle */
+/* Styles for selection rectangle */
 .paint-selection-rect {
     position: absolute;
     border: 1px dashed #FFFFFF;

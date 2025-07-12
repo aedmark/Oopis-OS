@@ -735,8 +735,7 @@ const AppLayerManager = (() => {
     let appLayer = null;
     let terminalOutput = null;
     let terminalInputContainer = null;
-    let isActive = false;
-    let currentAppContainer = null;
+    let modalStack = []; // Our new, mindful stack
 
     function _cacheDOM() {
         if (!appLayer) appLayer = document.getElementById('app-layer');
@@ -744,59 +743,63 @@ const AppLayerManager = (() => {
         if (!terminalInputContainer) terminalInputContainer = document.querySelector('.terminal__input-line');
     }
 
+    // Updates visibility based on the top of the stack
+    function _updateVisibility() {
+        _cacheDOM();
+
+        if (modalStack.length === 0) {
+            // If stack is empty, hide the app layer and show terminal
+            if(appLayer) appLayer.classList.add('hidden');
+            if(terminalOutput) terminalOutput.classList.remove('hidden');
+            if(terminalInputContainer) terminalInputContainer.classList.remove('hidden');
+            TerminalUI.setInputState(true);
+            OutputManager.setEditorActive(false);
+            TerminalUI.focusInput();
+        } else {
+            // Otherwise, show the app layer
+            if (terminalOutput) terminalOutput.classList.add('hidden');
+            if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
+            TerminalUI.setInputState(false);
+            OutputManager.setEditorActive(true);
+
+            // Hide all modals except the top one
+            modalStack.forEach((container, index) => {
+                const isTop = index === modalStack.length - 1;
+                container.classList.toggle('hidden', !isTop);
+            });
+
+            if(appLayer) appLayer.classList.remove('hidden');
+        }
+    }
+
     function show(appContainerElement) {
         _cacheDOM();
-        if (isActive || !appLayer || !appContainerElement) {
-            console.warn("AppLayerManager: Cannot show new app, one is already active or elements are missing.");
-            return;
+        if (!appLayer || !appContainerElement) return;
+
+        // Add the new modal to the stack
+        if (!modalStack.includes(appContainerElement)) {
+            modalStack.push(appContainerElement);
+            appLayer.appendChild(appContainerElement);
         }
 
-        TerminalUI.setInputState(false);
-        OutputManager.setEditorActive(true);
-
-        if (terminalOutput) terminalOutput.classList.add('hidden');
-        if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
-
-        currentAppContainer = appContainerElement;
-        if (!currentAppContainer.parentNode) {
-            appLayer.appendChild(currentAppContainer);
-        }
-        currentAppContainer.classList.remove('hidden');
-        appLayer.classList.remove('hidden');
-        isActive = true;
+        _updateVisibility();
     }
 
     function hide() {
-        _cacheDOM();
-        if (!isActive || !appLayer) return;
+        if (modalStack.length === 0) return;
 
-        appLayer.classList.add('hidden');
-        if (currentAppContainer && appLayer.contains(currentAppContainer)) {
-            currentAppContainer.remove();
+        // Remove the top modal from the stack and the DOM
+        const lastApp = modalStack.pop();
+        if (lastApp && lastApp.parentNode) {
+            lastApp.remove();
         }
 
-        currentAppContainer = null;
-
-        if (terminalOutput) terminalOutput.classList.remove('hidden');
-        if (terminalInputContainer) terminalInputContainer.classList.remove('hidden');
-
-        // These calls ensure the prompt is redrawn and the view is correct.
-        TerminalUI.updatePrompt();
-        if (terminalOutput) {
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        TerminalUI.clearInput();
-        TerminalUI.setInputState(true);
-        OutputManager.setEditorActive(false);
-        TerminalUI.focusInput();
-
-        isActive = false;
+        _updateVisibility();
     }
 
     return {
         show,
         hide,
-        isActive: () => isActive,
+        isActive: () => modalStack.length > 0, // isActive is now determined by the stack
     };
 })();

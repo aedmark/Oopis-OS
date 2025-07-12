@@ -113,24 +113,14 @@ const Adventure_create = (() => {
             id = `${_generateId(name)}_${counter++}`;
         }
 
-        const newEntity = {id, name, description: `A brand new ${name}.`};
+        const newEntity = { id, name, description: `A brand new ${name}.`};
 
         if (type === 'room') {
-            state.adventureData.rooms[id] = {...newEntity, exits: {}};
+            state.adventureData.rooms[id] = { ...newEntity, exits: {} };
         } else if (type === 'item') {
-            state.adventureData.items[id] = {
-                ...newEntity,
-                noun: name.split(' ').pop().toLowerCase(),
-                location: 'void',
-                canTake: true
-            };
+            state.adventureData.items[id] = { ...newEntity, noun: name.split(' ').pop().toLowerCase(), location: 'void', canTake: true };
         } else if (type === 'npc') {
-            state.adventureData.npcs[id] = {
-                ...newEntity,
-                noun: name.split(' ').pop().toLowerCase(),
-                location: 'void',
-                dialogue: {default: "They have nothing to say."}
-            };
+            state.adventureData.npcs[id] = { ...newEntity, noun: name.split(' ').pop().toLowerCase(), location: 'void', dialogue: { default: "They have nothing to say." }};
         }
 
         state.isDirty = true;
@@ -146,14 +136,14 @@ const Adventure_create = (() => {
         if (entity) return entity;
         // Fallback to finding by ID
         entity = collection[name];
-        if (entity) return entity;
+        if(entity) return entity;
 
         return null;
     }
 
     function _handleEdit(argString) {
         const typeMatch = argString.match(/^(room|item|npc)\s+/i);
-        if (!typeMatch) {
+        if(!typeMatch) {
             state.editContext = null; // Exit edit mode
             return;
         }
@@ -163,7 +153,7 @@ const Adventure_create = (() => {
         const entity = _findEntity(type, name);
 
         if (entity) {
-            state.editContext = {type, id: entity.id, name: entity.name};
+            state.editContext = { type, id: entity.id, name: entity.name };
             OutputManager.appendToOutput(`Now editing ${type} '${entity.name}'. Use 'set <prop> "<value>"'. Type 'edit' to stop editing.`, {typeClass: 'text-info'});
         } else {
             OutputManager.appendToOutput(`Error: Cannot find ${type} with name '${name}'.`, {typeClass: 'text-error'});
@@ -186,7 +176,7 @@ const Adventure_create = (() => {
         const value = match[2].replace(/["']/g, '');
 
         const entity = state.adventureData[state.editContext.type + 's'][state.editContext.id];
-        if (!entity) {
+        if(!entity) {
             OutputManager.appendToOutput("Error: Current entity context is invalid. Exiting edit mode.", {typeClass: 'text-error'});
             state.editContext = null;
             return;
@@ -223,14 +213,7 @@ const Adventure_create = (() => {
             return;
         }
 
-        const oppositeDirection = {
-            north: 'south',
-            south: 'north',
-            east: 'west',
-            west: 'east',
-            up: 'down',
-            down: 'up'
-        }[direction];
+        const oppositeDirection = { north: 'south', south: 'north', east: 'west', west: 'east', up: 'down', down: 'up'}[direction];
         if (!oppositeDirection) {
             OutputManager.appendToOutput(`Error: Invalid direction '${direction}'.`, {typeClass: 'text-error'});
             return;
@@ -268,7 +251,7 @@ File: ${state.targetFilename} (${state.isDirty ? 'UNSAVED CHANGES' : 'saved'})
         const saveResult = await FileSystemManager.createOrUpdateFile(
             FileSystemManager.getAbsolutePath(state.targetFilename),
             jsonContent,
-            {currentUser, primaryGroup}
+            { currentUser, primaryGroup }
         );
 
         if (!saveResult.success) {
