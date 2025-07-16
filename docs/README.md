@@ -1,4 +1,4 @@
-# OopisOS v4.1: Your Friendly Neighborhood LLM Edition
+# OopisOS v4.2: Your Friendly Neighborhood LLM Edition
 
 ```
    /$$$$$$                      /$$            /$$$$$$   /$$$$$$
@@ -16,7 +16,7 @@
 
 Welcome to OopisOS, a sophisticated OS simulation that runs entirely on your local machine. It's a self-contained, persistent world built on a foundation of privacy and exploration, featuring a rich command-line environment, a secure multi-user file system, and now, a suite of powerful, integrated AI tools. All user data is stored locally; your world remains your own.
 
-## What's New in v4.1: Your AI Copilot
+## What's New in v4.2: Your AI Copilot
 
 This release integrates a powerful and flexible AI toolkit directly into the OS core, making it your "Friendly Neighborhood LLM."
 
