@@ -1,3 +1,4 @@
+// scripts/commands/reboot.js
 (() => {
     "use strict";
 
@@ -6,16 +7,21 @@
         argValidation: { exact: 0 },
 
         coreLogic: async () => {
-            await OutputManager.appendToOutput(
-                "Rebooting OopisOS (reloading browser page)...",
-                {
-                    typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-                }
-            );
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
-            return { success: true, output: null };
+            try {
+                await OutputManager.appendToOutput(
+                    "Rebooting OopisOS (reloading browser page)...",
+                    {
+                        typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
+                    }
+                );
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+                return { success: true, output: null };
+            } catch (e) {
+                // This is unlikely to fail, but it's good practice.
+                return { success: false, error: `reboot: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 

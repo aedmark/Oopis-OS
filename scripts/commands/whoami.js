@@ -1,3 +1,4 @@
+// scripts/commands/whoami.js
 (() => {
     "use strict";
 
@@ -8,10 +9,14 @@
         },
 
         coreLogic: async () => {
-            return {
-                success: true,
-                output: UserManager.getCurrentUser().name,
-            };
+            try {
+                return {
+                    success: true,
+                    output: UserManager.getCurrentUser().name,
+                };
+            } catch (e) {
+                return { success: false, error: `whoami: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 

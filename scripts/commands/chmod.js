@@ -1,63 +1,63 @@
+// scripts/commands/chmod.js
 (() => {
     "use strict";
 
     const chmodCommandDefinition = {
         commandName: "chmod",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             exact: 2,
             error: "Usage: chmod <mode> <path>",
         },
-        pathValidation: [
-            {
-                argIndex: 1,
-            },
-        ],
         coreLogic: async (context) => {
-            const { args, currentUser, validatedPaths } = context;
+            const { args, currentUser } = context;
             const modeArg = args[0];
             const pathArg = args[1];
-            const pathInfo = validatedPaths[1];
-            const node = pathInfo.node;
             const nowISO = new Date().toISOString();
 
-            if (!/^[0-7]{3,4}$/.test(modeArg)) {
-                return {
-                    success: false,
-                    error: `chmod: invalid mode: ‘${modeArg}’ (must be 3 or 4 octal digits)`,
-                };
-            }
-            const newMode = parseInt(modeArg, 8);
+            try {
+                if (!/^[0-7]{3,4}$/.test(modeArg)) {
+                    return {
+                        success: false,
+                        error: `chmod: invalid mode: ‘${modeArg}’ (must be 3 or 4 octal digits)`,
+                    };
+                }
 
-            if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
-                return {
-                    success: false,
-                    error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,
-                };
-            }
+                const pathValidation = FileSystemManager.validatePath(pathArg);
 
-            node.mode = newMode;
-            node.mtime = nowISO;
-            FileSystemManager._updateNodeAndParentMtime(
-                pathInfo.resolvedPath,
-                nowISO
-            );
+                if (pathValidation.error) {
+                    return { success: false, error: `chmod: cannot access '${pathArg}': No such file or directory` };
+                }
+                const node = pathValidation.node;
 
-            if (!(await FileSystemManager.save())) {
+                if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
+                    return {
+                        success: false,
+                        error: `chmod: changing permissions of '${pathArg}': Operation not permitted`,
+                    };
+                }
+
+                const newMode = parseInt(modeArg, 8);
+                node.mode = newMode;
+                node.mtime = nowISO;
+
+                if (!(await FileSystemManager.save())) {
+                    return {
+                        success: false,
+                        error: "chmod: Failed to save file system changes.",
+                    };
+                }
                 return {
-                    success: false,
-                    error: "chmod: Failed to save file system changes.",
+                    success: true,
+                    output: "", // No output on success
                 };
+            } catch (e) {
+                return { success: false, error: `chmod: An unexpected error occurred: ${e.message}` };
             }
-            return {
-                success: true,
-                output: `Permissions of '${pathArg}' changed to ${modeArg}`,
-                messageType: Config.CSS_CLASSES.SUCCESS_MSG,
-            };
         },
     };
 
     const chmodDescription = "Changes the access permissions of a file or directory.";
-
     const chmodHelpText = `Usage: chmod <mode> <path>
 
 Change the access permissions of a file or directory.

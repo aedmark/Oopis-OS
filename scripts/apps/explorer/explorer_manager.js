@@ -144,7 +144,7 @@ const ExplorerManager = (() => {
         if (isActive) return;
 
         let initialPath = startPath || FileSystemManager.getCurrentPath();
-        const pathValidation = FileSystemManager.validatePath("explore", initialPath, {allowMissing: false});
+        const pathValidation = FileSystemManager.validatePath(initialPath, {allowMissing: false});
 
         if (pathValidation.error) {
             OutputManager.appendToOutput(`explore: ${pathValidation.error}`, {typeClass: 'text-error'});

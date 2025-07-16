@@ -1,5 +1,4 @@
 // scripts/commands/visudo.js
-
 (() => {
     "use strict";
 
@@ -11,52 +10,55 @@
         coreLogic: async (context) => {
             const { currentUser, options } = context;
 
-            if (currentUser !== 'root') {
-                return { success: false, error: "visudo: only root can run this command." };
-            }
-
-            if (!options.isInteractive) {
-                return { success: false, error: "visudo: can only be run in interactive mode." };
-            }
-
-            const sudoersPath = Config.SUDO.SUDOERS_PATH;
-            let sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
-
-            if (!sudoersNode) {
-                const primaryGroup = UserManager.getPrimaryGroupForUser('root');
-                const content = "# /etc/sudoers\n#\n# This file controls who can run what as root.\n\nroot    ALL\n%root   ALL\nDefaults timestamp_timeout=15\n";
-                const saveResult = await FileSystemManager.createOrUpdateFile(
-                    sudoersPath,
-                    content,
-                    { currentUser: 'root', primaryGroup }
-                );
-                if (!saveResult.success || !(await FileSystemManager.save())) {
-                    return { success: false, error: "visudo: failed to create /etc/sudoers file." };
+            try {
+                if (currentUser !== 'root') {
+                    return { success: false, error: "visudo: only root can run this command." };
                 }
-                sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
-            }
 
-            const onSudoersSave = async (filePath) => {
-                const node = FileSystemManager.getNodeByPath(filePath);
-                if (node) {
-                    node.mode = 0o440;
-                    node.owner = 'root';
-                    node.group = 'root';
-                    await FileSystemManager.save();
-                    SudoManager.invalidateSudoersCache();
-                    await OutputManager.appendToOutput("visudo: /etc/sudoers secured and cache invalidated.", {typeClass: Config.CSS_CLASSES.SUCCESS_MSG});
-                } else {
-                    await OutputManager.appendToOutput("visudo: CRITICAL - Could not find sudoers file after save to apply security.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+                if (!options.isInteractive) {
+                    return { success: false, error: "visudo: can only be run in interactive mode." };
                 }
-            };
 
-            EditorManager.enter(sudoersPath, sudoersNode.content, onSudoersSave);
+                const sudoersPath = Config.SUDO.SUDOERS_PATH;
+                let sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
 
-            return {
-                success: true,
-                output: `Opening /etc/sudoers. Please be careful.`,
-                messageType: Config.CSS_CLASSES.WARNING_MSG
-            };
+                if (!sudoersNode) {
+                    const primaryGroup = UserManager.getPrimaryGroupForUser('root');
+                    const content = "# /etc/sudoers\\n#\\n# This file controls who can run what as root.\\n\\nroot    ALL\\n%root   ALL\\nDefaults timestamp_timeout=15\\n";
+                    const saveResult = await FileSystemManager.createOrUpdateFile(
+                        sudoersPath,
+                        content,
+                        { currentUser: 'root', primaryGroup }
+                    );
+                    if (!saveResult.success || !(await FileSystemManager.save())) {
+                        return { success: false, error: "visudo: failed to create /etc/sudoers file." };
+                    }
+                    sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
+                }
+
+                const onSudoersSave = async (filePath) => {
+                    const node = FileSystemManager.getNodeByPath(filePath);
+                    if (node) {
+                        node.mode = 0o440;
+                        node.owner = 'root';
+                        node.group = 'root';
+                        await FileSystemManager.save();
+                        SudoManager.invalidateSudoersCache();
+                        await OutputManager.appendToOutput("visudo: /etc/sudoers secured and cache invalidated.", {typeClass: Config.CSS_CLASSES.SUCCESS_MSG});
+                    } else {
+                        await OutputManager.appendToOutput("visudo: CRITICAL - Could not find sudoers file after save to apply security.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
+                    }
+                };
+
+                EditorManager.enter(sudoersPath, sudoersNode.content, onSudoersSave);
+
+                return {
+                    success: true,
+                    output: `Opening /etc/sudoers. Please be careful.`,
+                };
+            } catch (e) {
+                return { success: false, error: `visudo: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 

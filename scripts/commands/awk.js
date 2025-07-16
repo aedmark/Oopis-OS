@@ -3,83 +3,78 @@
     "use strict";
     const awkCommandDefinition = {
         commandName: "awk",
-        // isInputStream is removed to allow for correct argument parsing.
+        completionType: "paths",
+        isInputStream: true,
         flagDefinitions: [
             { name: "fieldSeparator", short: "-F", takesValue: true }
         ],
+        firstFileArgIndex: 1,
         coreLogic: async (context) => {
-            const {flags, args, options, currentUser } = context;
+            const { flags, args, inputItems, inputError } = context;
 
-            if (args.length === 0) {
-                return { success: false, error: "awk: missing program" };
-            }
-
-            // The first argument is the program, not a file.
-            const programString = args[0];
-            const program = _parseProgram(programString);
-            if (program.error) {
-                return { success: false, error: `awk: program error: ${program.error}` };
-            }
-
-            // Determine the input source: either from a file argument or piped stdin.
-            let inputText;
-            if (args.length > 1) {
-                const pathValidation = FileSystemManager.validatePath("awk", args[1], { expectedType: 'file' });
-                if (pathValidation.error) {
-                    return { success: false, error: pathValidation.error };
+            try {
+                if (args.length === 0) {
+                    return { success: false, error: "awk: missing program" };
                 }
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    return { success: false, error: `awk: cannot read file: ${args[1]}` };
+
+                if (inputError) {
+                    return { success: false, error: "awk: One or more input files could not be read." };
                 }
-                inputText = pathValidation.node.content || "";
-            } else if (options.stdinContent !== null && options.stdinContent !== undefined) {
-                inputText = options.stdinContent;
-            } else {
-                return { success: false, error: "awk: No input provided. Please specify a file or pipe data." };
-            }
 
-            // The rest of the logic remains largely the same, as it correctly processes the inputText.
-            const separator = flags.fieldSeparator ? new RegExp(flags.fieldSeparator) : /\s+/;
-            let outputLines = [];
-            let nr = 0;
-
-            if (program.begin) {
-                const beginResult = _executeAction(program.begin, [], { NR: 0, NF: 0 });
-                if (beginResult !== null) {
-                    outputLines.push(beginResult);
+                const programString = args[0];
+                const program = _parseProgram(programString);
+                if (program.error) {
+                    return { success: false, error: `awk: program error: ${program.error}` };
                 }
-            }
 
-            const lines = inputText.split('\n');
-            for (const line of lines) {
-                if (line === '' && lines.at(-1) === '') continue;
-                nr++;
-                const trimmedLine = line.trim();
-                let fields = trimmedLine === '' ? [] : trimmedLine.split(separator);
-                if (!Array.isArray(fields)) fields = [];
-                const allFields = [line, ...fields];
-                const vars = {NR: nr, NF: fields.length};
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
+                }
 
-                for (const rule of program.rules) {
-                    if (rule.pattern.test(line)) {
-                        const actionResult = _executeAction(rule.action, allFields, vars);
-                        if (actionResult !== null) outputLines.push(actionResult);
+                const inputText = inputItems.map(item => item.content).join('\\n');
+                const separator = flags.fieldSeparator ? new RegExp(flags.fieldSeparator) : /\s+/;
+                let outputLines = [];
+                let nr = 0;
+
+                if (program.begin) {
+                    const beginResult = _executeAction(program.begin, [], { NR: 0, NF: 0 });
+                    if (beginResult !== null) {
+                        outputLines.push(beginResult);
                     }
                 }
-            }
 
-            if (program.end) {
-                const endResult = _executeAction(program.end, [], { NR: nr, NF: 0 });
-                if (endResult !== null) {
-                    outputLines.push(endResult);
+                const lines = inputText.split('\\n');
+                for (const line of lines) {
+                    if (line === '' && lines.at(-1) === '') continue;
+                    nr++;
+                    const trimmedLine = line.trim();
+                    let fields = trimmedLine === '' ? [] : trimmedLine.split(separator);
+                    if (!Array.isArray(fields)) fields = [];
+                    const allFields = [line, ...fields];
+                    const vars = { NR: nr, NF: fields.length };
+
+                    for (const rule of program.rules) {
+                        if (rule.pattern.test(line)) {
+                            const actionResult = _executeAction(rule.action, allFields, vars);
+                            if (actionResult !== null) outputLines.push(actionResult);
+                        }
+                    }
                 }
-            }
 
-            return { success: true, output: outputLines.join('\n') };
+                if (program.end) {
+                    const endResult = _executeAction(program.end, [], { NR: nr, NF: 0 });
+                    if (endResult !== null) {
+                        outputLines.push(endResult);
+                    }
+                }
+
+                return { success: true, output: outputLines.join('\\n') };
+            } catch (e) {
+                return { success: false, error: `awk: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 
-    // The helper functions _parseProgram and _executeAction remain unchanged.
     function _parseProgram(programString) {
         const program = {begin: null, end: null, rules: [], error: null,};
         const ruleRegex = /(BEGIN)\s*{([^}]*)}|(END)\s*{([^}]*)}|(\/[^/]*\/)\s*{([^}]*)}/g;
@@ -116,14 +111,19 @@
             if (argsStr === "") {
                 return fields[0];
             }
+
+            // CORRECTED: This regex now correctly finds $1, $2, etc. without requiring a backslash.
             argsStr = argsStr.replace(/\$([0-9]+)/g, (match, n) => {
                 const index = parseInt(n, 10);
                 return fields[index] || "";
             });
-            argsStr = argsStr.replace(/\$0/g, fields[0]);
+
+            argsStr = argsStr.replace(/\$0/g, fields[0] || "");
             argsStr = argsStr.replace(/NR/g, vars.NR);
             argsStr = argsStr.replace(/NF/g, vars.NF);
-            return argsStr.replace(/,/g, ' ');
+
+            // Replace commas with spaces for multi-argument print
+            return argsStr.replace(/,/g, ' ').replace(/"/g, ''); // Also strip quotes
         }
         return null;
     }

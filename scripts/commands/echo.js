@@ -1,3 +1,4 @@
+// scripts/commands/echo.js
 (() => {
     "use strict";
 
@@ -7,24 +8,28 @@
             {name: "enableBackslashEscapes", short: "-e"}
         ],
         coreLogic: async (context) => {
-            let output = context.args.join(" ");
+            try {
+                let output = context.args.join(" ");
 
-            if (context.flags.enableBackslashEscapes) {
-                // Interpret backslash escapes
-                output = output.replace(/\\n/g, '\n')
-                    .replace(/\\t/g, '\t')
-                    .replace(/\\c/g, '') // Used to stop further output
-                    .replace(/\\\\/g, '\\');
+                if (context.flags.enableBackslashEscapes) {
+                    // Interpret backslash escapes
+                    output = output.replace(/\\\\n/g, '\\n')
+                        .replace(/\\\\t/g, '\\t')
+                        .replace(/\\\\c/g, '') // Used to stop further output
+                        .replace(/\\\\\\\\/g, '\\\\');
+                }
+
+                // Handle the \\c sequence, which suppresses the trailing newline and further output.
+                const parts = output.split('\\\\c');
+                const finalOutput = parts[0];
+
+                return {
+                    success: true,
+                    output: finalOutput,
+                };
+            } catch (e) {
+                return { success: false, error: `echo: An unexpected error occurred: ${e.message}` };
             }
-
-            // Handle the \c sequence, which suppresses the trailing newline and further output.
-            const parts = output.split('\\c');
-            const finalOutput = parts[0];
-
-            return {
-                success: true,
-                output: finalOutput,
-            };
         },
     };
 
@@ -43,16 +48,16 @@ OPTIONS
 
 ESCAPES
        If -e is in effect, the following sequences are recognized:
-       \\\\     backslash
-       \\n     new line
-       \\t     horizontal tab
-       \\c     produce no further output (the trailing newline is suppressed)
+       \\\\\\\\     backslash
+       \\\\n     new line
+       \\\\t     horizontal tab
+       \\\\c     produce no further output (the trailing newline is suppressed)
 
 EXAMPLES
        echo Hello, world!
               Displays "Hello, world!".
 
-       echo -e "A line.\\nA second line."
+       echo -e "A line.\\\\nA second line."
               Displays two lines of text.
 
        echo "User: $USER"

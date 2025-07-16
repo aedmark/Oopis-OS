@@ -1,3 +1,4 @@
+// scripts/commands/set.js
 (() => {
     "use strict";
 
@@ -7,47 +8,50 @@
         coreLogic: async (context) => {
             const {args} = context;
 
-            if (args.length === 0) {
-                const allVars = EnvironmentManager.getAll();
-                const output = Object.keys(allVars).sort().map(key => `${key}="${allVars[key]}"`).join('\n');
-                return { success: true, output: output };
+            try {
+                if (args.length === 0) {
+                    const allVars = EnvironmentManager.getAll();
+                    const output = Object.keys(allVars).sort().map(key => `${key}="${allVars[key]}"`).join('\\n');
+                    return { success: true, output: output };
+                }
+
+                const combinedArg = args.join(' ');
+                const eqIndex = combinedArg.indexOf('=');
+
+                if (eqIndex !== -1) {
+                    const varName = combinedArg.substring(0, eqIndex).trim();
+                    let value = combinedArg.substring(eqIndex + 1).trim();
+
+                    if (!varName) {
+                        return { success: false, error: "set: invalid format. Missing variable name." };
+                    }
+
+                    if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+                        value = value.substring(1, value.length - 1);
+                    }
+
+                    const result = EnvironmentManager.set(varName, value);
+                    if (!result.success) {
+                        return { success: false, error: `set: ${result.error}` };
+                    }
+                } else {
+                    const varName = args[0];
+                    const value = args.slice(1).join(' ');
+
+                    const result = EnvironmentManager.set(varName, value);
+                    if (!result.success) {
+                        return { success: false, error: `set: ${result.error}` };
+                    }
+                }
+
+                return { success: true };
+            } catch (e) {
+                return { success: false, error: `set: An unexpected error occurred: ${e.message}` };
             }
-
-            const combinedArg = args.join(' ');
-            const eqIndex = combinedArg.indexOf('=');
-
-            if (eqIndex !== -1) {
-                const varName = combinedArg.substring(0, eqIndex).trim();
-                let value = combinedArg.substring(eqIndex + 1).trim();
-
-                if (!varName) {
-                    return { success: false, error: "set: invalid format. Missing variable name." };
-                }
-
-                if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
-                    value = value.substring(1, value.length - 1);
-                }
-
-                const result = EnvironmentManager.set(varName, value);
-                if (!result.success) {
-                    return { success: false, error: `set: ${result.error}` };
-                }
-            } else {
-                const varName = args[0];
-                const value = args.slice(1).join(' ');
-
-                const result = EnvironmentManager.set(varName, value);
-                if (!result.success) {
-                    return { success: false, error: `set: ${result.error}` };
-                }
-            }
-
-            return { success: true };
         }
     };
 
     const setDescription = "Set or display environment variables.";
-
     const setHelpText = `Usage: set [variable[=value]] ...
 
 Set or display environment variables.

@@ -1,3 +1,4 @@
+// scripts/commands/upload.js
 (() => {
     "use strict";
 
@@ -13,40 +14,39 @@
         coreLogic: async (context) => {
             const { args, flags, currentUser, options } = context;
 
-            if (!options.isInteractive)
-                return { success: false, error: "upload: Can only be run in interactive mode." };
-
-            let targetDirPath = FileSystemManager.getCurrentPath();
-            const nowISO = new Date().toISOString();
-            const operationMessages = [];
-            let allFilesSuccess = true;
-            let anyChangeMade = false;
-
-            if (args.length === 1) {
-                const destPathValidation = FileSystemManager.validatePath(
-                    "upload (destination)",
-                    args[0],
-                    { expectedType: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE }
-                );
-                if (destPathValidation.error)
-                    return { success: false, error: destPathValidation.error };
-                targetDirPath = destPathValidation.resolvedPath;
-            }
-
-            const initialTargetDirNode = FileSystemManager.getNodeByPath(targetDirPath);
-            if (!initialTargetDirNode || !FileSystemManager.hasPermission(initialTargetDirNode, currentUser, "write"))
-                return { success: false, error: `upload: cannot write to directory '${targetDirPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}` };
-
-            const input = Utils.createElement("input", { type: "file" });
-            if (flags.recursive) {
-                input.webkitdirectory = true;
-            } else {
-                input.multiple = true;
-            }
-            input.style.display = "none";
-            document.body.appendChild(input);
-
             try {
+                if (!options.isInteractive)
+                    return { success: false, error: "upload: Can only be run in interactive mode." };
+
+                let targetDirPath = FileSystemManager.getCurrentPath();
+                const nowISO = new Date().toISOString();
+                const operationMessages = [];
+                let allFilesSuccess = true;
+                let anyChangeMade = false;
+
+                if (args.length === 1) {
+                    const pathValidation = FileSystemManager.validatePath(args[0], { expectedType: 'directory', permissions: ['write'] });
+                    if (pathValidation.error) {
+                        return { success: false, error: `upload: ${pathValidation.error}` };
+                    }
+                    targetDirPath = pathValidation.resolvedPath;
+                } else {
+                    const pathValidation = FileSystemManager.validatePath(targetDirPath, { expectedType: 'directory', permissions: ['write'] });
+                    if (pathValidation.error) {
+                        return { success: false, error: `upload: cannot write to current directory: ${pathValidation.error}` };
+                    }
+                }
+
+
+                const input = Utils.createElement("input", { type: "file" });
+                if (flags.recursive) {
+                    input.webkitdirectory = true;
+                } else {
+                    input.multiple = true;
+                }
+                input.style.display = "none";
+                document.body.appendChild(input);
+
                 const fileResult = await new Promise((resolve) => {
                     input.onchange = (e) => {
                         if (e.target.files?.length > 0) {
@@ -62,7 +62,8 @@
                 });
 
                 if (!fileResult.success) {
-                    return { success: false, error: `upload: ${fileResult.error}` };
+                    document.body.removeChild(input);
+                    return { success: true, output: `upload: ${fileResult.error}` };
                 }
 
                 const filesToUpload = fileResult.files;
@@ -84,8 +85,6 @@
                         const content = await file.text();
                         const relativePath = (flags.recursive && file.webkitRelativePath) ? file.webkitRelativePath : file.name;
                         const fullDestPath = FileSystemManager.getAbsolutePath(relativePath, targetDirPath);
-                        const parentDestPath = fullDestPath.substring(0, fullDestPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)) || Config.FILESYSTEM.ROOT_PATH;
-                        const finalFileName = fullDestPath.substring(fullDestPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
 
                         const parentDirResult = FileSystemManager.createParentDirectoriesIfNeeded(fullDestPath);
                         if (parentDirResult.error) {
@@ -94,17 +93,18 @@
                             continue;
                         }
                         const finalTargetNode = parentDirResult.parentNode;
+                        const finalFileName = fullDestPath.substring(fullDestPath.lastIndexOf('/') + 1);
 
                         if (!FileSystemManager.hasPermission(finalTargetNode, currentUser, "write")) {
-                            operationMessages.push(`upload: cannot write to directory '${parentDestPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`);
+                            operationMessages.push(`upload: cannot write to destination directory for '${finalFileName}': Permission denied`);
                             allFilesSuccess = false;
                             continue;
                         }
 
                         const existingFileNode = finalTargetNode.children[finalFileName];
                         if (existingFileNode) {
-                            if (!FileSystemManager.hasPermission(existingFileNode, currentUser, "write")) {
-                                operationMessages.push(`Error uploading '${relativePath}': cannot overwrite '${finalFileName}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`);
+                            if (existingFileNode.type !== 'file') {
+                                operationMessages.push(`upload: cannot overwrite non-file '${finalFileName}'`);
                                 allFilesSuccess = false;
                                 continue;
                             }
@@ -142,22 +142,23 @@
                     allFilesSuccess = false;
                 }
 
-                const outputMessage = operationMessages.join("\n");
-                if (allFilesSuccess) {
-                    return { success: true, output: outputMessage || "Upload complete.", messageType: Config.CSS_CLASSES.SUCCESS_MSG };
-                } else {
-                    return { success: false, error: outputMessage };
-                }
+                document.body.removeChild(input);
+                const outputMessage = operationMessages.join("\\n");
+                return {
+                    success: allFilesSuccess,
+                    [allFilesSuccess ? 'output' : 'error']: outputMessage || "Upload process completed with some issues."
+                };
+
             } catch (e) {
-                return { success: false, error: `upload: ${e.message}` };
-            } finally {
-                if (input.parentNode) document.body.removeChild(input);
+                if (document.getElementById('file-upload-input')) {
+                    document.body.removeChild(document.getElementById('file-upload-input'));
+                }
+                return { success: false, error: `upload: An unexpected error occurred: ${e.message}` };
             }
         },
     };
 
     const uploadDescription = "Uploads files or folders from your local machine to OopisOS.";
-
     const uploadHelpText = `Usage: upload [-f] [-r] [destination_directory]
 
 Upload one or more files from your local machine to OopisOS.

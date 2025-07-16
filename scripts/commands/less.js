@@ -1,28 +1,34 @@
+// scripts/commands/less.js
 (() => {
     "use strict";
     const lessCommandDefinition = {
         commandName: "less",
         isInputStream: true,
+        completionType: "paths", // Preserved for tab completion
         coreLogic: async (context) => {
             const {options, inputItems, inputError} = context;
 
-            if (inputError) {
-                return {success: false, error: "less: Could not read one or more sources."};
-            }
+            try {
+                if (inputError) {
+                    return {success: false, error: "less: Could not read one or more sources."};
+                }
 
-            const content = inputItems.map(item => item.content).join('\n');
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
+                }
 
-            if (content === null || content === undefined) {
+                const content = inputItems.map(item => item.content).join('\\n');
+
+                if (!options.isInteractive) {
+                    return { success: true, output: content };
+                }
+
+                await PagerManager.enter(content, { mode: 'less' });
+
                 return { success: true, output: "" };
+            } catch (e) {
+                return { success: false, error: `less: An unexpected error occurred: ${e.message}` };
             }
-
-            if (!options.isInteractive) {
-                return { success: true, output: content };
-            }
-
-            PagerManager.enter(content, { mode: 'less' });
-
-            return { success: true, output: "" };
         },
     };
 

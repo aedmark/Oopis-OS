@@ -1,50 +1,56 @@
-// Corrected File: aedmark/oopis-os-dev/Oopis-OS-DEV-d433f2298e4704d53000b05f98b059a46e2196eb/scripts/commands/cksum.js
+// scripts/commands/cksum.js
 (() => {
     "use strict";
 
     const cksumCommandDefinition = {
         commandName: "cksum",
-        isInputStream: true, // ADDED
+        isInputStream: true,
+        completionType: "paths", // Preserved for tab completion
         flagDefinitions: [],
         coreLogic: async (context) => {
-            // MODIFIED
-            const {args, inputItems, inputError} = context;
+            const { inputItems, inputError } = context;
 
-            if (inputError) {
-                return {success: false, error: "cksum: No readable input provided or permission denied."};
-            }
+            try {
+                if (inputError) {
+                    return { success: false, error: "cksum: No readable input provided or permission denied." };
+                }
 
-            // MODIFIED
-            const input = inputItems.map(item => item.content).join('\\n');
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
+                }
 
-            if (input === null || input === undefined) {
-                return {success: false, error: "cksum: No readable input provided."};
-            }
-
-            const crc32 = (str) => {
-                const table = [];
-                for (let i = 0; i < 256; i++) {
-                    let c = i;
-                    for (let j = 0; j < 8; j++) {
-                        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                const crc32 = (str) => {
+                    const table = [];
+                    for (let i = 0; i < 256; i++) {
+                        let c = i;
+                        for (let j = 0; j < 8; j++) {
+                            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                        }
+                        table[i] = c;
                     }
-                    table[i] = c;
-                }
-                let crc = -1;
-                for (let i = 0; i < str.length; i++) {
-                    crc = (crc >>> 8) ^ table[(crc ^ str.charCodeAt(i)) & 0xFF];
-                }
-                return (crc ^ -1) >>> 0;
-            };
+                    let crc = -1;
+                    for (let i = 0; i < str.length; i++) {
+                        crc = (crc >>> 8) ^ table[(crc ^ str.charCodeAt(i)) & 0xFF];
+                    }
+                    return (crc ^ -1) >>> 0;
+                };
 
-            const checksum = crc32(input);
-            const byteCount = input.length;
-            const fileName = inputItems.length === 1 && inputItems[0].sourceName !== 'stdin' ? `${inputItems[0].sourceName}` : '';
+                const outputLines = [];
+                for (const item of inputItems) {
+                    const input = item.content || "";
+                    const checksum = crc32(input);
+                    const byteCount = input.length;
+                    const fileName = item.sourceName !== 'stdin' ? ` ${item.sourceName}` : '';
+                    outputLines.push(`${checksum} ${byteCount}${fileName}`);
+                }
 
-            return {
-                success: true,
-                output: `${checksum} ${byteCount}${fileName}`
-            };
+                return {
+                    success: true,
+                    output: outputLines.join('\\n')
+                };
+            } catch (e) {
+                return { success: false, error: `cksum: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 

@@ -1,3 +1,4 @@
+// scripts/commands/groupdel.js
 (() => {
     "use strict";
 
@@ -8,22 +9,25 @@
             const { args, currentUser } = context;
             const groupName = args[0];
 
-            if (currentUser !== "root") {
-                return { success: false, error: "groupdel: only root can delete groups." };
+            try {
+                if (currentUser !== "root") {
+                    return { success: false, error: "groupdel: only root can delete groups." };
+                }
+
+                const result = GroupManager.deleteGroup(groupName);
+
+                if (!result.success) {
+                    return { success: false, error: `groupdel: ${result.error}` };
+                }
+
+                return { success: true, output: `Group '${groupName}' deleted.` };
+            } catch (e) {
+                return { success: false, error: `groupdel: An unexpected error occurred: ${e.message}` };
             }
-
-            const result = GroupManager.deleteGroup(groupName);
-
-            if (!result.success) {
-                return { success: false, error: `groupdel: ${result.error}` };
-            }
-
-            return { success: true, output: `Group '${groupName}' deleted.`, messageType: Config.CSS_CLASSES.SUCCESS_MSG };
         },
     };
 
     const groupdelDescription = "Deletes an existing user group.";
-
     const groupdelHelpText = `Usage: groupdel <groupname>
 
 Delete an existing user group.
@@ -42,5 +46,6 @@ EXAMPLES
 PERMISSIONS
        Only the superuser (root) can delete groups.`;
 
+    // The variable name here is now correct.
     CommandRegistry.register("groupdel", groupdelCommandDefinition, groupdelDescription, groupdelHelpText);
 })();

@@ -1,37 +1,41 @@
+// scripts/commands/cat.js
 (() => {
     "use strict";
 
     const catCommandDefinition = {
         commandName: "cat",
-        isInputStream: true, // It correctly handles input streams
+        completionType: "paths", // Restored for tab completion
+        isInputStream: true,
         flagDefinitions: [
             { name: "numberLines", short: "-n", long: "--number" }
         ],
         coreLogic: async (context) => {
-            const {flags, inputItems, inputError} = context;
+            try {
+                const { flags, inputItems, inputError } = context;
 
-            if (inputError) {
-                return {success: false, error: "cat: Could not read one or more sources."};
+                if (inputError) {
+                    return { success: false, error: "cat: One or more files could not be read." };
+                }
+
+                if (!inputItems || inputItems.length === 0) {
+                    // If there are no file args and no stdin, it's not an error, just empty output.
+                    return { success: true, output: "" };
+                }
+
+                const content = inputItems.map(item => item.content).join('\\n');
+
+                if (flags.numberLines) {
+                    let lineCounter = 1;
+                    const lines = content.split('\\n');
+                    const processedLines = (lines.length > 0 && lines[lines.length - 1] === '') ? lines.slice(0, -1) : lines;
+                    const numberedOutput = processedLines.map(line => `     ${String(lineCounter++).padStart(5)}  ${line}`).join('\\n');
+                    return { success: true, output: numberedOutput };
+                }
+
+                return { success: true, output: content };
+            } catch (e) {
+                return { success: false, error: `cat: An unexpected error occurred: ${e.message}` };
             }
-
-            // The inputItems array contains the content from all sources (stdin or files).
-            const input = inputItems.map(item => item.content).join('');
-
-            if (input === null || input === undefined) {
-                return {success: true, output: ""}; // Handle no input gracefully.
-            }
-
-            if (!flags.numberLines) {
-                return {success: true, output: input};
-            }
-
-            let lineCounter = 1;
-            // Correctly handle splitting and potential trailing newlines
-            const lines = input.split('\n');
-            const processedLines = (lines.length > 0 && lines[lines.length - 1] === '') ? lines.slice(0, -1) : lines;
-            const numberedOutput = processedLines.map(line => `     ${String(lineCounter++).padStart(5)}  ${line}`).join('\n');
-
-            return {success: true, output: numberedOutput};
         },
     };
 
@@ -58,7 +62,7 @@ EXAMPLES
        cat file1.txt file2.txt > newfile.txt
               Concatenates file1.txt and file2.txt and writes the
               result to newfile.txt.
-              
+
        ls -l | cat
               Displays the output of the 'ls -l' command, demonstrating
               how cat handles piped input.`;

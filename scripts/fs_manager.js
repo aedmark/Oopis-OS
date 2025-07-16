@@ -232,7 +232,16 @@ MESSAGES.WELCOME_SUFFIX=!`;
         fsData = newData;
     }
 
-    function getAbsolutePath(targetPath, basePath = FileSystemManager.getCurrentPath()) {
+    // --- Start of Refactored Functions ---
+
+    /**
+     * The Path Resolver.
+     * Takes a user-provided path string and resolves it to a true, absolute path.
+     * @param {string} targetPath - The path to resolve.
+     * @param {string} [basePath=currentPath] - The base path to resolve from.
+     * @returns {string} The absolute path.
+     */
+    function getAbsolutePath(targetPath, basePath = currentPath) {
         if (!targetPath) targetPath = Config.FILESYSTEM.CURRENT_DIR_SYMBOL;
         let effectiveBasePath = basePath;
         if (targetPath.startsWith(Config.FILESYSTEM.PATH_SEPARATOR))
@@ -266,6 +275,13 @@ MESSAGES.WELCOME_SUFFIX=!`;
         );
     }
 
+    /**
+     * The Node Retriever.
+     * Traverses the file system from an absolute path and returns the corresponding node.
+     * It performs permission checks during traversal.
+     * @param {string} absolutePath - The absolute path to the node.
+     * @returns {object|null} The node object if found and accessible, otherwise null.
+     */
     function getNodeByPath(absolutePath) {
         const currentUser = UserManager.getCurrentUser().name;
         if (absolutePath === Config.FILESYSTEM.ROOT_PATH) {
@@ -278,15 +294,67 @@ MESSAGES.WELCOME_SUFFIX=!`;
         let currentNode = fsData[Config.FILESYSTEM.ROOT_PATH];
         for (const segment of segments) {
             if (!hasPermission(currentNode, currentUser, "execute")) {
-                return null;
+                return null; // Permission denied during traversal
             }
             if (!currentNode.children || !currentNode.children[segment]) {
-                return null;
+                return null; // Path does not exist
             }
             currentNode = currentNode.children[segment];
         }
         return currentNode;
     }
+
+    /**
+     * The Path Validator.
+     * Orchestrates path resolution, node retrieval, and final validation checks.
+     * @param {string} pathArg - The user-provided path.
+     * @param {object} options - Validation options.
+     * @param {string} [options.expectedType] - e.g., 'file' or 'directory'.
+     * @param {string[]} [options.permissions] - e.g., ['read', 'write'].
+     * @param {boolean} [options.allowMissing=false] - If true, doesn't error if the node is null.
+     * @returns {{node: object, resolvedPath: string, error: string|null}}
+     */
+    function validatePath(pathArg, options = {}) {
+        const { expectedType = null, permissions = [], allowMissing = false } = options;
+        const currentUser = UserManager.getCurrentUser().name;
+
+        // 1. Resolve Path
+        const resolvedPath = getAbsolutePath(pathArg);
+
+        // 2. Retrieve Node
+        const node = getNodeByPath(resolvedPath);
+
+        // 3. Validate Node Existence
+        if (!node) {
+            if (allowMissing) {
+                return { node: null, resolvedPath, error: null };
+            }
+            return { node: null, resolvedPath, error: `${pathArg}: No such file or directory` };
+        }
+
+        // 4. Validate Expected Type
+        if (expectedType && node.type !== expectedType) {
+            if (expectedType === 'file') {
+                return { node, resolvedPath, error: `${pathArg}: Is not a file` };
+            }
+            if (expectedType === 'directory') {
+                return { node, resolvedPath, error: `${pathArg}: Is not a directory` };
+            }
+        }
+
+        // 5. Validate Permissions
+        for (const perm of permissions) {
+            if (!hasPermission(node, currentUser, perm)) {
+                return { node, resolvedPath, error: `${pathArg}: Permission denied` };
+            }
+        }
+
+        // 6. Success
+        return { node, resolvedPath, error: null };
+    }
+
+    // --- End of Refactored Functions ---
+
 
     function calculateNodeSize(node) {
         if (!node) return 0;
@@ -415,114 +483,6 @@ MESSAGES.WELCOME_SUFFIX=!`;
         };
     }
 
-    function validatePath(commandName, pathArg, options = {}) {
-        const {
-            allowMissing = false,
-            expectedType = null,
-            disallowRoot = false,
-            defaultToCurrentIfEmpty = true,
-        } = options;
-        const currentUser = UserManager.getCurrentUser().name;
-        const effectivePathArg =
-            pathArg === "" && defaultToCurrentIfEmpty ?
-                Config.FILESYSTEM.CURRENT_DIR_SYMBOL :
-                pathArg;
-        const resolvedPath = getAbsolutePath(effectivePathArg, currentPath);
-
-        if (disallowRoot && resolvedPath === Config.FILESYSTEM.ROOT_PATH) {
-            return {
-                error: `${commandName}: '${pathArg}' (resolved to root) is not a valid target for this operation.`,
-                node: null,
-                resolvedPath,
-                optionsUsed: options,
-            };
-        }
-
-        let node;
-        if (resolvedPath === Config.FILESYSTEM.ROOT_PATH) {
-            node = fsData[Config.FILESYSTEM.ROOT_PATH];
-        } else {
-            const segments = resolvedPath
-                .substring(1)
-                .split(Config.FILESYSTEM.PATH_SEPARATOR)
-                .filter((s) => s);
-            let currentNode = fsData[Config.FILESYSTEM.ROOT_PATH];
-            let currentPathForError = Config.FILESYSTEM.ROOT_PATH;
-
-            for (const segment of segments) {
-                if (!hasPermission(currentNode, currentUser, "execute")) {
-                    return {
-                        error: `${commandName}: cannot access '${resolvedPath}': Permission denied while traversing '${currentPathForError}'`,
-                        node: null,
-                        resolvedPath,
-                        optionsUsed: options,
-                    };
-                }
-                if (!currentNode.children || !currentNode.children[segment]) {
-                    currentNode = null;
-                    break;
-                }
-                currentNode = currentNode.children[segment];
-                currentPathForError = getAbsolutePath(segment, currentPathForError);
-            }
-            node = currentNode;
-        }
-
-        if (!node) {
-            if (allowMissing) {
-                return {
-                    error: null,
-                    node: null,
-                    resolvedPath,
-                    optionsUsed: options,
-                };
-            }
-            return {
-                error: `${commandName}: '${pathArg}' (resolved to '${resolvedPath}'): No such file or directory`,
-                node: null,
-                resolvedPath,
-                optionsUsed: options,
-            };
-        }
-
-        if (expectedType && node.type !== expectedType) {
-            const typeName =
-                expectedType === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ?
-                    "directory" :
-                    "file";
-            const actualTypeName =
-                node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ?
-                    "directory" :
-                    node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE ?
-                        "file" :
-                        "unknown type";
-            return {
-                error: `${commandName}: '${pathArg}' (resolved to '${resolvedPath}') is not a ${typeName} (it's a ${actualTypeName})`,
-                node,
-                resolvedPath,
-                optionsUsed: options,
-            };
-        }
-
-        if (commandName.startsWith("cd") && node) {
-            if (!hasPermission(node, currentUser, "execute")) {
-                return {
-                    error: `cd: '${pathArg}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-                    node,
-                    resolvedPath,
-                    optionsUsed: options,
-                };
-            }
-        }
-
-        return {
-            error: null,
-            node,
-            resolvedPath,
-            optionsUsed: options,
-        };
-    }
-
     function hasPermission(node, username, permissionType) {
         if (username === 'root') {
             return true;
@@ -608,9 +568,7 @@ MESSAGES.WELCOME_SUFFIX=!`;
         const {
             force = false, currentUser
         } = options;
-        const pathValidation = validatePath("delete", path, {
-            disallowRoot: true,
-        });
+        const pathValidation = validatePath(path, { disallowRoot: true });
         if (pathValidation.error) {
             if (force && !pathValidation.node) {
                 return {
@@ -709,7 +667,7 @@ MESSAGES.WELCOME_SUFFIX=!`;
         } = context;
         const nowISO = new Date().toISOString();
 
-        const existingNode = providedExistingNode !== undefined ? providedExistingNode : FileSystemManager.getNodeByPath(absolutePath);
+        const existingNode = providedExistingNode !== undefined ? providedExistingNode : getNodeByPath(absolutePath);
 
         if (existingNode) {
             if (existingNode.type !== Config.FILESYSTEM.DEFAULT_FILE_TYPE) {

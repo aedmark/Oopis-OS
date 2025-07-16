@@ -1,144 +1,98 @@
-// aedmark/oopis-os-dev/Oopis-OS-DEV-e5518cea540819416617bfa81def39b31b5d26d1/scripts/commands/run.js
+// scripts/commands/run.js
 (() => {
     "use strict";
 
     const runCommandDefinition = {
         commandName: "run",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             min: 1,
         },
-        pathValidation: [
-            {
-                argIndex: 0,
-                options: {
-                    expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-                },
-            },
-        ],
-        permissionChecks: [
-            {
-                pathArgIndex: 0,
-                permissions: ["read", "execute"],
-            },
-        ],
         coreLogic: async (context) => {
-            const {args, options, signal} = context;
+            const { args, options, signal } = context;
             const scriptPathArg = args[0];
-            const scriptArgs = args.slice(1);
-            const scriptNode = context.validatedPaths[0].node;
-            const fileExtension = Utils.getFileExtension(scriptPathArg);
-            const MAX_SCRIPT_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS;
-            const MAX_RECURSION_DEPTH = 100;
 
-            if (fileExtension !== "sh") {
-                return { success: false, error: `run: '${scriptPathArg}' is not a shell script (.sh) file.` };
-            }
-            if (!scriptNode.content) {
-                return { success: true, output: `run: Script '${scriptPathArg}' is empty.` };
-            }
-            if (options.scriptingContext && options.isInteractive) {
-                return { success: false, error: "run: Cannot execute a script while another is already running in interactive mode." };
-            }
-
-            const rawScriptLines = scriptNode.content.split('\n');
-            const isTopLevelCall = !options.scriptingContext;
-
-            const scriptingContext = isTopLevelCall
-                ? { isScripting: true, waitingForInput: false, inputCallback: null, cancelCallback: null, steps: { count: 0 }, recursionDepth: 0 }
-                : options.scriptingContext;
-
-            const parentScriptState = isTopLevelCall ? null : {
-                lines: scriptingContext.lines,
-                currentLineIndex: scriptingContext.currentLineIndex
-            };
-
-            scriptingContext.recursionDepth++;
-
+            // 1. Create a new, isolated environment for the script
             EnvironmentManager.push();
-            if (isTopLevelCall) {
-                if (options.isInteractive) TerminalUI.setInputState(false);
-            }
-
-            let overallScriptSuccess = true;
-            let finalResult = {};
 
             try {
-                if (scriptingContext.recursionDepth > MAX_RECURSION_DEPTH) {
-                    await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum recursion depth (${MAX_RECURSION_DEPTH}). Terminating.`, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
-                    overallScriptSuccess = false;
-                } else {
-                    let programCounter = 0;
-                    while (programCounter < rawScriptLines.length) {
-                        scriptingContext.currentLineIndex = programCounter;
-                        scriptingContext.lines = rawScriptLines;
+                // --- RECURSION DEPTH CHECK ---
+                const currentDepth = (options.scriptingContext?.depth || 0) + 1;
+                if (currentDepth > Config.FILESYSTEM.MAX_SCRIPT_DEPTH) {
+                    return {
+                        success: false,
+                        error: `Maximum script recursion depth (${Config.FILESYSTEM.MAX_SCRIPT_DEPTH}) exceeded. Halting execution.`
+                    };
+                }
+                // --- END CHECK ---
 
-                        if (scriptingContext.steps.count++ > MAX_SCRIPT_STEPS) {
-                            overallScriptSuccess = false;
-                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' exceeded maximum execution steps (${MAX_SCRIPT_STEPS}). Terminating.`, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
-                            break;
-                        }
+                const pathValidation = FileSystemManager.validatePath(scriptPathArg, {
+                    expectedType: 'file',
+                    permissions: ['read', 'execute']
+                });
 
-                        if (signal?.aborted) {
-                            overallScriptSuccess = false;
-                            await OutputManager.appendToOutput(`Script '${scriptPathArg}' cancelled.`, {typeClass: Config.CSS_CLASSES.WARNING_MSG});
-                            if (scriptingContext.cancelCallback) scriptingContext.cancelCallback();
-                            break;
-                        }
+                if (pathValidation.error) {
+                    return { success: false, error: `run: ${scriptPathArg}: ${pathValidation.error}` };
+                }
 
-                        const lineToExecuteIndex = programCounter;
-                        let line = rawScriptLines[lineToExecuteIndex];
+                const scriptNode = pathValidation.node;
+                const scriptContent = scriptNode.content || "";
+                const scriptArgs = args.slice(1);
+                const lines = scriptContent.split('\n');
+                let overallSuccess = true;
 
-                        let inDoubleQuote = false, inSingleQuote = false, commentIndex = -1;
-                        for (let i = 0; i < line.length; i++) {
-                            const char = line[i], prevChar = i > 0 ? line[i - 1] : null;
-                            if (char === '"' && prevChar !== '\\' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
-                            else if (char === '\'' && prevChar !== '\\' && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-                            else if (char === '#' && !inDoubleQuote && !inSingleQuote) { commentIndex = i; break; }
-                        }
-                        if (commentIndex !== -1) line = line.substring(0, commentIndex);
-                        if (line.trim() === '') { programCounter++; continue; }
+                const scriptingContext = {
+                    sourceFile: scriptPathArg,
+                    isScripting: true,
+                    lines: lines,
+                    currentLineIndex: -1,
+                    depth: currentDepth // Pass the new depth to child commands
+                };
 
-                        let processedLine = line.replace(/\$@/g, scriptArgs.join(" ")).replace(/\$#/g, scriptArgs.length.toString());
-                        for (let i = 0; i < scriptArgs.length; i++) {
-                            processedLine = processedLine.replace(new RegExp(`\\$${i + 1}`, 'g'), scriptArgs[i]);
-                        }
+                for (let i = 0; i < lines.length; i++) {
+                    scriptingContext.currentLineIndex = i;
 
-                        const result = await CommandExecutor.processSingleCommand(processedLine.trim(), {
-                            isInteractive: false,
-                            scriptingContext
-                        });
-                        programCounter = scriptingContext.currentLineIndex + 1;
+                    if (signal?.aborted) {
+                        await OutputManager.appendToOutput("Script execution aborted by user.", { typeClass: "text-warning" });
+                        overallSuccess = false;
+                        break;
+                    }
 
-                        if (!result || !result.success) {
-                            const errorMsg = `Script '${scriptPathArg}' error on line ${lineToExecuteIndex + 1}: ${rawScriptLines[lineToExecuteIndex]}\nError: ${result.error || result.output || 'Unknown error.'}`;
-                            await OutputManager.appendToOutput(errorMsg, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
-                            overallScriptSuccess = false;
-                            break;
-                        }
+                    let line = lines[i].trim();
+
+                    if (line.startsWith('#') || line === '') {
+                        continue;
+                    }
+
+                    line = line.replace(/\$@/g, scriptArgs.join(' '));
+                    line = line.replace(/\$#/g, scriptArgs.length);
+                    scriptArgs.forEach((j, k) => {
+                        const regex = new RegExp(`\\$${k + 1}`, 'g');
+                        line = line.replace(regex, j);
+                    });
+
+                    const result = await CommandExecutor.processSingleCommand(line, {
+                        isInteractive: false,
+                        scriptingContext: scriptingContext
+                    });
+
+                    i = scriptingContext.currentLineIndex;
+
+                    if (!result.success) {
+                        await OutputManager.appendToOutput(`Script '${scriptPathArg}' error on line ${i + 1}: ${line}\nError: ${result.error || 'Command failed.'}`, { typeClass: 'text-error' });
+                        overallSuccess = false;
+                        break;
                     }
                 }
+
+                return { success: overallSuccess };
+
+            } catch (e) {
+                return { success: false, error: `run: An unexpected error occurred: ${e.message}` };
             } finally {
-                scriptingContext.recursionDepth--;
-
-                if (parentScriptState) {
-                    scriptingContext.lines = parentScriptState.lines;
-                    scriptingContext.currentLineIndex = parentScriptState.currentLineIndex;
-                }
-
+                // 2. Clean up the script's environment, restoring the parent's
                 EnvironmentManager.pop();
-
-                if (isTopLevelCall) {
-                    if (options.isInteractive) {
-                        TerminalUI.setInputState(true);
-                    }
-                }
             }
-
-            finalResult = {
-                success: overallScriptSuccess,
-                error: overallScriptSuccess ? null : `Script '${scriptPathArg}' failed.`
-            };
-            return finalResult;
         }
     };
 
@@ -173,28 +127,7 @@ SCRIPTING
 
        Error Handling
               If any command within the script fails, the script will
-              stop execution immediately.
-
-WARNING
-       The scripting engine includes a governor to prevent infinite loops.
-       A script that executes more than ${Config.FILESYSTEM.MAX_SCRIPT_STEPS} commands, or which
-       calls other scripts too deeply, will be terminated to prevent the
-       OS from becoming unresponsive.
-
-EXAMPLES
-       Suppose you have a file named 'greet.sh' with the following content:
-       #!/bin/oopis_shell
-       # This is a simple greeting script
-       echo "Welcome to OopisOS, $1! You provided $# argument(s)."
-
-       First, make the script executable:
-       chmod 755 greet.sh
-
-       Then, run it with an argument:
-       run ./greet.sh "Brave User"
-
-       This will output:
-       Welcome to OopisOS, Brave User! You provided 1 argument(s).`;
+              stop execution immediately.`;
 
     CommandRegistry.register(runCommandDefinition.commandName, runCommandDefinition, runDescription, runHelpText);
 })();

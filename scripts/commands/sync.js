@@ -1,3 +1,4 @@
+// scripts/commands/sync.js
 (() => {
     "use strict";
 

@@ -1,9 +1,10 @@
+// scripts/commands/login.js
 (() => {
     "use strict";
 
     const loginCommandDefinition = {
         commandName: "login",
-        completionType: "users",
+        completionType: "users", // Preserved for tab completion
         argValidation: {
             min: 1,
             max: 2,
@@ -15,19 +16,22 @@
             const username = args[0];
             const providedPassword = args.length === 2 ? args[1] : null;
 
-            const result = await UserManager.login(username, providedPassword, options);
+            try {
+                const result = await UserManager.login(username, providedPassword, options);
 
-            if (result.success && result.isLogin) {
-                OutputManager.clearOutput();
-                await OutputManager.appendToOutput(`${Config.MESSAGES.WELCOME_PREFIX} ${username}${Config.MESSAGES.WELCOME_SUFFIX}`);
+                if (result.success && result.isLogin) {
+                    OutputManager.clearOutput();
+                    await OutputManager.appendToOutput(`${Config.MESSAGES.WELCOME_PREFIX} ${username}${Config.MESSAGES.WELCOME_SUFFIX}`);
+                }
+
+                return {
+                    success: result.success,
+                    output: result.noAction ? result.message : null,
+                    error: result.success ? null : result.error,
+                };
+            } catch (e) {
+                return { success: false, error: `login: An unexpected error occurred: ${e.message}` };
             }
-
-            return {
-                success: result.success,
-                output: result.noAction ? result.message : null,
-                error: result.success ? null : result.error,
-                messageType: result.noAction ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : (result.success ? Config.CSS_CLASSES.SUCCESS_MSG : Config.CSS_CLASSES.ERROR_MSG)
-            };
         },
     };
 

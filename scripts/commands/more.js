@@ -1,31 +1,34 @@
+// scripts/commands/more.js
 (() => {
     "use strict";
     const moreCommandDefinition = {
         commandName: "more",
         isInputStream: true,
+        completionType: "paths", // Preserved for tab completion
         coreLogic: async (context) => {
-            const {options, inputItems, inputError} = context;
+            const { options, inputItems, inputError } = context;
 
-            if (inputError) {
-                return {success: false, error: "more: Could not read one or more sources."};
+            try {
+                if (inputError) {
+                    return { success: false, error: "more: Could not read one or more sources." };
+                }
+
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
+                }
+
+                const content = inputItems.map(item => item.content).join('\\n');
+
+                if (!options.isInteractive) {
+                    return { success: true, output: content };
+                }
+
+                await PagerManager.enter(content, { mode: 'more' });
+
+                return { success: true, output: "" };
+            } catch (e) {
+                return { success: false, error: `more: An unexpected error occurred: ${e.message}` };
             }
-
-            // The inputItems array now correctly provides the content from all sources (stdin or files).
-            const content = inputItems.map(item => item.content).join('\n');
-
-            if (content === null || content === undefined) {
-                return {success: true, output: ""}; // Handle no input gracefully
-            }
-
-            if (!options.isInteractive) {
-                // In a pipe or script, just pass the content through
-                return { success: true, output: content };
-            }
-
-            // In interactive mode, launch the pager UI
-            PagerManager.enter(content, { mode: 'more' });
-
-            return { success: true, output: "" };
         },
     };
 

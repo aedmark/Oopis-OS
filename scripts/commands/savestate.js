@@ -1,3 +1,4 @@
+// scripts/commands/savestate.js
 (() => {
     "use strict";
 
@@ -8,20 +9,22 @@
         },
 
         coreLogic: async () => {
-            const result = await SessionManager.saveManualState();
+            try {
+                const result = await SessionManager.saveManualState();
 
-            if (result.success) {
-                return {
-                    success: true,
-                    output: result.message,
-                    messageType: Config.CSS_CLASSES.SUCCESS_MSG,
-                };
-            } else {
-                return {
-                    success: false,
-                    error: result.error,
-                    messageType: Config.CSS_CLASSES.ERROR_MSG,
-                };
+                if (result.success) {
+                    return {
+                        success: true,
+                        output: result.message,
+                    };
+                } else {
+                    return {
+                        success: false,
+                        error: result.error,
+                    };
+                }
+            } catch (e) {
+                return { success: false, error: `savestate: An unexpected error occurred: ${e.message}` };
             }
         },
     };

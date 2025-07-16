@@ -1,8 +1,10 @@
+// scripts/commands/rmdir.js
 (() => {
     "use strict";
 
     const rmdirCommandDefinition = {
         commandName: "rmdir",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             min: 1,
             error: "missing operand"
@@ -11,53 +13,62 @@
             const { args, currentUser } = context;
             const outputMessages = [];
             let allSuccess = true;
+            let changesMade = false;
 
-            for (const pathArg of args) {
-                const pathValidation = FileSystemManager.validatePath("rmdir", pathArg, {
-                    expectedType: 'directory'
-                });
+            try {
+                for (const pathArg of args) {
+                    const resolvedPath = FileSystemManager.getAbsolutePath(pathArg);
+                    const node = FileSystemManager.getNodeByPath(resolvedPath);
 
-                if (pathValidation.error) {
-                    outputMessages.push(pathValidation.error);
-                    allSuccess = false;
-                    continue;
+                    if (!node) {
+                        outputMessages.push(`rmdir: failed to remove '${pathArg}': No such file or directory`);
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    if (node.type !== 'directory') {
+                        outputMessages.push(`rmdir: failed to remove '${pathArg}': Not a directory`);
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    const parentPath = resolvedPath.substring(0, resolvedPath.lastIndexOf('/')) || '/';
+                    const parentNode = FileSystemManager.getNodeByPath(parentPath);
+
+                    if (Object.keys(node.children).length > 0) {
+                        outputMessages.push(`rmdir: failed to remove '${pathArg}': Directory not empty`);
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    if (!FileSystemManager.hasPermission(parentNode, currentUser, "write")) {
+                        outputMessages.push(`rmdir: failed to remove '${pathArg}': Permission denied`);
+                        allSuccess = false;
+                        continue;
+                    }
+
+                    const dirName = resolvedPath.split('/').pop();
+                    delete parentNode.children[dirName];
+                    parentNode.mtime = new Date().toISOString();
+                    changesMade = true;
                 }
 
-                const node = pathValidation.node;
-                const parentPath = pathValidation.resolvedPath.substring(0, pathValidation.resolvedPath.lastIndexOf('/')) || '/';
-                const parentNode = FileSystemManager.getNodeByPath(parentPath);
-
-                // Check if the directory is empty
-                if (Object.keys(node.children).length > 0) {
-                    outputMessages.push(`rmdir: failed to remove '${pathArg}': Directory not empty`);
-                    allSuccess = false;
-                    continue;
+                if (changesMade) {
+                    await FileSystemManager.save();
                 }
 
-                // Check for write permission on the parent directory
-                if (!FileSystemManager.hasPermission(parentNode, currentUser, "write")) {
-                    outputMessages.push(`rmdir: failed to remove '${pathArg}': Permission denied`);
-                    allSuccess = false;
-                    continue;
+                if (allSuccess) {
+                    return { success: true, output: "" };
+                } else {
+                    return { success: false, error: outputMessages.join('\\n') };
                 }
-
-                // Perform the deletion
-                const dirName = pathValidation.resolvedPath.split('/').pop();
-                delete parentNode.children[dirName];
-                parentNode.mtime = new Date().toISOString();
-            }
-
-            if (allSuccess) {
-                await FileSystemManager.save();
-                return { success: true, output: "" };
-            } else {
-                return { success: false, error: outputMessages.join('\n') };
+            } catch (e) {
+                return { success: false, error: `rmdir: An unexpected error occurred: ${e.message}` };
             }
         }
     };
 
     const rmdirDescription = "Removes empty directories.";
-
     const rmdirHelpText = `Usage: rmdir [DIRECTORY]...
 
 Remove the DIRECTORY(ies), if they are empty.

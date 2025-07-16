@@ -1,8 +1,10 @@
+// scripts/commands/unalias.js
 (() => {
     "use strict";
 
     const unaliasCommandDefinition = {
         commandName: "unalias",
+        completionType: "aliases", // Preserved for tab completion
         argValidation: {
             min: 1,
             error: "Usage: unalias <alias_name>...",
@@ -10,26 +12,31 @@
 
         coreLogic: async (context) => {
             const { args } = context;
-            let allSuccess = true;
-            const errorMessages = [];
 
-            for (const aliasName of args) {
-                if (!AliasManager.removeAlias(aliasName)) {
-                    allSuccess = false;
-                    errorMessages.push(`unalias: no such alias: ${aliasName}`);
+            try {
+                let allSuccess = true;
+                const errorMessages = [];
+
+                for (const aliasName of args) {
+                    if (!AliasManager.removeAlias(aliasName)) {
+                        allSuccess = false;
+                        errorMessages.push(`unalias: no such alias: ${aliasName}`);
+                    }
                 }
-            }
 
-            if (allSuccess) {
-                return {
-                    success: true,
-                    output: "",
-                };
-            } else {
-                return {
-                    success: false,
-                    error: errorMessages.join("\n"),
-                };
+                if (allSuccess) {
+                    return {
+                        success: true,
+                        output: "",
+                    };
+                } else {
+                    return {
+                        success: false,
+                        error: errorMessages.join("\\n"),
+                    };
+                }
+            } catch (e) {
+                return { success: false, error: `unalias: An unexpected error occurred: ${e.message}` };
             }
         },
     };

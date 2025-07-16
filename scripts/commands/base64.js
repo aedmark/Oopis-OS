@@ -1,40 +1,43 @@
+// scripts/commands/base64.js
 (() => {
     "use strict";
 
     const base64CommandDefinition = {
         commandName: "base64",
         isInputStream: true,
+        completionType: "paths", // Preserved for tab completion
         flagDefinitions: [
             { name: "decode", short: "-d", long: "--decode" }
         ],
-        argValidation: {
-            max: 1,
-        },
         coreLogic: async (context) => {
-            const {flags, inputItems, inputError} = context;
-
-            if (inputError) {
-                return {success: false, error: "base64: No readable input provided."};
-            }
-
-            const inputData = inputItems.map(item => item.content).join('\n');
-
-            if (inputData === null || inputData === undefined) {
-                return { success: true, output: "" };
-            }
+            const { flags, inputItems, inputError } = context;
 
             try {
+                if (inputError) {
+                    return { success: false, error: "base64: No readable input provided or permission denied." };
+                }
+
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
+                }
+
+                const inputData = inputItems.map(item => item.content).join('\\n');
+
                 if (flags.decode) {
-                    const decodedData = atob(inputData.replace(/\s/g, ''));
+                    // The 'atob' function in browsers correctly handles whitespace.
+                    const decodedData = atob(inputData);
                     return { success: true, output: decodedData };
                 } else {
                     const encodedData = btoa(inputData);
-                    return { success: true, output: encodedData.replace(/(.{64})/g, "$1\n") };
+                    // Standard base64 output is often wrapped at 76 characters, but 64 is also common.
+                    return { success: true, output: encodedData.replace(/(.{64})/g, "$1\\n") };
                 }
             } catch (e) {
+                // This specifically catches errors from atob() on invalid input.
                 if (e instanceof DOMException && e.name === "InvalidCharacterError") {
                     return { success: false, error: "base64: invalid input" };
                 }
+                // Catch any other unexpected errors.
                 return { success: false, error: `base64: an unexpected error occurred: ${e.message}` };
             }
         }

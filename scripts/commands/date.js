@@ -1,3 +1,4 @@
+// scripts/commands/date.js
 (() => {
     "use strict";
 
@@ -8,10 +9,14 @@
         },
 
         coreLogic: async () => {
-            return {
-                success: true,
-                output: new Date().toString(),
-            };
+            try {
+                return {
+                    success: true,
+                    output: new Date().toString(),
+                };
+            } catch (e) {
+                return { success: false, error: `date: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 

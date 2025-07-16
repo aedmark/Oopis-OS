@@ -1,3 +1,4 @@
+// scripts/commands/xor.js
 (() => {
     "use strict";
 
@@ -13,42 +14,51 @@
     const xorCommandDefinition = {
         commandName: "xor",
         isInputStream: true,
-        firstFileArgIndex: 1,
+        completionType: "paths", // Preserved for tab completion
+        firstFileArgIndex: 1, // The first arg is the password
         coreLogic: async (context) => {
-            const {args, options, inputItems, inputError} = context;
+            const { args, options, inputItems, inputError } = context;
 
-            if (inputError) {
-                return {success: false, error: "xor: No readable input provided or permission denied."};
-            }
-
-            const inputData = inputItems.map(item => item.content).join('\n');
-
-            let password = args[0];
-
-            if (password === null || password === undefined) {
-                if (!options.isInteractive) {
-                    return { success: false, error: "xor: password must be provided as an argument in non-interactive mode." };
+            try {
+                if (inputError) {
+                    return { success: false, error: "xor: No readable input provided or permission denied." };
                 }
-                password = await new Promise(resolve => {
-                    ModalInputManager.requestInput(
-                        "Enter password for xor:",
-                        (pw) => resolve(pw),
-                        () => resolve(null),
-                        true // Obscured input
-                    );
-                });
 
-                if (password === null) {
-                    return { success: true, output: "Operation cancelled." };
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
                 }
-            }
 
-            if (!password) {
-                return { success: false, error: "xor: password cannot be empty." };
-            }
+                const inputData = inputItems.map(item => item.content).join('\\n');
 
-            const processedData = xorCipher(inputData, password);
-            return { success: true, output: processedData };
+                let password = args[0];
+
+                if (password === null || password === undefined) {
+                    if (!options.isInteractive) {
+                        return { success: false, error: "xor: password must be provided as an argument in non-interactive mode." };
+                    }
+                    password = await new Promise(resolve => {
+                        ModalInputManager.requestInput(
+                            "Enter password for xor:",
+                            (pw) => resolve(pw),
+                            () => resolve(null),
+                            true // Obscured input
+                        );
+                    });
+
+                    if (password === null) {
+                        return { success: true, output: "Operation cancelled." };
+                    }
+                }
+
+                if (!password) {
+                    return { success: false, error: "xor: password cannot be empty." };
+                }
+
+                const processedData = xorCipher(inputData, password);
+                return { success: true, output: processedData };
+            } catch (e) {
+                return { success: false, error: `xor: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 

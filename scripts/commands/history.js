@@ -1,3 +1,4 @@
+// scripts/commands/history.js
 (() => {
     "use strict";
 
@@ -12,31 +13,33 @@
         ],
 
         coreLogic: async (context) => {
-            if (context.flags.clear) {
-                HistoryManager.clearHistory();
+            try {
+                if (context.flags.clear) {
+                    HistoryManager.clearHistory();
+                    return {
+                        success: true,
+                        output: "Command history cleared.",
+                    };
+                }
+                const history = HistoryManager.getFullHistory();
+                if (history.length === 0)
+                    return {
+                        success: true,
+                        output: Config.MESSAGES.NO_COMMANDS_IN_HISTORY,
+                    };
                 return {
                     success: true,
-                    output: "Command history cleared.",
-                    messageType: Config.CSS_CLASSES.SUCCESS_MSG,
+                    output: history
+                        .map((cmd, i) => `  ${String(i + 1).padStart(3)}  ${cmd}`)
+                        .join("\\n"),
                 };
+            } catch (e) {
+                return { success: false, error: `history: An unexpected error occurred: ${e.message}` };
             }
-            const history = HistoryManager.getFullHistory();
-            if (history.length === 0)
-                return {
-                    success: true,
-                    output: Config.MESSAGES.NO_COMMANDS_IN_HISTORY,
-                };
-            return {
-                success: true,
-                output: history
-                    .map((cmd, i) => `  ${String(i + 1).padStart(3)}  ${cmd}`)
-                    .join("\n"),
-            };
         },
     };
 
     const historyDescription = "Displays or clears the command history.";
-
     const historyHelpText = `Usage: history [-c]
 
 Display or clear the command history.

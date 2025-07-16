@@ -1,42 +1,59 @@
+// scripts/commands/basic.js
 (() => {
     "use strict";
 
     const basicCommandDefinition = {
         commandName: "basic",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             max: 1,
             error: "Usage: basic [filename.bas]"
         },
-        pathValidation: [{
-            argIndex: 0,
-            optional: true,
-            options: { allowMissing: true, expectedType: 'file' }
-        }],
-        permissionChecks: [{
-            pathArgIndex: 0,
-            permissions: ["read"]
-        }],
         coreLogic: async (context) => {
-            const { options, validatedPaths } = context;
+            const { args, options } = context;
 
-            if (!options.isInteractive) {
-                return { success: false, error: "basic: Cannot be run in a non-interactive mode." };
+            try {
+                if (!options.isInteractive) {
+                    return { success: false, error: "basic: Cannot be run in a non-interactive mode." };
+                }
+
+                if (typeof BasicManager === 'undefined' || typeof BasicUI === 'undefined' || typeof Basic_interp === 'undefined') {
+                    return { success: false, error: "basic: The BASIC application modules are not loaded." };
+                }
+
+                let fileContent = null;
+                let filePath = null;
+
+                if (args.length > 0) {
+                    const pathArg = args[0];
+                    const pathValidation = FileSystemManager.validatePath(pathArg, {
+                        allowMissing: true,
+                        expectedType: 'file'
+                    });
+
+                    if (pathValidation.error && !pathValidation.node && !pathValidation.error.includes("No such file or directory")) {
+                        return { success: false, error: `basic: ${pathValidation.error}` };
+                    }
+
+                    if(pathValidation.node) {
+                        if (!FileSystemManager.hasPermission(pathValidation.node, context.currentUser, 'read')) {
+                            return { success: false, error: `basic: cannot read file '${pathArg}': Permission denied`};
+                        }
+                        filePath = pathValidation.resolvedPath;
+                        fileContent = pathValidation.node.content;
+                    } else {
+                        // File doesn't exist, which is fine. We'll create it on save.
+                        filePath = pathValidation.resolvedPath;
+                        fileContent = "";
+                    }
+                }
+
+                BasicManager.enter(context, { content: fileContent, path: filePath });
+
+                return { success: true, output: "" };
+            } catch (e) {
+                return { success: false, error: `basic: An unexpected error occurred: ${e.message}` };
             }
-
-            if (typeof BasicManager === 'undefined' || typeof BasicUI === 'undefined' || typeof Basic_interp === 'undefined') {
-                return { success: false, error: "basic: The BASIC application modules are not loaded." };
-            }
-
-            let fileContent = null;
-            let filePath = null;
-            if (validatedPaths[0] && validatedPaths[0].node) {
-                fileContent = validatedPaths[0].node.content;
-                filePath = validatedPaths[0].resolvedPath;
-            }
-
-            BasicManager.enter(context, { content: fileContent, path: filePath });
-
-            return { success: true, output: "" };
         }
     };
 

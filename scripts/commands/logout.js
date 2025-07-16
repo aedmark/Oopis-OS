@@ -1,3 +1,4 @@
+// scripts/commands/logout.js
 (() => {
     "use strict";
 
@@ -8,18 +9,22 @@
         },
 
         coreLogic: async () => {
-            const result = await UserManager.logout();
+            try {
+                const result = await UserManager.logout();
 
-            if (result.success && result.isLogout) {
-                OutputManager.clearOutput();
-                await OutputManager.appendToOutput(`${Config.MESSAGES.WELCOME_PREFIX} ${result.newUser}${Config.MESSAGES.WELCOME_SUFFIX}`);
+                if (result.success && result.isLogout) {
+                    OutputManager.clearOutput();
+                    await OutputManager.appendToOutput(`${Config.MESSAGES.WELCOME_PREFIX} ${result.newUser}${Config.MESSAGES.WELCOME_SUFFIX}`);
+                }
+
+                return {
+                    ...result,
+                    output: result.noAction ? result.message : null,
+                    error: result.success ? null : result.error,
+                };
+            } catch (e) {
+                return { success: false, error: `logout: An unexpected error occurred: ${e.message}` };
             }
-
-            return {
-                ...result,
-                output: result.message,
-                messageType: result.noAction ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : (result.success ? Config.CSS_CLASSES.SUCCESS_MSG : Config.CSS_CLASSES.ERROR_MSG)
-            };
         },
     };
 
@@ -34,7 +39,7 @@ DESCRIPTION
        to the session of the previous user in the stack.
 
        This command is the counterpart to 'su'. If you use 'su' to become
-       another user, 'logout' will return you to your original session.
+       another user, 'logout' will return you to your original user session.
 
        If there is no previous session in the stack (i.e., you are in the
        initial session started with 'login'), logout will do nothing.

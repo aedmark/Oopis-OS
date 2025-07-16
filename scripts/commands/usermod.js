@@ -1,58 +1,64 @@
+// scripts/commands/usermod.js
 (() => {
     "use strict";
 
     const usermodCommandDefinition = {
         commandName: "usermod",
+        completionType: "users", // Preserved for tab completion
         argValidation: {
-            exact: 3, // Requires exactly three arguments: flag, groupname, username.
+            exact: 3,
             error: "Usage: usermod -aG <groupname> <username>",
         },
 
         coreLogic: async (context) => {
             const { args, currentUser } = context;
-            const flag = args[0];
-            const groupName = args[1];
-            const username = args[2];
 
-            if (currentUser !== "root") {
-                return {
-                    success: false,
-                    error: "usermod: only root can modify user groups.",
-                };
-            }
+            try {
+                const flag = args[0];
+                const groupName = args[1];
+                const username = args[2];
 
-            if (flag !== "-aG") {
-                return {
-                    success: false,
-                    error: "usermod: invalid flag. Only '-aG' is supported.",
-                };
-            }
+                if (currentUser !== "root") {
+                    return {
+                        success: false,
+                        error: "usermod: only root can modify user groups.",
+                    };
+                }
 
-            if (!GroupManager.groupExists(groupName)) {
-                return {
-                    success: false,
-                    error: `usermod: group '${groupName}' does not exist.`,
-                };
-            }
+                if (flag !== "-aG") {
+                    return {
+                        success: false,
+                        error: "usermod: invalid flag. Only '-aG' is supported.",
+                    };
+                }
 
-            if (!await UserManager.userExists(username) && username !== Config.USER.DEFAULT_NAME) {
-                return {
-                    success: false,
-                    error: `usermod: user '${username}' does not exist.`,
-                };
-            }
+                if (!GroupManager.groupExists(groupName)) {
+                    return {
+                        success: false,
+                        error: `usermod: group '${groupName}' does not exist.`,
+                    };
+                }
 
-            if (GroupManager.addUserToGroup(username, groupName)) {
-                return {
-                    success: true,
-                    output: `Added user '${username}' to group '${groupName}'.`,
-                };
-            } else {
-                return {
-                    success: true,
-                    output: `User '${username}' is already in group '${groupName}'.`,
-                    messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG, // Informational message.
-                };
+                if (!await UserManager.userExists(username) && username !== Config.USER.DEFAULT_NAME) {
+                    return {
+                        success: false,
+                        error: `usermod: user '${username}' does not exist.`,
+                    };
+                }
+
+                if (GroupManager.addUserToGroup(username, groupName)) {
+                    return {
+                        success: true,
+                        output: `Added user '${username}' to group '${groupName}'.`,
+                    };
+                } else {
+                    return {
+                        success: true,
+                        output: `User '${username}' is already in group '${groupName}'.`,
+                    };
+                }
+            } catch (e) {
+                return { success: false, error: `usermod: An unexpected error occurred: ${e.message}` };
             }
         },
     };

@@ -1,3 +1,4 @@
+// scripts/commands/log.js
 (() => {
     "use strict";
 
@@ -10,33 +11,37 @@
         coreLogic: async (context) => {
             const { args, currentUser, options } = context;
 
-            if (!options.isInteractive) {
-                return {
-                    success: false,
-                    error: "log: Can only be run in interactive mode."
-                };
-            }
-
-            if (typeof LogManager === 'undefined' || typeof LogUI === 'undefined') {
-                return {
-                    success: false,
-                    error: "log: The Log application module is not loaded."
-                };
-            }
-
-            if (args.length === 1) {
-                const entryText = args[0];
-                const result = await LogManager.quickAdd(entryText, currentUser);
-                if (result.success) {
-                    await OutputManager.appendToOutput(result.message, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
-                    return { success: true, output: "" };
-                } else {
-                    return { success: false, error: result.error };
+            try {
+                if (!options.isInteractive) {
+                    return {
+                        success: false,
+                        error: "log: Can only be run in interactive mode."
+                    };
                 }
-            }
 
-            LogManager.enter();
-            return { success: true, output: "" };
+                if (typeof LogManager === 'undefined' || typeof LogUI === 'undefined') {
+                    return {
+                        success: false,
+                        error: "log: The Log application module is not loaded."
+                    };
+                }
+
+                if (args.length === 1) {
+                    const entryText = args[0];
+                    const result = await LogManager.quickAdd(entryText, currentUser);
+                    if (result.success) {
+                        await OutputManager.appendToOutput(result.message, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+                        return { success: true, output: "" };
+                    } else {
+                        return { success: false, error: result.error };
+                    }
+                }
+
+                await LogManager.enter();
+                return { success: true, output: "" };
+            } catch (e) {
+                return { success: false, error: `log: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 

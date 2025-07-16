@@ -68,6 +68,7 @@ const Config = (() => {
             PERMISSION_BIT_EXECUTE: 0b001,
             MAX_VFS_SIZE: 640 * 1024 * 1024,
             MAX_SCRIPT_STEPS: 10000,
+            MAX_SCRIPT_DEPTH: 100,
         },
         MESSAGES: {
             PERMISSION_DENIED_SUFFIX: ": You aren't allowed to do that.",

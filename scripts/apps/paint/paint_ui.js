@@ -21,12 +21,12 @@ const PaintUI = (() => {
         });
 
         const toolGroup = Utils.createElement('div', { className: 'paint-tool-group' }, [
-            elements.pencilBtn = createToolBtn('pencil', 'p', '✎'),
-            elements.eraserBtn = createToolBtn('eraser', 'e', '✐'),
+            elements.pencilBtn = createToolBtn('pencil', 'p', '✏️'),
+            elements.eraserBtn = createToolBtn('eraser', 'e', '🧼'),
             elements.lineBtn = createToolBtn('line', 'l', '—'),
             elements.rectBtn = createToolBtn('rect', 'r', '▢'),
             elements.circleBtn = createToolBtn('circle', 'c', '◯'),
-            elements.fillBtn = createToolBtn('fill', 'f', '⛁'),
+            elements.fillBtn = createToolBtn('fill', 'f', '🪣'),
             elements.selectBtn = createToolBtn('select', 's', '⬚'),
         ]);
 
@@ -47,18 +47,18 @@ const PaintUI = (() => {
 
         elements.undoBtn = Utils.createElement('button', {className: 'btn', textContent: '↩'});
         elements.redoBtn = Utils.createElement('button', {className: 'btn', textContent: '↪'});
-        elements.gridBtn = Utils.createElement('button', {className: 'btn', textContent: '▦'});
+        elements.gridBtn = Utils.createElement('button', {className: 'btn', textContent: '🪟'});
         const historyGroup = Utils.createElement('div', { className: 'paint-tool-group' }, [elements.undoBtn, elements.redoBtn, elements.gridBtn]);
 
-        elements.cutBtn = Utils.createElement('button', {className: 'btn', textContent: 'Cut', title: 'Cut (Ctrl+X)'});
+        elements.cutBtn = Utils.createElement('button', {className: 'btn', textContent: '✂️', title: 'Cut (Ctrl+X)'});
         elements.copyBtn = Utils.createElement('button', {
             className: 'btn',
-            textContent: 'Copy',
+            textContent: '🖨️',
             title: 'Copy (Ctrl+C)'
         });
         elements.pasteBtn = Utils.createElement('button', {
             className: 'btn',
-            textContent: 'Paste',
+            textContent: '🧩',
             title: 'Paste (Ctrl+V)'
         });
         const clipboardGroup = Utils.createElement('div', {className: 'paint-tool-group'}, [elements.cutBtn, elements.copyBtn, elements.pasteBtn]);

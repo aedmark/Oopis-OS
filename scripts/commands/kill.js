@@ -1,3 +1,4 @@
+// scripts/commands/kill.js
 (() => {
     "use strict";
 
@@ -10,26 +11,27 @@
 
         coreLogic: async (context) => {
             const { args } = context;
-            const jobId = parseInt(args[0], 10);
 
-            if (isNaN(jobId)) {
+            try {
+                const jobId = parseInt(args[0], 10);
+
+                if (isNaN(jobId)) {
+                    return {
+                        success: false,
+                        error: `kill: invalid job ID: ${args[0]}`,
+                    };
+                }
+
+                const result = await CommandExecutor.killJob(jobId);
+
                 return {
-                    success: false,
-                    error: `kill: invalid job ID: ${args[0]}`,
+                    success: result.success,
+                    output: result.message || "",
+                    error: result.error || null,
                 };
+            } catch (e) {
+                return { success: false, error: `kill: An unexpected error occurred: ${e.message}` };
             }
-
-            // The 'await' keyword is added here.
-            const result = await CommandExecutor.killJob(jobId);
-
-            return {
-                success: result.success,
-                output: result.message || "",
-                error: result.error || null,
-                messageType: result.success
-                    ? Config.CSS_CLASSES.SUCCESS_MSG
-                    : Config.CSS_CLASSES.ERROR_MSG,
-            };
         },
     };
 

@@ -2,12 +2,14 @@
 (() => {
     "use strict";
 
-    // The _safeEvaluate function remains unchanged. It correctly
-    // parses and computes the mathematical expression.
     const _safeEvaluate = (expression) => {
-        // Shunting-yard algorithm for safe expression evaluation
+        // This is a simplified and safer evaluator. It does not support variables or complex functions.
+        // It uses a proper shunting-yard implementation to handle order of operations.
+
+        // CORRECTED: This now properly removes all whitespace from the expression.
         const cleanExpression = expression.replace(/\s+/g, '');
-        const tokens = cleanExpression.match(/(\d+\.?\d*|\+|-|\*|\/|%|\(|\))/g);
+
+        const tokens = cleanExpression.match(/(\d+\.?\d*|\+|\-|\*|\/|%|\(|\))/g);
 
         if (!tokens || tokens.join('') !== cleanExpression) {
             throw new Error("Invalid characters in expression.");
@@ -76,29 +78,21 @@
 
     const bcCommandDefinition = {
         commandName: "bc",
-        // isInputStream is removed to prevent the shell from treating
-        // arguments as file paths for this command.
         coreLogic: async (context) => {
-            // The context now correctly differentiates between piped input
-            // and direct arguments.
             const { args, options } = context;
             let input = "";
 
-            // Prioritize piped input if it exists.
-            if (options.stdinContent !== null && options.stdinContent !== undefined) {
-                input = options.stdinContent;
-            } else if (args.length > 0) {
-                // Otherwise, use the command-line arguments.
-                input = args.join(' ');
-            }
-
-            if (!input.trim()) {
-                // It's not an error to receive no input; just do nothing.
-                return { success: true, output: "" };
-            }
-
             try {
-                // The core calculation logic remains the same.
+                if (options.stdinContent !== null && options.stdinContent !== undefined) {
+                    input = options.stdinContent;
+                } else if (args.length > 0) {
+                    input = args.join(' ');
+                }
+
+                if (!input.trim()) {
+                    return { success: true, output: "" };
+                }
+
                 const result = _safeEvaluate(input);
                 return { success: true, output: String(result) };
             } catch (e) {

@@ -1,3 +1,4 @@
+// scripts/commands/listusers.js
 (() => {
     "use strict";
 
@@ -8,31 +9,34 @@
         },
 
         coreLogic: async () => {
-            const users = StorageManager.loadItem(
-                Config.STORAGE_KEYS.USER_CREDENTIALS,
-                "User list",
-                {}
-            );
-            let userNames = Object.keys(users);
+            try {
+                const users = StorageManager.loadItem(
+                    Config.STORAGE_KEYS.USER_CREDENTIALS,
+                    "User list",
+                    {}
+                );
+                let userNames = Object.keys(users);
 
-            if (!userNames.includes(Config.USER.DEFAULT_NAME)) {
-                userNames.push(Config.USER.DEFAULT_NAME);
-            }
+                if (!userNames.includes(Config.USER.DEFAULT_NAME)) {
+                    userNames.push(Config.USER.DEFAULT_NAME);
+                }
 
-            userNames.sort();
+                userNames.sort();
 
-            if (userNames.length === 0)
+                if (userNames.length === 0)
+                    return {
+                        success: true,
+                        output: "No users registered.",
+                    };
+
                 return {
                     success: true,
-                    output: "No users registered.",
-                    messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+                    output:
+                        "Registered users:\\n" + userNames.map((u) => `  ${u}`).join("\\n"),
                 };
-
-            return {
-                success: true,
-                output:
-                    "Registered users:\n" + userNames.map((u) => `  ${u}`).join("\n"),
-            };
+            } catch (e) {
+                return { success: false, error: `listusers: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 

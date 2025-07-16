@@ -5,6 +5,7 @@
 
 echo "Initiating World-Build Protocol v3.5..."
 delay 500
+
 echo "Warning: Spontaneous generation of files and directories is imminent."
 delay 500
 
@@ -92,10 +93,23 @@ echo "/* The main component for rendering UI. Contains the secret 'make_pretty' 
 echo "body { font-family: 'VT323', monospace; color: #00FF00; background-color: #000000; }" > ./src/styles/theme.css
 echo "Creating evidence of a rival..."
 echo -e "config_option_a=true\nconfig_option_b=999\n# A shared line\nconfig_option_d=hello\n# Hacked by Morpheus" > src/config_v1.hacked
-# A broken script for the user to fix
-echo "echo 'This script is supposed to work, but it needs your help!'" > src/fix_me.sh
-chmod 644 src/fix_me.sh
+echo "#!/bin/oopis_shell" > src/fix_me.sh
+echo "echo 'This script is supposed to list the contents of a directory.'" >> src/fix_me.sh
+echo "TARGET_DIR='/home/Guest/docs'" >> src/fix_me.sh
+echo "cd $TARGET_DIR" >> src/fix_me.sh
+echo "ls" >> src/fix_me.sh
+echo "echo '...but this next part is broken.'" >> src/fix_me.sh
+echo "TARGET_FILE='/home/Guest/README.md'" >> src/fix_me.sh
+chmod 755 src/fix_me.sh
 delay 300
+echo '#!/bin/oopis_shell' > src/backup_docs.sh
+echo '# Creates a timestamped zip of the docs directory' >> src/backup_docs.sh
+echo 'TIMESTAMP=$(date | awk "{print \$2_\$3_\$6}")' >> src/backup_docs.sh
+echo 'FILENAME="docs_backup_$TIMESTAMP.zip"' >> src/backup_docs.sh
+echo 'echo "Backing up /home/Guest/docs to $FILENAME..."' >> src/backup_docs.sh
+echo 'zip $FILENAME /home/Guest/docs' >> src/backup_docs.sh
+chmod 755 src/backup_docs.sh
+delay 500
 
 # Files for 'diff' and 'run' showcases
 echo -e "config_option_a=true\nconfig_option_b=123\n# A shared line\nconfig_option_d=hello" > src/config_v1.txt
@@ -125,8 +139,22 @@ touch ./data/old_data.tmp
 touch ./data/session.tmp
 echo "./data/sort_test.txt" > ./data/files_to_process.txt
 echo "./data/pangrams.txt" >> ./data/files_to_process.txt
-
+echo "[2025-06-08T22:10:00Z] [DEBUG] User 'Guest' ran 'ls -l'. It was beautiful." >> ./data/logs/system.log
+echo "[2025-06-08T22:11:00Z] [INFO] AI 'chidi' successfully summarized 3 documents." >> ./data/logs/system.log
+echo "[2025-06-08T22:15:00Z] [WARN] Filesystem at 88% capacity. Consider running 'cleanup'." >> ./data/logs/system.log
+echo "id,product,region,units_sold,revenue" > ./data/analysis/sales.csv
+echo "1,Duck,NA,500,2500.00" >> ./data/analysis/sales.csv
+echo "2,Semicolon,EU,1200,120.00" >> ./data/analysis/sales.csv
+echo "3,Duck,APAC,350,1750.00" >> ./data/analysis/sales.csv
+echo "4,Mug,NA,800,4000.00" >> ./data/analysis/sales.csv
 delay 300
+echo "Generating faulty filenames"
+delay 300
+echo "This filename has spaces" > "./data/a file with spaces.txt"
+echo "This one has a quote" > "./data/a_quote's_file.txt"
+echo "This one has... everything" > "./data/(all-the-symbols!@#\$%^&).data"
+
+delay 500
 
 # --- BASIC Showcase ---
 echo "Writing a sample BASIC program..."
@@ -170,6 +198,26 @@ delay 300
 # --- Administrative tasks (as root) ---
 echo "Logging in as root. Kneel before your god."
 login root mcgoopis
+delay 300
+echo "Creating a more complex user/group environment..."
+groupadd developers
+delay 200
+useradd dev1
+newpass
+newpass
+delay 200
+groupadd research
+useradd analyst
+testpass
+testpass
+delay 200
+usermod -aG research dev1
+usermod -aG research analyst
+mkdir /home/project_y
+chown dev1 /home/project_y
+chgrp research /home/project_y
+chmod 770 /home/project_y
+echo "# Project Y - Market Analysis\nCONFIDENTIAL - For 'research' group only." > /home/project_y/README.md
 rm -r -f /vault /shared_for_guest /home/clearfs_tester
 mkdir /vault
 echo "The launch codes are: 'password123'. The real secret is that there's nothing to launch." > /vault/top_secret.txt
@@ -192,15 +240,16 @@ mkdir ./doomed_dir
 echo "So long, and thanks for all the fish." > ./doomed_dir/message.txt
 login root mcgoopis
 echo "Setting up a shared project for a new developer..."
-groupadd developers
-useradd dev1
-newpass
-newpass
+delay 200
 usermod -aG developers dev1
 mkdir /home/project_x
 chgrp developers /home/project_x
 chmod 770 /home/project_x
 echo "# Project X - Top Secret\nDo not share with marketing." > /home/project_x/brief.md
+mkdir /home/project_y/archive
+chown root /home/project_y/archive
+chmod 755 /home/project_y/archive # Everyone can enter and read, only root can write.
+echo "Q1 data. Do not modify." > /home/project_y/archive/q1_data.bak
 
 delay 500
 login Guest
@@ -232,3 +281,4 @@ echo "- [ ] Investigate the .secret_stuff directory." >> ./todo.txt
 echo "- [ ] Figure out what 'sys_check.sh' is for and run it." >> ./todo.txt
 echo "- [ ] Find out who 'Morpheus' is." >> ./todo.txt
 echo "- [ ] Beat the 'Quest for the Lost Semicolon' adventure." >> ./todo.txt
+echo "- [ ] Delete all the weirdly-named files in /data using a single 'find | xargs' command." >> ./todo.txt

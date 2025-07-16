@@ -1,3 +1,4 @@
+// scripts/terminal_ui.js
 const ModalManager = (() => {
     "use strict";
     let isAwaitingTerminalInput = false;
@@ -573,12 +574,9 @@ const TabCompletionManager = (() => {
     }
 
     function _getCompletionContext(fullInput, cursorPos) {
-        // Tokenize the input string, respecting quotes.
         const tokens = (fullInput.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []);
         const commandName = tokens.length > 0 ? tokens[0].replace(/["']/g, '') : "";
-
         const textBeforeCursor = fullInput.substring(0, cursorPos);
-
         let startOfWordIndex = 0;
         let inQuote = null;
         for (let i = 0; i < textBeforeCursor.length; i++) {
@@ -588,19 +586,15 @@ const TabCompletionManager = (() => {
             } else if (!inQuote && (char === '"' || char === "'") && (i === 0 || textBeforeCursor[i - 1] === ' ' || textBeforeCursor[i - 1] === undefined)) {
                 inQuote = char;
             }
-
             if (char === ' ' && !inQuote) {
                 startOfWordIndex = i + 1;
             }
         }
-
         const currentWordWithQuotes = fullInput.substring(startOfWordIndex, cursorPos);
         const quoteChar = currentWordWithQuotes.startsWith("'") ? "'" : currentWordWithQuotes.startsWith('"') ? '"' : null;
         const currentWordPrefix = quoteChar ? currentWordWithQuotes.substring(1) : currentWordWithQuotes;
         const isQuoted = !!quoteChar;
-
         const isCompletingCommand = tokens.length === 0 || (tokens.length === 1 && !fullInput.substring(0, tokens[0].length).includes(' '));
-
         return {
             commandName,
             isCompletingCommand,
@@ -638,7 +632,7 @@ const TabCompletionManager = (() => {
                 suggestions = userNames
                     .filter((name) => name.toLowerCase().startsWith(currentWordPrefix.toLowerCase()))
                     .sort();
-            } else if (commandDefinition.pathValidation) {
+            } else if (commandDefinition.completionType === 'paths' || commandDefinition.pathValidation) { // THIS IS THE FIX
                 const lastSlashIndex = currentWordPrefix.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR);
                 const pathPrefixForFS = lastSlashIndex !== -1 ? currentWordPrefix.substring(0, lastSlashIndex + 1) : "";
                 const segmentToMatchForFS = lastSlashIndex !== -1 ? currentWordPrefix.substring(lastSlashIndex + 1) : currentWordPrefix;
@@ -735,7 +729,7 @@ const AppLayerManager = (() => {
     let appLayer = null;
     let terminalOutput = null;
     let terminalInputContainer = null;
-    let modalStack = []; // Our new, mindful stack
+    let modalStack = [];
 
     function _cacheDOM() {
         if (!appLayer) appLayer = document.getElementById('app-layer');
@@ -743,12 +737,10 @@ const AppLayerManager = (() => {
         if (!terminalInputContainer) terminalInputContainer = document.querySelector('.terminal__input-line');
     }
 
-    // Updates visibility based on the top of the stack
     function _updateVisibility() {
         _cacheDOM();
 
         if (modalStack.length === 0) {
-            // If stack is empty, hide the app layer and show terminal
             if(appLayer) appLayer.classList.add('hidden');
             if(terminalOutput) terminalOutput.classList.remove('hidden');
             if(terminalInputContainer) terminalInputContainer.classList.remove('hidden');
@@ -756,13 +748,11 @@ const AppLayerManager = (() => {
             OutputManager.setEditorActive(false);
             TerminalUI.focusInput();
         } else {
-            // Otherwise, show the app layer
             if (terminalOutput) terminalOutput.classList.add('hidden');
             if (terminalInputContainer) terminalInputContainer.classList.add('hidden');
             TerminalUI.setInputState(false);
             OutputManager.setEditorActive(true);
 
-            // Hide all modals except the top one
             modalStack.forEach((container, index) => {
                 const isTop = index === modalStack.length - 1;
                 container.classList.toggle('hidden', !isTop);
@@ -776,7 +766,6 @@ const AppLayerManager = (() => {
         _cacheDOM();
         if (!appLayer || !appContainerElement) return;
 
-        // Add the new modal to the stack
         if (!modalStack.includes(appContainerElement)) {
             modalStack.push(appContainerElement);
             appLayer.appendChild(appContainerElement);
@@ -788,7 +777,6 @@ const AppLayerManager = (() => {
     function hide() {
         if (modalStack.length === 0) return;
 
-        // Remove the top modal from the stack and the DOM
         const lastApp = modalStack.pop();
         if (lastApp && lastApp.parentNode) {
             lastApp.remove();
@@ -800,6 +788,6 @@ const AppLayerManager = (() => {
     return {
         show,
         hide,
-        isActive: () => modalStack.length > 0, // isActive is now determined by the stack
+        isActive: () => modalStack.length > 0,
     };
 })();

@@ -1,34 +1,39 @@
+// scripts/commands/ps.js
 (() => {
     "use strict";
 
     const psCommandDefinition = {
         commandName: "ps",
         argValidation: {
-            exact: 0, // This command takes no arguments.
+            exact: 0,
         },
 
         coreLogic: async () => {
-            const jobs = CommandExecutor.getActiveJobs();
-            const jobIds = Object.keys(jobs);
+            try {
+                const jobs = CommandExecutor.getActiveJobs();
+                const jobIds = Object.keys(jobs);
 
-            if (jobIds.length === 0) {
+                if (jobIds.length === 0) {
+                    return {
+                        success: true,
+                        output: "No active background jobs.",
+                    };
+                }
+
+                let outputLines = ["  PID   COMMAND"];
+
+                jobIds.forEach((id) => {
+                    const job = jobs[id];
+                    outputLines.push(`  ${String(id).padEnd(5)} ${job.command}`);
+                });
+
                 return {
                     success: true,
-                    output: "No active background jobs.",
+                    output: outputLines.join("\\n"),
                 };
+            } catch (e) {
+                return { success: false, error: `ps: An unexpected error occurred: ${e.message}` };
             }
-
-            let outputLines = ["  PID   COMMAND"];
-
-            jobIds.forEach((id) => {
-                const job = jobs[id];
-                outputLines.push(`  ${String(id).padEnd(5)} ${job.command}`);
-            });
-
-            return {
-                success: true,
-                output: outputLines.join("\n"),
-            };
         },
     };
 

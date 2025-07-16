@@ -1,8 +1,10 @@
+// scripts/commands/explore.js
 (() => {
     "use strict";
 
     const exploreCommandDefinition = {
         commandName: "explore",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             max: 1,
             error: "Usage: explore [path]",
@@ -11,33 +13,36 @@
         coreLogic: async (context) => {
             const { args, options } = context;
 
-            if (!options.isInteractive) {
+            try {
+                if (!options.isInteractive) {
+                    return {
+                        success: false,
+                        error: "explore: Can only be run in an interactive session.",
+                    };
+                }
+
+                if (typeof ExplorerManager === 'undefined') {
+                    return {
+                        success: false,
+                        error: "explore: Explorer application module is not loaded.",
+                    };
+                }
+
+                const startPath = args.length > 0 ? args[0] : null;
+
+                await ExplorerManager.enter(startPath);
+
                 return {
-                    success: false,
-                    error: "explore: Can only be run in an interactive session.",
+                    success: true,
+                    output: "Opening File Explorer..."
                 };
+            } catch(e) {
+                return { success: false, error: `explore: An unexpected error occurred: ${e.message}` };
             }
-
-            if (typeof ExplorerManager === 'undefined') {
-                return {
-                    success: false,
-                    error: "explore: Explorer application module is not loaded.",
-                };
-            }
-
-            const startPath = args.length > 0 ? args[0] : null;
-
-            ExplorerManager.enter(startPath);
-
-            return {
-                success: true,
-                output: "Opening File Explorer..."
-            };
         },
     };
 
     const exploreDescription = "Opens the graphical file explorer.";
-
     const exploreHelpText = `Usage: explore [path]
 
 Launches the graphical file explorer application.

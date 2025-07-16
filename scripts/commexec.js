@@ -17,10 +17,9 @@ const CommandExecutor = (() => {
   async function* _generateInputContent(context, firstFileArgIndex = 0) {
     const {args, options, currentUser} = context;
 
-    // CORRECTED LOGIC: Prioritize stdinContent as direct input.
     if (options.stdinContent !== null && options.stdinContent !== undefined) {
       yield {success: true, content: options.stdinContent, sourceName: 'stdin'};
-      return; // Stop further processing if we have piped input
+      return;
     }
 
     const fileArgs = args.slice(firstFileArgIndex);
@@ -29,7 +28,7 @@ const CommandExecutor = (() => {
     }
 
     for (const pathArg of fileArgs) {
-      const pathValidation = FileSystemManager.validatePath("input stream", pathArg, {expectedType: 'file'});
+      const pathValidation = FileSystemManager.validatePath(pathArg, {expectedType: 'file'});
       if (pathValidation.error) {
         yield {success: false, error: pathValidation.error, sourceName: pathArg};
         continue;
@@ -60,68 +59,11 @@ const CommandExecutor = (() => {
         }
       }
 
-      const validatedPaths = {};
-      if (definition.pathValidation) {
-        for (const pv of definition.pathValidation) {
-          const pathArg = remainingArgs[pv.argIndex];
-          if (pathArg === undefined) {
-            if (pv.optional) {
-              continue;
-            }
-            return {
-              success: false,
-              error: `${definition.commandName}: Missing expected path argument at index ${pv.argIndex}.`,
-            };
-          }
-          const pathValidationResult = FileSystemManager.validatePath(
-              definition.commandName || "command",
-              pathArg,
-              pv.options
-          );
-          if (pathValidationResult.error) {
-            if (!(pv.options.allowMissing && !pathValidationResult.node)) {
-              return {
-                success: false,
-                error: pathValidationResult.error,
-              };
-            }
-          }
-          validatedPaths[pv.argIndex] = pathValidationResult;
-        }
-      }
-
-      if (definition.permissionChecks) {
-        for (const pc of definition.permissionChecks) {
-          const validatedPath = validatedPaths[pc.pathArgIndex];
-          if (!validatedPath || !validatedPath.node) {
-            continue;
-          }
-
-          for (const perm of pc.permissions) {
-            if (
-                !FileSystemManager.hasPermission(
-                    validatedPath.node,
-                    currentUser,
-                    perm
-                )
-            ) {
-              return {
-                success: false,
-                error: `${definition.commandName || ""}: '${
-                    remainingArgs[pc.pathArgIndex]
-                }'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-              };
-            }
-          }
-        }
-      }
-
       const context = {
         args: remainingArgs,
         options,
         flags,
         currentUser,
-        validatedPaths,
         signal: options.signal,
       };
 
@@ -192,67 +134,6 @@ const CommandExecutor = (() => {
     return await loadingPromises[commandName];
   }
 
-  async function _expandGlobPatterns(commandString) {
-    const GLOB_WHITELIST = ['ls', 'rm', 'cat', 'cp', 'mv', 'chmod', 'chown', 'chgrp'];
-    const args = commandString.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
-
-    if (args.length === 0 || !GLOB_WHITELIST.includes(args[0])) {
-      return commandString;
-    }
-
-    const expandedArgs = [args[0]];
-    let hasExpansionOccurred = false;
-
-    for (let i = 1; i < args.length; i++) {
-      const originalArg = args[i];
-      const isQuoted = (originalArg.startsWith('"') && originalArg.endsWith('"')) || (originalArg.startsWith("'") && originalArg.endsWith("'"));
-
-      const globPattern = isQuoted ? originalArg.slice(1, -1) : originalArg;
-      const hasGlobChar = globPattern.includes('*') || globPattern.includes('?');
-
-      if (hasGlobChar) {
-        const lastSlashIndex = globPattern.lastIndexOf('/');
-        let pathPrefix = '.';
-        let patternPart = globPattern;
-
-        if (lastSlashIndex > -1) {
-          pathPrefix = globPattern.substring(0, lastSlashIndex + 1);
-          patternPart = globPattern.substring(lastSlashIndex + 1);
-        }
-
-        const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix, FileSystemManager.getCurrentPath());
-        const dirNode = FileSystemManager.getNodeByPath(searchDir);
-
-        if (dirNode && dirNode.type === 'directory') {
-          const regex = Utils.globToRegex(patternPart);
-          if (regex) {
-            const matches = Object.keys(dirNode.children)
-                .filter(name => regex.test(name))
-                .map(name => {
-                  const fullPath = FileSystemManager.getAbsolutePath(name, searchDir);
-                  return fullPath.includes(' ') ? `"${fullPath}"` : fullPath;
-                });
-
-            if (matches.length > 0) {
-              expandedArgs.push(...matches);
-              hasExpansionOccurred = true;
-            } else {
-              expandedArgs.push(originalArg);
-            }
-          } else {
-            expandedArgs.push(originalArg);
-          }
-        } else {
-          expandedArgs.push(originalArg);
-        }
-      } else {
-        expandedArgs.push(originalArg);
-      }
-    }
-
-    return hasExpansionOccurred ? expandedArgs.join(' ') : commandString;
-  }
-
   function getActiveJobs() {
     return activeJobs;
   }
@@ -262,7 +143,7 @@ const CommandExecutor = (() => {
     if (job && job.abortController) {
       job.abortController.abort("Killed by user command.");
       if (job.promise) {
-        await job.promise.catch(() => {}); // Wait for the job to fully terminate
+        await job.promise.catch(() => {});
       }
       MessageBusManager.unregisterJob(jobId);
       delete activeJobs[jobId];
@@ -298,9 +179,7 @@ const CommandExecutor = (() => {
         console.error(`Error in command handler for '${segment.command}':`, e);
         return {
           success: false,
-          error: `Command '${segment.command}' failed: ${
-              e.message || "Unknown error"
-          }`,
+          error: `${segment.command}: ${e.message || "Unknown error"}`,
         };
       }
     } else if (segment.command) {
@@ -321,7 +200,7 @@ const CommandExecutor = (() => {
       output: "",
     };
     if (pipeline.inputRedirectFile) {
-      const pathValidation = FileSystemManager.validatePath("input redirection", pipeline.inputRedirectFile, {expectedType: 'file'});
+      const pathValidation = FileSystemManager.validatePath(pipeline.inputRedirectFile, {expectedType: 'file'});
       if (pathValidation.error) {
         return { success: false, error: pathValidation.error };
       }
@@ -390,8 +269,9 @@ const CommandExecutor = (() => {
     if (pipeline.redirection && lastResult.success) {
       const { type: redirType, file: redirFile } = pipeline.redirection;
       const outputToRedir = lastResult.output || "";
+
+      // THIS IS THE CORRECTED CALL
       const redirVal = FileSystemManager.validatePath(
-          "redirection",
           redirFile,
           {
             allowMissing: true,
@@ -399,6 +279,7 @@ const CommandExecutor = (() => {
             defaultToCurrentIfEmpty: false,
           }
       );
+
       if (
           redirVal.error &&
           !(redirVal.optionsUsed.allowMissing && !redirVal.node)
@@ -566,6 +447,10 @@ const CommandExecutor = (() => {
         }
       } else {
         if (lastResult.output && !suppressOutput) {
+          // Fix for incorrect newline characters
+          if (typeof lastResult.output === 'string') {
+            lastResult.output = lastResult.output.replace(/\\n/g, '\n');
+          }
           await OutputManager.appendToOutput(lastResult.output, {
             typeClass: lastResult.messageType || null,
           });
@@ -575,25 +460,94 @@ const CommandExecutor = (() => {
     return lastResult;
   }
 
-  async function _preprocessCommandString(rawCommandText) {
-    let expandedCommand = rawCommandText.trim();
-    if (!expandedCommand) {
+  // This function is now enhanced to handle script arguments.
+  async function _preprocessCommandString(rawCommandText, scriptingContext = null) {
+    let commandToProcess = rawCommandText.trim();
+
+    const commentIndex = commandToProcess.search(/(?<= )#/);
+    if (commentIndex > -1) {
+      commandToProcess = commandToProcess.substring(0, commentIndex).trim();
+    }
+
+    if (!commandToProcess) {
       return "";
     }
 
-    expandedCommand = expandedCommand.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
+    if (scriptingContext && scriptingContext.args) {
+      const scriptArgs = scriptingContext.args;
+      commandToProcess = commandToProcess.replace(/\$@/g, scriptArgs.join(' '));
+      commandToProcess = commandToProcess.replace(/\$#/g, scriptArgs.length);
+      scriptArgs.forEach((arg, i) => {
+        const regex = new RegExp(`\\$${i + 1}`, 'g');
+        commandToProcess = commandToProcess.replace(regex, arg);
+      });
+    }
+
+    commandToProcess = commandToProcess.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
       const varName = var1 || var2;
       return EnvironmentManager.get(varName);
     });
 
-    const aliasResult = AliasManager.resolveAlias(expandedCommand);
+    const aliasResult = AliasManager.resolveAlias(commandToProcess);
     if (aliasResult.error) {
       throw new Error(aliasResult.error);
     }
     const commandAfterAliases = aliasResult.newCommand;
 
-    const commandToParse = await _expandGlobPatterns(commandAfterAliases);
-    return commandToParse;
+    const args = commandAfterAliases.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+    const expandedArgs = [];
+    if (args.length > 0) {
+      expandedArgs.push(args[0]);
+    }
+    let hasExpansionOccurred = false;
+
+    for (let i = 1; i < args.length; i++) {
+      const originalArg = args[i];
+      const isQuoted = (originalArg.startsWith('"') && originalArg.endsWith('"')) || (originalArg.startsWith("'") && originalArg.endsWith("'"));
+      const globPattern = isQuoted ? originalArg.slice(1, -1) : originalArg;
+      const hasGlobChar = globPattern.includes('*') || globPattern.includes('?');
+
+      if (hasGlobChar && !isQuoted) {
+        const lastSlashIndex = globPattern.lastIndexOf('/');
+        let pathPrefix = '.';
+        let patternPart = globPattern;
+
+        if (lastSlashIndex > -1) {
+          pathPrefix = globPattern.substring(0, lastSlashIndex + 1);
+          patternPart = globPattern.substring(lastSlashIndex + 1);
+        }
+
+        const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix, FileSystemManager.getCurrentPath());
+        const dirNode = FileSystemManager.getNodeByPath(searchDir);
+
+        if (dirNode && dirNode.type === 'directory') {
+          const regex = Utils.globToRegex(patternPart);
+          if (regex) {
+            const matches = Object.keys(dirNode.children)
+                .filter(name => regex.test(name))
+                .map(name => name.includes(' ') ? `"${name}"` : name);
+
+            if (matches.length > 0) {
+              expandedArgs.push(...matches);
+              hasExpansionOccurred = true;
+            } else {
+              // If no files match, push the original glob pattern.
+              // This mimics the shell behavior that causes ls to show an error,
+              // which is what your test script expects.
+              expandedArgs.push(originalArg);
+            }
+          } else {
+            expandedArgs.push(originalArg);
+          }
+        } else {
+          expandedArgs.push(originalArg);
+        }
+      } else {
+        expandedArgs.push(originalArg);
+      }
+    }
+    const finalCommandToParse = hasExpansionOccurred ? expandedArgs.join(' ') : commandAfterAliases;
+    return finalCommandToParse;
   }
 
   async function _finalizeInteractiveModeUI(originalCommandText) {
@@ -631,7 +585,8 @@ const CommandExecutor = (() => {
 
     let commandToParse;
     try {
-      commandToParse = await _preprocessCommandString(rawCommandText);
+      // Pass scripting context to preprocessing for argument expansion
+      commandToParse = await _preprocessCommandString(rawCommandText, scriptingContext);
     } catch (e) {
       await OutputManager.appendToOutput(e.message, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
       if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
@@ -639,7 +594,7 @@ const CommandExecutor = (() => {
     }
 
     const cmdToEcho = rawCommandText.trim();
-    if (isInteractive) {
+    if (isInteractive && !scriptingContext) { // Only echo for direct user commands
       DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
       const prompt = DOM.promptContainer.textContent;
       await OutputManager.appendToOutput(`${prompt}${cmdToEcho}`);
@@ -722,6 +677,7 @@ const CommandExecutor = (() => {
 
     return overallResult;
   }
+
 
   function getCommands() {
     return commands;

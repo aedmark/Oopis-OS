@@ -4,68 +4,66 @@
 
     const uniqCommandDefinition = {
         commandName: "uniq",
-        // isInputStream is removed.
+        completionType: "paths", // This was missing and is now restored.
+        isInputStream: true,
         flagDefinitions: [
             { name: "count", short: "-c", long: "--count" },
             { name: "repeated", short: "-d", long: "--repeated" },
             { name: "unique", short: "-u", long: "--unique" },
         ],
         coreLogic: async (context) => {
-            const {flags, args, options, currentUser } = context;
+            const { flags, inputItems, inputError } = context;
 
-            if (flags.repeated && flags.unique) {
-                return { success: false, error: "uniq: printing only unique and repeated lines is mutually exclusive"};
-            }
-
-            // Determine input source: file argument or piped stdin.
-            let inputText;
-            if (args.length > 0) {
-                const pathValidation = FileSystemManager.validatePath("uniq", args[0], { expectedType: 'file' });
-                if (pathValidation.error) {
-                    return { success: false, error: pathValidation.error };
+            try {
+                if (inputError) {
+                    return { success: false, error: "uniq: One or more input files could not be read." };
                 }
-                if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                    return { success: false, error: `uniq: cannot read file: ${args[0]}` };
+
+                if (flags.repeated && flags.unique) {
+                    return { success: false, error: "uniq: printing only unique and repeated lines is mutually exclusive" };
                 }
-                inputText = pathValidation.node.content || "";
-            } else if (options.stdinContent !== null && options.stdinContent !== undefined) {
-                inputText = options.stdinContent;
-            } else {
-                // If no file and no stdin, do nothing.
-                return { success: true, output: "" };
-            }
 
-            if (!inputText) {
-                return { success: true, output: "" };
-            }
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
+                }
 
-            let lines = inputText.split('\n');
-            // Gracefully handle empty input or input with only a trailing newline.
-            if (lines.length === 0 || (lines.length === 1 && lines[0] === '')) return {success: true, output: ""};
+                const inputText = inputItems.map(item => item.content).join('\\n');
+                if (!inputText) {
+                    return { success: true, output: "" };
+                }
 
-            const outputLines = [];
-            let currentLine = lines[0];
-            let count = 1;
+                let lines = inputText.split('\\n');
+                if (lines.length > 0 && lines[lines.length - 1] === '') {
+                    lines.pop();
+                }
 
-            // Process the lines as before.
-            for (let i = 1; i <= lines.length; i++) {
-                if (i < lines.length && lines[i] === currentLine) {
-                    count++;
-                } else {
-                    if (!flags.repeated && !flags.unique) {
-                        outputLines.push(flags.count ? `${String(count).padStart(7)} ${currentLine}` : currentLine);
-                    } else if (flags.repeated && count > 1) {
-                        outputLines.push(flags.count ? `${String(count).padStart(7)} ${currentLine}` : currentLine);
-                    } else if (flags.unique && count === 1) {
-                        outputLines.push(flags.count ? `${String(count).padStart(7)} ${currentLine}` : currentLine);
-                    }
-                    if (i < lines.length) {
-                        currentLine = lines[i];
-                        count = 1;
+                const outputLines = [];
+                if (lines.length > 0) {
+                    let currentLine = lines[0];
+                    let count = 1;
+
+                    for (let i = 1; i <= lines.length; i++) {
+                        if (i < lines.length && lines[i] === currentLine) {
+                            count++;
+                        } else {
+                            if (!flags.repeated && !flags.unique) {
+                                outputLines.push(flags.count ? `${String(count).padStart(7)} ${currentLine}` : currentLine);
+                            } else if (flags.repeated && count > 1) {
+                                outputLines.push(flags.count ? `${String(count).padStart(7)} ${currentLine}` : currentLine);
+                            } else if (flags.unique && count === 1) {
+                                outputLines.push(flags.count ? `${String(count).padStart(7)} ${currentLine}` : currentLine);
+                            }
+                            if (i < lines.length) {
+                                currentLine = lines[i];
+                                count = 1;
+                            }
+                        }
                     }
                 }
+                return { success: true, output: outputLines.join('\\n') };
+            } catch (e) {
+                return { success: false, error: `uniq: An unexpected error occurred: ${e.message}` };
             }
-            return {success: true, output: outputLines.join('\n')};
         }
     };
     const uniqDescription = "Reports or filters out repeated lines in a file.";

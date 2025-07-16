@@ -1,65 +1,61 @@
+// scripts/commands/chown.js
 (() => {
     "use strict";
 
     const chownCommandDefinition = {
         commandName: "chown",
-        completionType: "users",
+        completionType: "users", // Preserved for tab completion
         argValidation: {
             exact: 2,
             error: "Usage: chown <new_owner> <path>",
         },
-        pathValidation: [
-            {
-                argIndex: 1,
-            },
-        ],
-        permissionChecks: [],
-
         coreLogic: async (context) => {
-            const { args, currentUser, validatedPaths } = context;
+            const { args, currentUser } = context;
             const newOwnerArg = args[0];
             const pathArg = args[1];
-            const pathInfo = validatedPaths[1];
-            const node = pathInfo.node;
             const nowISO = new Date().toISOString();
 
-            if (!await UserManager.userExists(newOwnerArg) && newOwnerArg !== Config.USER.DEFAULT_NAME) {
-                return {
-                    success: false,
-                    error: `chown: user '${newOwnerArg}' does not exist.`,
-                };
-            }
+            try {
+                if (!await UserManager.userExists(newOwnerArg) && newOwnerArg !== Config.USER.DEFAULT_NAME) {
+                    return {
+                        success: false,
+                        error: `chown: user '${newOwnerArg}' does not exist.`,
+                    };
+                }
 
-            if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
-                return {
-                    success: false,
-                    error: `chown: changing ownership of '${pathArg}': Operation not permitted`,
-                };
-            }
+                const pathValidation = FileSystemManager.validatePath(pathArg);
+                if (pathValidation.error) {
+                    return { success: false, error: `chown: cannot access '${pathArg}': ${pathValidation.error}` };
+                }
+                const node = pathValidation.node;
 
-            node.owner = newOwnerArg;
-            node.mtime = nowISO;
-            FileSystemManager._updateNodeAndParentMtime(
-                pathInfo.resolvedPath,
-                nowISO
-            );
+                if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
+                    return {
+                        success: false,
+                        error: `chown: changing ownership of '${pathArg}': Operation not permitted`,
+                    };
+                }
 
-            if (!(await FileSystemManager.save(currentUser))) {
+                node.owner = newOwnerArg;
+                node.mtime = nowISO;
+
+                if (!(await FileSystemManager.save(currentUser))) {
+                    return {
+                        success: false,
+                        error: "chown: Failed to save file system changes.",
+                    };
+                }
                 return {
-                    success: false,
-                    error: "chown: Failed to save file system changes.",
+                    success: true,
+                    output: "", // No output on success
                 };
+            } catch (e) {
+                return { success: false, error: `chown: An unexpected error occurred: ${e.message}` };
             }
-            return {
-                success: true,
-                output: `Owner of '${pathArg}' changed to ${newOwnerArg}`,
-                messageType: Config.CSS_CLASSES.SUCCESS_MSG,
-            };
         },
     };
 
     const chownDescription = "Changes the user ownership of a file or directory.";
-
     const chownHelpText = `Usage: chown <owner> <path>
 
 Change the user ownership of a file or directory.

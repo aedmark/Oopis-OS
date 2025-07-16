@@ -1,3 +1,4 @@
+// scripts/commands/clear.js
 (() => {
     "use strict";
 
@@ -8,13 +9,17 @@
         },
 
         coreLogic: async (context) => {
-            if (context.options.isInteractive) {
-                OutputManager.clearOutput();
+            try {
+                if (context.options.isInteractive) {
+                    OutputManager.clearOutput();
+                }
+                return {
+                    success: true,
+                    output: "",
+                };
+            } catch (e) {
+                return { success: false, error: `clear: An unexpected error occurred: ${e.message}` };
             }
-            return {
-                success: true,
-                output: "",
-            };
         },
     };
 

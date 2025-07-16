@@ -1,45 +1,54 @@
+// scripts/commands/chgrp.js
 (() => {
     "use strict";
 
     const chgrpCommandDefinition = {
         commandName: "chgrp",
+        completionType: "groups", // Preserved for tab completion
         argValidation: { exact: 2, error: "Usage: chgrp <groupname> <path>" },
-        pathValidation: [{ argIndex: 1 }],
-
         coreLogic: async (context) => {
-            const { args, currentUser, validatedPaths } = context;
+            const { args, currentUser } = context;
             const groupName = args[0];
-            const pathInfo = validatedPaths[1];
-            const node = pathInfo.node;
+            const pathArg = args[1];
 
-            if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
-                return {
-                    success: false,
-                    error: `chgrp: changing group of '${pathInfo.resolvedPath}': Operation not permitted`,
-                };
-            }
-            if (!GroupManager.groupExists(groupName)) {
-                return {
-                    success: false,
-                    error: `chgrp: invalid group: '${groupName}'`,
-                };
-            }
+            try {
+                const pathValidation = FileSystemManager.validatePath(pathArg);
 
-            node.group = groupName;
-            node.mtime = new Date().toISOString();
-            if (!(await FileSystemManager.save())) {
-                return {
-                    success: false,
-                    error: "chgrp: Failed to save file system changes.",
-                };
-            }
+                if (pathValidation.error) {
+                    return { success: false, error: `chgrp: cannot access '${pathArg}': ${pathValidation.error}` };
+                }
+                const node = pathValidation.node;
 
-            return { success: true, output: "" };
+                if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
+                    return {
+                        success: false,
+                        error: `chgrp: changing group of '${pathArg}': Operation not permitted`,
+                    };
+                }
+                if (!GroupManager.groupExists(groupName)) {
+                    return {
+                        success: false,
+                        error: `chgrp: invalid group: '${groupName}'`,
+                    };
+                }
+
+                node.group = groupName;
+                node.mtime = new Date().toISOString();
+                if (!(await FileSystemManager.save())) {
+                    return {
+                        success: false,
+                        error: "chgrp: Failed to save file system changes.",
+                    };
+                }
+
+                return { success: true, output: "" };
+            } catch (e) {
+                return { success: false, error: `chgrp: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 
     const chgrpDescription = "Changes the group ownership of a file or directory.";
-
     const chgrpHelpText = `Usage: chgrp <group> <path>
 
 Change the group ownership of a file or directory.

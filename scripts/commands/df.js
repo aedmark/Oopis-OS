@@ -1,3 +1,4 @@
+// scripts/commands/df.js
 (() => {
     "use strict";
 
@@ -12,28 +13,32 @@
         coreLogic: async (context) => {
             const { flags } = context;
 
-            const totalSize = Config.FILESYSTEM.MAX_VFS_SIZE;
-            const rootNode = FileSystemManager.getNodeByPath('/');
-            const usedSize = FileSystemManager.calculateNodeSize(rootNode);
-            const availableSize = totalSize - usedSize;
-            const usePercentage = totalSize > 0 ? Math.round((usedSize / totalSize) * 100) : 0;
+            try {
+                const totalSize = Config.FILESYSTEM.MAX_VFS_SIZE;
+                const rootNode = FileSystemManager.getNodeByPath('/');
+                const usedSize = FileSystemManager.calculateNodeSize(rootNode);
+                const availableSize = totalSize - usedSize;
+                const usePercentage = totalSize > 0 ? Math.round((usedSize / totalSize) * 100) : 0;
 
-            const format = flags.humanReadable ? Utils.formatBytes : (bytes) => bytes;
+                const format = flags.humanReadable ? Utils.formatBytes : (bytes) => bytes;
 
-            const header = "Filesystem      Size      Used     Avail   Use%  Mounted on";
-            const separator = "----------  --------  --------  --------  ----  ----------";
-            const data = [
-                "OopisVFS".padEnd(10),
-                String(format(totalSize)).padStart(8),
-                String(format(usedSize)).padStart(8),
-                String(format(availableSize)).padStart(8),
-                `${usePercentage}%`.padStart(4),
-                "/".padEnd(10)
-            ].join("  ");
+                const header = "Filesystem      Size      Used     Avail   Use%  Mounted on";
+                const separator = "----------  --------  --------  --------  ----  ----------";
+                const data = [
+                    "OopisVFS".padEnd(10),
+                    String(format(totalSize)).padStart(8),
+                    String(format(usedSize)).padStart(8),
+                    String(format(availableSize)).padStart(8),
+                    `${usePercentage}%`.padStart(4),
+                    "/".padEnd(10)
+                ].join("  ");
 
-            const output = [header, separator, data].join('\n');
+                const output = [header, separator, data].join('\\n');
 
-            return { success: true, output: output };
+                return { success: true, output: output };
+            } catch (e) {
+                return { success: false, error: `df: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 

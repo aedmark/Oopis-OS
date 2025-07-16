@@ -1,3 +1,4 @@
+// scripts/commands/head.js
 (() => {
     "use strict";
 
@@ -9,47 +10,52 @@
             { name: "bytes", short: "-c", long: "--bytes", takesValue: true },
         ],
         coreLogic: async (context) => {
-            const {flags, inputItems, inputError} = context; // Now uses inputItems
+            const { flags, inputItems, inputError } = context;
 
-            if (inputError) {
-                return {success: false, error: "head: No readable input provided."};
-            }
-            const input = inputItems.map(item => item.content).join('\n');
-
-            if (flags.lines && flags.bytes) {
-                return { success: false, error: "head: cannot use both -n and -c" };
-            }
-
-            if (input === null) {
-                return {success: false, error: "head: No readable input provided."};
-            }
-
-            let lineCount = 10;
-            if (flags.lines) {
-                const linesResult = Utils.parseNumericArg(flags.lines, { allowFloat: false, allowNegative: false });
-                if (linesResult.error) {
-                    return { success: false, error: `head: invalid number of lines: '${flags.lines}'` };
+            try {
+                if (inputError) {
+                    return { success: false, error: "head: No readable input provided or permission denied." };
                 }
-                lineCount = linesResult.value;
-            }
 
-            let byteCount = null;
-            if (flags.bytes) {
-                const bytesResult = Utils.parseNumericArg(flags.bytes, { allowFloat: false, allowNegative: false });
-                if (bytesResult.error) {
-                    return { success: false, error: `head: invalid number of bytes: '${flags.bytes}'` };
+                if (!inputItems || inputItems.length === 0) {
+                    return { success: true, output: "" };
                 }
-                byteCount = bytesResult.value;
-            }
 
-            let output;
-            if (byteCount !== null) {
-                output = input.substring(0, byteCount);
-            } else {
-                output = input.split('\n').slice(0, lineCount).join('\n');
-            }
+                if (flags.lines && flags.bytes) {
+                    return { success: false, error: "head: cannot use both -n and -c" };
+                }
 
-            return {success: true, output: output};
+                const input = inputItems.map(item => item.content).join('\\n');
+
+                let lineCount = 10;
+                if (flags.lines) {
+                    const linesResult = Utils.parseNumericArg(flags.lines, { allowFloat: false, allowNegative: false });
+                    if (linesResult.error) {
+                        return { success: false, error: `head: invalid number of lines: '${flags.lines}'` };
+                    }
+                    lineCount = linesResult.value;
+                }
+
+                let byteCount = null;
+                if (flags.bytes) {
+                    const bytesResult = Utils.parseNumericArg(flags.bytes, { allowFloat: false, allowNegative: false });
+                    if (bytesResult.error) {
+                        return { success: false, error: `head: invalid number of bytes: '${flags.bytes}'` };
+                    }
+                    byteCount = bytesResult.value;
+                }
+
+                let output;
+                if (byteCount !== null) {
+                    output = input.substring(0, byteCount);
+                } else {
+                    output = input.split('\\n').slice(0, lineCount).join('\\n');
+                }
+
+                return { success: true, output: output };
+            } catch (e) {
+                return { success: false, error: `head: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 

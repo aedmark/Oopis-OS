@@ -1,4 +1,4 @@
-// lexpar.js - OopisOS Lexer/Parser Logic
+// lexpar.js - OopisOS Lexer/Parser Logic (Corrected)
 
 const TokenType = {
   WORD: "WORD",
@@ -6,7 +6,7 @@ const TokenType = {
   STRING_SQ: "STRING_SQ",
   OPERATOR_GT: "OPERATOR_GT", // >
   OPERATOR_GTGT: "OPERATOR_GTGT", // >>
-  OPERATOR_LT: "OPERATOR_LT", // < (NEW)
+  OPERATOR_LT: "OPERATOR_LT", // <
   OPERATOR_PIPE: "OPERATOR_PIPE",
   OPERATOR_SEMICOLON: "OPERATOR_SEMICOLON",
   OPERATOR_BG: "OPERATOR_BG",
@@ -16,7 +16,6 @@ const TokenType = {
 };
 
 class Token {
-
   constructor(type, value, position) {
     this.type = type;
     this.value = value;
@@ -25,7 +24,6 @@ class Token {
 }
 
 class Lexer {
-
   constructor(input) {
     this.input = input;
     this.position = 0;
@@ -33,7 +31,7 @@ class Lexer {
   }
 
   tokenize() {
-    const specialChars = ['"', "'", ">", "<", "|", "&", ";"]; // ADDED '<'
+    const specialChars = ['"', "'", ">", "<", "|", "&", ";"];
     while (this.position < this.input.length) {
       let char = this.input[this.position];
       if (/\s/.test(char)) {
@@ -88,25 +86,35 @@ class Lexer {
         }
         continue;
       }
+
+      // *** CORRECTED WORD TOKENIZATION LOGIC ***
       let value = "";
       const startPos = this.position;
       while (this.position < this.input.length) {
-        char = this.input[this.position];
-        if (char === '\\') {
-          this.position++;
+        let innerChar = this.input[this.position];
+
+        if (innerChar === '\\') {
+          // Handle escaped characters
+          this.position++; // Move past the backslash
           if (this.position < this.input.length) {
-            value += this.input[this.position];
+            value += this.input[this.position]; // Add the escaped character literally
             this.position++;
           } else {
-            value += '\\';
+            value += '\\'; // Dangling backslash at the end
           }
-        } else if (/\s/.test(char) || specialChars.includes(char)) {
-          break;
-        } else {
-          value += char;
-          this.position++;
+          continue; // Continue the loop to process the next character
         }
+
+        // Check for terminators for an unquoted word
+        if (/\s/.test(innerChar) || specialChars.includes(innerChar)) {
+          break; // End of the word
+        }
+
+        // Regular character
+        value += innerChar;
+        this.position++;
       }
+
       if (value) {
         this.tokens.push(new Token(TokenType.WORD, value, startPos));
       } else if (this.position < this.input.length && !specialChars.includes(this.input[this.position]) && !/\s/.test(this.input[this.position])) {
@@ -120,21 +128,16 @@ class Lexer {
   _tokenizeString(quoteChar) {
     const startPos = this.position;
     let value = "";
-    this.position++;
+    this.position++; // Move past the opening quote
     while (this.position < this.input.length) {
       let char = this.input[this.position];
       if (char === '\\') {
-        this.position++;
+        this.position++; // Consume the backslash
         if (this.position < this.input.length) {
-          let nextChar = this.input[this.position];
-          if (nextChar === quoteChar || nextChar === '\\') {
-            value += nextChar;
-          } else {
-            value += '\\' + nextChar;
-          }
+          value += this.input[this.position];
           this.position++;
         } else {
-          value += '\\';
+          value += '\\'; // Append dangling backslash at the end of input
         }
       } else if (char === quoteChar) {
         this.position++;
@@ -144,10 +147,10 @@ class Lexer {
         this.position++;
       }
     }
+    // If the loop finishes, the string was not closed.
     throw new Error(`Lexer Error: Unclosed string literal starting at position ${startPos}. Expected closing ${quoteChar}.`);
   }
 }
-
 class ParsedCommandSegment {
   constructor(command, args) {
     this.command = command;

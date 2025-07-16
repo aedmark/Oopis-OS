@@ -1,3 +1,4 @@
+// scripts/commands/groupadd.js
 (() => {
     "use strict";
 
@@ -8,25 +9,28 @@
             const { args, currentUser } = context;
             const groupName = args[0];
 
-            if (currentUser !== "root") {
-                return { success: false, error: "groupadd: only root can add groups." };
+            try {
+                if (currentUser !== "root") {
+                    return { success: false, error: "groupadd: only root can add groups." };
+                }
+
+                if (GroupManager.groupExists(groupName)) {
+                    return {
+                        success: false,
+                        error: `groupadd: group '${groupName}' already exists.`,
+                    };
+                }
+
+                GroupManager.createGroup(groupName);
+
+                return { success: true, output: `Group '${groupName}' created.` };
+            } catch (e) {
+                return { success: false, error: `groupadd: An unexpected error occurred: ${e.message}` };
             }
-
-            if (GroupManager.groupExists(groupName)) {
-                return {
-                    success: false,
-                    error: `groupadd: group '${groupName}' already exists.`,
-                };
-            }
-
-            GroupManager.createGroup(groupName);
-
-            return { success: true, output: `Group '${groupName}' created.` };
         },
     };
 
     const groupaddDescription = "Creates a new user group.";
-
     const groupaddHelpText = `Usage: groupadd <groupname>
 
 Create a new user group.

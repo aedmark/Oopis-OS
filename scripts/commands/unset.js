@@ -1,3 +1,4 @@
+// scripts/commands/unset.js
 (() => {
     "use strict";
 
@@ -5,8 +6,12 @@
         commandName: "unset",
         argValidation: { min: 1, error: "Usage: unset <variable_name>..." },
         coreLogic: async (context) => {
-            context.args.forEach(varName => EnvironmentManager.unset(varName));
-            return { success: true };
+            try {
+                context.args.forEach(varName => EnvironmentManager.unset(varName));
+                return { success: true };
+            } catch (e) {
+                return { success: false, error: `unset: An unexpected error occurred: ${e.message}` };
+            }
         }
     };
 

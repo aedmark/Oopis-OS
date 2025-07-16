@@ -1,3 +1,4 @@
+// scripts/commands/unzip.js
 (() => {
     "use strict";
 
@@ -58,71 +59,77 @@
 
     const unzipCommandDefinition = {
         commandName: "unzip",
+        completionType: "paths", // Preserved for tab completion.
         argValidation: {
             min: 1,
             max: 2,
             error: "Usage: unzip <archive.zip> [destination_path]"
         },
-        pathValidation: [{
-            argIndex: 0,
-            options: { expectedType: 'file' }
-        }],
         coreLogic: async (context) => {
-            const { args, currentUser, validatedPaths } = context;
+            const { args, currentUser } = context;
             const archivePathArg = args[0];
             const destinationPathArg = args.length > 1 ? args[1] : '.';
 
-            if (!archivePathArg.endsWith('.zip')) {
-                return { success: false, error: `unzip: invalid file extension for '${archivePathArg}'. Must be .zip` };
-            }
-
-            const archiveNode = validatedPaths[0].node;
-            let archiveContent;
             try {
-                archiveContent = JSON.parse(archiveNode.content);
-            } catch (e) {
-                return { success: false, error: `unzip: Archive is corrupted or not a valid .zip file.` };
-            }
-
-            const destValidation = FileSystemManager.validatePath("unzip", destinationPathArg, {
-                allowMissing: true
-            });
-
-            if (destValidation.error && !(destValidation.optionsUsed.allowMissing && !destValidation.node)) {
-                return { success: false, error: destValidation.error };
-            }
-
-            if (destValidation.node && destValidation.node.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
-                return { success: false, error: `unzip: destination '${destinationPathArg}' is not a directory.`};
-            }
-
-            const resolvedDestPath = destValidation.resolvedPath;
-
-            if (!destValidation.node) {
-                const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${resolvedDestPath}"`, { isInteractive: false });
-                if (!mkdirResult.success) {
-                    return { success: false, error: `unzip: could not create destination directory: ${mkdirResult.error}` };
+                if (!archivePathArg.endsWith('.zip')) {
+                    return { success: false, error: `unzip: invalid file extension for '${archivePathArg}'. Must be .zip` };
                 }
+
+                const archiveValidation = FileSystemManager.validatePath(archivePathArg, {
+                    expectedType: 'file',
+                    permissions: ['read']
+                });
+                if (archiveValidation.error) {
+                    return { success: false, error: `unzip: ${archiveValidation.error}` };
+                }
+                const archiveNode = archiveValidation.node;
+
+                let archiveContent;
+                try {
+                    archiveContent = JSON.parse(archiveNode.content);
+                } catch (e) {
+                    return { success: false, error: `unzip: Archive is corrupted or not a valid .zip file.` };
+                }
+
+                const destValidation = FileSystemManager.validatePath(destinationPathArg, {
+                    allowMissing: true,
+                    expectedType: 'directory'
+                });
+
+                if (destValidation.error && !(destValidation.node === null && destValidation.error.includes("No such file or directory"))) {
+                    return { success: false, error: `unzip: ${destValidation.error}` };
+                }
+
+                const resolvedDestPath = destValidation.resolvedPath;
+
+                if (!destValidation.node) {
+                    const mkdirResult = await CommandExecutor.processSingleCommand(`mkdir -p "${resolvedDestPath}"`, { isInteractive: false });
+                    if (!mkdirResult.success) {
+                        return { success: false, error: `unzip: could not create destination directory: ${mkdirResult.error}` };
+                    }
+                }
+
+                await OutputManager.appendToOutput(`Extracting archive '${archivePathArg}'...`);
+
+                const extractionContext = {
+                    currentUser,
+                    primaryGroup: UserManager.getPrimaryGroupForUser(currentUser)
+                };
+
+                const extractResult = await _performExtraction(archiveContent, resolvedDestPath, extractionContext);
+
+                if (!extractResult.success) {
+                    return { success: false, error: `unzip: extraction failed. ${extractResult.error}` };
+                }
+
+                if (!(await FileSystemManager.save())) {
+                    return { success: false, error: "unzip: Failed to save file system changes." };
+                }
+
+                return { success: true, output: `Archive '${archivePathArg}' successfully extracted to '${resolvedDestPath}'.` };
+            } catch (e) {
+                return { success: false, error: `unzip: An unexpected error occurred: ${e.message}` };
             }
-
-            await OutputManager.appendToOutput(`Extracting archive '${archivePathArg}'...`);
-
-            const extractionContext = {
-                currentUser,
-                primaryGroup: UserManager.getPrimaryGroupForUser(currentUser)
-            };
-
-            const extractResult = await _performExtraction(archiveContent, resolvedDestPath, extractionContext);
-
-            if (!extractResult.success) {
-                return { success: false, error: `unzip: extraction failed. ${extractResult.error}` };
-            }
-
-            if (!(await FileSystemManager.save())) {
-                return { success: false, error: "unzip: Failed to save file system changes." };
-            }
-
-            return { success: true, output: `Archive '${archivePathArg}' successfully extracted to '${resolvedDestPath}'.` };
         }
     };
 

@@ -1,49 +1,33 @@
-/**
- * @file Defines the 'export' command, which enables downloading a file from the OopisOS virtual
- * file system to the user's local machine via the browser's download mechanism.
- * @author Andrew Edmark
- * @author Gemini
- */
-
+// scripts/commands/export.js
 (() => {
     "use strict";
 
-    /**
-     * @const {object} exportCommandDefinition
-     * @description The command definition for the 'export' command.
-     * This object specifies the command's name, argument validation (expecting one file path),
-     * path validation (ensuring it's a file), required read permissions, and the core logic
-     * for initiating the file download.
-     */
     const exportCommandDefinition = {
         commandName: "export",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             exact: 1,
             error: "expects exactly one file path.",
         },
-        pathValidation: [
-            {
-                argIndex: 0,
-                options: {
-                    expectedType: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-                },
-            },
-        ],
-        permissionChecks: [
-            {
-                pathArgIndex: 0,
-                permissions: ["read"],
-            },
-        ],
-
         coreLogic: async (context) => {
-            const pathInfo = context.validatedPaths[0];
-            const fileNode = pathInfo.node;
-            const fileName = pathInfo.resolvedPath.substring(
-                pathInfo.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
-            );
+            const { args } = context;
+            const pathArg = args[0];
 
             try {
+                const pathValidation = FileSystemManager.validatePath(pathArg, {
+                    expectedType: 'file',
+                    permissions: ['read']
+                });
+
+                if (pathValidation.error) {
+                    return { success: false, error: `export: ${pathValidation.error.replace(pathArg + ':', '').trim()}` };
+                }
+
+                const fileNode = pathValidation.node;
+                const fileName = pathValidation.resolvedPath.substring(
+                    pathValidation.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+                );
+
                 const blob = new Blob([fileNode.content || ""], {
                     type: "text/plain;charset=utf-8",
                 });
@@ -63,19 +47,17 @@
                 return {
                     success: true,
                     output: `${Config.MESSAGES.EXPORTING_PREFIX}${fileName}${Config.MESSAGES.EXPORTING_SUFFIX}`,
-                    messageType: Config.CSS_CLASSES.SUCCESS_MSG,
                 };
             } catch (e) {
                 return {
                     success: false,
-                    error: `export: Failed to download '${fileName}': ${e.message}`,
+                    error: `export: Failed to download file: ${e.message}`,
                 };
             }
         },
     };
 
     const exportDescription = "Downloads a file from OopisOS to your local machine.";
-
     const exportHelpText = `Usage: export <file_path>
 
 Download a file from OopisOS to your local machine.

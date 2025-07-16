@@ -1,54 +1,52 @@
+// scripts/commands/cd.js
 (() => {
     "use strict";
 
     const cdCommandDefinition = {
         commandName: "cd",
+        completionType: "paths", // Preserved for tab completion
         argValidation: {
             exact: 1,
             error: "incorrect number of arguments",
         },
-        pathValidation: [
-            {
-                argIndex: 0,
-                options: {
-                    expectedType: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-                },
-            },
-        ],
-        permissionChecks: [
-            {
-                pathArgIndex: 0,
-                permissions: ["execute"],
-            },
-        ],
-
         coreLogic: async (context) => {
-            const {options} = context;
-            const pathInfo = context.validatedPaths[0];
+            const { args, currentUser, options } = context;
+            const pathArg = args[0];
 
-            if (FileSystemManager.getCurrentPath() === pathInfo.resolvedPath) {
+            try {
+                const pathValidation = FileSystemManager.validatePath(pathArg, {
+                    expectedType: 'directory',
+                    permissions: ['execute']
+                });
+
+                if (pathValidation.error) {
+                    return { success: false, error: `cd: ${pathValidation.error.replace(pathArg + ':', '').trim()}` };
+                }
+
+                if (FileSystemManager.getCurrentPath() === pathValidation.resolvedPath) {
+                    return {
+                        success: true,
+                        output: "", // No output on success
+                    };
+                }
+
+                FileSystemManager.setCurrentPath(pathValidation.resolvedPath);
+
+                if (options.isInteractive) {
+                    TerminalUI.updatePrompt();
+                }
+
                 return {
                     success: true,
-                    output: `${Config.MESSAGES.ALREADY_IN_DIRECTORY_PREFIX}${pathInfo.resolvedPath}${Config.MESSAGES.ALREADY_IN_DIRECTORY_SUFFIX} ${Config.MESSAGES.NO_ACTION_TAKEN}`,
-                    messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
+                    output: "",
                 };
+            } catch (e) {
+                return { success: false, error: `cd: An unexpected error occurred: ${e.message}` };
             }
-
-            FileSystemManager.setCurrentPath(pathInfo.resolvedPath);
-
-            if (options.isInteractive) {
-                TerminalUI.updatePrompt();
-            }
-
-            return {
-                success: true,
-                output: "",
-            };
         },
     };
 
     const cdDescription = "Changes the current working directory.";
-
     const cdHelpText = `Usage: cd <directory>
 
 Change the current working directory.

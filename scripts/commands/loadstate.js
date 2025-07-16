@@ -1,3 +1,4 @@
+// scripts/commands/loadstate.js
 (() => {
     "use strict";
 
@@ -8,18 +9,18 @@
         },
 
         coreLogic: async () => {
-
-            const result = await SessionManager.loadManualState();
-            return {
-                success: result.success,
-                output: result.message,
-                error: result.success
-                    ? undefined
-                    : result.message || "Failed to load state.",
-                messageType: result.success
-                    ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
-                    : Config.CSS_CLASSES.ERROR_MSG,
-            };
+            try {
+                const result = await SessionManager.loadManualState();
+                return {
+                    success: result.success,
+                    output: result.message,
+                    error: result.success
+                        ? undefined
+                        : result.message || "Failed to load state.",
+                };
+            } catch (e) {
+                return { success: false, error: `loadstate: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 

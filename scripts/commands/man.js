@@ -1,3 +1,4 @@
+// scripts/commands/man.js
 (() => {
     "use strict";
 
@@ -15,17 +16,17 @@
         output.push(`       ${commandName} - ${description}`);
         output.push("");
 
-        const helpLines = helpText.split('\n');
+        const helpLines = helpText.split('\\n');
         const synopsisLine = helpLines.find(line => line.trim().toLowerCase().startsWith('usage:'));
         const synopsis = synopsisLine || `       Usage: ${commandName} [options]`;
         output.push("SYNOPSIS");
         output.push(`       ${synopsis.replace("Usage: ", "")}`);
         output.push("");
 
-        const descriptionText = helpLines.slice(synopsisLine ? 1 : 0).join('\n').trim();
+        const descriptionText = helpLines.slice(synopsisLine ? 1 : 0).join('\\n').trim();
         if (descriptionText) {
             output.push("DESCRIPTION");
-            descriptionText.split('\n').forEach(line => {
+            descriptionText.split('\\n').forEach(line => {
                 output.push(`       ${line}`);
             });
             output.push("");
@@ -49,12 +50,12 @@
             output.push("");
         }
 
-        return output.join('\n');
+        return output.join('\\n');
     }
 
     const manCommandDefinition = {
         commandName: "man",
-        completionType: "commands",
+        completionType: "commands", // Preserved for tab completion
         argValidation: {
             exact: 1,
             error: "what manual page do you want?",
@@ -63,31 +64,35 @@
             const { args } = context;
             const commandName = args[0];
 
-            const isLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
+            try {
+                const isLoaded = await CommandExecutor._ensureCommandLoaded(commandName);
 
-            if (!isLoaded) {
+                if (!isLoaded) {
+                    return {
+                        success: false,
+                        error: `No manual entry for ${commandName}`,
+                    };
+                }
+
+                const allCommands = CommandRegistry.getDefinitions();
+                const commandData = allCommands[commandName];
+
+                if (!commandData) {
+                    return {
+                        success: false,
+                        error: `No manual entry for ${commandName}`,
+                    };
+                }
+
+                const manPage = formatManPage(commandName, commandData);
+
                 return {
-                    success: false,
-                    error: `No manual entry for ${commandName}`,
+                    success: true,
+                    output: manPage,
                 };
+            } catch (e) {
+                return { success: false, error: `man: An unexpected error occurred: ${e.message}` };
             }
-
-            const allCommands = CommandRegistry.getDefinitions();
-            const commandData = allCommands[commandName];
-
-            if (!commandData) {
-                return {
-                    success: false,
-                    error: `No manual entry for ${commandName}`,
-                };
-            }
-
-            const manPage = formatManPage(commandName, commandData);
-
-            return {
-                success: true,
-                output: manPage,
-            };
         },
     };
 

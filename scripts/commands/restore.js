@@ -1,3 +1,4 @@
+// scripts/commands/restore.js
 (() => {
     "use strict";
 
@@ -8,37 +9,38 @@
         },
         coreLogic: async (context) => {
             const { options } = context;
-            if (!options.isInteractive) {
-                return { success: false, error: "restore: Can only be run in interactive mode." };
-            }
 
-            let fileContent;
-            let fileName;
-
-            if (window.electronAPI && typeof window.electronAPI.showOpenDialog === 'function') {
-                const filePath = await window.electronAPI.showOpenDialog({
-                    title: 'Select OopisOS Backup File',
-                    properties: ['openFile'],
-                    filters: [{ name: 'OopisOS Backups', extensions: ['json'] }]
-                });
-
-                if (filePath) {
-                    const readResult = await CommandExecutor.processSingleCommand(`cat "${filePath}"`, { isInteractive: false });
-                    if (!readResult.success) {
-                        return { success: false, error: `restore: Could not read file '${filePath}': ${readResult.error}` };
-                    }
-                    fileContent = readResult.output;
-                    fileName = filePath.split(/[\\\/]/).pop();
-                } else {
-                    return { success: false, error: `restore: ${Config.MESSAGES.RESTORE_CANCELLED_NO_FILE}` };
+            try {
+                if (!options.isInteractive) {
+                    return { success: false, error: "restore: Can only be run in interactive mode." };
                 }
-            }
-            else {
-                const input = Utils.createElement("input", { type: "file", accept: ".json" });
-                input.style.display = "none";
-                document.body.appendChild(input);
 
-                try {
+                let fileContent;
+                let fileName;
+
+                if (window.electronAPI && typeof window.electronAPI.showOpenDialog === 'function') {
+                    const filePath = await window.electronAPI.showOpenDialog({
+                        title: 'Select OopisOS Backup File',
+                        properties: ['openFile'],
+                        filters: [{ name: 'OopisOS Backups', extensions: ['json'] }]
+                    });
+
+                    if (filePath) {
+                        const readResult = await CommandExecutor.processSingleCommand(`cat "${filePath}"`, { isInteractive: false });
+                        if (!readResult.success) {
+                            return { success: false, error: `restore: Could not read file '${filePath}': ${readResult.error}` };
+                        }
+                        fileContent = readResult.output;
+                        fileName = filePath.split(/[\\\\/]/).pop();
+                    } else {
+                        return { success: true, output: Config.MESSAGES.RESTORE_CANCELLED_NO_FILE };
+                    }
+                }
+                else {
+                    const input = Utils.createElement("input", { type: "file", accept: ".json" });
+                    input.style.display = "none";
+                    document.body.appendChild(input);
+
                     const fileResult = await new Promise((resolve) => {
                         let dialogClosed = false;
                         const onFocus = () => {
@@ -61,82 +63,81 @@
                         input.click();
                     });
 
+                    document.body.removeChild(input);
                     if (!fileResult.success) {
-                        return { success: false, error: `restore: ${fileResult.error}` };
+                        return { success: true, output: `restore: ${fileResult.error}` };
                     }
                     fileContent = await fileResult.file.text();
                     fileName = fileResult.file.name;
-                } catch (e) {
-                    return { success: false, error: `restore: ${e.message}` };
-                } finally {
-                    if (input.parentNode) document.body.removeChild(input);
                 }
-            }
 
-            let backupData;
-            try {
-                backupData = JSON.parse(fileContent);
-            } catch (parseError) {
-                return { success: false, error: `restore: Error parsing backup file '${fileName}': ${parseError.message}` };
-            }
-
-            if (backupData.checksum) {
-                const storedChecksum = backupData.checksum;
-                delete backupData.checksum;
-                const stringifiedDataForChecksum = JSON.stringify(backupData);
-                const calculatedChecksum = await Utils.calculateSHA256(stringifiedDataForChecksum);
-                if (calculatedChecksum !== storedChecksum) {
-                    return { success: false, error: `restore: Checksum mismatch. Backup file is corrupted or has been tampered with.` };
+                let backupData;
+                try {
+                    backupData = JSON.parse(fileContent);
+                } catch (parseError) {
+                    return { success: false, error: `restore: Error parsing backup file '${fileName}': ${parseError.message}` };
                 }
-            }
 
-            if (!backupData || !backupData.dataType || !backupData.dataType.startsWith("OopisOS_System_State_Backup")) {
-                return { success: false, error: `restore: '${fileName}' is not a valid OopisOS System State backup file.` };
-            }
-
-            const messageLines = [
-                `WARNING: This will completely overwrite the current OopisOS state.`,
-                `All users, files, and sessions will be replaced with data from '${fileName}'.`,
-                "This action cannot be undone. Are you sure you want to restore?",
-            ];
-
-            const confirmed = await new Promise((conf) =>
-                ModalManager.request({
-                    context: "terminal", messageLines, onConfirm: () => conf(true), onCancel: () => conf(false), options
-                })
-            );
-
-            if (!confirmed) {
-                return { success: true, output: Config.MESSAGES.OPERATION_CANCELLED, messageType: Config.CSS_CLASSES.CONSOLE_LOG_MSG };
-            }
-
-            const allKeys = StorageManager.getAllLocalStorageKeys();
-            allKeys.forEach((key) => {
-                if (key !== Config.STORAGE_KEYS.GEMINI_API_KEY) {
-                    StorageManager.removeItem(key);
+                if (backupData.checksum) {
+                    const storedChecksum = backupData.checksum;
+                    delete backupData.checksum;
+                    const stringifiedDataForChecksum = JSON.stringify(backupData);
+                    const calculatedChecksum = await Utils.calculateSHA256(stringifiedDataForChecksum);
+                    if (calculatedChecksum !== storedChecksum) {
+                        return { success: false, error: `restore: Checksum mismatch. Backup file is corrupted or has been tampered with.` };
+                    }
                 }
-            });
 
-            if (backupData.userCredentials) StorageManager.saveItem(Config.STORAGE_KEYS.USER_CREDENTIALS, backupData.userCredentials);
-            if (backupData.editorWordWrapEnabled !== undefined) StorageManager.saveItem(Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, backupData.editorWordWrapEnabled);
-            if (backupData.automaticSessionStates) {
-                for (const key in backupData.automaticSessionStates) StorageManager.saveItem(key, backupData.automaticSessionStates[key]);
+                if (!backupData || !backupData.dataType || !backupData.dataType.startsWith("OopisOS_System_State_Backup")) {
+                    return { success: false, error: `restore: '${fileName}' is not a valid OopisOS System State backup file.` };
+                }
+
+                const messageLines = [
+                    `WARNING: This will completely overwrite the current OopisOS state.`,
+                    `All users, files, and sessions will be replaced with data from '${fileName}'.`,
+                    "This action cannot be undone. Are you sure you want to restore?",
+                ];
+
+                const confirmed = await new Promise((conf) =>
+                    ModalManager.request({
+                        context: "terminal", messageLines, onConfirm: () => conf(true), onCancel: () => conf(false), options
+                    })
+                );
+
+                if (!confirmed) {
+                    return { success: true, output: Config.MESSAGES.OPERATION_CANCELLED };
+                }
+
+                const allKeys = StorageManager.getAllLocalStorageKeys();
+                allKeys.forEach((key) => {
+                    if (key !== Config.STORAGE_KEYS.GEMINI_API_KEY) {
+                        StorageManager.removeItem(key);
+                    }
+                });
+
+                if (backupData.userCredentials) StorageManager.saveItem(Config.STORAGE_KEYS.USER_CREDENTIALS, backupData.userCredentials);
+                if (backupData.editorWordWrapEnabled !== undefined) StorageManager.saveItem(Config.STORAGE_KEYS.EDITOR_WORD_WRAP_ENABLED, backupData.editorWordWrapEnabled);
+                if (backupData.automaticSessionStates) {
+                    for (const key in backupData.automaticSessionStates) StorageManager.saveItem(key, backupData.automaticSessionStates[key]);
+                }
+                if (backupData.manualSaveStates) {
+                    for (const key in backupData.manualSaveStates) StorageManager.saveItem(key, backupData.manualSaveStates[key]);
+                }
+
+                FileSystemManager.setFsData(Utils.deepCopyNode(backupData.fsDataSnapshot));
+                if (!(await FileSystemManager.save())) {
+                    return { success: false, error: "restore: Critical failure: Could not save the restored file system to the database." };
+                }
+
+                const successMessage = `${Config.MESSAGES.RESTORE_SUCCESS_PREFIX}${context.currentUser}${Config.MESSAGES.RESTORE_SUCCESS_MIDDLE}${fileName}${Config.MESSAGES.RESTORE_SUCCESS_SUFFIX}`;
+                await OutputManager.appendToOutput(successMessage, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
+
+                setTimeout(() => { window.location.reload(true); }, 1500);
+
+                return { success: true, output: "" };
+            } catch (e) {
+                return { success: false, error: `restore: An unexpected error occurred: ${e.message}` };
             }
-            if (backupData.manualSaveStates) {
-                for (const key in backupData.manualSaveStates) StorageManager.saveItem(key, backupData.manualSaveStates[key]);
-            }
-
-            FileSystemManager.setFsData(Utils.deepCopyNode(backupData.fsDataSnapshot));
-            if (!(await FileSystemManager.save())) {
-                return { success: false, error: "restore: Critical failure: Could not save the restored file system to the database." };
-            }
-
-            const successMessage = `${Config.MESSAGES.RESTORE_SUCCESS_PREFIX}${context.currentUser}${Config.MESSAGES.RESTORE_SUCCESS_MIDDLE}${fileName}${Config.MESSAGES.RESTORE_SUCCESS_SUFFIX}`;
-            await OutputManager.appendToOutput(successMessage, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
-
-            setTimeout(() => { window.location.reload(true); }, 1500);
-
-            return { success: true, output: "" };
         },
     };
 

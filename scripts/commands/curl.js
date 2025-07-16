@@ -1,8 +1,10 @@
+// scripts/commands/curl.js
 (() => {
     "use strict";
 
     const curlCommandDefinition = {
         commandName: "curl",
+        completionType: "paths", // Preserved for tab completion
         flagDefinitions: [{
             name: "output",
             short: "-o",
@@ -39,7 +41,7 @@
                         if (!flags.location) {
                             return {
                                 success: false,
-                                error: `Redirected to ${response.headers.get('location')}. Use -L to follow.`
+                                error: `curl: Redirected to ${response.headers.get('location')}. Use -L to follow.`
                             };
                         }
                         currentUrl = new URL(response.headers.get('location'), currentUrl).href;
@@ -50,16 +52,28 @@
                     let outputString = "";
 
                     if (flags.include) {
-                        outputString += `HTTP/1.1 ${response.status} ${response.statusText}\n`;
+                        outputString += `HTTP/1.1 ${response.status} ${response.statusText}\\n`;
                         response.headers.forEach((value, name) => {
-                            outputString += `${name}: ${value}\n`;
+                            outputString += `${name}: ${value}\\n`;
                         });
-                        outputString += '\n';
+                        outputString += '\\n';
                     }
 
                     outputString += content;
 
                     if (flags.output) {
+                        const pathValidation = FileSystemManager.validatePath(flags.output, {
+                            allowMissing: true,
+                            expectedType: 'file'
+                        });
+
+                        if (pathValidation.error) {
+                            return { success: false, error: `curl: ${pathValidation.error}` };
+                        }
+                        if (pathValidation.node && pathValidation.node.type === 'directory') {
+                            return { success: false, error: `curl: output file '${flags.output}' is a directory` };
+                        }
+
                         const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
                         if (!primaryGroup) {
                             return {
@@ -67,9 +81,9 @@
                                 error: "curl: critical - could not determine primary group for user."
                             };
                         }
-                        const absPath = FileSystemManager.getAbsolutePath(flags.output, FileSystemManager.getCurrentPath());
+
                         const saveResult = await FileSystemManager.createOrUpdateFile(
-                            absPath,
+                            pathValidation.resolvedPath,
                             outputString, {
                                 currentUser,
                                 primaryGroup
@@ -97,7 +111,7 @@
 
                 return {
                     success: false,
-                    error: 'Too many redirects.'
+                    error: 'curl: Too many redirects.'
                 };
 
             } catch (e) {
@@ -116,7 +130,6 @@
     };
 
     const curlDescription = "Transfer data from or to a server.";
-
     const curlHelpText = `Usage: curl [options] <URL>
 
 Transfer data from or to a server.

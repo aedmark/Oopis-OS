@@ -1,3 +1,4 @@
+// scripts/commands/pwd.js
 (() => {
     "use strict";
 
@@ -8,10 +9,14 @@
         },
 
         coreLogic: async () => {
-            return {
-                success: true,
-                output: FileSystemManager.getCurrentPath(),
-            };
+            try {
+                return {
+                    success: true,
+                    output: FileSystemManager.getCurrentPath(),
+                };
+            } catch (e) {
+                return { success: false, error: `pwd: An unexpected error occurred: ${e.message}` };
+            }
         },
     };
 
