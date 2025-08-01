@@ -1,41 +1,42 @@
 // scripts/commands/sync.js
-(() => {
-    "use strict";
 
-    const syncCommandDefinition = {
-        commandName: "sync",
-        argValidation: {
-            exact: 0,
-        },
-        coreLogic: async () => {
-            try {
-                const saveSuccessful = await FileSystemManager.save();
-                if (saveSuccessful) {
-                    return { success: true, output: "" };
-                } else {
-                    return { success: false, error: "sync: Filesystem failed to save state." };
-                }
-            } catch (error) {
-                console.error("Error during sync operation:", error);
-                return { success: false, error: "sync: An unexpected error occurred." };
-            }
+window.SyncCommand = class SyncCommand extends Command {
+  constructor() {
+    super({
+      commandName: "sync",
+      description: "Manually saves the current file system to the database.",
+      helpText: `Usage: sync
+      Synchronize cached file data with persistent storage.
+      DESCRIPTION
+      The sync command writes any buffered file system modifications to
+      the underlying persistent storage (IndexedDB).
+      In OopisOS, this happens automatically on events like logout, but
+      'sync' provides a way to force a save manually, ensuring data
+
+      persistence without ending the session.`,
+      validations: {
+        args: {
+          exact: 0
         }
-    };
+      },
+    });
+  }
 
-    const syncDescription = "Commit filesystem caches to persistent storage.";
+  async coreLogic(context) {
+    const { dependencies, currentUser } = context;
+    const { FileSystemManager, ErrorHandler } = dependencies;
 
-    const syncHelpText = `Usage: sync
+    try {
+      await FileSystemManager.save(currentUser);
+      return ErrorHandler.createSuccess(
+          "File system cache synchronized with persistent storage."
+      );
+    } catch (e) {
+      return ErrorHandler.createError(
+          `sync: An error occurred during synchronization: ${e.message}`
+      );
+    }
+  }
+}
 
-Flush file system buffers.
-
-DESCRIPTION
-       The sync command forces a write of all buffered file system data
-       in memory (the live fsData object) to the underlying persistent
-       storage (IndexedDB).
-
-       While most file operations in OopisOS trigger a save automatically,
-       'sync' can be used to ensure all pending changes are written before
-       a critical operation or closing the session.`;
-
-    CommandRegistry.register("sync", syncCommandDefinition, syncDescription, syncHelpText);
-})();
+window.CommandRegistry.register(new SyncCommand());

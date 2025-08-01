@@ -1,111 +1,66 @@
 // scripts/commands/clearfs.js
-(() => {
-    "use strict";
 
-    const clearfsCommandDefinition = {
-        commandName: "clearfs",
-        argValidation: {
-            exact: 0,
-        },
-
-        coreLogic: async (context) => {
-            const {options, currentUser} = context;
-
-            try {
-                if (!options.isInteractive) {
-                    return {
-                        success: false,
-                        error: "clearfs: Can only be run in interactive mode.",
-                    };
+window.ClearfsCommand = class ClearfsCommand extends Command {
+    constructor() {
+        super({
+            commandName: "clearfs",
+            description: "Clears all files and directories from the current user's home directory.",
+            helpText: `Usage: clearfs
+      Clears the current user's home directory.
+      DESCRIPTION
+      The clearfs command removes all files and subdirectories within the
+      current user's home directory, effectively resetting it to a clean slate.
+      This command is useful for cleaning up test files or starting fresh without
+      affecting other users on the system.
+      WARNING
+      This operation is irreversible and will permanently delete all data from
+      your home directory. The command will prompt for confirmation.`,
+            validations: {
+                args: {
+                    exact: 0
                 }
+            },
+        });
+    }
 
-                const username = currentUser;
-                const userHomePath = `/home/${username}`;
+    async coreLogic(context) {
+        const { currentUser, options, dependencies } = context;
+        const { FileSystemManager, ModalManager, ErrorHandler, Config } = dependencies;
 
-                const confirmed = await new Promise((resolve) =>
-                    ModalManager.request({
-                        context: "terminal",
-                        messageLines: [
-                            `WARNING: This will permanently erase ALL files and directories in your home directory (${userHomePath}).`,
-                            "This action cannot be undone.",
-                            "Are you sure you want to clear your home directory?",
-                        ],
-                        onConfirm: () => resolve(true),
-                        onCancel: () => resolve(false),
-                        options,
-                    })
-                );
+        if (currentUser === 'root') {
+            return ErrorHandler.createError("clearfs: cannot clear the root user's home directory for safety reasons.");
+        }
 
-                if (!confirmed) {
-                    return {
-                        success: true,
-                        output: `Home directory clear for '${username}' cancelled. No action taken.`,
-                    };
-                }
+        const confirmed = await new Promise((resolve) => {
+            ModalManager.request({
+                context: "terminal",
+                messageLines: [
+                    "WARNING: This will permanently delete all files and directories in your home folder.",
+                    "This action cannot be undone. Are you sure?",
+                ],
+                onConfirm: () => resolve(true),
+                onCancel: () => resolve(false),
+                options,
+            });
+        });
 
-                const homeDirNode = FileSystemManager.getNodeByPath(userHomePath);
+        if (!confirmed) {
+            return ErrorHandler.createSuccess("Operation cancelled.");
+        }
 
-                if (
-                    !homeDirNode ||
-                    homeDirNode.type !== Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
-                ) {
-                    return {
-                        success: false,
-                        error: `clearfs: Critical error - Could not find home directory for '${username}' at '${userHomePath}'.`,
-                    };
-                }
+        const homePath = `/home/${currentUser}`;
+        const homeNode = FileSystemManager.getNodeByPath(homePath);
 
-                homeDirNode.children = {};
-                homeDirNode.mtime = new Date().toISOString();
+        if (homeNode && homeNode.children) {
+            // Create a new empty children object
+            homeNode.children = {};
+            homeNode.mtime = new Date().toISOString();
+            await FileSystemManager.save();
+            return ErrorHandler.createSuccess("Home directory cleared.", { stateModified: true });
+        }
 
-                if (!(await FileSystemManager.save())) {
-                    return {
-                        success: false,
-                        error:
-                            "clearfs: CRITICAL - Failed to save file system changes after clearing home directory.",
-                    };
-                }
+        return ErrorHandler.createError("clearfs: Could not find home directory to clear.");
+    }
+}
 
-                const currentPath = FileSystemManager.getCurrentPath();
-                if (currentPath.startsWith(userHomePath)) {
-                    FileSystemManager.setCurrentPath(userHomePath);
-                }
-
-                TerminalUI.updatePrompt();
-                OutputManager.clearOutput();
-
-                const successMessage = `Home directory for user '${username}' has been cleared.`;
-                await OutputManager.appendToOutput(successMessage, {
-                    typeClass: Config.CSS_CLASSES.SUCCESS_MSG,
-                });
-
-                return {
-                    success: true,
-                    output: "",
-                };
-            } catch (e) {
-                return { success: false, error: `clearfs: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
-
-    const clearfsDescription = "Clears the current user's home directory of all contents.";
-    const clearfsHelpText = `Usage: clearfs
-
-Clears the current user's home directory of all contents.
-
-DESCRIPTION
-       The clearfs command permanently removes all files and subdirectories
-       within the current user's home directory (e.g., /home/Guest),
-       effectively resetting it to an empty state.
-
-       This command only affects the home directory of the user who runs it.
-       It does not affect other parts of the file system.
-
-WARNING
-       This operation is irreversible. All data within your home
-       directory will be permanently lost. The command will prompt for
-       confirmation before proceeding.`;
-
-    CommandRegistry.register("clearfs", clearfsCommandDefinition, clearfsDescription, clearfsHelpText);
-})();
+window.CommandRegistry.register(new ClearfsCommand());

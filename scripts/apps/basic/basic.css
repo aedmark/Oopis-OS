@@ -1,49 +1,31 @@
-/* OopisOS v4.0 BASIC Style Sheet  */
-/* ========================================================================== */
+/* Oopis BASIC Style Sheet */
 
-.basic-app__container {
-  display: flex;
-  flex-direction: column;
-  width: 95%;
-  height: 95%;
-  max-width: 1200px;
+.basic-app__container.app-container {
   background-color: #0088FF;
-  border: var(--border-width-thick) solid #AAFFEE;
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-sm);
-  font-family: var(--font-family-mono), monospace;
+  border-color: #AAFFEE;
   color: #AAFFEE;
   box-shadow: var(--shadow-inset-light), var(--shadow-drop-medium);
 }
 
-.basic-app__header {
-  flex-shrink: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
+.basic-app__container .app-header {
   color: #AAFFEE;
-  font-size: var(--font-size-lg);
   border-bottom: var(--border-width-thick) double #AAFFEE;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
-.basic-app__title {
-  font-size: var(--font-size-xl);
+.basic-app__container .app-header__title {
   color: #FFFFFF;
 }
 
-.basic-app__exit-btn {
-  font-size: var(--font-size-lg);
-  background: none;
-  border: none;
-  cursor: pointer;
+.basic-app__container .app-header__exit-btn {
   color: #AAFFEE;
-  transition: color 0.2s ease-in-out;
 }
 
-.basic-app__exit-btn:hover {
+.basic-app__container .app-header__exit-btn:hover {
   color: var(--color-error);
+}
+
+.basic-app__container .app-main {
+  flex-direction: column;
 }
 
 .basic-app__output {

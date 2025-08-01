@@ -1,149 +1,166 @@
-const TextAdventureModal = (() => {
-  "use strict";
+// scripts/apps/adventure/adventure_ui.js
 
-  let state = {
-    isModalOpen: false,
-    isActive: false,
-    inputCallback: null,
-    exitPromiseResolve: null
-  };
+/**
+ * Text Adventure UI Modal - Handles the user interface for text adventure games
+ * @class TextAdventureModal
+ */
+window.TextAdventureModal = class TextAdventureModal {
+  /**
+   * Create a text adventure modal
+   * @param {Object} callbacks - Callback functions for game interaction
+   * @param {Object} dependencies - Required dependencies
+   * @param {Object} [scriptingContext] - Scripting context for automated play
+   */
+  constructor(callbacks, dependencies, scriptingContext) {
+    /** @type {Object} DOM elements cache */
+    this.elements = {};
+    /** @type {Object} Callback functions */
+    this.callbacks = callbacks;
+    /** @type {Object} Injected dependencies */
+    this.dependencies = dependencies;
 
-  let elements = {};
+    /** @type {Function} Bound input handler */
+    this._boundHandleInput = this._handleInput.bind(this);
 
-  function _createLayout() {
-    const roomNameSpan = Utils.createElement('span', { id: 'adventure-room-name' });
-    const scoreSpan = Utils.createElement('span', { id: 'adventure-score' });
-    const headerLeft = Utils.createElement('div', {}, roomNameSpan);
-    const headerRight = Utils.createElement('div', {}, scoreSpan);
-    const header = Utils.createElement('header', { id: 'adventure-header' }, headerLeft, headerRight);
-    const output = Utils.createElement('div', { id: 'adventure-output' });
-    const inputPrompt = Utils.createElement('span', { id: 'adventure-prompt', textContent: '>' });
-    const input = Utils.createElement('input', { id: 'adventure-input', type: 'text', spellcheck: 'false', autocapitalize: 'none' });
-    const inputContainer = Utils.createElement('div', { id: 'adventure-input-container' }, inputPrompt, input);
-    const container = Utils.createElement('div', { id: 'adventure-container' }, header, output, inputContainer);
-
-    elements = { container, header, output, input, roomNameSpan, scoreSpan };
+    this._buildLayout(scriptingContext);
   }
 
-  function _handleInput(e) {
-    if (e.key !== 'Enter' || !state.inputCallback) return;
-    e.preventDefault();
-    const command = elements.input.value;
-    elements.input.value = '';
-    appendOutput(`> ${command}`, 'system');
-    state.inputCallback(command);
+  /**
+   * Get the main container element
+   * @returns {HTMLElement} Container DOM element
+   */
+  getContainer() {
+    return this.elements.container;
   }
 
-  function _setupEventListeners() {
-    elements.input.addEventListener('keydown', _handleInput);
-    document.addEventListener('keydown', _handleGlobalKeys);
-  }
+  /**
+   * Build the UI layout
+   * @private
+   * @param {Object} [scriptingContext] - Scripting context
+   */
+  _buildLayout(scriptingContext) {
+    const { Utils } = this.dependencies;
+    this._createElements();
 
-  function _removeEventListeners() {
-    if (elements.input) {
-      elements.input.removeEventListener('keydown', _handleInput);
-    }
-    document.removeEventListener('keydown', _handleGlobalKeys);
-  }
+    this.elements.input.addEventListener("keydown", this._boundHandleInput);
 
-  function _handleGlobalKeys(e) {
-    if (e.key === 'Escape' && state.isModalOpen) {
-      // Defer to the AppLayerManager's control flow for hiding.
-      // This ensures a consistent exit path.
-      callbacks.onExitRequest();
-    }
-  }
-
-  function show(adventureData, callbacks, scriptingContext) {
-    if (state.isModalOpen) return Promise.resolve();
-
-    // Assign callbacks from the manager
-    state.callbacks = callbacks;
-
-    _createLayout(); // Build the layout but don't show it yet
-
-    AppLayerManager.show(elements.container); // Use AppLayerManager to show the UI.
-
-    state.isModalOpen = true;
-    state.isActive = true;
-    state.inputCallback = callbacks.processCommand;
-
-    _setupEventListeners();
-    elements.input.focus();
-
-    if (scriptingContext && scriptingContext.isScripting) {
-      elements.input.style.display = 'none';
+    if (scriptingContext?.isScripting) {
+      this.elements.input.style.display = "none";
     }
 
-    return new Promise(resolve => {
-      state.exitPromiseResolve = resolve;
+    setTimeout(() => this.elements.input.focus(), 0);
+  }
+
+  /**
+   * Hide the modal and clean up resources
+   */
+  hideAndReset() {
+    if (this.elements.input) {
+      this.elements.input.removeEventListener("keydown", this._boundHandleInput);
+    }
+    if (this.elements.container) {
+      this.elements.container.remove();
+    }
+    this.elements = {};
+    this.callbacks = {};
+    this.dependencies = {};
+  }
+
+  /**
+   * Create all DOM elements for the adventure UI
+   * @private
+   */
+  _createElements() {
+    const { Utils } = this.dependencies;
+    const roomNameSpan = Utils.createElement("span", { id: "adventure-room-name" });
+    const scoreSpan = Utils.createElement("span", { id: "adventure-score" });
+    const headerLeft = Utils.createElement("div", {}, roomNameSpan);
+    const headerRight = Utils.createElement("div", {}, scoreSpan);
+    const header = Utils.createElement("header", { id: "adventure-header" }, headerLeft, headerRight);
+    const output = Utils.createElement("div", { id: "adventure-output" });
+    const inputPrompt = Utils.createElement("span", { id: "adventure-prompt", textContent: ">" });
+    const input = Utils.createElement("input", {
+      id: "adventure-input",
+      type: "text",
+      spellcheck: "false",
+      autocapitalize: "none",
     });
+    const inputContainer = Utils.createElement("div", { id: "adventure-input-container" }, inputPrompt, input);
+    const container = Utils.createElement("div", { id: "adventure-container" }, header, output, inputContainer);
+
+    this.elements = { container, header, output, input, roomNameSpan, scoreSpan };
   }
 
-  function hide() {
-    if (!state.isModalOpen) return;
-    _removeEventListeners();
-    AppLayerManager.hide(); // Use AppLayerManager to hide the UI.
-    const resolver = state.exitPromiseResolve;
-
-    // Reset state completely.
-    state = {
-      isModalOpen: false,
-      isActive: false,
-      inputCallback: null,
-      exitPromiseResolve: null,
-      callbacks: {}
-    };
-    elements = {};
-
-    if (resolver) {
-      resolver();
-    }
+  /**
+   * Handle input events from the text input field
+   * @private
+   * @param {KeyboardEvent} e - Keyboard event
+   */
+  _handleInput(e) {
+    if (e.key !== "Enter" || !this.callbacks.processCommand) return;
+    e.preventDefault();
+    const command = this.elements.input.value;
+    this.elements.input.value = "";
+    this.appendOutput(`> ${command}`, "system");
+    this.callbacks.processCommand(command);
   }
 
-  function appendOutput(text, styleClass = '') {
-    if (!elements.output) return;
-    const p = Utils.createElement('p', { textContent: text });
+  /**
+   * Append text output to the game display
+   * @param {string} text - Text to display
+   * @param {string} [styleClass] - CSS class for styling
+   */
+  appendOutput(text, styleClass = "") {
+    if (!this.elements.output) return;
+    const { Utils } = this.dependencies;
+    const p = Utils.createElement("p", { textContent: text });
     if (styleClass) {
       p.className = `adv-${styleClass}`;
     }
-    elements.output.appendChild(p);
-    elements.output.scrollTop = elements.output.scrollHeight;
+    this.elements.output.appendChild(p);
+    this.elements.output.scrollTop = this.elements.output.scrollHeight;
   }
 
-  function requestInput() {
-    return new Promise(resolve => {
-      const scriptContext = TextAdventureEngine.getScriptingContext();
-      if (scriptContext && scriptContext.isScripting) {
-        while (scriptContext.currentLineIndex < scriptContext.lines.length - 1) {
-          scriptContext.currentLineIndex++;
-          const line = scriptContext.lines[scriptContext.currentLineIndex]?.trim();
-          if (line && !line.startsWith('#')) {
-            appendOutput(`> ${line}`, 'system');
-            resolve(line);
-            return;
+  /**
+   * Update the status line with current game info
+   * @param {string} roomName - Current room name
+   * @param {number} score - Player's score
+   * @param {number} moves - Number of moves taken
+   */
+  updateStatusLine(roomName, score, moves) {
+    if (this.elements.roomNameSpan) {
+      this.elements.roomNameSpan.textContent = roomName;
+    }
+    if (this.elements.scoreSpan) {
+      this.elements.scoreSpan.textContent = `Score: ${score}  Moves: ${moves}`;
+    }
+  }
+
+  /**
+   * Request input from the player
+   * @param {string} _prompt - Input prompt (unused)
+   * @returns {Promise<string>} Promise resolving to player input
+   */
+  requestInput(_prompt) {
+    return new Promise((resolve) => {
+      if (this.callbacks.onScriptedInput) {
+        const command = this.callbacks.onScriptedInput();
+        resolve(command);
+      } else {
+        const handleOneTimeInput = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const command = this.elements.input.value;
+            this.elements.input.value = '';
+            this.appendOutput(`> ${command}`, 'system');
+            this.elements.input.removeEventListener('keydown', handleOneTimeInput);
+            this.elements.input.addEventListener('keydown', this._boundHandleInput);
+            resolve(command);
           }
-        }
-        resolve(null);
+        };
+        this.elements.input.removeEventListener('keydown', this._boundHandleInput);
+        this.elements.input.addEventListener('keydown', handleOneTimeInput);
       }
     });
   }
-
-  function updateStatusLine(roomName, score, moves) {
-    if (elements.roomNameSpan) {
-      elements.roomNameSpan.textContent = roomName;
-    }
-    if (elements.scoreSpan) {
-      elements.scoreSpan.textContent = `Score: ${score}  Moves: ${moves}`;
-    }
-  }
-
-  return {
-    show,
-    hide,
-    appendOutput,
-    requestInput,
-    updateStatusLine,
-    isActive: () => state.isActive
-  };
-})();
+}

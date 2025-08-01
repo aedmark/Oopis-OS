@@ -1,191 +1,135 @@
 // scripts/commands/ocrypt.js
-(() => {
-    "use strict";
 
-    async function getKey(password, salt) {
-        const enc = new TextEncoder();
-        const keyMaterial = await window.crypto.subtle.importKey(
-            'raw',
-            enc.encode(password),
-            { name: 'PBKDF2' },
-            false,
-            ['deriveKey']
-        );
-        return window.crypto.subtle.deriveKey(
-            {
-                "name": 'PBKDF2',
-                salt: salt,
-                "iterations": 100000,
-                "hash": 'SHA-256'
-            },
-            keyMaterial,
-            { "name": 'AES-GCM', "length": 256 },
-            true,
-            [ "encrypt", "decrypt" ]
-        );
+function _transpose(matrix) {
+  return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
+}
+
+function _matrixMultiply(A, B) {
+  const result = Array(A.length)
+      .fill(0)
+      .map(() => Array(B[0].length).fill(0));
+  for (let i = 0; i < A.length; i++) {
+    for (let j = 0; j < B[0].length; j++) {
+      for (let k = 0; k < A[0].length; k++) {
+        result[i][j] = (result[i][j] + A[i][k] * B[k][j]) % 256;
+      }
     }
+  }
+  return result;
+}
 
-    async function encryptData(plaintext, password) {
-        const salt = window.crypto.getRandomValues(new Uint8Array(16));
-        const iv = window.crypto.getRandomValues(new Uint8Array(12));
-        const key = await getKey(password, salt);
-        const enc = new TextEncoder();
-
-        const encryptedContent = await window.crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: iv },
-            key,
-            enc.encode(plaintext)
-        );
-
-        const encryptedContentArr = new Uint8Array(encryptedContent);
-        const base64Content = btoa(String.fromCharCode.apply(null, encryptedContentArr));
-        const base64Salt = btoa(String.fromCharCode.apply(null, salt));
-        const base64Iv = btoa(String.fromCharCode.apply(null, iv));
-
-        const output = {
-            salt: base64Salt,
-            iv: base64Iv,
-            data: base64Content
-        };
-
-        return JSON.stringify(output, null, 2);
+function _getBlock(data, index, blockSize) {
+  const block = Array(blockSize).fill(0);
+  for (let i = 0; i < blockSize; i++) {
+    if (index + i < data.length) {
+      block[i] = data[index + i];
     }
+  }
+  return block;
+}
 
-    async function decryptData(jsonString, password) {
-        const encryptedData = JSON.parse(jsonString);
-        const salt = new Uint8Array(atob(encryptedData.salt).split('').map(c => c.charCodeAt(0)));
-        const iv = new Uint8Array(atob(encryptedData.iv).split('').map(c => c.charCodeAt(0)));
-        const data = new Uint8Array(atob(encryptedData.data).split('').map(c => c.charCodeAt(0)));
+function _generateKeyMatrix(keyString, size) {
+  let hash = 0;
+  for (let i = 0; i < keyString.length; i++) {
+    hash = (hash << 5) - hash + keyString.charCodeAt(i);
+    hash |= 0;
+  }
+  const matrix = Array(size)
+      .fill(0)
+      .map(() => Array(size).fill(0));
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      hash = (hash * 16807 + (i * size + j)) % 2147483647;
+      matrix[i][j] = Math.abs(hash % 256);
+    }
+  }
+  return matrix;
+}
 
-        const key = await getKey(password, salt);
-        const dec = new TextDecoder();
+window.OcryptCommand = class OcryptCommand extends Command {
+  constructor() {
+    super({
+      commandName: "ocrypt",
+      description: "Encrypts or decrypts files using a custom block cipher.",
+      helpText: `Usage: ocrypt [-d] <key> <inputfile> [outputfile]
+      Encrypt or decrypt a file using a key.
+      DESCRIPTION
+      ocrypt is a simple custom block cipher for demonstration purposes.
+      It uses a key-derived matrix to transform 8-byte blocks of data.
+      If [outputfile] is not provided, the result is printed to standard output.
+      OPTIONS
+      -d, --decrypt
+      Decrypt the input file instead of encrypting.
+      WARNING
+      This tool is for educational purposes ONLY. It is NOT
+      cryptographically secure and should not be used to protect
+      sensitive data.`,
+      flagDefinitions: [
+        { name: "decrypt", short: "-d", long: "--decrypt" },
+      ],
+      validations: {
+        args: { min: 2, max: 3, error: "Usage: ocrypt [-d] <key> <inputfile> [outputfile]" },
+        paths: [{
+          argIndex: 1,
+          options: { expectedType: 'file', permissions: ['read'] }
+        }]
+      },
+    });
+  }
 
-        try {
-            const decryptedContent = await window.crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: iv },
-                key,
-                data
-            );
-            return dec.decode(decryptedContent);
-        } catch (e) {
-            throw new Error("Decryption failed. The password may be incorrect or the data corrupted.");
+  async coreLogic(context) {
+    const { args, flags, currentUser, validatedPaths, dependencies } = context;
+    const { FileSystemManager, UserManager, ErrorHandler } = dependencies;
+    const blockSize = 8;
+
+    const key = args[0];
+    const inputFileNode = validatedPaths[0].node;
+    const outputFile = args.length === 3 ? args[2] : null;
+
+    const keyMatrix = _generateKeyMatrix(key, blockSize);
+    const operationMatrix = flags.decrypt ? _transpose(keyMatrix) : keyMatrix;
+
+    const textEncoder = new TextEncoder();
+    const inputBytes = textEncoder.encode(inputFileNode.content || "");
+    const outputBytes = new Uint8Array(inputBytes.length);
+
+    for (let i = 0; i < inputBytes.length; i += blockSize) {
+      const block = _getBlock(inputBytes, i, blockSize);
+      const blockMatrix = [block];
+      const resultMatrix = _matrixMultiply(blockMatrix, operationMatrix);
+      for (let j = 0; j < blockSize; j++) {
+        if (i + j < outputBytes.length) {
+          outputBytes[i + j] = resultMatrix[0][j];
         }
+      }
     }
 
-    const ocryptCommandDefinition = {
-        commandName: "ocrypt",
-        completionType: "paths",
-        flagDefinitions: [
-            { name: "encrypt", short: "-e", long: "--encrypt" },
-            { name: "decrypt", short: "-d", long: "--decrypt" }
-        ],
-        coreLogic: async (context) => {
-            const {args, flags, options, currentUser} = context;
+    const textDecoder = new TextDecoder("utf-8", { fatal: true });
+    let outputContent;
+    try {
+      outputContent = textDecoder.decode(outputBytes);
+    } catch (e) {
+      outputContent = Array.from(outputBytes)
+          .map((byte) => String.fromCharCode(byte))
+          .join("");
+    }
 
-            try {
-                if ((!flags.encrypt && !flags.decrypt) || (flags.encrypt && flags.decrypt)) {
-                    return { success: false, error: "ocrypt: You must specify exactly one of -e (encrypt) or -d (decrypt)." };
-                }
+    if (outputFile) {
+      const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+      const saveResult = await FileSystemManager.createOrUpdateFile(
+          outputFile,
+          outputContent,
+          { currentUser, primaryGroup }
+      );
 
-                let password = args[0];
-                const filePath = args[1];
+      if (!saveResult.success) {
+        return ErrorHandler.createError(`ocrypt: ${saveResult.error}`);
+      }
+      return ErrorHandler.createSuccess("", { stateModified: true });
+    } else {
+      return ErrorHandler.createSuccess(outputContent);
+    }
+  }
+}
 
-                if (!filePath) {
-                    return { success: false, error: "ocrypt: File path is required." };
-                }
-
-                if (!password) {
-                    if (!options.isInteractive) {
-                        return { success: false, error: "ocrypt: password must be provided as an argument in non-interactive mode." };
-                    }
-                    password = await new Promise(resolve => {
-                        ModalInputManager.requestInput(
-                            "Enter password for ocrypt:",
-                            (pw) => resolve(pw),
-                            () => resolve(null),
-                            true
-                        );
-                    });
-                    if (password === null) return { success: true, output: "Operation cancelled." };
-                    if (!password) return { success: false, error: "ocrypt: password cannot be empty." };
-                }
-
-                const pathValidation = FileSystemManager.validatePath(filePath, { allowMissing: flags.encrypt, expectedType: 'file' });
-
-                if (pathValidation.error && !pathValidation.optionsUsed.allowMissing) {
-                    return { success: false, error: `ocrypt: ${pathValidation.error}` };
-                }
-
-                if (flags.encrypt) {
-                    const contentToEncrypt = pathValidation.node?.content || '';
-                    const encryptedString = await encryptData(contentToEncrypt, password);
-
-                    const saveResult = await FileSystemManager.createOrUpdateFile(
-                        pathValidation.resolvedPath,
-                        encryptedString,
-                        { currentUser, primaryGroup: UserManager.getPrimaryGroupForUser(currentUser) }
-                    );
-
-                    if (!saveResult.success) {
-                        return { success: false, error: `ocrypt: ${saveResult.error}` };
-                    }
-                    if (!(await FileSystemManager.save())) {
-                        return { success: false, error: "ocrypt: Failed to save encrypted file."};
-                    }
-                    return { success: true, output: `File '${filePath}' encrypted successfully.` };
-
-                } else { // Decrypt
-                    if (!pathValidation.node) {
-                        return { success: false, error: `ocrypt: file not found: ${filePath}` };
-                    }
-                    if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-                        return { success: false, error: `ocrypt: cannot read '${filePath}': Permission denied` };
-                    }
-                    try {
-                        const decryptedContent = await decryptData(pathValidation.node.content, password);
-                        return { success: true, output: decryptedContent };
-                    } catch (e) {
-                        return { success: false, error: e.message };
-                    }
-                }
-            } catch (e) {
-                return { success: false, error: `ocrypt: An unexpected error occurred: ${e.message}` };
-            }
-        }
-    };
-
-    const ocryptDescription = "Securely encrypts or decrypts a file using AES-GCM.";
-    const ocryptHelpText = `Usage: ocrypt <-e|-d> [password] <file>
-
-Encrypt or decrypt a file using a password.
-
-DESCRIPTION
-       ocrypt provides strong, password-based encryption for files using the
-       AES-GCM standard. This is a secure method for protecting sensitive data.
-
-       You must specify either -e to encrypt or -d to decrypt.
-
-       If a password is not provided on the command line, you will be prompted
-       for one in interactive sessions.
-
-OPTIONS
-       -e, --encrypt
-              Encrypt the specified file. If the file exists, it will be
-              overwritten with the encrypted content. If it does not exist,
-              it will be created.
-
-       -d, --decrypt
-              Decrypt the specified file and print its contents to standard
-              output. This does not modify the original encrypted file.
-
-EXAMPLES
-       ocrypt -e mySecretPass /home/Guest/secrets.txt
-              Encrypts the contents of secrets.txt, saving the result back
-              to the same file.
-
-       ocrypt -d mySecretPass /home/Guest/secrets.txt
-              Decrypts secrets.txt and prints the original content to the
-              terminal.`;
-
-    CommandRegistry.register("ocrypt", ocryptCommandDefinition, ocryptDescription, ocryptHelpText);
-})();
+window.CommandRegistry.register(new OcryptCommand());

@@ -1,50 +1,11 @@
 // scripts/commands/base64.js
-(() => {
-    "use strict";
 
-    const base64CommandDefinition = {
-        commandName: "base64",
-        isInputStream: true,
-        completionType: "paths", // Preserved for tab completion
-        flagDefinitions: [
-            { name: "decode", short: "-d", long: "--decode" }
-        ],
-        coreLogic: async (context) => {
-            const { flags, inputItems, inputError } = context;
-
-            try {
-                if (inputError) {
-                    return { success: false, error: "base64: No readable input provided or permission denied." };
-                }
-
-                if (!inputItems || inputItems.length === 0) {
-                    return { success: true, output: "" };
-                }
-
-                const inputData = inputItems.map(item => item.content).join('\\n');
-
-                if (flags.decode) {
-                    // The 'atob' function in browsers correctly handles whitespace.
-                    const decodedData = atob(inputData);
-                    return { success: true, output: decodedData };
-                } else {
-                    const encodedData = btoa(inputData);
-                    // Standard base64 output is often wrapped at 76 characters, but 64 is also common.
-                    return { success: true, output: encodedData.replace(/(.{64})/g, "$1\\n") };
-                }
-            } catch (e) {
-                // This specifically catches errors from atob() on invalid input.
-                if (e instanceof DOMException && e.name === "InvalidCharacterError") {
-                    return { success: false, error: "base64: invalid input" };
-                }
-                // Catch any other unexpected errors.
-                return { success: false, error: `base64: an unexpected error occurred: ${e.message}` };
-            }
-        }
-    };
-
-    const base64Description = "Encode or decode data and print to standard output.";
-    const base64HelpText = `Usage: base64 [OPTION]... [FILE]
+window.Base64Command = class Base64Command extends Command {
+  constructor() {
+    super({
+      commandName: "base64",
+      description: "Encode or decode data and print to standard output.",
+      helpText: `Usage: base64 [OPTION]... [FILE]
 
 Base64 encode or decode FILE, or standard input, to standard output.
 
@@ -65,7 +26,46 @@ EXAMPLES
               Encodes the script and saves the output to a new file.
 
        cat encoded.txt | base64 -d
-              Decodes the content of 'encoded.txt' and prints the original script.`;
+              Decodes the content of 'encoded.txt' and prints the original script.`,
+      isInputStream: true,
+      completionType: "paths",
+      flagDefinitions: [{ name: "decode", short: "-d", long: "--decode" }],
+    });
+  }
 
-    CommandRegistry.register("base64", base64CommandDefinition, base64Description, base64HelpText);
-})();
+  async coreLogic(context) {
+    const { flags, inputItems, inputError, dependencies } = context;
+    const { ErrorHandler } = dependencies;
+
+    if (inputError) {
+      return ErrorHandler.createError(
+          "base64: No readable input provided or permission denied."
+      );
+    }
+
+    if (!inputItems || inputItems.length === 0) {
+      return ErrorHandler.createSuccess("");
+    }
+
+    const inputData = inputItems.map((item) => item.content).join("\n");
+
+    try {
+      if (flags.decode) {
+        const decodedData = atob(inputData);
+        return ErrorHandler.createSuccess(decodedData);
+      } else {
+        const encodedData = btoa(inputData);
+        return ErrorHandler.createSuccess(
+            encodedData.replace(/(.{64})/g, "$1\n")
+        );
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "InvalidCharacterError") {
+        return ErrorHandler.createError("base64: invalid input");
+      }
+      throw e;
+    }
+  }
+}
+
+window.CommandRegistry.register(new Base64Command());

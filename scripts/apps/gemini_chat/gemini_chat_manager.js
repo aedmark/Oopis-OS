@@ -1,99 +1,113 @@
 // scripts/apps/gemini_chat/gemini_chat_manager.js
 
-const GeminiChatManager = (() => {
-    "use strict";
+window.GeminiChatManager = class GeminiChatManager extends App {
+  constructor() {
+    super();
+    this.state = {};
+    this.dependencies = {};
+    this.callbacks = {};
+    this.ui = null;
+  }
 
-    let state = {};
+  async enter(appLayer, options = {}) {
+    if (this.isActive) return;
 
-    const defaultState = {
-        isActive: false,
-        conversationHistory: [],
-        provider: 'gemini', // Default provider
-        model: null, // Default model
+    this.dependencies = options.dependencies;
+    this.callbacks = this._createCallbacks();
+
+    this.isActive = true;
+    this.state = {
+      isActive: true,
+      conversationHistory: [],
+      provider: options.provider || "gemini",
+      model: options.model || null,
+      options,
+      terminalContext: "",
     };
 
-    async function enter(provider, model) {
-        if (state.isActive) return;
+    this.ui = new this.dependencies.GeminiChatUI(this.callbacks, this.dependencies);
+    this.container = this.ui.getContainer();
+    appLayer.appendChild(this.container);
 
-        state = { ...defaultState };
-        state.isActive = true;
-        state.provider = provider || 'gemini';
-        state.model = model || null;
+    this.ui.appendMessage(
+        "Greetings! What would you like to do?",
+        "ai",
+        true
+    );
 
-        // NEW: Gather and prepend context at the start of the session
-        const pwdResult = await CommandExecutor.processSingleCommand("pwd", { suppressOutput: true });
-        const lsResult = await CommandExecutor.processSingleCommand("ls -la", { suppressOutput: true });
-        const historyResult = await CommandExecutor.processSingleCommand("history", { suppressOutput: true });
+    this.container.focus();
+  }
 
-        const systemContext = `You are a helpful assistant operating inside a browser-based simulated OS called OopisOS. The user has opened this chat interface. Below is the context of their current terminal session. Use it to inform your answers.
-
-## OopisOS Session Context ##
-Current Directory:
-${pwdResult.output || '(unknown)'}
-
-Directory Listing (ls -la):
-${lsResult.output || '(empty)'}
-
-Recent Command History:
-${historyResult.output || '(none)'}
-`;
-        // Prepend the context to the conversation history as a system message.
-        // This is sent only once at the beginning of the conversation.
-        state.conversationHistory.push({ role: 'system', parts: [{ text: systemContext }] });
-
-        GeminiChatUI.buildAndShow({
-            onSendMessage: _sendMessage,
-            onExit: exit
-        });
+  exit() {
+    if (!this.isActive) return;
+    if (this.ui) {
+      this.ui.hideAndReset();
     }
+    this.dependencies.AppLayerManager.hide(this);
+    this.isActive = false;
+    this.state = {};
+    this.ui = null;
+  }
 
-    async function exit() {
-        if (!state.isActive) return;
-
-        GeminiChatUI.hideAndReset();
-        state = {};
+  handleKeyDown(event) {
+    if (event.key === "Escape") {
+      this.exit();
     }
+  }
 
-    async function _sendMessage(userInput) {
-        if (!userInput || userInput.trim() === '') return;
-
-        const userMessage = { role: 'user', parts: [{ text: userInput }] };
-        state.conversationHistory.push(userMessage);
-
-        GeminiChatUI.appendMessage(userInput, 'user');
-        GeminiChatUI.toggleLoader(true);
-
-        let apiKey = null;
-
-        if (state.provider === 'gemini') {
-            apiKey = StorageManager.loadItem(Config.STORAGE_KEYS.GEMINI_API_KEY);
-            if (!apiKey) {
-                GeminiChatUI.toggleLoader(false);
-                GeminiChatUI.appendMessage("Error: Gemini API key not set. Please run the `gemini` command in the terminal once to set it.", 'ai');
-                state.conversationHistory.pop();
-                return;
-            }
-        }
-
-        // The conversation history now naturally includes the system context at the beginning
-        const result = await Utils.callLlmApi(state.provider, state.model, state.conversationHistory, apiKey, null);
-
-        GeminiChatUI.toggleLoader(false);
-
-        if (result.success) {
-            const aiResponse = result.answer;
-            state.conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
-            GeminiChatUI.appendMessage(aiResponse, 'ai');
-        } else {
-            const errorMessage = `AI Error: ${result.error}`;
-            GeminiChatUI.appendMessage(errorMessage, 'ai');
-            state.conversationHistory.pop();
-        }
-    }
-
+  _createCallbacks() {
     return {
-        enter,
-        exit,
-        isActive: () => state.isActive
+      onSendMessage: async (userInput) => {
+        const { AIManager } = this.dependencies;
+        if (!userInput || userInput.trim() === "") return;
+
+        this.ui.appendMessage(userInput, "user", false);
+        this.state.conversationHistory.push({
+          role: "user",
+          parts: [{ text: userInput }],
+        });
+
+        this.ui.toggleLoader(true);
+
+        const verboseCallback = (message, typeClass) => {
+          this.ui.appendMessage(message, "system", false);
+        };
+
+        const agentResult = await AIManager.performAgenticSearch(
+            userInput,
+            this.state.conversationHistory,
+            this.state.provider,
+            this.state.model,
+            { isInteractive: true, ...this.state.options, verboseCallback, dependencies: this.dependencies }
+        );
+
+        this.ui.toggleLoader(false);
+
+        if (agentResult.success) {
+          const finalAnswer = agentResult.data;
+          this.state.conversationHistory.push({
+            role: "model",
+            parts: [{ text: finalAnswer }],
+          });
+          this.ui.appendMessage(finalAnswer, "ai", true);
+        } else {
+          this.ui.appendMessage(
+              `An error occurred: ${agentResult.error}`,
+              "ai",
+              true
+          );
+          this.state.conversationHistory.pop();
+        }
+      },
+      onExit: this.exit.bind(this),
+      onRunCommand: async (commandText) => {
+        const { CommandExecutor } = this.dependencies;
+        this.exit();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        await CommandExecutor.processSingleCommand(commandText, {
+          isInteractive: true,
+        });
+      },
     };
-})();
+  }
+}

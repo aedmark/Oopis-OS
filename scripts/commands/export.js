@@ -1,76 +1,66 @@
 // scripts/commands/export.js
-(() => {
-    "use strict";
 
-    const exportCommandDefinition = {
-        commandName: "export",
-        completionType: "paths", // Preserved for tab completion
-        argValidation: {
-            exact: 1,
-            error: "expects exactly one file path.",
-        },
-        coreLogic: async (context) => {
-            const { args } = context;
-            const pathArg = args[0];
+window.ExportCommand = class ExportCommand extends Command {
+    constructor() {
+        super({
+            commandName: "export",
+            description: "Downloads a file from OopisOS to your local machine.",
+            helpText: `Usage: export <file_path>
+      Download a file from OopisOS to your local machine.
+      DESCRIPTION
+      The export command initiates a browser download for the file
+      specified by <file_path>. This allows you to save files from
+      the OopisOS virtual file system onto your actual computer's
+      hard drive.
+      EXAMPLES
+      export /home/Guest/documents/report.txt
+      Triggers a download of 'report.txt' to your computer.`,
+            completionType: "paths",
+            validations: {
+                args: {
+                    exact: 1,
+                    error: "expects exactly one file path."
+                },
+                paths: [{
+                    argIndex: 0,
+                    options: {
+                        expectedType: 'file',
+                        permissions: ['read']
+                    }
+                }]
+            },
+        });
+    }
 
-            try {
-                const pathValidation = FileSystemManager.validatePath(pathArg, {
-                    expectedType: 'file',
-                    permissions: ['read']
-                });
+    async coreLogic(context) {
+        const { validatedPaths, dependencies } = context;
+        const { Config, Utils, ErrorHandler } = dependencies;
+        const { node, resolvedPath } = validatedPaths[0];
 
-                if (pathValidation.error) {
-                    return { success: false, error: `export: ${pathValidation.error.replace(pathArg + ':', '').trim()}` };
-                }
+        const fileName = resolvedPath.substring(
+            resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
+        );
 
-                const fileNode = pathValidation.node;
-                const fileName = pathValidation.resolvedPath.substring(
-                    pathValidation.resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
-                );
+        const blob = new Blob([node.content || ""], {
+            type: "text/plain;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
 
-                const blob = new Blob([fileNode.content || ""], {
-                    type: "text/plain;charset=utf-8",
-                });
-                const url = URL.createObjectURL(blob);
+        const a = Utils.createElement("a", {
+            href: url,
+            download: fileName,
+        });
 
-                const a = Utils.createElement("a", {
-                    href: url,
-                    download: fileName,
-                });
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-                URL.revokeObjectURL(url);
+        return ErrorHandler.createSuccess(
+            `${Config.MESSAGES.EXPORTING_PREFIX}${fileName}${Config.MESSAGES.EXPORTING_SUFFIX}`
+        );
+    }
+}
 
-                return {
-                    success: true,
-                    output: `${Config.MESSAGES.EXPORTING_PREFIX}${fileName}${Config.MESSAGES.EXPORTING_SUFFIX}`,
-                };
-            } catch (e) {
-                return {
-                    success: false,
-                    error: `export: Failed to download file: ${e.message}`,
-                };
-            }
-        },
-    };
-
-    const exportDescription = "Downloads a file from OopisOS to your local machine.";
-    const exportHelpText = `Usage: export <file_path>
-
-Download a file from OopisOS to your local machine.
-
-DESCRIPTION
-       The export command initiates a browser download for the file
-       specified by <file_path>. This allows you to save files from
-       the OopisOS virtual file system onto your actual computer's
-       hard drive.
-
-EXAMPLES
-       export /home/Guest/documents/report.txt
-              Triggers a download of 'report.txt' to your computer.`;
-
-    CommandRegistry.register("export", exportCommandDefinition, exportDescription, exportHelpText);
-})();
+window.CommandRegistry.register(new ExportCommand());

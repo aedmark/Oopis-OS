@@ -1,125 +1,137 @@
-const GroupManager = (() => {
-    "use strict";
-    let groups = {};
+// scripts/group_manager.js
 
-    function initialize() {
-        groups = StorageManager.loadItem(
-            Config.STORAGE_KEYS.USER_GROUPS,
-            "User Groups",
-            {}
-        );
-        if (!groups["root"]) {
-            createGroup("root");
-            addUserToGroup("root", "root");
-        }
-        if (!groups["Guest"]) {
-            createGroup("Guest");
-            addUserToGroup("Guest", "Guest");
-        }
-        if (!groups["userDiag"]) {
-            createGroup("userDiag");
-            addUserToGroup("userDiag", "userDiag");
-        }
-        console.log("GroupManager initialized.");
+class GroupManager {
+  constructor() {
+    this.groups = {};
+    this.dependencies = {};
+  }
+
+  setDependencies(dependencies) {
+    this.dependencies = dependencies;
+  }
+
+  initialize() {
+    const { StorageManager, Config } = this.dependencies;
+    this.groups = StorageManager.loadItem(
+        Config.STORAGE_KEYS.USER_GROUPS,
+        "User Groups",
+        {}
+    );
+    if (!this.groups["root"]) {
+      this.createGroup("root");
+      this.addUserToGroup("root", "root");
+    }
+    if (!this.groups["Guest"]) {
+      this.createGroup("Guest");
+      this.addUserToGroup("Guest", "Guest");
+    }
+    if (!this.groups["userDiag"]) {
+      this.createGroup("userDiag");
+      this.addUserToGroup("userDiag", "userDiag");
+    }
+    if (!this.groups["towncrier"]) {
+      this.createGroup("towncrier");
+    }
+    console.log("GroupManager initialized.");
+  }
+
+  _save() {
+    const { StorageManager, Config } = this.dependencies;
+    StorageManager.saveItem(
+        Config.STORAGE_KEYS.USER_GROUPS,
+        this.groups,
+        "User Groups"
+    );
+  }
+
+  groupExists(groupName) {
+    return !!this.groups[groupName];
+  }
+
+  createGroup(groupName) {
+    if (this.groupExists(groupName)) {
+      return false;
+    }
+    this.groups[groupName] = { members: [] };
+    this._save();
+    return true;
+  }
+
+  addUserToGroup(username, groupName) {
+    if (
+        this.groupExists(groupName) &&
+        !this.groups[groupName].members.includes(username)
+    ) {
+      this.groups[groupName].members.push(username);
+      this._save();
+      return true;
+    }
+    return false;
+  }
+
+  getGroupsForUser(username) {
+    const { StorageManager, Config } = this.dependencies;
+    const userGroups = [];
+    const users = StorageManager.loadItem(
+        Config.STORAGE_KEYS.USER_CREDENTIALS,
+        "User list",
+        {}
+    );
+    const primaryGroup = users[username]?.primaryGroup;
+
+    if (primaryGroup) {
+      userGroups.push(primaryGroup);
     }
 
-    function _save() {
-        StorageManager.saveItem(
-            Config.STORAGE_KEYS.USER_GROUPS,
-            groups,
-            "User Groups"
-        );
+    for (const groupName in this.groups) {
+      if (
+          this.groups[groupName].members &&
+          this.groups[groupName].members.includes(username)
+      ) {
+        if (!userGroups.includes(groupName)) {
+          userGroups.push(groupName);
+        }
+      }
+    }
+    return userGroups;
+  }
+
+  deleteGroup(groupName) {
+    const { StorageManager } = this.dependencies;
+    if (!this.groupExists(groupName)) {
+      return { success: false, error: `group '${groupName}' does not exist.` };
     }
 
-    function groupExists(groupName) {
-        return !!groups[groupName];
+    const users = StorageManager.loadItem(
+        this.dependencies.Config.STORAGE_KEYS.USER_CREDENTIALS,
+        "User list",
+        {}
+    );
+    for (const username in users) {
+      if (users[username].primaryGroup === groupName) {
+        return {
+          success: false,
+          error: `cannot remove group '${groupName}': it is the primary group of user '${username}'.`,
+        };
+      }
     }
 
-    function createGroup(groupName) {
-        if (groupExists(groupName)) {
-            return false;
-        }
-        groups[groupName] = { members: [] };
-        _save();
-        return true;
+    delete this.groups[groupName];
+    this._save();
+    return { success: true };
+  }
+
+  removeUserFromAllGroups(username) {
+    let changed = false;
+    for (const groupName in this.groups) {
+      const index = this.groups[groupName].members.indexOf(username);
+      if (index > -1) {
+        this.groups[groupName].members.splice(index, 1);
+        changed = true;
+      }
     }
-
-    function addUserToGroup(username, groupName) {
-        if (
-            groupExists(groupName) &&
-            !groups[groupName].members.includes(username)
-        ) {
-            groups[groupName].members.push(username);
-            _save();
-            return true;
-        }
-        return false;
+    if (changed) {
+      this._save();
     }
-
-    function getGroupsForUser(username) {
-        const userGroups = [];
-        const users = StorageManager.loadItem(
-            Config.STORAGE_KEYS.USER_CREDENTIALS,
-            "User list",
-            {}
-        );
-        const primaryGroup = users[username]?.primaryGroup;
-
-        if (primaryGroup) {
-            userGroups.push(primaryGroup);
-        }
-
-        for (const groupName in groups) {
-            if (
-                groups[groupName].members &&
-                groups[groupName].members.includes(username)
-            ) {
-                if (!userGroups.includes(groupName)) {
-                    userGroups.push(groupName);
-                }
-            }
-        }
-        return userGroups;
-    }
-
-    function deleteGroup(groupName) {
-        if (!groupExists(groupName)) {
-            return { success: false, error: `group '${groupName}' does not exist.` };
-        }
-
-        const users = StorageManager.loadItem(Config.STORAGE_KEYS.USER_CREDENTIALS, "User list", {});
-        for (const username in users) {
-            if (users[username].primaryGroup === groupName) {
-                return { success: false, error: `cannot remove group '${groupName}': it is the primary group of user '${username}'.` };
-            }
-        }
-
-        delete groups[groupName];
-        _save();
-        return { success: true };
-    }
-
-    function removeUserFromAllGroups(username) {
-        let changed = false;
-        for (const groupName in groups) {
-            const index = groups[groupName].members.indexOf(username);
-            if (index > -1) {
-                groups[groupName].members.splice(index, 1);
-                changed = true;
-            }
-        }
-        if (changed) {
-            _save();
-        }
-    }
-
-    return {
-        initialize,
-        createGroup,
-        deleteGroup,
-        addUserToGroup,
-        removeUserFromAllGroups,
-        getGroupsForUser,
-        groupExists,
-    };
-})();
+  }
+}

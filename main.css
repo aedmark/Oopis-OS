@@ -1,7 +1,5 @@
-/* OopisOS v4.0: Main Style Sheet */
-
-/* Design Tokens (Root Variables)
-/* ========================================================================== */
+/* OopisOS v5.1 Main Style Sheet */
+/* Design Tokens (Root Variables) */
 
 :root {
     --color-text-primary: #00ff5b;
@@ -26,53 +24,34 @@
     --color-border-primary: #52525b;
     --color-border-secondary: #3f3f46;
 
-    /* Typography */
     --font-family-mono: 'VT323', monospace;
     --font-family-sans: 'Inter', sans-serif;
     --font-size-sm: 0.875rem;
-    /* 14px */
     --font-size-base: 1rem;
-    /* 16px */
     --font-size-lg: 1.125rem;
-    /* 18px */
     --font-size-xl: 1.25rem;
-    /* 20px */
     --font-size-2xl: 1.5rem;
-    /* 24px */
     --line-height-base: 1.5;
     --line-height-terminal: 1.35;
 
-    /* Spacing */
     --spacing-xs: 0.25rem;
-    /* 4px */
     --spacing-sm: 0.5rem;
-    /* 8px */
     --spacing-md: 1rem;
-    /* 16px */
     --spacing-lg: 1.5rem;
-    /* 24px */
     --spacing-xl: 2rem;
-    /* 32px */
 
-    /* Borders & Radius */
     --border-radius-sm: 0.25rem;
-    /* 4px */
     --border-radius-md: 0.5rem;
-    /* 8px */
     --border-radius-lg: 1rem;
-    /* 16px */
     --border-width: 1px;
     --border-width-thick: 2px;
 
-    /* Shadows */
     --shadow-inset-light: inset 0 0 10px rgba(0, 255, 0, 0.1);
     --shadow-inset-dark: inset 0 0 15px rgba(0, 0, 0, 0.5);
     --shadow-drop-medium: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* 2. Base & Reset Styles
-/* ========================================================================== */
-/* A simple reset to ensure cross-browser consistency. */
+/* 2. Base & Reset Styles */
 
 *,
 *::before,
@@ -97,9 +76,7 @@ body {
     overflow: hidden;
 }
 
-/* 3. Layout Architecture
-/* ========================================================================== */
-/* Defines the primary layout containers of the application. */
+/* 3. Layout Architecture */
 
 #app-container {
     display: flex;
@@ -146,7 +123,7 @@ body {
     flex-grow: 1;
     display: flex;
     background-color: var(--color-background-medium);
-    border-radius: var(--border-radius-md); /* Match the terminal's rounding */
+    border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
     min-height: 0;
     width: 100%;
@@ -154,8 +131,7 @@ body {
     position: relative;
 }
 
-/* 4. Terminal Component (BEM-like)
-/* ========================================================================== */
+/* 4. Terminal Component (BEM-like) */
 
 .terminal {
     width: 100%;
@@ -212,9 +188,7 @@ body {
     white-space: pre-wrap;
 }
 
-/* 5. App Layer & Modals
-/* ========================================================================== */
-/* Styles for full-screen applications and modal dialogs. */
+/* 5. App Layer & Modals */
 
 #app-layer {
     position: absolute;
@@ -230,8 +204,6 @@ body {
     backdrop-filter: blur(2px);
 }
 
-
-/* Base styles for all modal dialogs */
 .modal-overlay {
     position: absolute;
     top: 0;
@@ -243,7 +215,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--border-radius-lg); /* Match the bezel's rounding */
+    border-radius: var(--border-radius-lg);
 }
 
 .modal-dialog {
@@ -306,10 +278,6 @@ body {
     border-color: var(--color-text-primary);
 }
 
-/* 6. General Components & Utilities
-/* ========================================================================== */
-
-/* General button styling */
 .btn {
     padding: var(--spacing-xs) var(--spacing-sm);
     border: var(--border-width) solid var(--color-border-primary);
@@ -338,8 +306,6 @@ body {
     border-color: var(--color-info);
 }
 
-
-/* Button modifiers */
 .btn--confirm {
     border-color: var(--color-success);
     color: var(--color-success);
@@ -360,9 +326,17 @@ body {
     color: var(--color-background-darkest);
 }
 
+.prose-output h3 {
+    color: var(--color-accent-sky);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border-primary);
+}
 
-/* Scrollbar styling for consistency */
-/* This is a global style for all scrollable areas in the OS */
+.prose-output p {
+    margin-bottom: var(--spacing-md);
+}
+
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -383,14 +357,11 @@ body {
     background-color: var(--color-accent-lime);
 }
 
-/* For Firefox */
 * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-text-primary) var(--color-background-darkest);
 }
 
-
-/* Utility classes to replace the config.js object */
 .hidden {
     display: none !important;
 }

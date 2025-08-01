@@ -1,53 +1,27 @@
-/* OopisOS v4.0 Chidi Style Sheet
-/* ========================================================================== */
+/* Chidi Style Sheet */
 
-#chidi-console-panel {
-    width: 95%;
-    height: 95%;
-    max-height: 95%;
-    max-width: 1200px;
-    background-color: var(--color-background-medium);
-    border: var(--border-width-thick) solid var(--color-border-secondary);
-    border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-inset-dark);
-    display: flex;
-    flex-direction: column;
+#chidi-app-container .app-main {
     padding: var(--spacing-md);
-    font-family: var(--font-family-mono), monospace;
-    color: var(--color-text-secondary);
-    position: relative;
-    overflow: hidden;
+    background-color: var(--color-background-darkest);
 }
 
-.chidi-console-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    gap: var(--spacing-md);
+#chidi-app-container .app-header {
     flex-wrap: nowrap;
-    padding-bottom: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
     background-color: transparent;
-    border-bottom: 1px solid var(--color-border-secondary);
+    padding: var(--spacing-sm) var(--spacing-md);
 }
 
-#chidi-mainTitle {
-    padding: 0;
-    margin: 0;
+#chidi-app-container .app-header__title {
     flex-shrink: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-align: left;
-    color: var(--color-info);
-    font-size: var(--font-size-xl);
+    text-align: center;
 }
 
-#chidi-markdownDisplay,
-.chidi-ask-container {
-    flex-grow: 1;
-    background-color: var(--color-background-darkest);
+.chidi-markdown-content {
+    width: 100%;
     color: var(--color-text-secondary);
     padding: var(--spacing-lg) var(--spacing-xl);
     border: 1px solid var(--color-border-secondary);
@@ -57,7 +31,7 @@
     line-height: 1.6;
 }
 
-.chidi-markdown-content>*+* {
+.chidi-markdown-content > * + * {
     margin-top: var(--spacing-md);
 }
 
@@ -71,80 +45,15 @@
     color: var(--color-info);
 }
 
-.chidi-markdown-content a {
-    color: var(--color-text-link);
-    text-decoration: none;
-}
-
-.chidi-markdown-content a:hover {
-    text-decoration: underline;
-}
-
-.chidi-markdown-content code:not(pre > code) {
-    background-color: var(--color-background-medium);
-    color: #fde047;
-    padding: 0.2rem 0.4rem;
-    border-radius: 3px;
-    font-size: 0.9em;
-}
-
-.chidi-markdown-content pre {
-    background-color: #000;
-    padding: 1rem;
-    border-radius: 4px;
-    overflow-x: auto;
-    border: 1px solid var(--color-border-secondary);
-}
-
-.chidi-markdown-content blockquote {
-    border-left: 4px solid var(--color-info);
-    padding-left: 1rem;
-    margin-left: 0;
-    font-style: italic;
-    color: var(--color-text-subtle);
-}
-
-.chidi-markdown-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
-}
-
-.chidi-markdown-content th,
-.chidi-markdown-content td {
-    border: 1px solid var(--color-border-primary);
-    padding: 0.5rem;
-    text-align: left;
-}
-
-.chidi-markdown-content th {
-    background-color: var(--color-background-light);
-}
-
-.chidi-ai-output {
-    border-top: 2px dashed var(--color-info);
-    margin-top: 2rem;
-    padding-top: 1rem;
-}
-
-.chidi-ask-textarea {
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border: none;
-    color: var(--color-text-primary);
-    font-size: 1.1rem;
-    resize: none;
-    outline: none;
-}
-
-.chidi-controls-container {
-    display: flex;
-    justify-content: space-between;
-    padding-top: 1rem;
-    margin-bottom: 0.5rem;
-    align-items: center;
-}
+.chidi-markdown-content a { color: var(--color-text-link); text-decoration: none; }
+.chidi-markdown-content a:hover { text-decoration: underline; }
+.chidi-markdown-content code:not(pre > code) { background-color: var(--color-background-medium); color: #fde047; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
+.chidi-markdown-content pre { background-color: #000; padding: 1rem; border-radius: 4px; overflow-x: auto; border: 1px solid var(--color-border-secondary); }
+.chidi-markdown-content blockquote { border-left: 4px solid var(--color-info); padding-left: 1rem; margin-left: 0; font-style: italic; color: var(--color-text-subtle); }
+.chidi-markdown-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.chidi-markdown-content th, .chidi-markdown-content td { border: 1px solid var(--color-border-primary); padding: 0.5rem; text-align: left; }
+.chidi-markdown-content th { background-color: var(--color-background-light); }
+.chidi-ai-output { border-top: 2px dashed var(--color-info); margin-top: 2rem; padding-top: 1rem; }
 
 .chidi-control-group {
     display: flex;
@@ -176,40 +85,6 @@
     cursor: not-allowed;
 }
 
-.chidi-exit-btn {
-    background-color: #3f1212;
-    color: #fca5a5;
-    border-color: var(--color-error);
-}
-
-.chidi-exit-btn:hover:not(:disabled) {
-    background-color: #5b2121;
-}
-
-.chidi-select {
-    max-width: 300px;
-    min-width: 0;
-    flex-shrink: 1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-    appearance: none;
-    -webkit-appearance: none;
-    text-align: center;
-}
-
-.chidi-status-readout {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    border-top: 1px solid var(--color-border-primary);
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
-    font-size: 1rem;
-    color: #888;
-}
-
 .chidi-status-message {
     flex-grow: 1;
     text-align: center;
@@ -219,11 +94,8 @@
 }
 
 .chidi-status-item {
-    flex-grow: 1;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 100px;
+    text-align: left;
 }
 
 .chidi-loader {
@@ -241,74 +113,4 @@
     to {
         visibility: hidden;
     }
-}
-
-/* Custom Selector Additions */
-/* ========================================================================== */
-
-.chidi-selector-container {
-    position: relative;
-    min-width: 150px;
-    flex-shrink: 1;
-}
-
-.chidi-selector-trigger {
-    width: 100%;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right: 2rem;
-    position: relative;
-}
-
-.chidi-selector-trigger::after {
-    content: '▼';
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%) scale(0.8);
-    color: var(--color-text-secondary);
-    pointer-events: none;
-}
-
-.chidi-selector-panel {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background-color: var(--color-background-dark);
-    border: 1px solid var(--color-border-primary);
-    border-radius: var(--border-radius-sm);
-    margin-top: var(--spacing-xs);
-    z-index: 1000;
-    overflow-y: auto;
-    box-shadow: var(--shadow-drop-medium);
-}
-
-.chidi-selector-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font-family: var(--font-family-mono), monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.chidi-selector-item:hover,
-.chidi-selector-item:focus {
-    background-color: var(--color-info);
-    color: var(--color-background-darkest);
-    outline: none;
-}
-
-.chidi-selector-item.selected {
-    font-weight: bold;
-    color: var(--color-success);
 }

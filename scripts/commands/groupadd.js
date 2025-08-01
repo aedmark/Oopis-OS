@@ -1,55 +1,54 @@
 // scripts/commands/groupadd.js
-(() => {
-    "use strict";
 
-    const groupaddCommandDefinition = {
-        commandName: "groupadd",
-        argValidation: { exact: 1, error: "Usage: groupadd <groupname>" },
-        coreLogic: async (context) => {
-            const { args, currentUser } = context;
-            const groupName = args[0];
-
-            try {
-                if (currentUser !== "root") {
-                    return { success: false, error: "groupadd: only root can add groups." };
+window.GroupaddCommand = class GroupaddCommand extends Command {
+    constructor() {
+        super({
+            commandName: "groupadd",
+            description: "Creates a new user group.",
+            helpText: `Usage: groupadd <groupname>
+      Create a new user group.
+      DESCRIPTION
+      The groupadd command creates a new group with the specified
+      <groupname>. Once a group is created, users can be added to it
+      with the 'usermod' command, and file group ownership can be
+      changed with the 'chgrp' command to manage permissions for
+      shared resources.
+      Group names cannot contain spaces.
+      EXAMPLES
+      groupadd developers
+      Creates a new group named 'developers'.
+      PERMISSIONS
+      Only the superuser (root) can create new groups.`,
+            validations: {
+                args: {
+                    exact: 1,
+                    error: "Usage: groupadd <groupname>"
                 }
+            },
+        });
+    }
 
-                if (GroupManager.groupExists(groupName)) {
-                    return {
-                        success: false,
-                        error: `groupadd: group '${groupName}' already exists.`,
-                    };
-                }
+    async coreLogic(context) {
+        const { args, currentUser, dependencies } = context;
+        const { GroupManager, ErrorHandler } = dependencies;
+        const groupName = args[0];
 
-                GroupManager.createGroup(groupName);
+        if (currentUser !== "root") {
+            return ErrorHandler.createError(
+                "groupadd: only root can add groups."
+            );
+        }
 
-                return { success: true, output: `Group '${groupName}' created.` };
-            } catch (e) {
-                return { success: false, error: `groupadd: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
+        if (GroupManager.groupExists(groupName)) {
+            return ErrorHandler.createError(
+                `groupadd: group '${groupName}' already exists.`
+            );
+        }
 
-    const groupaddDescription = "Creates a new user group.";
-    const groupaddHelpText = `Usage: groupadd <groupname>
+        GroupManager.createGroup(groupName);
 
-Create a new user group.
+        return ErrorHandler.createSuccess(`Group '${groupName}' created.`);
+    }
+}
 
-DESCRIPTION
-       The groupadd command creates a new group with the specified
-       <groupname>. Once a group is created, users can be added to it
-       with the 'usermod' command, and file group ownership can be
-       changed with the 'chgrp' command to manage permissions for
-       shared resources.
-
-       Group names cannot contain spaces.
-
-EXAMPLES
-       groupadd developers
-              Creates a new group named 'developers'.
-
-PERMISSIONS
-       Only the superuser (root) can create new groups.`;
-
-    CommandRegistry.register("groupadd", groupaddCommandDefinition, groupaddDescription, groupaddHelpText);
-})();
+window.CommandRegistry.register(new GroupaddCommand());

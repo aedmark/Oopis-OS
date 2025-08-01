@@ -1,32 +1,14 @@
-/* OopisOS v4.0 Captain's Log Style Sheet */
-/* ========================================================================== */
+/* Captain's Log Style Sheet */
 
-.log-app__container {
-    display: flex;
-    flex-direction: column;
-    width: 95%;
-    height: 95%;
-    max-width: 1024px;
-    background-color: var(--color-background-dark);
-    border: var(--border-width-thick) solid var(--color-border-primary);
-    border-radius: var(--border-radius-md);
+#captains-log-app-container .app-main {
     padding: var(--spacing-md);
+    padding-top: 0;
     gap: var(--spacing-md);
-    font-family: var(--font-family-sans), sans-serif;
 }
 
-.log-app__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    padding-bottom: var(--spacing-sm);
-    border-bottom: var(--border-width) solid var(--color-border-secondary);
-}
-
-.log-app__header h2 {
-    color: var(--color-info);
-    font-size: var(--font-size-xl);
+#captains-log-app-container .app-header {
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
 }
 
 .log-app__search {
@@ -35,35 +17,12 @@
     border-radius: var(--border-radius-sm);
     color: var(--color-text-primary);
     padding: var(--spacing-xs) var(--spacing-sm);
-    width: 50%;
+    flex-grow: 1; /* Allow search to take up space */
 }
 
 .log-app__actions {
     display: flex;
     gap: var(--spacing-sm);
-}
-
-.log-app__btn {
-    background-color: var(--color-background-light);
-    color: var(--color-text-secondary);
-    border: var(--border-width) solid var(--color-border-primary);
-    padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-
-.log-app__btn:hover {
-    background-color: var(--color-info);
-    color: var(--color-background-darkest);
-}
-
-.log-app__btn--exit {
-    background-color: var(--color-background-medium);
-}
-
-.log-app__btn--exit:hover {
-    background-color: var(--color-error);
 }
 
 .log-app__main {
@@ -125,4 +84,11 @@
     overflow-y: auto;
     color: var(--color-text-primary);
     line-height: var(--line-height-base);
+    font-family: var(--font-family-sans), sans-serif;
+    border: none;
+    resize: none;
+}
+
+.log-app__content-pane:focus {
+    outline: 1px solid var(--color-info);
 }

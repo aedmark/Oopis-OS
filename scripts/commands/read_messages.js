@@ -1,32 +1,58 @@
-// /scripts/commands/read_messages.js
+// scripts/commands/read_messages.js
 
-(() => {
-    "use strict";
+window.ReadMessagesCommand = class ReadMessagesCommand extends Command {
+    constructor() {
+        super({
+            commandName: "read_messages",
+            description: "Reads all messages from a job's message queue.",
+            helpText: `Usage: read_messages <job_id>
+      Read all messages from a background job's message queue.
+      DESCRIPTION
+      The read_messages command retrieves all pending string messages for
+      the specified <job_id>. This is the counterpart to 'post_message'.
+      Once read, the messages are removed from the queue.
+      This command is intended for use within scripts ('run' command) to
+      allow background processes to be controlled by other processes.
+      The output is a space-separated string of all messages.
+      EXAMPLES
+      (In a script running as job 2)
+      loop_variable=true
+      while $loop_variable; do
+          messages=$(read_messages 2)
+          if [[ "$messages" == "stop" ]]; then
+              loop_variable=false
+          fi
+          delay 1000
+      done`,
+            validations: {
+                args: {
+                    exact: 1
+                }
+            },
+        });
+    }
 
-    const readMessagesCommandDefinition = {
-        commandName: "read_messages",
-        argValidation: { exact: 0 },
-        coreLogic: async (context) => {
-            const jobId = context.options?.jobId;
+    async coreLogic(context) {
+        const { args, dependencies } = context;
+        const { MessageBusManager, ErrorHandler } = dependencies;
 
-            if (jobId === undefined) {
-                return { success: false, error: "read_messages: can only be run from within a background job." };
+        try {
+            const jobId = parseInt(args[0], 10);
+
+            if (isNaN(jobId)) {
+                return ErrorHandler.createError(
+                    `read_messages: invalid job ID: ${args[0]}`
+                );
             }
 
             const messages = MessageBusManager.getMessages(jobId);
+            return ErrorHandler.createSuccess(messages.join(" "));
+        } catch (e) {
+            return ErrorHandler.createError(
+                `read_messages: An unexpected error occurred: ${e.message}`
+            );
+        }
+    }
+}
 
-            if (messages.length === 0) {
-                return { success: true, output: "" };
-            }
-
-            return { success: true, output: messages.join('\n') };
-        },
-    };
-
-    CommandRegistry.register(
-        "read_messages",
-        readMessagesCommandDefinition,
-        "Reads messages from the job's own message queue.",
-        "Usage: read_messages (must be run within a background job)"
-    );
-})();
+window.CommandRegistry.register(new ReadMessagesCommand());

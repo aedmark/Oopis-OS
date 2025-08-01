@@ -1,33 +1,20 @@
-/* Gemini Chat Application Styles */
-#gemini-chat-container {
-    display: flex;
-    flex-direction: column;
-    width: 95%;
-    max-width: 900px;
-    height: 95%;
-    background-color: var(--color-background-dark);
-    border: var(--border-width-thick) solid var(--color-border-primary);
-    border-radius: var(--border-radius-md);
+/* Gemini Chat Application Style Sheet */
+
+#gemini-chat-app-container .app-main {
     padding: var(--spacing-md);
-    box-shadow: var(--shadow-drop-medium);
-    font-family: var(--font-family-sans), sans-serif;
-    color: var(--color-text-secondary);
+    padding-bottom: 0;
 }
 
-.gemini-chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--color-border-secondary);
-    color: var(--color-info);
+#gemini-chat-app-container .app-footer {
+    padding: var(--spacing-md);
+    padding-top: 0;
+    border-top: none;
 }
 
 .gemini-chat-messages {
     flex-grow: 1;
     overflow-y: auto;
-    padding: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);

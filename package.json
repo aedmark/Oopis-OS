@@ -1,6 +1,6 @@
 {
   "name": "oopisos",
-  "version": "4.1.0",
+  "version": "5.1.0",
   "description": "OopisOS Pocket",
   "keywords": [
     "OS"
@@ -15,7 +15,8 @@
   },
   "license": "MIT",
   "author": "Andrew Edmark & Gemini <oopismcgoopis@gmail.com> (https://oopisos.com/)",
-  "main": "electron.js",
+  "main": "electron.cjs",
+  "type": "module",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
@@ -42,7 +43,12 @@
     }
   },
   "devDependencies": {
+    "@eslint/js": "^9.31.0",
     "electron": "^37.2.0",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "globals": "^16.3.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
   }
 }

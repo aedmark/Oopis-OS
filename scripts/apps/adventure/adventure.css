@@ -1,5 +1,4 @@
-/* OopisOS v4.0 Adventure Style Sheet */
-/* ========================================================================== */
+/* Adventure Style Sheet */
 
 #adventure-container {
     display: flex;
@@ -18,7 +17,6 @@
 }
 
 #adventure-header {
-    /* The "Infocom" status line */
     display: flex;
     justify-content: space-between;
     align-items: center;

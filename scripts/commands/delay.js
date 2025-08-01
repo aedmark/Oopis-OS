@@ -1,87 +1,84 @@
 // scripts/commands/delay.js
-(() => {
-    "use strict";
 
-    const delayCommandDefinition = {
-        commandName: "delay",
-        argValidation: {
-            exact: 1,
-        },
-
-        coreLogic: async (context) => {
-            const { args, options, signal } = context;
-
-            try {
-                const parsedArg = Utils.parseNumericArg(args[0], {
-                    allowFloat: false,
-                    allowNegative: false,
-                    min: 1,
-                });
-
-                if (parsedArg.error) {
-                    return {
-                        success: false,
-                        error: `delay: Invalid delay time '${args[0]}': ${parsedArg.error}. Must be a positive integer.`,
-                    };
+window.DelayCommand = class DelayCommand extends Command {
+    constructor() {
+        super({
+            commandName: "delay",
+            description: "Pauses script or command execution for a specified time.",
+            helpText: `Usage: delay <milliseconds>
+      Pause execution for a specified time.
+      DESCRIPTION
+      The delay command pauses execution for the specified number of
+      milliseconds.
+      It is primarily used within scripts ('run' command) to create
+      timed sequences or demonstrations.
+      EXAMPLES
+      delay 1000
+      Waits for 1000 milliseconds (1 second).
+      delay 5000 &
+      Starts a 5-second delay in the background. The job ID
+      will be printed, and you can see it with 'ps'.`,
+            validations: {
+                args: {
+                    exact: 1
                 }
+            },
+        });
+    }
 
-                const ms = parsedArg.value;
+    async coreLogic(context) {
+        const { args, options, signal, dependencies } = context;
+        const { Utils, ErrorHandler, OutputManager } = dependencies;
 
-                if (options.isInteractive && !options.scriptingContext) {
-                    await OutputManager.appendToOutput(`Delaying for ${ms}ms...`);
-                }
+        const parsedArg = Utils.parseNumericArg(args[0], {
+            allowFloat: false,
+            allowNegative: false,
+            min: 1,
+        });
 
-                if (signal?.aborted) {
-                    return { success: false, error: `delay: Operation already cancelled.` };
-                }
+        if (parsedArg.error) {
+            return ErrorHandler.createError(
+                `delay: Invalid delay time '${args[0]}': ${parsedArg.error}. Must be a positive integer.`
+            );
+        }
 
-                const delayPromise = new Promise((resolve) => setTimeout(resolve, ms));
+        const ms = parsedArg.value;
 
-                const abortPromise = new Promise((_, reject) => {
-                    if (!signal) return;
-                    signal.addEventListener(
-                        "abort",
-                        () => {
-                            reject(
-                                new Error(`Operation cancelled. (Reason: ${signal.reason})`)
-                            );
-                        },
-                        { once: true }
-                    );
-                });
+        if (options.isInteractive && !options.scriptingContext) {
+            await OutputManager.appendToOutput(`Delaying for ${ms}ms...`);
+        }
 
-                await Promise.race([delayPromise, abortPromise]);
+        if (signal?.aborted) {
+            return ErrorHandler.createError(
+                `delay: Operation already cancelled.`
+            );
+        }
 
-                if (options.isInteractive && !options.scriptingContext) {
-                    await OutputManager.appendToOutput(`Delay complete.`);
-                }
-                return { success: true, output: "" };
-            } catch (e) {
-                return { success: false, error: `delay: ${e.message}` };
-            }
-        },
-    };
+        // Use a safe delay function instead of setTimeout
+        const delayPromise = Utils.safeDelay(ms);
 
-    const delayDescription = "Pauses execution for a specified time.";
+        const abortPromise = new Promise((resolve) => {
+            if (!signal) return;
+            signal.addEventListener(
+                "abort",
+                () => {
+                    resolve("cancelled");
+                },
+                { once: true }
+            );
+        });
 
-    const delayHelpText = `Usage: delay <milliseconds>
+        const result = await Promise.race([delayPromise, abortPromise]);
+        
+        if (result === "cancelled") {
+            return ErrorHandler.createSuccess("");
+        }
 
-Pause execution for a specified time.
+        if (options.isInteractive && !options.scriptingContext) {
+            await OutputManager.appendToOutput(`Delay complete.`);
+        }
+        return ErrorHandler.createSuccess("");
+    }
+}
 
-DESCRIPTION
-       The delay command pauses execution for the specified number of
-       milliseconds.
-
-       It is primarily used within scripts (\`run\` command) to create
-       timed sequences or demonstrations.
-
-EXAMPLES
-       delay 1000
-              Waits for 1000 milliseconds (1 second).
-
-       delay 5000 &
-              Starts a 5-second delay in the background. The job ID
-              will be printed, and you can see it with 'ps'.`;
-
-    CommandRegistry.register("delay", delayCommandDefinition, delayDescription, delayHelpText);
-})();
+window.CommandRegistry.register(new DelayCommand());

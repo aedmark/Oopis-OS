@@ -1,51 +1,50 @@
 // scripts/commands/groupdel.js
-(() => {
-    "use strict";
 
-    const groupdelCommandDefinition = {
-        commandName: "groupdel",
-        argValidation: { exact: 1, error: "Usage: groupdel <groupname>" },
-        coreLogic: async (context) => {
-            const { args, currentUser } = context;
-            const groupName = args[0];
-
-            try {
-                if (currentUser !== "root") {
-                    return { success: false, error: "groupdel: only root can delete groups." };
+window.GroupdelCommand = class GroupdelCommand extends Command {
+    constructor() {
+        super({
+            commandName: "groupdel",
+            description: "Deletes an existing user group.",
+            helpText: `Usage: groupdel <groupname>
+      Delete an existing user group.
+      DESCRIPTION
+      The groupdel command deletes the group specified by <groupname>.
+      You cannot remove the primary group of an existing user. You must
+      either delete the user first ('removeuser') or change their
+      primary group before deleting the group.
+      EXAMPLES
+      groupdel developers
+      Deletes the group named 'developers'.
+      PERMISSIONS
+      Only the superuser (root) can delete groups.`,
+            validations: {
+                args: {
+                    exact: 1,
+                    error: "Usage: groupdel <groupname>"
                 }
+            },
+        });
+    }
 
-                const result = GroupManager.deleteGroup(groupName);
+    async coreLogic(context) {
+        const { args, currentUser, dependencies } = context;
+        const { GroupManager, ErrorHandler } = dependencies;
+        const groupName = args[0];
 
-                if (!result.success) {
-                    return { success: false, error: `groupdel: ${result.error}` };
-                }
+        if (currentUser !== "root") {
+            return ErrorHandler.createError(
+                "groupdel: only root can delete groups."
+            );
+        }
 
-                return { success: true, output: `Group '${groupName}' deleted.` };
-            } catch (e) {
-                return { success: false, error: `groupdel: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
+        const result = GroupManager.deleteGroup(groupName);
 
-    const groupdelDescription = "Deletes an existing user group.";
-    const groupdelHelpText = `Usage: groupdel <groupname>
+        if (!result.success) {
+            return ErrorHandler.createError(`groupdel: ${result.error}`);
+        }
 
-Delete an existing user group.
+        return ErrorHandler.createSuccess(`Group '${groupName}' deleted.`);
+    }
+}
 
-DESCRIPTION
-       The groupdel command deletes the group specified by <groupname>.
-
-       You cannot remove the primary group of an existing user. You must
-       either delete the user first ('removeuser') or change their
-       primary group before deleting the group.
-
-EXAMPLES
-       groupdel developers
-              Deletes the group named 'developers'.
-
-PERMISSIONS
-       Only the superuser (root) can delete groups.`;
-
-    // The variable name here is now correct.
-    CommandRegistry.register("groupdel", groupdelCommandDefinition, groupdelDescription, groupdelHelpText);
-})();
+window.CommandRegistry.register(new GroupdelCommand());

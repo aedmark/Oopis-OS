@@ -1,68 +1,64 @@
 // scripts/commands/echo.js
-(() => {
-    "use strict";
 
-    const echoCommandDefinition = {
-        commandName: "echo",
-        flagDefinitions: [
-            {name: "enableBackslashEscapes", short: "-e"}
-        ],
-        coreLogic: async (context) => {
-            try {
-                let output = context.args.join(" ");
+window.EchoCommand = class EchoCommand extends Command {
+    constructor() {
+        super({
+            commandName: "echo",
+            description: "Writes arguments to the standard output.",
+            helpText: `Usage: echo [-e] [STRING]...
+      Write arguments to the standard output.
+      DESCRIPTION
+      The echo utility writes its arguments separated by spaces,
+      terminated by a newline, to the standard output.
+      OPTIONS
+      -e     Enable interpretation of backslash escapes.
+      ESCAPES
+      If -e is in effect, the following sequences are recognized:
+      \\\\     backslash
+      \\n     new line
+      \\t     horizontal tab
+      \\c     produce no further output (the trailing newline is suppressed)
+      BRACE EXPANSION
+      The shell supports brace expansion before passing arguments to echo:
+      {a,b,c}    Comma expansion - expands to separate arguments
+      {1..10}    Sequence expansion - numeric ranges
+      {a..z}     Sequence expansion - alphabetic ranges
+      EXAMPLES
+      echo Hello, world!
+      Displays "Hello, world!".
+      echo -e "A line.\\nA second line."
+      Displays two lines of text.
+      echo "User: $USER"
+      Displays the name of the current user by expanding the
+      $USER environment variable.
+      echo file{1,2,3}.txt
+      Displays "file1.txt file2.txt file3.txt".
+      echo {1..5}
+      Displays "1 2 3 4 5".`,
+            flagDefinitions: [{ name: "enableBackslashEscapes", short: "-e" }],
+        });
+    }
 
-                if (context.flags.enableBackslashEscapes) {
-                    // Interpret backslash escapes
-                    output = output.replace(/\\\\n/g, '\\n')
-                        .replace(/\\\\t/g, '\\t')
-                        .replace(/\\\\c/g, '') // Used to stop further output
-                        .replace(/\\\\\\\\/g, '\\\\');
-                }
+    async coreLogic(context) {
+        const { ErrorHandler } = context.dependencies;
+        let output = context.args.join(" ");
+        let suppressNewline = false;
 
-                // Handle the \\c sequence, which suppresses the trailing newline and further output.
-                const parts = output.split('\\\\c');
-                const finalOutput = parts[0];
-
-                return {
-                    success: true,
-                    output: finalOutput,
-                };
-            } catch (e) {
-                return { success: false, error: `echo: An unexpected error occurred: ${e.message}` };
+        if (context.flags.enableBackslashEscapes) {
+            const cIndex = output.indexOf("\\c");
+            if (cIndex !== -1) {
+                output = output.substring(0, cIndex);
+                suppressNewline = true;
             }
-        },
-    };
 
-    const echoDescription = "Writes arguments to the standard output.";
+            output = output
+                .replace(/\\n/g, "\n")
+                .replace(/\\t/g, "\t")
+                .replace(/\\\\/g, "\\");
+        }
 
-    const echoHelpText = `Usage: echo [-e] [STRING]...
+        return ErrorHandler.createSuccess(output, { suppressNewline });
+    }
+}
 
-Write arguments to the standard output.
-
-DESCRIPTION
-       The echo utility writes its arguments separated by spaces,
-       terminated by a newline, to the standard output.
-
-OPTIONS
-       -e     Enable interpretation of backslash escapes.
-
-ESCAPES
-       If -e is in effect, the following sequences are recognized:
-       \\\\\\\\     backslash
-       \\\\n     new line
-       \\\\t     horizontal tab
-       \\\\c     produce no further output (the trailing newline is suppressed)
-
-EXAMPLES
-       echo Hello, world!
-              Displays "Hello, world!".
-
-       echo -e "A line.\\\\nA second line."
-              Displays two lines of text.
-
-       echo "User: $USER"
-              Displays the name of the current user by expanding the
-              $USER environment variable.`;
-
-    CommandRegistry.register("echo", echoCommandDefinition, echoDescription, echoHelpText);
-})();
+window.CommandRegistry.register(new EchoCommand());

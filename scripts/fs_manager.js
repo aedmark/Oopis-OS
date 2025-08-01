@@ -1,759 +1,872 @@
-const FileSystemManager = (() => {
-    "use strict";
+// scripts/fs_manager.js
 
-    let fsData = {};
-    let currentPath = Config.FILESYSTEM.ROOT_PATH;
+class FileSystemManager {
+  constructor(config) {
+    this.config = config;
+    this.fsData = {};
+    this.currentPath = this.config.FILESYSTEM.ROOT_PATH;
+    this.dependencies = {};
+    this.storageHAL = null;
+  }
 
-    const OOPIS_CONF_CONTENT = `TERMINAL.PROMPT_CHAR=>
-OS.DEFAULT_HOST_NAME=OopisOS
-MESSAGES.WELCOME_PREFIX=Welcome,
-MESSAGES.WELCOME_SUFFIX=!`;
+  setDependencies(dependencies) {
+    this.dependencies = dependencies;
+    this.userManager = dependencies.UserManager;
+    this.groupManager = dependencies.GroupManager;
+    this.storageHAL = dependencies.StorageHAL;
+  }
 
-    async function initialize(guestUsername) {
-        const nowISO = new Date().toISOString();
-        fsData = {
-            [Config.FILESYSTEM.ROOT_PATH]: {
-                type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+  async initialize(guestUsername) {
+    const nowISO = new Date().toISOString();
+    this.fsData = {
+      [this.config.FILESYSTEM.ROOT_PATH]: {
+        type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+        children: {
+          home: {
+            type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+            children: {},
+            owner: "root",
+            group: "root",
+            mode: 0o755,
+            mtime: nowISO,
+          },
+          etc: {
+            type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+            children: {
+              'sudoers': {
+                type: this.config.FILESYSTEM.DEFAULT_FILE_TYPE,
+                content: "# /etc/sudoers\n#\n# This file MUST be edited with the 'visudo' command as root.\n\nroot ALL=(ALL) ALL\n%root ALL=(ALL) ALL\n",
+                owner: 'root',
+                group: 'root',
+                mode: 0o440,
+                mtime: nowISO,
+              },
+              'agenda.json': {
+                type: this.config.FILESYSTEM.DEFAULT_FILE_TYPE,
+                content: "[]",
+                owner: 'root',
+                group: 'root',
+                mode: 0o644,
+                mtime: nowISO,
+              }
+            },
+            owner: "root",
+            group: "root",
+            mode: 0o755,
+            mtime: nowISO,
+          },
+          var: {
+            type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+            children: {
+              log: {
+                type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
                 children: {
-                    home: {
-                        type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-                        children: {},
-                        owner: "root",
-                        group: "root",
-                        mode: 0o755,
-                        mtime: nowISO,
-                    },
-                    etc: {
-                        type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-                        children: {},
-                        owner: "root",
-                        group: "root",
-                        mode: 0o755,
-                        mtime: nowISO,
-                    },
+                  'bulletin.md': {
+                    type: this.config.FILESYSTEM.DEFAULT_FILE_TYPE,
+                    content: "# OopisOS Town Bulletin\n",
+                    owner: "root",
+                    group: "towncrier",
+                    mode: 0o666,
+                    mtime: nowISO,
+                  }
                 },
                 owner: "root",
                 group: "root",
                 mode: 0o755,
                 mtime: nowISO,
+              }
             },
-        };
-        await createUserHomeDirectory("root");
-        await createUserHomeDirectory(guestUsername);
-        const rootNode = fsData[Config.FILESYSTEM.ROOT_PATH];
-        if (rootNode) {
-            if (rootNode) {
-                rootNode.children["etc"] = {
-                    type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-                    children: {},
-                    owner: "root",
-                    group: "root",
-                    mode: 0o755,
-                    mtime: nowISO,
-                };
-                rootNode.mtime = nowISO;
-
-                const etcNode = rootNode.children["etc"];
-                if (etcNode) {
-                    etcNode.children["oopis.conf"] = {
-                        type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-                        content: OOPIS_CONF_CONTENT,
-                        owner: "root",
-                        group: "root",
-                        mode: 0o644,
-                        mtime: nowISO,
-                    };
-                    etcNode.mtime = nowISO;
-                } else {
-                    console.error("FileSystemManager: Failed to create /etc directory.");
-                }
-            } else {
-                console.error(
-                    "FileSystemManager: Root node not found during initialization. Critical error."
-                );
-            }
-        } else {
-            console.error(
-                "FileSystemManager: Root node not found during initialization. Critical error."
-            );
-        }
-    }
-
-    async function createUserHomeDirectory(username) {
-        if (!fsData["/"]?.children?.home) {
-            console.error(
-                "FileSystemManager: Cannot create user home directory, /home does not exist."
-            );
-            return;
-        }
-        const homeDirNode = fsData["/"].children.home;
-        if (!homeDirNode.children[username]) {
-            homeDirNode.children[username] = {
-                type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-                children: {},
-                owner: username,
-                group: username,
-                mode: 0o700,
-                mtime: new Date().toISOString(),
-            };
-            homeDirNode.mtime = new Date().toISOString();
-        }
-    }
-
-    async function save() {
-        const totalSize = _calculateTotalSize();
-        if (totalSize > Config.FILESYSTEM.MAX_VFS_SIZE) {
-            const errorMsg = `Disk quota exceeded. (Usage: ${Utils.formatBytes(
-                totalSize
-            )} / ${Utils.formatBytes(
-                Config.FILESYSTEM.MAX_VFS_SIZE
-            )}). Reverting last operation.`;
-            await OutputManager.appendToOutput(errorMsg, {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-            });
-            await load();
-            return false;
-        }
-        let db;
-        try {
-            db = IndexedDBManager.getDbInstance();
-        } catch (e) {
-            await OutputManager.appendToOutput(
-                "Error: File system storage not available for saving.", {
-                    typeClass: Config.CSS_CLASSES.ERROR_MSG,
-                }
-            );
-            return Promise.reject(Config.INTERNAL_ERRORS.DB_NOT_INITIALIZED_FS_SAVE);
-        }
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(
-                [Config.DATABASE.FS_STORE_NAME],
-                "readwrite"
-            );
-            const store = transaction.objectStore(Config.DATABASE.FS_STORE_NAME);
-            const request = store.put({
-                id: Config.DATABASE.UNIFIED_FS_KEY,
-                data: Utils.deepCopyNode(fsData),
-            });
-            request.onsuccess = () => resolve(true);
-            request.onerror = (event) => {
-                OutputManager.appendToOutput(
-                    "Error: OopisOs failed to save the file system.", {
-                        typeClass: Config.CSS_CLASSES.ERROR_MSG,
-                    }
-                );
-                reject(event.target.error);
-            };
-        });
-    }
-
-    async function load() {
-        let db;
-        try {
-            db = IndexedDBManager.getDbInstance();
-        } catch (e) {
-            await initialize(Config.USER.DEFAULT_NAME);
-            return Promise.reject(Config.INTERNAL_ERRORS.DB_NOT_INITIALIZED_FS_LOAD);
-        }
-        return new Promise(async (resolve, reject) => {
-            const transaction = db.transaction(
-                [Config.DATABASE.FS_STORE_NAME],
-                "readonly"
-            );
-            const store = transaction.objectStore(Config.DATABASE.FS_STORE_NAME);
-            const request = store.get(Config.DATABASE.UNIFIED_FS_KEY);
-            request.onsuccess = async (event) => {
-                const result = event.target.result;
-                if (result && result.data) {
-                    fsData = result.data;
-                } else {
-                    await OutputManager.appendToOutput(
-                        "No file system found. Initializing new one.", {
-                            typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG,
-                        }
-                    );
-                    await initialize(Config.USER.DEFAULT_NAME);
-                    await save();
-                }
-                resolve();
-            };
-            request.onerror = async (event) => {
-                await initialize(Config.USER.DEFAULT_NAME);
-                reject(event.target.error);
-            };
-        });
-    }
-
-    async function clearAllFS() {
-        let db;
-        try {
-            db = IndexedDBManager.getDbInstance();
-        } catch (e) {
-            await OutputManager.appendToOutput(
-                "Error: File system storage not available for clearing all data.", {
-                    typeClass: Config.CSS_CLASSES.ERROR_MSG,
-                }
-            );
-            return Promise.reject(Config.INTERNAL_ERRORS.DB_NOT_INITIALIZED_FS_CLEAR);
-        }
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(
-                [Config.DATABASE.FS_STORE_NAME],
-                "readwrite"
-            );
-            const store = transaction.objectStore(Config.DATABASE.FS_STORE_NAME);
-            const request = store.clear();
-            request.onsuccess = () => resolve(true);
-            request.onerror = (event) => {
-                console.error("Error clearing FileSystemsStore:", event.target.error);
-                OutputManager.appendToOutput(
-                    "Error: OopisOs could not clear all user file systems. Your data might still be present. Please try the operation again.", {
-                        typeClass: Config.CSS_CLASSES.ERROR_MSG,
-                    }
-                );
-                reject(event.target.error);
-            };
-        });
-    }
-
-    function getCurrentPath() {
-        return currentPath;
-    }
-
-    function setCurrentPath(path) {
-        currentPath = path;
-    }
-
-    function getFsData() {
-        return fsData;
-    }
-
-    function setFsData(newData) {
-        fsData = newData;
-    }
-
-    // --- Start of Refactored Functions ---
-
-    /**
-     * The Path Resolver.
-     * Takes a user-provided path string and resolves it to a true, absolute path.
-     * @param {string} targetPath - The path to resolve.
-     * @param {string} [basePath=currentPath] - The base path to resolve from.
-     * @returns {string} The absolute path.
-     */
-    function getAbsolutePath(targetPath, basePath = currentPath) {
-        if (!targetPath) targetPath = Config.FILESYSTEM.CURRENT_DIR_SYMBOL;
-        let effectiveBasePath = basePath;
-        if (targetPath.startsWith(Config.FILESYSTEM.PATH_SEPARATOR))
-            effectiveBasePath = Config.FILESYSTEM.ROOT_PATH;
-        const baseSegments =
-            effectiveBasePath === Config.FILESYSTEM.ROOT_PATH ?
-                [] :
-                effectiveBasePath
-                    .substring(1)
-                    .split(Config.FILESYSTEM.PATH_SEPARATOR)
-                    .filter((s) => s && s !== Config.FILESYSTEM.CURRENT_DIR_SYMBOL);
-        let resolvedSegments = [...baseSegments];
-        const targetSegments = targetPath.split(Config.FILESYSTEM.PATH_SEPARATOR);
-        for (const segment of targetSegments) {
-            if (segment === "" || segment === Config.FILESYSTEM.CURRENT_DIR_SYMBOL) {
-                if (
-                    targetPath.startsWith(Config.FILESYSTEM.PATH_SEPARATOR) &&
-                    resolvedSegments.length === 0 &&
-                    segment === ""
-                ) {}
-                continue;
-            }
-            if (segment === Config.FILESYSTEM.PARENT_DIR_SYMBOL) {
-                if (resolvedSegments.length > 0) resolvedSegments.pop();
-            } else resolvedSegments.push(segment);
-        }
-        if (resolvedSegments.length === 0) return Config.FILESYSTEM.ROOT_PATH;
-        return (
-            Config.FILESYSTEM.PATH_SEPARATOR +
-            resolvedSegments.join(Config.FILESYSTEM.PATH_SEPARATOR)
-        );
-    }
-
-    /**
-     * The Node Retriever.
-     * Traverses the file system from an absolute path and returns the corresponding node.
-     * It performs permission checks during traversal.
-     * @param {string} absolutePath - The absolute path to the node.
-     * @returns {object|null} The node object if found and accessible, otherwise null.
-     */
-    function getNodeByPath(absolutePath) {
-        const currentUser = UserManager.getCurrentUser().name;
-        if (absolutePath === Config.FILESYSTEM.ROOT_PATH) {
-            return fsData[Config.FILESYSTEM.ROOT_PATH];
-        }
-        const segments = absolutePath
-            .substring(1)
-            .split(Config.FILESYSTEM.PATH_SEPARATOR)
-            .filter((s) => s);
-        let currentNode = fsData[Config.FILESYSTEM.ROOT_PATH];
-        for (const segment of segments) {
-            if (!hasPermission(currentNode, currentUser, "execute")) {
-                return null; // Permission denied during traversal
-            }
-            if (!currentNode.children || !currentNode.children[segment]) {
-                return null; // Path does not exist
-            }
-            currentNode = currentNode.children[segment];
-        }
-        return currentNode;
-    }
-
-    /**
-     * The Path Validator.
-     * Orchestrates path resolution, node retrieval, and final validation checks.
-     * @param {string} pathArg - The user-provided path.
-     * @param {object} options - Validation options.
-     * @param {string} [options.expectedType] - e.g., 'file' or 'directory'.
-     * @param {string[]} [options.permissions] - e.g., ['read', 'write'].
-     * @param {boolean} [options.allowMissing=false] - If true, doesn't error if the node is null.
-     * @returns {{node: object, resolvedPath: string, error: string|null}}
-     */
-    function validatePath(pathArg, options = {}) {
-        const { expectedType = null, permissions = [], allowMissing = false } = options;
-        const currentUser = UserManager.getCurrentUser().name;
-
-        // 1. Resolve Path
-        const resolvedPath = getAbsolutePath(pathArg);
-
-        // 2. Retrieve Node
-        const node = getNodeByPath(resolvedPath);
-
-        // 3. Validate Node Existence
-        if (!node) {
-            if (allowMissing) {
-                return { node: null, resolvedPath, error: null };
-            }
-            return { node: null, resolvedPath, error: `${pathArg}: No such file or directory` };
-        }
-
-        // 4. Validate Expected Type
-        if (expectedType && node.type !== expectedType) {
-            if (expectedType === 'file') {
-                return { node, resolvedPath, error: `${pathArg}: Is not a file` };
-            }
-            if (expectedType === 'directory') {
-                return { node, resolvedPath, error: `${pathArg}: Is not a directory` };
-            }
-        }
-
-        // 5. Validate Permissions
-        for (const perm of permissions) {
-            if (!hasPermission(node, currentUser, perm)) {
-                return { node, resolvedPath, error: `${pathArg}: Permission denied` };
-            }
-        }
-
-        // 6. Success
-        return { node, resolvedPath, error: null };
-    }
-
-    // --- End of Refactored Functions ---
-
-
-    function calculateNodeSize(node) {
-        if (!node) return 0;
-        if (node.type === Config.FILESYSTEM.DEFAULT_FILE_TYPE)
-            return (node.content || "").length;
-        if (node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
-            let totalSize = 0;
-            for (const childName in node.children)
-                totalSize += calculateNodeSize(node.children[childName]);
-            return totalSize;
-        }
-        return 0;
-    }
-
-    function _updateNodeAndParentMtime(nodePath, nowISO) {
-        if (!nodePath || !nowISO) return;
-        const node = getNodeByPath(nodePath);
-        if (node) node.mtime = nowISO;
-        if (nodePath !== Config.FILESYSTEM.ROOT_PATH) {
-            const parentPath =
-                nodePath.substring(
-                    0,
-                    nodePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
-                ) || Config.FILESYSTEM.ROOT_PATH;
-            const parentNode = getNodeByPath(parentPath);
-            if (
-                parentNode &&
-                parentNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
-            )
-                parentNode.mtime = nowISO;
-        }
-    }
-
-    function createParentDirectoriesIfNeeded(fullPath) {
-        const currentUserForCPDIF = UserManager.getCurrentUser().name;
-        const nowISO = new Date().toISOString();
-        if (fullPath === Config.FILESYSTEM.ROOT_PATH)
-            return {
-                parentNode: null,
-                error: "Cannot create directory structure for root.",
-            };
-        const lastSlashIndex = fullPath.lastIndexOf(
-            Config.FILESYSTEM.PATH_SEPARATOR
-        );
-        const parentPathForSegments =
-            lastSlashIndex === 0 ?
-                Config.FILESYSTEM.ROOT_PATH :
-                fullPath.substring(0, lastSlashIndex);
-        if (parentPathForSegments === Config.FILESYSTEM.ROOT_PATH)
-            return {
-                parentNode: fsData[Config.FILESYSTEM.ROOT_PATH],
-                error: null,
-            };
-        const segmentsToCreate = parentPathForSegments
-            .substring(1)
-            .split(Config.FILESYSTEM.PATH_SEPARATOR)
-            .filter((s) => s);
-        let currentParentNode = fsData[Config.FILESYSTEM.ROOT_PATH];
-        let currentProcessedPath = Config.FILESYSTEM.ROOT_PATH;
-        if (
-            !currentParentNode ||
-            typeof currentParentNode.owner === "undefined" ||
-            typeof currentParentNode.mode === "undefined"
-        )
-            return {
-                parentNode: null,
-                error: "Internal error: Root FS node is malformed.",
-            };
-        for (const segment of segmentsToCreate) {
-            if (
-                !currentParentNode.children ||
-                typeof currentParentNode.children !== "object"
-            ) {
-                const errorMsg = `Internal error: currentParentNode.children is not an object at path "${currentProcessedPath}" for segment "${segment}". FS may be corrupted.`;
-                console.error(errorMsg, currentParentNode);
-                return {
-                    parentNode: null,
-                    error: errorMsg,
-                };
-            }
-            if (!currentParentNode.children[segment]) {
-                if (!hasPermission(currentParentNode, currentUserForCPDIF, "write")) {
-                    const errorMsg = `Cannot create directory '${segment}' in '${currentProcessedPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`;
-                    return {
-                        parentNode: null,
-                        error: errorMsg,
-                    };
-                }
-                currentParentNode.children[segment] = {
-                    type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-                    children: {},
-                    owner: currentUserForCPDIF,
-                    group: currentUserForCPDIF,
-                    mode: Config.FILESYSTEM.DEFAULT_DIR_MODE,
-                    mtime: nowISO,
-                };
-                currentParentNode.mtime = nowISO;
-            } else if (
-                currentParentNode.children[segment].type !==
-                Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
-            ) {
-                const errorMsg = `Path component '${getAbsolutePath(
-                    segment,
-                    currentProcessedPath
-                )}' is not a directory.`;
-                return {
-                    parentNode: null,
-                    error: errorMsg,
-                };
-            }
-            currentParentNode = currentParentNode.children[segment];
-            currentProcessedPath = getAbsolutePath(segment, currentProcessedPath);
-            if (
-                !currentParentNode ||
-                typeof currentParentNode.owner === "undefined" ||
-                typeof currentParentNode.mode === "undefined"
-            )
-                return {
-                    parentNode: null,
-                    error: `Internal error: Node for "${currentProcessedPath}" became malformed during parent creation.`,
-                };
-        }
-        return {
-            parentNode: currentParentNode,
-            error: null,
-        };
-    }
-
-    function hasPermission(node, username, permissionType) {
-        if (username === 'root') {
-            return true;
-        }
-
-        if (!node) {
-            return false;
-        }
-
-        const permissionMap = {
-            'read': 4,
-            'write': 2,
-            'execute': 1
-        };
-
-        const requiredPerm = permissionMap[permissionType];
-        if (!requiredPerm) {
-            console.error(`Unknown permissionType requested: ${permissionType}`);
-            return false;
-        }
-
-        const mode = node.mode || 0;
-        const ownerPerms = (mode >> 6) & 7;
-        const groupPerms = (mode >> 3) & 7;
-        const otherPerms = mode & 7;
-
-        if (node.owner === username) {
-            return (ownerPerms & requiredPerm) === requiredPerm;
-        }
-
-        const userGroups = GroupManager.getGroupsForUser(username);
-        if (userGroups.includes(node.group)) {
-            return (groupPerms & requiredPerm) === requiredPerm;
-        }
-
-        return (otherPerms & requiredPerm) === requiredPerm;
-    }
-
-    function formatModeToString(node) {
-        if (!node || typeof node.mode !== "number") {
-            return "----------";
-        }
-        const typeChar =
-            node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? "d" : "-";
-
-        const ownerPerms = (node.mode >> 6) & 7;
-        const groupPerms = (node.mode >> 3) & 7;
-        let p = node.mode & 7; // Other permissions
-
-        const perm_str = (permValue) => {
-            let str = "";
-            let p_copy = permValue;
-
-            if (p_copy >= 4) {
-                str += "r";
-                p_copy -= 4;
-            } else {
-                str += "-";
-            }
-            if (p_copy >= 2) {
-                str += "w";
-                p_copy -= 2;
-            } else {
-                str += "-";
-            }
-            if (p_copy >= 1) {
-                str += "x";
-            } else {
-                str += "-";
-            }
-            return str;
-        };
-
-        return (
-            typeChar +
-            perm_str(ownerPerms) +
-            perm_str(groupPerms) +
-            perm_str(p)
-        );
-    }
-
-    async function deleteNodeRecursive(path, options = {}) {
-        const {
-            force = false, currentUser
-        } = options;
-        const pathValidation = validatePath(path, { disallowRoot: true });
-        if (pathValidation.error) {
-            if (force && !pathValidation.node) {
-                return {
-                    success: true,
-                    messages: [],
-                };
-            }
-            return {
-                success: false,
-                messages: [pathValidation.error],
-            };
-        }
-        const node = pathValidation.node;
-        const resolvedPath = pathValidation.resolvedPath;
-        const parentPath =
-            resolvedPath.substring(
-                0,
-                resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR)
-            ) || Config.FILESYSTEM.ROOT_PATH;
-        const parentNode = getNodeByPath(parentPath);
-        const itemName = resolvedPath.substring(
-            resolvedPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
-        );
-        const nowISO = new Date().toISOString();
-        let messages = [];
-        let anyChangeMade = false;
-        if (!parentNode || !hasPermission(parentNode, currentUser, "write")) {
-            const permError = `cannot remove '${path}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`;
-            return {
-                success: force,
-                messages: force ? [] : [permError],
-            };
-        }
-        if (node.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
-            if (node.children && typeof node.children === 'object') {
-                const childrenNames = Object.keys(node.children);
-                for (const childName of childrenNames) {
-                    const childPath = getAbsolutePath(childName, resolvedPath);
-                    const result = await deleteNodeRecursive(childPath, options);
-                    messages.push(...result.messages);
-                    if (!result.success) {
-                        return {
-                            success: false,
-                            messages,
-                        };
-                    }
-                }
-            } else {
-                console.warn(`FileSystemManager: Directory node at '${path}' is missing or has an invalid 'children' property.`, node);
-            }
-        }
-        delete parentNode.children[itemName];
-        parentNode.mtime = nowISO;
-        anyChangeMade = true;
-        return {
-            success: true,
-            messages,
-            anyChangeMade,
-        };
-    }
-
-    function _createNewFileNode(name, content, owner, group, mode = null) {
-        const nowISO = new Date().toISOString();
-        return {
-            type: Config.FILESYSTEM.DEFAULT_FILE_TYPE,
-            content: content || "",
-            owner: owner,
-            group: group,
-            mode: mode !== null ? mode : Config.FILESYSTEM.DEFAULT_FILE_MODE,
+            owner: "root",
+            group: "root",
+            mode: 0o755,
             mtime: nowISO,
-        };
-    }
+          },
+        },
+        owner: "root",
+        group: "root",
+        mode: this.config.FILESYSTEM.DEFAULT_DIR_MODE,
+        mtime: nowISO,
+      },
+    };
+    await this.createUserHomeDirectory("root");
+    await this.createUserHomeDirectory(guestUsername);
+  }
 
-    function _calculateTotalSize() {
-        if (!fsData || !fsData[Config.FILESYSTEM.ROOT_PATH]) return 0;
-        return calculateNodeSize(fsData[Config.FILESYSTEM.ROOT_PATH]);
+  async createUserHomeDirectory(username) {
+    if (!this.fsData["/"]?.children?.home) {
+      console.error(
+          "FileSystemManager: Cannot create user home directory, /home does not exist."
+      );
+      return;
     }
+    const homeDirNode = this.fsData["/"].children.home;
+    if (!homeDirNode.children[username]) {
+      homeDirNode.children[username] = {
+        type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+        children: {},
+        owner: username,
+        group: username,
+        mode: 0o755,
+        mtime: new Date().toISOString(),
+      };
+      homeDirNode.mtime = new Date().toISOString();
+    }
+  }
 
-    function _createNewDirectoryNode(owner, group, mode = null) {
+  async save() {
+    const { ErrorHandler, Utils } = this.dependencies;
+    const saveData = Utils.deepCopyNode(this.fsData);
+    const success = await this.storageHAL.save(saveData);
+    if (success) {
+      return ErrorHandler.createSuccess();
+    }
+    return ErrorHandler.createError("OopisOs failed to save the file system.");
+  }
+
+  async load() {
+    const { ErrorHandler, OutputManager } = this.dependencies;
+    const loadedData = await this.storageHAL.load();
+
+    if (loadedData) {
+      this.fsData = loadedData;
+      // --- Migration: Ensure essential files exist ---
+      const etcNode = this.fsData['/']?.children?.etc;
+      if (etcNode && etcNode.type === 'directory') {
         const nowISO = new Date().toISOString();
-        return {
-            type: Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
-            children: {},
-            owner: owner,
-            group: group,
-            mode: mode !== null ? mode : Config.FILESYSTEM.DEFAULT_DIR_MODE,
-            mtime: nowISO
-        };
+        let needsSave = false;
+        
+        if (!etcNode.children['sudoers']) {
+          etcNode.children['sudoers'] = {
+            type: this.config.FILESYSTEM.DEFAULT_FILE_TYPE,
+            content: "# /etc/sudoers\n#\n# This file MUST be edited with the 'visudo' command as root.\n\nroot ALL=(ALL) ALL\n%root ALL=(ALL) ALL\n",
+            owner: 'root',
+            group: 'root',
+            mode: 0o440,
+            mtime: nowISO,
+          };
+          console.log("FileSystem Migration: Created missing /etc/sudoers file.");
+          needsSave = true;
+        }
+        
+        if (!etcNode.children['agenda.json']) {
+          etcNode.children['agenda.json'] = {
+            type: this.config.FILESYSTEM.DEFAULT_FILE_TYPE,
+            content: "[]",
+            owner: 'root',
+            group: 'root',
+            mode: 0o644,
+            mtime: nowISO,
+          };
+          console.log("FileSystem Migration: Created missing /etc/agenda.json file.");
+          needsSave = true;
+        }
+        
+        if (needsSave) {
+          etcNode.mtime = nowISO;
+          await this.save();
+        }
+      }
+    } else {
+      await OutputManager.appendToOutput(
+          "No file system found. Initializing new one.",
+          { typeClass: this.config.CSS_CLASSES.CONSOLE_LOG_MSG }
+      );
+      await this.initialize(this.config.USER.DEFAULT_NAME);
+      await this.save();
+    }
+    return ErrorHandler.createSuccess();
+  }
+
+  async clearAllFS() {
+    const success = await this.storageHAL.clear();
+    if (success) {
+      return this.dependencies.ErrorHandler.createSuccess();
+    }
+    return this.dependencies.ErrorHandler.createError("Could not clear all user file systems.");
+  }
+
+  getCurrentPath() {
+    return this.currentPath;
+  }
+
+  setCurrentPath(path) {
+    this.currentPath = path;
+  }
+
+  getFsData() {
+    return this.fsData;
+  }
+
+  setFsData(newData) {
+    this.fsData = newData;
+  }
+
+  getAbsolutePath(targetPath, basePath) {
+    basePath = basePath || this.currentPath;
+    if (!targetPath) targetPath = this.config.FILESYSTEM.CURRENT_DIR_SYMBOL;
+    let effectiveBasePath = basePath;
+    if (targetPath.startsWith(this.config.FILESYSTEM.PATH_SEPARATOR))
+      effectiveBasePath = this.config.FILESYSTEM.ROOT_PATH;
+
+    const baseSegments =
+        effectiveBasePath === this.config.FILESYSTEM.ROOT_PATH
+            ? []
+            : effectiveBasePath
+                .substring(1)
+                .split(this.config.FILESYSTEM.PATH_SEPARATOR)
+                .filter((s) => s && s !== this.config.FILESYSTEM.CURRENT_DIR_SYMBOL && s !== this.config.FILESYSTEM.PARENT_DIR_SYMBOL);
+
+    let resolvedSegments = [...baseSegments];
+    const targetSegments = targetPath.split(this.config.FILESYSTEM.PATH_SEPARATOR);
+
+    for (const segment of targetSegments) {
+      if (segment === "" || segment === this.config.FILESYSTEM.CURRENT_DIR_SYMBOL) {
+        continue;
+      }
+      if (segment === this.config.FILESYSTEM.PARENT_DIR_SYMBOL) {
+        if (resolvedSegments.length > 0) resolvedSegments.pop();
+      } else {
+        const sanitizedSegment = segment.replace(/[\\/&<>"']/g, '');
+        if (sanitizedSegment) {
+          resolvedSegments.push(sanitizedSegment);
+        }
+      }
     }
 
-    async function createOrUpdateFile(absolutePath, content, context) {
-        const {
-            currentUser,
-            primaryGroup,
-            existingNode: providedExistingNode
-        } = context;
-        const nowISO = new Date().toISOString();
+    if (resolvedSegments.length === 0) return this.config.FILESYSTEM.ROOT_PATH;
+    return (
+        this.config.FILESYSTEM.PATH_SEPARATOR +
+        resolvedSegments.join(this.config.FILESYSTEM.PATH_SEPARATOR)
+    );
+  }
 
-        const existingNode = providedExistingNode !== undefined ? providedExistingNode : getNodeByPath(absolutePath);
+  _createNewSymlinkNode(targetPath, owner, group) {
+    return {
+      type: this.config.FILESYSTEM.SYMBOLIC_LINK_TYPE,
+      target: targetPath,
+      owner: owner,
+      group: group,
+      mode: 0o777,
+      mtime: new Date().toISOString()
+    };
+  }
 
-        if (existingNode) {
-            if (existingNode.type !== Config.FILESYSTEM.DEFAULT_FILE_TYPE) {
-                return {
-                    success: false,
-                    error: `Cannot overwrite non-file '${absolutePath}'`
-                };
-            }
-            if (!hasPermission(existingNode, currentUser, "write")) {
-                return {
-                    success: false,
-                    error: `'${absolutePath}': Permission denied`
-                };
-            }
-            existingNode.content = content;
-            existingNode.mtime = nowISO;
-        } else {
-            const parentDirResult = createParentDirectoriesIfNeeded(absolutePath);
-            if (parentDirResult.error) {
-                return {
-                    success: false,
-                    error: parentDirResult.error
-                };
-            }
-            const parentNode = parentDirResult.parentNode;
+  getNodeByPath(absolutePath, options = {}) {
+    const { resolveLastSymlink = true } = options;
+    const MAX_SYMLINK_DEPTH = 10;
+    const currentUser = this.dependencies.UserManager.getCurrentUser().name;
 
-            if (!parentNode) {
-                return {
-                    success: false,
-                    error: `Could not find or create parent directory for '${absolutePath}'.`
-                };
-            }
+    let currentPath = absolutePath;
+    for (let depth = 0; depth < MAX_SYMLINK_DEPTH; depth++) {
+      if (currentPath === this.config.FILESYSTEM.ROOT_PATH) {
+        return this.fsData[this.config.FILESYSTEM.ROOT_PATH];
+      }
 
-            if (!hasPermission(parentNode, currentUser, "write")) {
-                return {
-                    success: false,
-                    error: `Cannot create file in parent directory: Permission denied`
-                };
-            }
+      const segments = currentPath.substring(1).split(this.config.FILESYSTEM.PATH_SEPARATOR).filter(s => s);
+      let currentNode = this.fsData[this.config.FILESYSTEM.ROOT_PATH];
+      let pathTraversedSoFar = '/';
 
-            if (!parentNode.children || typeof parentNode.children !== 'object') {
-                console.error(`FileSystemManager: Corrupted directory node at parent of '${absolutePath}'. Missing 'children' property. Restoring it.`, parentNode);
-                parentNode.children = {};
-            }
+      let pathResolved = true;
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        const isLastSegment = i === segments.length - 1;
 
-            const fileName = absolutePath.substring(absolutePath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1);
-            parentNode.children[fileName] = _createNewFileNode(fileName, content, currentUser, primaryGroup);
-            parentNode.mtime = nowISO;
+        if (currentNode.type !== this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
+          return null;
+        }
+        if (!this.hasPermission(currentNode, currentUser, "execute")) {
+          return null;
+        }
+        if (!currentNode.children || !currentNode.children[segment]) {
+          return null;
         }
 
-        return {
-            success: true
+        currentNode = currentNode.children[segment];
+        pathTraversedSoFar = this.getAbsolutePath(segment, pathTraversedSoFar);
+
+        if (currentNode.type === this.config.FILESYSTEM.SYMBOLIC_LINK_TYPE) {
+          if (isLastSegment && !resolveLastSymlink) {
+            return currentNode;
+          }
+
+          const parentOfLink = pathTraversedSoFar.substring(0, pathTraversedSoFar.lastIndexOf('/')) || '/';
+          const targetPath = this.getAbsolutePath(currentNode.target, parentOfLink);
+          const remainingSegments = segments.slice(i + 1);
+
+          currentPath = remainingSegments.length > 0
+              ? this.getAbsolutePath(remainingSegments.join('/'), targetPath)
+              : targetPath;
+
+          pathResolved = false;
+          break;
+        }
+      }
+
+      if (pathResolved) {
+        return currentNode;
+      }
+    }
+
+    console.error(`getNodeByPath: Too many levels of symbolic links for path '${absolutePath}'`);
+    return null;
+  }
+
+  validatePath(pathArg, options = {}) {
+    const { ErrorHandler } = this.dependencies;
+    const {
+      expectedType = null,
+      permissions = [],
+      allowMissing = false,
+      resolveLastSymlink = true,
+    } = options;
+    const currentUser = this.dependencies.UserManager.getCurrentUser().name;
+
+    const resolvedPath = this.getAbsolutePath(pathArg);
+    const node = this.getNodeByPath(resolvedPath, { resolveLastSymlink });
+
+    if (!node) {
+      if (allowMissing) {
+        return ErrorHandler.createSuccess({ node: null, resolvedPath });
+      }
+      return ErrorHandler.createError(`${pathArg}: No such file or directory`);
+    }
+
+    if (expectedType && node.type !== expectedType) {
+      if (expectedType === "file") {
+        return ErrorHandler.createError(`${pathArg}: Is not a file`);
+      }
+      if (expectedType === "directory") {
+        return ErrorHandler.createError(`${pathArg}: Is not a directory`);
+      }
+    }
+
+    for (const perm of permissions) {
+      if (!this.hasPermission(node, currentUser, perm)) {
+        return ErrorHandler.createError(`${pathArg}: Permission denied`);
+      }
+    }
+
+    return ErrorHandler.createSuccess({ node, resolvedPath });
+  }
+
+  calculateNodeSize(node) {
+    if (!node) return 0;
+    if (node.type === this.config.FILESYSTEM.DEFAULT_FILE_TYPE)
+      return (node.content || "").length;
+    if (node.type === this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
+      let totalSize = 0;
+      for (const childName in node.children)
+        totalSize += this.calculateNodeSize(node.children[childName]);
+      return totalSize;
+    }
+    return 0;
+  }
+
+  _updateNodeAndParentMtime(nodePath, nowISO) {
+    if (!nodePath || !nowISO) return;
+    const node = this.getNodeByPath(nodePath);
+    if (node) node.mtime = nowISO;
+    if (nodePath !== this.config.FILESYSTEM.ROOT_PATH) {
+      const parentPath =
+          nodePath.substring(
+              0,
+              nodePath.lastIndexOf(this.config.FILESYSTEM.PATH_SEPARATOR)
+          ) || this.config.FILESYSTEM.ROOT_PATH;
+      const parentNode = this.getNodeByPath(parentPath);
+      if (
+          parentNode &&
+          parentNode.type === this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+      )
+        parentNode.mtime = nowISO;
+    }
+  }
+
+  createParentDirectoriesIfNeeded(fullPath) {
+    const { ErrorHandler } = this.dependencies;
+    const currentUserForCPDIF = this.dependencies.UserManager.getCurrentUser().name;
+    const nowISO = new Date().toISOString();
+    if (fullPath === this.config.FILESYSTEM.ROOT_PATH) {
+      return ErrorHandler.createError(
+          "Cannot create directory structure for root."
+      );
+    }
+    const lastSlashIndex = fullPath.lastIndexOf(
+        this.config.FILESYSTEM.PATH_SEPARATOR
+    );
+    const parentPathForSegments =
+        lastSlashIndex === 0
+            ? this.config.FILESYSTEM.ROOT_PATH
+            : fullPath.substring(0, lastSlashIndex);
+    if (parentPathForSegments === this.config.FILESYSTEM.ROOT_PATH) {
+      return ErrorHandler.createSuccess(
+          this.fsData[this.config.FILESYSTEM.ROOT_PATH]
+      );
+    }
+    const segmentsToCreate = parentPathForSegments
+        .substring(1)
+        .split(this.config.FILESYSTEM.PATH_SEPARATOR)
+        .filter((s) => s);
+    let currentParentNode = this.fsData[this.config.FILESYSTEM.ROOT_PATH];
+    let currentProcessedPath = this.config.FILESYSTEM.ROOT_PATH;
+    if (
+        !currentParentNode ||
+        typeof currentParentNode.owner === "undefined" ||
+        typeof currentParentNode.mode === "undefined"
+    ) {
+      return ErrorHandler.createError(
+          "Internal error: Root FS node is malformed."
+      );
+    }
+    for (const segment of segmentsToCreate) {
+      if (
+          !currentParentNode.children ||
+          typeof currentParentNode.children !== "object"
+      ) {
+        const errorMsg = `Internal error: currentParentNode.children is not an object at path "${currentProcessedPath}" for segment "${segment}". FS may be corrupted.`;
+        console.error(errorMsg, currentParentNode);
+        return ErrorHandler.createError(errorMsg);
+      }
+      if (!currentParentNode.children[segment]) {
+        if (
+            !this.hasPermission(currentParentNode, currentUserForCPDIF, "write")
+        ) {
+          const errorMsg = `Cannot create directory '${segment}' in '${currentProcessedPath}'${this.config.MESSAGES.PERMISSION_DENIED_SUFFIX}`;
+          return ErrorHandler.createError(errorMsg);
+        }
+        currentParentNode.children[segment] = {
+          type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+          children: {},
+          owner: currentUserForCPDIF,
+          group: currentUserForCPDIF,
+          mode: this.config.FILESYSTEM.DEFAULT_DIR_MODE,
+          mtime: nowISO,
         };
+        currentParentNode.mtime = nowISO;
+      } else if (
+          currentParentNode.children[segment].type !==
+          this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+      ) {
+        const errorMsg = `Path component '${this.getAbsolutePath(
+            segment,
+            currentProcessedPath
+        )}' is not a directory.`;
+        return ErrorHandler.createError(errorMsg);
+      }
+      currentParentNode = currentParentNode.children[segment];
+      currentProcessedPath = this.getAbsolutePath(
+          segment,
+          currentProcessedPath
+      );
+      if (
+          !currentParentNode ||
+          typeof currentParentNode.owner === "undefined" ||
+          typeof currentParentNode.mode === "undefined"
+      )
+        return ErrorHandler.createError(
+            `Internal error: Node for "${currentProcessedPath}" became malformed during parent creation.`
+        );
+    }
+    return ErrorHandler.createSuccess(currentParentNode);
+  }
+
+  hasPermission(node, username, permissionType) {
+    if (username === "root") {
+      return true;
     }
 
-    /**
-     * Checks if a user has administrative rights to modify a node's metadata (owner/permissions).
-     * @param {object} node The filesystem node in question.
-     * @param {string} username The name of the user attempting the action.
-     * @returns {boolean} True if the user is the owner or root.
-     */
-    function canUserModifyNode(node, username) {
-        return username === 'root' || node.owner === username;
+    if (!node) {
+      return false;
     }
 
-    return {
-        createUserHomeDirectory,
-        save,
-        load,
-        clearAllFS,
-        getCurrentPath,
-        setCurrentPath,
-        getFsData,
-        setFsData,
-        getAbsolutePath,
-        getNodeByPath,
-        createParentDirectoriesIfNeeded,
-        calculateNodeSize,
-        validatePath,
-        hasPermission,
-        formatModeToString,
-        _updateNodeAndParentMtime,
-        _createNewFileNode,
-        _createNewDirectoryNode,
-        deleteNodeRecursive,
-        createOrUpdateFile,
-        canUserModifyNode,
+    const permissionMap = {
+      read: 4,
+      write: 2,
+      execute: 1,
     };
-})();
+
+    const requiredPerm = permissionMap[permissionType];
+    if (!requiredPerm) {
+      console.error(`Unknown permissionType requested: ${permissionType}`);
+      return false;
+    }
+
+    const mode = node.mode || 0;
+    const ownerPerms = (mode >> 6) & 7;
+    const groupPerms = (mode >> 3) & 7;
+    const otherPerms = mode & 7;
+
+    if (node.owner === username) {
+      return (ownerPerms & requiredPerm) === requiredPerm;
+    }
+
+    const userGroups = this.dependencies.GroupManager.getGroupsForUser(username);
+    if (userGroups.includes(node.group)) {
+      return (groupPerms & requiredPerm) === requiredPerm;
+    }
+
+    return (otherPerms & requiredPerm) === requiredPerm;
+  }
+
+  formatModeToString(node) {
+    if (!node || typeof node.mode !== "number") {
+      return "----------";
+    }
+    const typeChar =
+        node.type === this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE ? "d" : "-";
+
+    const ownerPerms = (node.mode >> 6) & 7;
+    const groupPerms = (node.mode >> 3) & 7;
+    const otherPerms = node.mode & 7;
+
+    const perm_str = (permValue) => {
+      let str = "";
+      let p_copy = permValue;
+
+      if (p_copy >= 4) {
+        str += "r";
+        p_copy -= 4;
+      } else {
+        str += "-";
+      }
+      if (p_copy >= 2) {
+        str += "w";
+        p_copy -= 2;
+      } else {
+        str += "-";
+      }
+      if (p_copy >= 1) {
+        str += "x";
+      } else {
+        str += "-";
+      }
+      return str;
+    };
+
+    return (
+        typeChar +
+        perm_str(ownerPerms) +
+        perm_str(groupPerms) +
+        perm_str(otherPerms)
+    );
+  }
+
+  async deleteNodeRecursive(path, options = {}) {
+    const { ErrorHandler } = this.dependencies;
+    const { force = false, currentUser } = options;
+    const pathValidationResult = this.validatePath(path, {
+      disallowRoot: true,
+      resolveLastSymlink: false
+    });
+    if (!pathValidationResult.success) {
+      if (force && !pathValidationResult.data?.node) {
+        return ErrorHandler.createSuccess({ messages: [] });
+      }
+      return ErrorHandler.createError(pathValidationResult.error);
+    }
+    const { node, resolvedPath } = pathValidationResult.data;
+    const parentPath =
+        resolvedPath.substring(
+            0,
+            resolvedPath.lastIndexOf(this.config.FILESYSTEM.PATH_SEPARATOR)
+        ) || this.config.FILESYSTEM.ROOT_PATH;
+    const parentNode = this.getNodeByPath(parentPath);
+    const itemName = resolvedPath.substring(
+        resolvedPath.lastIndexOf(this.config.FILESYSTEM.PATH_SEPARATOR) + 1
+    );
+    const nowISO = new Date().toISOString();
+    let messages = [];
+    let anyChangeMade = false;
+    if (!parentNode || !this.hasPermission(parentNode, currentUser, "write")) {
+      const permError = `cannot remove '${path}'${this.config.MESSAGES.PERMISSION_DENIED_SUFFIX}`;
+      return ErrorHandler.createError(permError);
+    }
+    
+    if (node.type === this.config.FILESYSTEM.SYMBOLIC_LINK_TYPE) {
+      delete parentNode.children[itemName];
+      parentNode.mtime = nowISO;
+      anyChangeMade = true;
+      return ErrorHandler.createSuccess({ messages, anyChangeMade });
+    }
+    
+    if (node.type === this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE) {
+      if (node.children && typeof node.children === "object") {
+        const childrenNames = Object.keys(node.children);
+        for (const childName of childrenNames) {
+          const childPath = this.getAbsolutePath(childName, resolvedPath);
+          const result = await this.deleteNodeRecursive(childPath, options);
+          if (!result.success) {
+            messages.push(result.error);
+            return ErrorHandler.createError(messages.join('\n'));
+          }
+        }
+      } else {
+        console.warn(
+            `FileSystemManager: Directory node at '${path}' is missing or has an invalid 'children' property.`,
+            node
+        );
+      }
+    }
+    
+    delete parentNode.children[itemName];
+    parentNode.mtime = nowISO;
+    anyChangeMade = true;
+    return ErrorHandler.createSuccess({ messages, anyChangeMade });
+  }
+
+  _createNewFileNode(name, content, owner, group, mode = null) {
+    const nowISO = new Date().toISOString();
+    return {
+      type: this.config.FILESYSTEM.DEFAULT_FILE_TYPE,
+      content: content || "",
+      owner: owner,
+      group: group,
+      mode: mode !== null ? mode : this.config.FILESYSTEM.DEFAULT_FILE_MODE,
+      mtime: nowISO,
+    };
+  }
+
+  _calculateTotalSize() {
+    if (!this.fsData || !this.fsData[this.config.FILESYSTEM.ROOT_PATH]) return 0;
+    return this.calculateNodeSize(this.fsData[this.config.FILESYSTEM.ROOT_PATH]);
+  }
+
+  _willOperationExceedQuota(changeInBytes) {
+    const currentSize = this._calculateTotalSize();
+    return currentSize + changeInBytes > this.config.FILESYSTEM.MAX_VFS_SIZE;
+  }
+
+  _createNewDirectoryNode(owner, group, mode = null) {
+    const nowISO = new Date().toISOString();
+    return {
+      type: this.config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE,
+      children: {},
+      owner: owner,
+      group: group,
+      mode: mode !== null ? mode : this.config.FILESYSTEM.DEFAULT_DIR_MODE,
+      mtime: nowISO,
+    };
+  }
+
+  async createOrUpdateFile(absolutePath, content, context) {
+    const { ErrorHandler } = this.dependencies;
+    const {
+      currentUser,
+      primaryGroup,
+      isDirectory = false,
+    } = context;
+    const nowISO = new Date().toISOString();
+
+    if (isDirectory) {
+      const parentDirResult = this.createParentDirectoriesIfNeeded(absolutePath);
+      if (!parentDirResult.success) {
+        return parentDirResult;
+      }
+      const parentNode = parentDirResult.data;
+      if (!this.hasPermission(parentNode, currentUser, "write")) {
+        return ErrorHandler.createError(`Cannot create directory in parent: Permission denied`);
+      }
+      const dirName = absolutePath.substring(absolutePath.lastIndexOf("/") + 1);
+      if (parentNode.children && !parentNode.children[dirName]) {
+        parentNode.children[dirName] = this._createNewDirectoryNode(currentUser, primaryGroup);
+        parentNode.mtime = nowISO;
+      }
+      return ErrorHandler.createSuccess();
+    }
+
+    const existingNode = this.getNodeByPath(absolutePath);
+    const changeInBytes = (content || "").length - (existingNode?.content?.length || 0);
+
+    if (this._willOperationExceedQuota(changeInBytes)) {
+      return ErrorHandler.createError(
+          `Disk quota exceeded. Cannot write ${content.length} bytes.`
+      );
+    }
+
+    if (existingNode) {
+      if (existingNode.type !== this.config.FILESYSTEM.DEFAULT_FILE_TYPE) {
+        return ErrorHandler.createError(
+            `Cannot overwrite non-file '${absolutePath}'`
+        );
+      }
+      if (!this.hasPermission(existingNode, currentUser, "write")) {
+        return ErrorHandler.createError(`'${absolutePath}': Permission denied`);
+      }
+      existingNode.content = content;
+      existingNode.mtime = nowISO;
+    } else {
+      const parentDirResult =
+          this.createParentDirectoriesIfNeeded(absolutePath);
+      if (!parentDirResult.success) {
+        return parentDirResult;
+      }
+      const parentNode = parentDirResult.data;
+
+      if (!parentNode) {
+        return ErrorHandler.createError(
+            `Could not find or create parent directory for '${absolutePath}'.`
+        );
+      }
+
+      if (!this.hasPermission(parentNode, currentUser, "write")) {
+        return ErrorHandler.createError(
+            `Cannot create file in parent directory: Permission denied`
+        );
+      }
+
+      if (!parentNode.children || typeof parentNode.children !== "object") {
+        console.error(
+            `FileSystemManager: Corrupted directory node at parent of '${absolutePath}'. Missing 'children' property. Restoring it.`,
+            parentNode
+        );
+        parentNode.children = {};
+      }
+
+      const fileName = absolutePath.substring(
+          absolutePath.lastIndexOf(this.config.FILESYSTEM.PATH_SEPARATOR) + 1
+      );
+      parentNode.children[fileName] = this._createNewFileNode(
+          fileName,
+          content,
+          currentUser,
+          primaryGroup
+      );
+      parentNode.mtime = nowISO;
+    }
+
+    return ErrorHandler.createSuccess();
+  }
+
+  canUserModifyNode(node, username) {
+    return username === "root" || node.owner === username;
+  }
+
+  async prepareFileOperation(sourcePathArgs, destPathArg, options = {}) {
+    const { ErrorHandler } = this.dependencies;
+    const { isCopy = false, isMove = false } = options;
+
+    const destValidationResult = this.validatePath(destPathArg, {
+      allowMissing: true,
+    });
+    if (
+        !destValidationResult.success &&
+        destValidationResult.data?.node === undefined
+    ) {
+      return ErrorHandler.createError(
+          `target '${destPathArg}': ${destValidationResult.error}`
+      );
+    }
+    const isDestADirectory =
+        destValidationResult.data.node &&
+        destValidationResult.data.node.type === "directory";
+
+    if (sourcePathArgs.length > 1 && !isDestADirectory) {
+      return ErrorHandler.createError(
+          `target '${destPathArg}' is not a directory`
+      );
+    }
+
+    const operationsPlan = [];
+    for (const sourcePath of sourcePathArgs) {
+      let sourceValidationResult;
+      if (isCopy) {
+        sourceValidationResult = this.validatePath(sourcePath, {
+          permissions: ["read"],
+        });
+      } else {
+        sourceValidationResult = this.validatePath(sourcePath);
+        if (sourceValidationResult.success) {
+          const sourceParentPath =
+              sourceValidationResult.data.resolvedPath.substring(
+                  0,
+                  sourceValidationResult.data.resolvedPath.lastIndexOf("/")
+              ) || "/";
+          const parentValidation = this.validatePath(sourceParentPath, {
+            permissions: ["write"],
+          });
+          if (!parentValidation.success) {
+            return ErrorHandler.createError(
+                `cannot move '${sourcePath}', permission denied in source directory`
+            );
+          }
+        }
+      }
+
+      if (!sourceValidationResult.success) {
+        return ErrorHandler.createError(
+            `${sourcePath}: ${sourceValidationResult.error}`
+        );
+      }
+
+      const { node: sourceNode, resolvedPath: sourceAbsPath } =
+          sourceValidationResult.data;
+
+      let destinationAbsPath;
+      let finalName;
+      let destinationParentNode;
+
+      if (isDestADirectory) {
+        finalName = sourceAbsPath.substring(sourceAbsPath.lastIndexOf("/") + 1);
+        destinationAbsPath = this.getAbsolutePath(
+            finalName,
+            destValidationResult.data.resolvedPath
+        );
+        destinationParentNode = destValidationResult.data.node;
+      } else {
+        finalName = destValidationResult.data.resolvedPath.substring(
+            destValidationResult.data.resolvedPath.lastIndexOf("/") + 1
+        );
+        destinationAbsPath = destValidationResult.data.resolvedPath;
+        const destParentPath =
+            destinationAbsPath.substring(
+                0,
+                destinationAbsPath.lastIndexOf("/")
+            ) || "/";
+        const destParentValidation = this.validatePath(destParentPath, {
+          expectedType: "directory",
+          permissions: ["write"],
+        });
+        if (!destParentValidation.success) {
+          return ErrorHandler.createError(destParentValidation.error);
+        }
+        destinationParentNode = destParentValidation.data.node;
+      }
+
+      const willOverwrite = !!destinationParentNode.children[finalName];
+
+      if (isDestADirectory) {
+        const parentValidation = this.validatePath(
+            destValidationResult.data.resolvedPath,
+            { permissions: ["write"] }
+        );
+        if (!parentValidation.success) {
+          return ErrorHandler.createError(parentValidation.error);
+        }
+      }
+
+      if (isMove) {
+        if (sourceAbsPath === "/") {
+          return ErrorHandler.createError("cannot move root directory");
+        }
+        if (
+            sourceNode.type === "directory" &&
+            destinationAbsPath.startsWith(sourceAbsPath + "/")
+        ) {
+          return ErrorHandler.createError(
+              `cannot move '${sourcePath}' to a subdirectory of itself, '${destinationAbsPath}'`
+          );
+        }
+      }
+
+      operationsPlan.push({
+        sourceNode,
+        sourceAbsPath,
+        destinationAbsPath,
+        destinationParentNode,
+        finalName,
+        willOverwrite,
+      });
+    }
+
+    return ErrorHandler.createSuccess(operationsPlan);
+  }
+}

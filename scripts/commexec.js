@@ -1,214 +1,361 @@
-// /scripts/commexec.js
+// scripts/commexec.js
 
-const CommandExecutor = (() => {
-  "use strict";
-  let backgroundProcessIdCounter = 0;
-  let activeJobs = {};
-  const commands = {};
-  const loadingPromises = {};
-
-  async function precacheCommonCommands() {
-    await _ensureCommandLoaded('ls');
-    await _ensureCommandLoaded('cd');
-    await _ensureCommandLoaded('cat');
-    await _ensureCommandLoaded('rm');
+class CommandExecutor {
+  constructor() {
+    this.backgroundProcessIdCounter = 0;
+    this.activeJobs = {};
+    this.commands = {};
+    this.loadedScripts = new Set();
+    this.dependencies = {};
   }
 
-  async function* _generateInputContent(context, firstFileArgIndex = 0) {
-    const {args, options, currentUser} = context;
-
-    if (options.stdinContent !== null && options.stdinContent !== undefined) {
-      yield {success: true, content: options.stdinContent, sourceName: 'stdin'};
-      return;
-    }
-
-    const fileArgs = args.slice(firstFileArgIndex);
-    if (fileArgs.length === 0) {
-      return;
-    }
-
-    for (const pathArg of fileArgs) {
-      const pathValidation = FileSystemManager.validatePath(pathArg, {expectedType: 'file'});
-      if (pathValidation.error) {
-        yield {success: false, error: pathValidation.error, sourceName: pathArg};
-        continue;
-      }
-
-      if (!FileSystemManager.hasPermission(pathValidation.node, currentUser, "read")) {
-        yield {success: false, error: `Permission denied: ${pathArg}`, sourceName: pathArg};
-        continue;
-      }
-
-      yield {success: true, content: pathValidation.node.content || "", sourceName: pathArg};
-    }
+  setDependencies(dependencies) {
+    this.dependencies = dependencies;
   }
 
+  _loadScript(scriptPath) {
+    if (this.loadedScripts.has(scriptPath)) {
+      return Promise.resolve(true);
+    }
 
-  function createCommandHandler(definition) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `./scripts/${scriptPath}`;
+      script.onload = () => {
+        this.loadedScripts.add(scriptPath);
+        resolve(true);
+      };
+      script.onerror = () => {
+        reject(new Error(`Failed to fetch script: ${scriptPath}`));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async _ensureCommandLoaded(commandName) {
+    const { Config, OutputManager, CommandRegistry, FileSystemManager } = this.dependencies;
+    if (!commandName || typeof commandName !== "string") return null;
+
+    const existingCommand = CommandRegistry.getCommands()[commandName];
+    if (existingCommand) {
+      return existingCommand;
+    }
+
+    if (Config.COMMANDS_MANIFEST.includes(commandName)) {
+      const commandScriptPath = `commands/${commandName}.js`;
+      try {
+        await this._loadScript(commandScriptPath);
+        const commandInstance = CommandRegistry.getCommands()[commandName];
+
+        if (!commandInstance) {
+          await OutputManager.appendToOutput(
+              `Error: Script loaded but command '${commandName}' failed to register itself.`,
+              { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+          );
+          return null;
+        }
+
+        const definition = commandInstance.definition;
+        if (definition.dependencies && Array.isArray(definition.dependencies)) {
+          for (const dep of definition.dependencies) {
+            await this._loadScript(dep);
+          }
+        }
+        return commandInstance;
+      } catch (error) {
+        const vfsPath = `/bin/${commandName}`;
+        const packageNode = FileSystemManager.getNodeByPath(vfsPath);
+
+        if (packageNode && packageNode.type === 'file') {
+          try {
+            const scriptElement = document.createElement('script');
+            scriptElement.textContent = packageNode.content;
+            document.head.appendChild(scriptElement);
+            document.head.removeChild(scriptElement);
+
+            const commandInstance = CommandRegistry.getCommands()[commandName];
+            if (!commandInstance) {
+              await OutputManager.appendToOutput(
+                  `Error: Installed package '${commandName}' was executed but failed to register itself. The package may be corrupt.`,
+                  { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+              );
+              return null;
+            }
+            return commandInstance;
+          } catch (e) {
+            await OutputManager.appendToOutput(
+                `Error: Failed to execute package '${commandName}' from '${vfsPath}'. ${e.message}`,
+                { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+            );
+            return null;
+          }
+        } else {
+          await OutputManager.appendToOutput(
+              `Error: Command '${commandName}' could not be loaded. ${error.message}`,
+              { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+          );
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  _createCommandHandler(definition) {
     const handler = async (args, options) => {
+      const { Utils, ErrorHandler, FileSystemManager, UserManager } = this.dependencies;
       const { flags, remainingArgs } = Utils.parseFlags(
           args,
           definition.flagDefinitions || []
       );
       const currentUser = UserManager.getCurrentUser().name;
 
-      if (definition.argValidation) {
-        const validation = Utils.validateArguments(remainingArgs, definition.argValidation);
-        if (!validation.isValid) {
-          return { success: false, error: `${definition.commandName}: ${validation.errorDetail}` };
-        }
-      }
-
-      const context = {
-        args: remainingArgs,
-        options,
-        flags,
-        currentUser,
-        signal: options.signal,
-      };
-
-      if (definition.isInputStream) {
-        const inputParts = [];
-        let hadError = false;
-        let fileCount = 0;
-        let firstSourceName = null;
-
-        const firstFileArgIndex = definition.firstFileArgIndex || 0;
-
-        for await (const item of _generateInputContent(context, firstFileArgIndex)) {
-          fileCount++;
-          if (firstSourceName === null) firstSourceName = item.sourceName;
-
-          if (!item.success) {
-            await OutputManager.appendToOutput(item.error, {typeClass: Config.CSS_CLASSES.ERROR_MSG});
-            hadError = true;
-          } else {
-            inputParts.push({content: item.content, sourceName: item.sourceName});
+      if (definition.validations) {
+        if (definition.validations.args) {
+          const argValidation = Utils.validateArguments(
+              remainingArgs,
+              definition.validations.args
+          );
+          if (!argValidation.isValid) {
+            return ErrorHandler.createError(
+                `${definition.commandName}: ${argValidation.errorDetail}`
+            );
           }
         }
 
-        context.inputItems = inputParts;
-        context.inputError = hadError;
-        context.inputFileCount = fileCount;
-        context.firstSourceName = firstSourceName;
+        if (definition.validations.paths) {
+          const validatedPaths = [];
+          for (const rule of definition.validations.paths) {
+            const indices =
+                rule.argIndex === "all"
+                    ? remainingArgs.map((_, i) => i)
+                    : [rule.argIndex];
+
+            for (const index of indices) {
+              if (index >= remainingArgs.length) {
+                if (rule.options?.required !== false) {
+                  return ErrorHandler.createError(
+                      `${definition.commandName}: missing path argument.`
+                  );
+                }
+                continue;
+              }
+              const pathArg = remainingArgs[index];
+              const pathValidationResult = FileSystemManager.validatePath(
+                  pathArg,
+                  rule.options || {}
+              );
+
+              if (!pathValidationResult.success) {
+                return ErrorHandler.createError(
+                    `${definition.commandName}: ${pathValidationResult.error}`
+                );
+              }
+
+              const { node, resolvedPath } = pathValidationResult.data;
+
+              if (rule.permissionsOnParent) {
+                const parentPath =
+                    resolvedPath.substring(0, resolvedPath.lastIndexOf("/")) ||
+                    "/";
+                const parentValidation = FileSystemManager.validatePath(
+                    parentPath,
+                    { permissions: rule.permissionsOnParent }
+                );
+                if (!parentValidation.success) {
+                  return ErrorHandler.createError(
+                      `${definition.commandName}: ${parentValidation.error}`
+                  );
+                }
+              }
+
+              if (rule.options && rule.options.ownershipRequired && node) {
+                if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
+                  return ErrorHandler.createError(
+                      `${definition.commandName}: changing permissions of '${pathArg}': Operation not permitted`
+                  );
+                }
+              }
+
+              validatedPaths.push({
+                arg: pathArg,
+                node,
+                resolvedPath,
+              });
+            }
+          }
+          options.validatedPaths = validatedPaths;
+        }
       }
 
+      const commandDependencies = { ...this.dependencies };
 
-      return definition.coreLogic(context);
+      if (definition.applicationModules && Array.isArray(definition.applicationModules)) {
+        for (const moduleName of definition.applicationModules) {
+          if (window[moduleName]) {
+            commandDependencies[moduleName] = window[moduleName];
+          } else {
+            console.error(`Command '${definition.commandName}' declared a dependency on '${moduleName}', but it was not found on the window object after loading.`);
+          }
+        }
+      }
+
+      const command = new Command(definition);
+      return command.execute(remainingArgs, options, commandDependencies);
     };
     handler.definition = definition;
     return handler;
   }
 
-  async function _ensureCommandLoaded(commandName) {
-    if (!commandName) return false;
-    if (commands[commandName]) return true;
-    if (loadingPromises[commandName]) return await loadingPromises[commandName];
-
-    const promise = new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = `./scripts/commands/${commandName}.js`;
-      script.onload = () => {
-        const definition = CommandRegistry.getDefinitions()[commandName];
-        if (definition) {
-          commands[commandName] = {
-            handler: createCommandHandler(definition.definition),
-            description: definition.description,
-            helpText: definition.helpText,
-          };
-          resolve(true);
-        } else {
-          console.error(`Script for '${commandName}' loaded, but command not found in registry.`);
-          resolve(false);
-        }
-        delete loadingPromises[commandName];
-      };
-      script.onerror = () => {
-        resolve(false);
-        delete loadingPromises[commandName];
-      };
-      document.head.appendChild(script);
-    });
-
-    loadingPromises[commandName] = promise;
-    return await loadingPromises[commandName];
+  getActiveJobs() {
+    return this.activeJobs;
   }
 
-  function getActiveJobs() {
-    return activeJobs;
-  }
-
-  async function killJob(jobId) {
-    const job = activeJobs[jobId];
-    if (job && job.abortController) {
-      job.abortController.abort("Killed by user command.");
-      if (job.promise) {
-        await job.promise.catch(() => {});
-      }
-      MessageBusManager.unregisterJob(jobId);
-      delete activeJobs[jobId];
-      return {
-        success: true,
-        message: `Signal sent to terminate job ${jobId}.`,
-      };
+  sendSignalToJob(jobId, signal) {
+    const { ErrorHandler } = this.dependencies;
+    const job = this.activeJobs[jobId];
+    if (!job) {
+      return ErrorHandler.createError(`Job ${jobId} not found.`);
     }
-    return {
-      success: false,
-      error: `Job ${jobId} not found or cannot be killed.`,
-    };
+
+    switch (signal.toUpperCase()) {
+      case 'KILL':
+      case 'TERM':
+        if (job.abortController) {
+          job.abortController.abort("Killed by user command.");
+          delete this.activeJobs[jobId];
+          this.dependencies.MessageBusManager.unregisterJob(jobId);
+        }
+        break;
+      case 'STOP':
+        job.status = 'paused';
+        break;
+      case 'CONT':
+        job.status = 'running';
+        break;
+      default:
+        return ErrorHandler.createError(`Invalid signal '${signal}'.`);
+    }
+
+    return ErrorHandler.createSuccess(`Signal ${signal} sent to job ${jobId}.`);
   }
 
-  async function _executeCommandHandler(segment, execCtxOpts, stdinContent = null, signal) {
+
+  async executeScript(lines, options = {}) {
+    const { ErrorHandler, EnvironmentManager, Config } = this.dependencies;
+
+    EnvironmentManager.push();
+
+    const scriptingContext = {
+      isScripting: true,
+      lines: lines,
+      currentLineIndex: -1,
+      args: options.args || [],
+    };
+
+    let stepCounter = 0;
+    const MAX_STEPS = Config.FILESYSTEM.MAX_SCRIPT_STEPS || 10000;
+
+    try {
+      for (let i = 0; i < lines.length; i++) {
+        stepCounter++;
+        if (stepCounter > MAX_STEPS) {
+          throw new Error(`Maximum script execution steps (${MAX_STEPS}) exceeded.`);
+        }
+        scriptingContext.currentLineIndex = i;
+        const line = lines[i].trim();
+        if (line && !line.startsWith("#")) {
+          const result = await this.processSingleCommand(line, {
+            ...options,
+            scriptingContext,
+          });
+          i = scriptingContext.currentLineIndex;
+          if (!result.success) {
+            throw new Error(`Error on line ${i + 1}: ${result.error || 'Unknown error'}`);
+          }
+        }
+      }
+    } finally {
+      EnvironmentManager.pop();
+    }
+
+    return ErrorHandler.createSuccess("Script finished successfully.");
+  }
+
+  async _executeCommandHandler(
+      segment,
+      execCtxOpts,
+      stdinContent = null,
+      signal
+  ) {
+    const { ErrorHandler } = this.dependencies;
     const commandName = segment.command?.toLowerCase();
 
-    const commandExists = await _ensureCommandLoaded(commandName);
-    if (!commandExists) {
-      return { success: false, error: `${commandName}: command not found` };
+    const cmdInstance = await this._ensureCommandLoaded(commandName);
+    if (!cmdInstance) {
+      return ErrorHandler.createError(`${commandName}: command not found`);
     }
 
-    const cmdData = commands[commandName];
-
-    if (cmdData?.handler) {
+    if (cmdInstance instanceof Command) {
       try {
-        return await cmdData.handler(segment.args, {
+        const definition = cmdInstance.definition;
+        const commandDependencies = { ...this.dependencies };
+        if (definition.applicationModules && Array.isArray(definition.applicationModules)) {
+          for (const moduleName of definition.applicationModules) {
+            if (window[moduleName]) {
+              commandDependencies[moduleName] = window[moduleName];
+            } else {
+              console.error(`Command '${definition.commandName}' declared a dependency on '${moduleName}', but it was not found on the window object after loading.`);
+            }
+          }
+        }
+        return await cmdInstance.execute(segment.args, {
           ...execCtxOpts,
           stdinContent,
           signal,
-        });
+        }, commandDependencies);
       } catch (e) {
         console.error(`Error in command handler for '${segment.command}':`, e);
-        return {
-          success: false,
-          error: `${segment.command}: ${e.message || "Unknown error"}`,
-        };
+        return ErrorHandler.createError(
+            `${segment.command}: ${e.message || "Unknown error"}`
+        );
       }
     } else if (segment.command) {
-      return { success: false, error: `${segment.command}: command not found` };
+      return ErrorHandler.createError(`${segment.command}: command not found`);
     }
 
-    return {
-      success: true,
-      output: "",
-    };
+    return ErrorHandler.createSuccess("");
   }
 
-  async function _executePipeline(pipeline, options) {
+  async _executePipeline(pipeline, options) {
+    const { FileSystemManager, UserManager, OutputManager, Config, ErrorHandler, Utils } = this.dependencies;
     const { isInteractive, signal, scriptingContext, suppressOutput } = options;
     let currentStdin = null;
-    let lastResult = {
-      success: true,
-      output: "",
-    };
+    let lastResult = ErrorHandler.createSuccess("");
+
     if (pipeline.inputRedirectFile) {
-      const pathValidation = FileSystemManager.validatePath(pipeline.inputRedirectFile, {expectedType: 'file'});
-      if (pathValidation.error) {
-        return { success: false, error: pathValidation.error };
+      const pathValidationResult = FileSystemManager.validatePath(
+          pipeline.inputRedirectFile,
+          { expectedType: "file" }
+      );
+      if (!pathValidationResult.success) {
+        return pathValidationResult;
       }
-      if (!FileSystemManager.hasPermission(pathValidation.node, UserManager.getCurrentUser().name, "read")) {
-        return { success: false, error: `cannot open '${pipeline.inputRedirectFile}' for reading: Permission denied` };
+      const { node } = pathValidationResult.data;
+      if (
+          !FileSystemManager.hasPermission(
+              node,
+              UserManager.getCurrentUser().name,
+              "read"
+          )
+      ) {
+        return ErrorHandler.createError(
+            `cannot open '${pipeline.inputRedirectFile}' for reading: Permission denied`
+        );
       }
-      currentStdin = pathValidation.node.content || "";
+      currentStdin = node.content || "";
     }
+
     if (
         typeof UserManager === "undefined" ||
         typeof UserManager.getCurrentUser !== "function"
@@ -219,10 +366,7 @@ const CommandExecutor = (() => {
       await OutputManager.appendToOutput(errorMsg, {
         typeClass: Config.CSS_CLASSES.ERROR_MSG,
       });
-      return {
-        success: false,
-        error: errorMsg,
-      };
+      return ErrorHandler.createError(errorMsg);
     }
     const user = UserManager.getCurrentUser().name;
     const nowISO = new Date().toISOString();
@@ -230,9 +374,13 @@ const CommandExecutor = (() => {
       const segment = pipeline.segments[i];
       const execOptions = { isInteractive, scriptingContext };
       if (pipeline.isBackground) {
+        const job = this.activeJobs[pipeline.jobId];
+        while (job && job.status === 'paused') {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
         execOptions.jobId = pipeline.jobId;
       }
-      lastResult = await _executeCommandHandler(
+      lastResult = await this._executeCommandHandler(
           segment,
           execOptions,
           currentStdin,
@@ -241,20 +389,39 @@ const CommandExecutor = (() => {
       if (!lastResult) {
         const err = `Critical: Command handler for '${segment.command}' returned an undefined result.`;
         console.error(err, "Pipeline:", pipeline, "Segment:", segment);
-        lastResult = {
-          success: false,
-          error: err,
-        };
+        lastResult = ErrorHandler.createError(err);
       }
 
       if (scriptingContext?.waitingForInput) {
-        return { success: true, output: "" };
+        return ErrorHandler.createSuccess("");
       }
 
-      if (!lastResult.success) {
-        const err = `${Config.MESSAGES.PIPELINE_ERROR_PREFIX}'${
-            segment.command
-        }': ${lastResult.error || "Unknown"}`;
+      if (lastResult.success) {
+        if (lastResult.stateModified) {
+          const saveResult = await FileSystemManager.save();
+          if (!saveResult.success) {
+            return ErrorHandler.createError(
+                `CRITICAL: Failed to save file system state: ${saveResult.error}`
+            );
+          }
+        }
+
+        if (lastResult.effect === "clear_screen") {
+          OutputManager.clearOutput();
+        } else if (lastResult.effect === "backup") {
+          const { content, fileName } = lastResult.effectData;
+          const blob = new Blob([content], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = Utils.createElement("a", { href: url, download: fileName });
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        currentStdin = lastResult.data;
+      } else {
+        const err = `${Config.MESSAGES.PIPELINE_ERROR_PREFIX}'${segment.command}': ${lastResult.error || "Unknown"}`;
         if (!pipeline.isBackground) {
           await OutputManager.appendToOutput(err, {
             typeClass: Config.CSS_CLASSES.ERROR_MSG,
@@ -264,48 +431,39 @@ const CommandExecutor = (() => {
         }
         return lastResult;
       }
-      currentStdin = lastResult.output;
     }
     if (pipeline.redirection && lastResult.success) {
       const { type: redirType, file: redirFile } = pipeline.redirection;
-      const outputToRedir = lastResult.output || "";
 
-      // THIS IS THE CORRECTED CALL
-      const redirVal = FileSystemManager.validatePath(
-          redirFile,
-          {
-            allowMissing: true,
-            disallowRoot: true,
-            defaultToCurrentIfEmpty: false,
-          }
-      );
+      let outputToWrite = lastResult.data || "";
+      if (!lastResult.suppressNewline) {
+        outputToWrite += "\n";
+      }
+      const redirValResult = FileSystemManager.validatePath(redirFile, {
+        allowMissing: true,
+        disallowRoot: true,
+        defaultToCurrentIfEmpty: false,
+      });
 
-      if (
-          redirVal.error &&
-          !(redirVal.optionsUsed.allowMissing && !redirVal.node)
-      ) {
+      if (!redirValResult.success && !(redirValResult.data?.node === null)) {
         if (!pipeline.isBackground)
-          await OutputManager.appendToOutput(redirVal.error, {
+          await OutputManager.appendToOutput(redirValResult.error, {
             typeClass: Config.CSS_CLASSES.ERROR_MSG,
           });
-        return {
-          success: false,
-          error: redirVal.error,
-        };
+        return redirValResult;
       }
-      const absRedirPath = redirVal.resolvedPath;
-      let targetNode = redirVal.node;
+      const { resolvedPath: absRedirPath } = redirValResult.data;
       const pDirRes =
           FileSystemManager.createParentDirectoriesIfNeeded(absRedirPath);
-      if (pDirRes.error) {
+      if (!pDirRes.success) {
         if (!pipeline.isBackground)
-          await OutputManager.appendToOutput(`Redir err: ${pDirRes.error}`, {
-            typeClass: Config.CSS_CLASSES.ERROR_MSG,
-          });
-        return {
-          success: false,
-          error: pDirRes.error,
-        };
+          await OutputManager.appendToOutput(
+              `Redir err: ${pDirRes.error}`,
+              {
+                typeClass: Config.CSS_CLASSES.ERROR_MSG,
+              }
+          );
+        return pDirRes;
       }
       const finalParentDirPath =
           absRedirPath.substring(
@@ -315,128 +473,104 @@ const CommandExecutor = (() => {
       const finalParentNodeForFile =
           FileSystemManager.getNodeByPath(finalParentDirPath);
       if (!finalParentNodeForFile) {
+        const errorMsg = `Redir err: critical internal error, parent dir '${finalParentDirPath}' for file write not found.`;
         if (!pipeline.isBackground)
-          await OutputManager.appendToOutput(
-              `Redir err: critical internal error, parent dir '${finalParentDirPath}' for file write not found.`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
-          );
-        return {
-          success: false,
-          error: `parent dir '${finalParentDirPath}' for file write not found (internal)`,
-        };
+          await OutputManager.appendToOutput(errorMsg, {
+            typeClass: Config.CSS_CLASSES.ERROR_MSG,
+          });
+        return ErrorHandler.createError(
+            `parent dir '${finalParentDirPath}' for file write not found (internal)`
+        );
       }
-      targetNode = FileSystemManager.getNodeByPath(absRedirPath);
+
+      const existingNode = FileSystemManager.getNodeByPath(absRedirPath);
       if (
-          targetNode &&
-          targetNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
+          existingNode &&
+          existingNode.type === Config.FILESYSTEM.DEFAULT_DIRECTORY_TYPE
       ) {
+        const errorMsg = `Redir err: '${redirFile}' is dir.`;
         if (!pipeline.isBackground)
-          await OutputManager.appendToOutput(
-              `Redir err: '${redirFile}' is dir.`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
-          );
-        return {
-          success: false,
-          error: `'${redirFile}' is dir.`,
-        };
+          await OutputManager.appendToOutput(errorMsg, {
+            typeClass: Config.CSS_CLASSES.ERROR_MSG,
+          });
+        return ErrorHandler.createError(`'${redirFile}' is dir.`);
       }
       if (
-          targetNode &&
-          !FileSystemManager.hasPermission(targetNode, user, "write")
+          existingNode &&
+          !FileSystemManager.hasPermission(existingNode, user, "write")
       ) {
+        const errorMsg = `Redir err: no write to '${redirFile}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`;
         if (!pipeline.isBackground)
-          await OutputManager.appendToOutput(
-              `Redir err: no write to '${redirFile}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
-          );
-        return {
-          success: false,
-          error: `no write to '${redirFile}'`,
-        };
+          await OutputManager.appendToOutput(errorMsg, {
+            typeClass: Config.CSS_CLASSES.ERROR_MSG,
+          });
+        return ErrorHandler.createError(`no write to '${redirFile}'`);
       }
       if (
-          !targetNode &&
+          !existingNode &&
           !FileSystemManager.hasPermission(finalParentNodeForFile, user, "write")
       ) {
+        const errorMsg = `Redir err: no create in '${finalParentDirPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`;
         if (!pipeline.isBackground)
-          await OutputManager.appendToOutput(
-              `Redir err: no create in '${finalParentDirPath}'${Config.MESSAGES.PERMISSION_DENIED_SUFFIX}`,
-              {
-                typeClass: Config.CSS_CLASSES.ERROR_MSG,
-              }
-          );
-        return {
-          success: false,
-          error: `no create in '${finalParentDirPath}'`,
-        };
+          await OutputManager.appendToOutput(errorMsg, {
+            typeClass: Config.CSS_CLASSES.ERROR_MSG,
+          });
+        return ErrorHandler.createError(`no create in '${finalParentDirPath}'`);
       }
-      const fName = absRedirPath.substring(
-          absRedirPath.lastIndexOf(Config.FILESYSTEM.PATH_SEPARATOR) + 1
-      );
-      let exContent = "";
-      if (
-          redirType === "append" &&
-          finalParentNodeForFile.children[fName]?.type ===
-          Config.FILESYSTEM.DEFAULT_FILE_TYPE
-      ) {
-        exContent = finalParentNodeForFile.children[fName].content || "";
-        if (exContent && !exContent.endsWith("\n") && outputToRedir)
-          exContent += "\n";
-      }
-      if (targetNode) {
-        targetNode.content = exContent + outputToRedir;
+
+      let finalFileContent;
+      if (redirType === "append" && existingNode) {
+        const existingContent = existingNode.content || "";
+        finalFileContent = existingContent + outputToWrite;
       } else {
-        const primaryGroup = UserManager.getPrimaryGroupForUser(user);
-        if (!primaryGroup) {
-          if (!pipeline.isBackground)
-            await OutputManager.appendToOutput(
-                `Redirection error: could not determine primary group for user '${user}'.`,
-                {typeClass: Config.CSS_CLASSES.ERROR_MSG}
-            );
-          return {
-            success: false,
-            error: "internal redirection error: no primary group",
-          };
-        }
-        finalParentNodeForFile.children[fName] =
-            FileSystemManager._createNewFileNode(
-                fName,
-                exContent + outputToRedir,
-                user,
-                primaryGroup
-            );
+        finalFileContent = outputToWrite;
       }
+
+      const saveResult = await FileSystemManager.createOrUpdateFile(
+          absRedirPath,
+          finalFileContent,
+          {
+            currentUser: user,
+            primaryGroup: UserManager.getPrimaryGroupForUser(user),
+          }
+      );
+
+      if (!saveResult.success) {
+        if (!pipeline.isBackground) {
+          await OutputManager.appendToOutput(
+              `Redir err: ${saveResult.error}`,
+              { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+          );
+        }
+        return saveResult;
+      }
+
       FileSystemManager._updateNodeAndParentMtime(absRedirPath, nowISO);
-      if (!(await FileSystemManager.save())) {
+      const fsSaveResult = await FileSystemManager.save();
+      if (!fsSaveResult.success) {
         if (!pipeline.isBackground)
           await OutputManager.appendToOutput(
-              `Failed to save redir to '${redirFile}'.`,
+              `Failed to save redir to '${redirFile}': ${fsSaveResult.error}`,
               {
                 typeClass: Config.CSS_CLASSES.ERROR_MSG,
               }
           );
-        return {
-          success: false,
-          error: `save redir fail`,
-        };
+        return ErrorHandler.createError(
+            `save redir fail: ${fsSaveResult.error}`
+        );
       }
-      lastResult.output = "";
+      lastResult.data = "";
     }
 
     if (
         !pipeline.redirection &&
         lastResult.success &&
-        lastResult.output !== null &&
-        lastResult.output !== undefined
+        lastResult.data !== null &&
+        lastResult.data !== undefined &&
+        !lastResult.suppressNewline
     ) {
       if (pipeline.isBackground) {
-        if (lastResult.output) {
+        if (lastResult.data) {
           await OutputManager.appendToOutput(
               `${Config.MESSAGES.BACKGROUND_PROCESS_OUTPUT_SUPPRESSED} (Job ${pipeline.jobId})`,
               {
@@ -446,25 +580,110 @@ const CommandExecutor = (() => {
           );
         }
       } else {
-        if (lastResult.output && !suppressOutput) {
-          // Fix for incorrect newline characters
-          if (typeof lastResult.output === 'string') {
-            lastResult.output = lastResult.output.replace(/\\n/g, '\n');
+        if (lastResult.data && !suppressOutput) {
+          if (typeof lastResult.data === "string") {
+            lastResult.data = lastResult.data.replace(/\\n/g, "\n");
           }
-          await OutputManager.appendToOutput(lastResult.output, {
-            typeClass: lastResult.messageType || null,
-          });
+          const { data, success, ...outputOptions } = lastResult;
+          await OutputManager.appendToOutput(data, outputOptions);
         }
       }
     }
     return lastResult;
   }
 
-  // This function is now enhanced to handle script arguments.
-  async function _preprocessCommandString(rawCommandText, scriptingContext = null) {
-    let commandToProcess = rawCommandText.trim();
+  _expandBraces(commandString) {
+    const braceExpansionRegex = /(\S*?)\{([^}]+)\}(\S*)/g;
 
-    const commentIndex = commandToProcess.search(/(?<= )#/);
+    const expander = (match, prefix, content, suffix) => {
+      if (content.includes('..')) { // Handle sequence expansion like {1..5} or {a..z}
+        const [start, end] = content.split('..');
+        const startNum = parseInt(start, 10);
+        const endNum = parseInt(end, 10);
+
+        if (!isNaN(startNum) && !isNaN(endNum)) { // Numeric sequence
+          const result = [];
+          const step = startNum <= endNum ? 1 : -1;
+          for (let i = startNum; step > 0 ? i <= endNum : i >= endNum; i += step) {
+            result.push(`${prefix}${i}${suffix}`);
+          }
+          return result.join(' ');
+        } else if (start.length === 1 && end.length === 1) { // Character sequence
+          const startCode = start.charCodeAt(0);
+          const endCode = end.charCodeAt(0);
+          const result = [];
+          const step = startCode <= endCode ? 1 : -1;
+          for (let i = startCode; step > 0 ? i <= endCode : i >= endCode; i += step) {
+            result.push(`${prefix}${String.fromCharCode(i)}${suffix}`);
+          }
+          return result.join(' ');
+        }
+      } else if (content.includes(',')) { // Handle comma expansion like {a,b,c}
+        return content.split(',')
+            .map(part => `${prefix}${part}${suffix}`)
+            .join(' ');
+      }
+      return match;
+    };
+
+    let expandedString = commandString;
+    let previousString;
+    do {
+      previousString = expandedString;
+      expandedString = expandedString.replace(braceExpansionRegex, expander);
+    } while (expandedString !== previousString);
+
+    return expandedString;
+  }
+
+  async _preprocessCommandString(rawCommandText, scriptingContext = null) {
+    const { EnvironmentManager, AliasManager } = this.dependencies;
+    let commandToProcess = rawCommandText.trim();
+    
+    // Apply brace expansion before other processing
+    commandToProcess = this._expandBraces(commandToProcess);
+
+    const assignmentSubstitutionRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)=\$\(([^)]+)\)$/;
+    const assignmentMatch = commandToProcess.match(assignmentSubstitutionRegex);
+
+    if (assignmentMatch) {
+      const varName = assignmentMatch[1];
+      const subCommand = assignmentMatch[2];
+      const result = await this.processSingleCommand(subCommand, { isInteractive: false, suppressOutput: true });
+      const output = result.success ? (result.output || '').trim().replace(/\n/g, ' ') : '';
+      EnvironmentManager.set(varName, output);
+      return "";
+    }
+
+    const commandSubstitutionRegex = /\$\(([^)]+)\)/g;
+    let inlineMatch;
+    while ((inlineMatch = commandSubstitutionRegex.exec(commandToProcess)) !== null) {
+      const subCommand = inlineMatch[1];
+      const result = await this.processSingleCommand(subCommand, { isInteractive: false, suppressOutput: true });
+      const output = result.success ? (result.output || '').trim().replace(/\n/g, ' ') : '';
+      commandToProcess = commandToProcess.replace(inlineMatch[0], output);
+    }
+
+    let inQuote = null;
+    let commentIndex = -1;
+
+    for (let i = 0; i < commandToProcess.length; i++) {
+      const char = commandToProcess[i];
+
+      if (inQuote) {
+        if (char === inQuote) {
+          inQuote = null;
+        }
+      } else {
+        if (char === '"' || char === "'") {
+          inQuote = char;
+        } else if (char === '#' && (i === 0 || /\s/.test(commandToProcess[i-1]))) {
+          commentIndex = i;
+          break;
+        }
+      }
+    }
+
     if (commentIndex > -1) {
       commandToProcess = commandToProcess.substring(0, commentIndex).trim();
     }
@@ -475,221 +694,231 @@ const CommandExecutor = (() => {
 
     if (scriptingContext && scriptingContext.args) {
       const scriptArgs = scriptingContext.args;
-      commandToProcess = commandToProcess.replace(/\$@/g, scriptArgs.join(' '));
+      commandToProcess = commandToProcess.replace(/\$@/g, scriptArgs.join(" "));
       commandToProcess = commandToProcess.replace(/\$#/g, scriptArgs.length);
       scriptArgs.forEach((arg, i) => {
-        const regex = new RegExp(`\\$${i + 1}`, 'g');
+        const regex = new RegExp(`\\$${i + 1}`, "g");
         commandToProcess = commandToProcess.replace(regex, arg);
       });
     }
 
-    commandToProcess = commandToProcess.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, var1, var2) => {
-      const varName = var1 || var2;
-      return EnvironmentManager.get(varName);
-    });
+    commandToProcess = commandToProcess.replace(
+        /\$([a-zA-Z_][a-zA-Z0-9_]*)|\$\{([a-zA-Z_][a-zA-Z0-9_]*)}/g,
+        (match, var1, var2) => {
+          const varName = var1 || var2;
+          return EnvironmentManager.get(varName);
+        }
+    );
 
     const aliasResult = AliasManager.resolveAlias(commandToProcess);
     if (aliasResult.error) {
       throw new Error(aliasResult.error);
     }
-    const commandAfterAliases = aliasResult.newCommand;
 
-    const args = commandAfterAliases.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
-    const expandedArgs = [];
-    if (args.length > 0) {
-      expandedArgs.push(args[0]);
-    }
-    let hasExpansionOccurred = false;
-
-    for (let i = 1; i < args.length; i++) {
-      const originalArg = args[i];
-      const isQuoted = (originalArg.startsWith('"') && originalArg.endsWith('"')) || (originalArg.startsWith("'") && originalArg.endsWith("'"));
-      const globPattern = isQuoted ? originalArg.slice(1, -1) : originalArg;
-      const hasGlobChar = globPattern.includes('*') || globPattern.includes('?');
-
-      if (hasGlobChar && !isQuoted) {
-        const lastSlashIndex = globPattern.lastIndexOf('/');
-        let pathPrefix = '.';
-        let patternPart = globPattern;
-
-        if (lastSlashIndex > -1) {
-          pathPrefix = globPattern.substring(0, lastSlashIndex + 1);
-          patternPart = globPattern.substring(lastSlashIndex + 1);
-        }
-
-        const searchDir = (pathPrefix === '/') ? '/' : FileSystemManager.getAbsolutePath(pathPrefix, FileSystemManager.getCurrentPath());
-        const dirNode = FileSystemManager.getNodeByPath(searchDir);
-
-        if (dirNode && dirNode.type === 'directory') {
-          const regex = Utils.globToRegex(patternPart);
-          if (regex) {
-            const matches = Object.keys(dirNode.children)
-                .filter(name => regex.test(name))
-                .map(name => name.includes(' ') ? `"${name}"` : name);
-
-            if (matches.length > 0) {
-              expandedArgs.push(...matches);
-              hasExpansionOccurred = true;
-            } else {
-              // If no files match, push the original glob pattern.
-              // This mimics the shell behavior that causes ls to show an error,
-              // which is what your test script expects.
-              expandedArgs.push(originalArg);
-            }
-          } else {
-            expandedArgs.push(originalArg);
-          }
-        } else {
-          expandedArgs.push(originalArg);
-        }
-      } else {
-        expandedArgs.push(originalArg);
-      }
-    }
-    const finalCommandToParse = hasExpansionOccurred ? expandedArgs.join(' ') : commandAfterAliases;
-    return finalCommandToParse;
+    return aliasResult.newCommand;
   }
 
-  async function _finalizeInteractiveModeUI(originalCommandText) {
+  async _finalizeInteractiveModeUI(originalCommandText) {
+    const { TerminalUI, AppLayerManager, HistoryManager } = this.dependencies;
     TerminalUI.clearInput();
     TerminalUI.updatePrompt();
-    if (!EditorManager.isActive()) {
-      if (DOM.inputLineContainerDiv) {
-        DOM.inputLineContainerDiv.classList.remove(Config.CSS_CLASSES.HIDDEN);
-      }
+    if (!AppLayerManager.isActive()) {
+      TerminalUI.showInputLine();
       TerminalUI.setInputState(true);
       TerminalUI.focusInput();
     }
-    if (DOM.outputDiv) {
-      DOM.outputDiv.scrollTop = DOM.outputDiv.scrollHeight;
-    }
-    if (!TerminalUI.getIsNavigatingHistory() && originalCommandText.trim()) {
+    TerminalUI.scrollOutputToEnd();
+
+    if (
+        !TerminalUI.getIsNavigatingHistory() &&
+        originalCommandText.trim()
+    ) {
       HistoryManager.resetIndex();
     }
     TerminalUI.setIsNavigatingHistory(false);
   }
 
-  async function processSingleCommand(rawCommandText, options = {}) {
-    const { isInteractive = true, scriptingContext = null, suppressOutput = false } = options;
+  async processSingleCommand(rawCommandText, options = {}) {
+    const {
+      isInteractive = true,
+      scriptingContext = null,
+      suppressOutput = false
+    } = options;
+    const {
+      ModalManager,
+      OutputManager,
+      TerminalUI,
+      AppLayerManager,
+      HistoryManager,
+      Config,
+      ErrorHandler,
+      Lexer,
+      Parser,
+      MessageBusManager
+    } = this.dependencies;
 
-    if (options.scriptingContext && isInteractive && !ModalManager.isAwaiting()) {
-      await OutputManager.appendToOutput("Script execution in progress. Input suspended.", { typeClass: Config.CSS_CLASSES.WARNING_MSG });
-      return { success: false, error: "Script execution in progress." };
+    if (
+        options.scriptingContext &&
+        isInteractive &&
+        !ModalManager.isAwaiting()
+    ) {
+      await OutputManager.appendToOutput(
+          "Script execution in progress. Input suspended.",
+          { typeClass: Config.CSS_CLASSES.WARNING_MSG }
+      );
+      return ErrorHandler.createError("Script execution in progress.");
     }
     if (ModalManager.isAwaiting()) {
-      await ModalManager.handleTerminalInput(rawCommandText);
-      if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return { success: true, output: "" };
+      await ModalManager.handleTerminalInput(
+          TerminalUI.getCurrentInputValue()
+      );
+      if (isInteractive) await this._finalizeInteractiveModeUI(rawCommandText);
+      return ErrorHandler.createSuccess("");
     }
-    if (EditorManager.isActive()) return { success: true, output: "" };
+
+    if (AppLayerManager.isActive() && options.isInteractive) {
+      return ErrorHandler.createSuccess("");
+    }
 
     let commandToParse;
     try {
-      // Pass scripting context to preprocessing for argument expansion
-      commandToParse = await _preprocessCommandString(rawCommandText, scriptingContext);
+      commandToParse = await this._preprocessCommandString(
+          rawCommandText,
+          scriptingContext
+      );
     } catch (e) {
-      await OutputManager.appendToOutput(e.message, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-      if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return { success: false, error: e.message };
+      await OutputManager.appendToOutput(e.message, {
+        typeClass: Config.CSS_CLASSES.ERROR_MSG,
+      });
+      if (isInteractive) await this._finalizeInteractiveModeUI(rawCommandText);
+      return ErrorHandler.createError(e.message);
     }
 
     const cmdToEcho = rawCommandText.trim();
-    if (isInteractive && !scriptingContext) { // Only echo for direct user commands
-      DOM.inputLineContainerDiv.classList.add(Config.CSS_CLASSES.HIDDEN);
-      const prompt = DOM.promptContainer.textContent;
+    if (isInteractive && !scriptingContext) {
+      TerminalUI.hideInputLine();
+      const prompt = TerminalUI.getPromptText();
       await OutputManager.appendToOutput(`${prompt}${cmdToEcho}`);
     }
     if (cmdToEcho === "") {
-      if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return { success: true, output: "" };
+      if (isInteractive) await this._finalizeInteractiveModeUI(rawCommandText);
+      return ErrorHandler.createSuccess("");
     }
     if (isInteractive) HistoryManager.add(cmdToEcho);
-    if (isInteractive && !TerminalUI.getIsNavigatingHistory()) HistoryManager.resetIndex();
+    if (isInteractive && !TerminalUI.getIsNavigatingHistory())
+      HistoryManager.resetIndex();
 
     let commandSequence;
     try {
-      commandSequence = new Parser(new Lexer(commandToParse).tokenize()).parse();
+      commandSequence = new Parser(
+          new Lexer(commandToParse, this.dependencies).tokenize(),
+          this.dependencies
+      ).parse();
     } catch (e) {
-      await OutputManager.appendToOutput(e.message || "Command parse error.", { typeClass: Config.CSS_CLASSES.ERROR_MSG });
-      if (isInteractive) await _finalizeInteractiveModeUI(rawCommandText);
-      return { success: false, error: e.message || "Command parse error." };
+      await OutputManager.appendToOutput(
+          e.message || "Command parse error.",
+          { typeClass: Config.CSS_CLASSES.ERROR_MSG }
+      );
+      if (isInteractive) await this._finalizeInteractiveModeUI(rawCommandText);
+      return ErrorHandler.createError(e.message || "Command parse error.");
     }
 
     let lastPipelineSuccess = true;
-    let overallResult = { success: true, output: "" };
+    let finalResult = ErrorHandler.createSuccess("");
 
     for (let i = 0; i < commandSequence.length; i++) {
       const { pipeline, operator } = commandSequence[i];
 
       if (i > 0) {
-        const prevOperator = commandSequence[i-1].operator;
-        if (prevOperator === '&&' && !lastPipelineSuccess) continue;
-        if (prevOperator === '||' && lastPipelineSuccess) continue;
+        const prevOperator = commandSequence[i - 1].operator;
+        if (prevOperator === "&&" && !lastPipelineSuccess) continue;
+        if (prevOperator === "||" && lastPipelineSuccess) continue;
       }
 
       let result;
-      if (operator === '&') {
+      if (operator === "&") {
         pipeline.isBackground = true;
-        const jobId = ++backgroundProcessIdCounter;
+        const jobId = ++this.backgroundProcessIdCounter;
         pipeline.jobId = jobId;
         MessageBusManager.registerJob(jobId);
         const abortController = new AbortController();
 
-        const jobPromise = _executePipeline(pipeline, {
-          isInteractive: false,
-          signal: abortController.signal,
-          scriptingContext,
-          suppressOutput: true
-        }).finally(() => {
-          delete activeJobs[jobId];
-          MessageBusManager.unregisterJob(jobId);
+        const job = {
+          id: jobId,
+          command: cmdToEcho,
+          abortController,
+          promise: null,
+          status: 'running',
+        };
+        this.activeJobs[jobId] = job;
+
+        const jobPromise = new Promise(resolve => {
+          setTimeout(() => {
+            this._executePipeline(pipeline, {
+              isInteractive: false,
+              signal: abortController.signal,
+              scriptingContext,
+              suppressOutput: true,
+            }).then(resolve);
+          }, 0);
         });
 
-        activeJobs[jobId] = { id: jobId, command: cmdToEcho, abortController, promise: jobPromise };
-        await OutputManager.appendToOutput(`${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`, { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG });
+        job.promise = jobPromise;
 
-        jobPromise.then(bgResult => {
-          const statusMsg = `[Job ${pipeline.jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
+        jobPromise.finally(() => {
+          delete this.activeJobs[jobId];
+          MessageBusManager.unregisterJob(jobId);
+        }).then((bgResult) => {
+          const statusMsg = `[Job ${jobId} ${bgResult.success ? "finished" : "finished with error"}${bgResult.success ? "" : `: ${bgResult.error || "Unknown error"}`}]`;
           OutputManager.appendToOutput(statusMsg, {
-            typeClass: bgResult.success ? Config.CSS_CLASSES.CONSOLE_LOG_MSG : Config.CSS_CLASSES.WARNING_MSG,
-            isBackground: true
+            typeClass: bgResult.success
+                ? Config.CSS_CLASSES.CONSOLE_LOG_MSG
+                : Config.CSS_CLASSES.WARNING_MSG,
+            isBackground: true,
           });
         });
 
-        result = { success: true };
-      } else {
-        result = await _executePipeline(pipeline, { isInteractive, signal: null, scriptingContext, suppressOutput });
-      }
+        await OutputManager.appendToOutput(
+            `${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_PREFIX}${jobId}${Config.MESSAGES.BACKGROUND_PROCESS_STARTED_SUFFIX}`,
+            { typeClass: Config.CSS_CLASSES.CONSOLE_LOG_MSG }
+        );
 
+        result = ErrorHandler.createSuccess();
+      } else {
+        result = await this._executePipeline(pipeline, {
+          isInteractive,
+          signal: null,
+          scriptingContext,
+          suppressOutput,
+        });
+      }
 
       if (!result) {
         const err = `Critical: Pipeline execution returned an undefined result.`;
         console.error(err, "Pipeline:", pipeline);
-        result = { success: false, error: err };
+        result = ErrorHandler.createError(err);
       }
+
       lastPipelineSuccess = result.success;
-      overallResult = result;
+      finalResult = result;
+
+      if (!lastPipelineSuccess && (!operator || operator === ";")) {
+        break;
+      }
     }
 
     if (isInteractive && !scriptingContext) {
-      await _finalizeInteractiveModeUI(rawCommandText);
+      await this._finalizeInteractiveModeUI(rawCommandText);
     }
 
-    return overallResult;
+    return {
+      success: finalResult.success,
+      output: finalResult.success ? finalResult.data : null,
+      error: !finalResult.success ? finalResult.error : null,
+    };
   }
 
-
-  function getCommands() {
-    return commands;
+  getCommands() {
+    return this.commands;
   }
-
-  return {
-    initialize: () => {},
-    processSingleCommand,
-    getCommands,
-    getActiveJobs,
-    killJob,
-    _ensureCommandLoaded,
-    precacheCommonCommands
-  };
-})();
+}

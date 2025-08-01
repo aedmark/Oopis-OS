@@ -1,54 +1,54 @@
 // scripts/commands/more.js
-(() => {
-    "use strict";
-    const moreCommandDefinition = {
-        commandName: "more",
-        isInputStream: true,
-        completionType: "paths", // Preserved for tab completion
-        coreLogic: async (context) => {
-            const { options, inputItems, inputError } = context;
 
-            try {
-                if (inputError) {
-                    return { success: false, error: "more: Could not read one or more sources." };
-                }
+window.MoreCommand = class MoreCommand extends Command {
+    constructor() {
+        super({
+            commandName: "more",
+            dependencies: ["utils.js", "pager.js"],
+            description: "A simple pager for displaying content.",
+            helpText: `Usage: more [file]
+      Displays file content or standard input one screen at a time.
+      DESCRIPTION
+      The more command is a filter for paging through text one screenful
+      at a time. It only allows forward movement. For more advanced
+      features like backward scrolling, use 'less'.
+      When used in a non-interactive script, it prints the entire
+      input without pausing.
+      CONTROLS
+      SPACE / f:   Page forward.
+      q:           Quit.
+      EXAMPLES
+      more long_document.txt
+      Displays the document, pausing after each screenful of text.`,
+            isInputStream: true,
+            completionType: "paths",
+        });
+    }
 
-                if (!inputItems || inputItems.length === 0) {
-                    return { success: true, output: "" };
-                }
+    async coreLogic(context) {
+        const { options, inputItems, inputError, dependencies } = context;
+        const { ErrorHandler, PagerManager } = dependencies;
 
-                const content = inputItems.map(item => item.content).join('\\n');
+        if (inputError) {
+            return ErrorHandler.createError(
+                "more: Could not read one or more sources."
+            );
+        }
 
-                if (!options.isInteractive) {
-                    return { success: true, output: content };
-                }
+        if (!inputItems || inputItems.length === 0) {
+            return ErrorHandler.createSuccess("");
+        }
 
-                await PagerManager.enter(content, { mode: 'more' });
+        const content = inputItems.map((item) => item.content).join("\n");
 
-                return { success: true, output: "" };
-            } catch (e) {
-                return { success: false, error: `more: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
+        if (!options.isInteractive) {
+            return ErrorHandler.createSuccess(content);
+        }
 
-    const moreDescription = "Displays content one screen at a time.";
-    const moreHelpText = `Usage: more [file]
+        await PagerManager.enter(content, { mode: "more" });
 
-Displays file content or standard input one screen at a time.
+        return ErrorHandler.createSuccess("");
+    }
+}
 
-DESCRIPTION
-        more is a filter for paging through text one screenful at a time.
-        When used in a non-interactive script, it prints the entire input
-        without pausing. In an interactive session, press SPACE to view
-        the next page, and 'q' to quit.
-
-EXAMPLES
-        more long_document.txt
-               Displays the document, pausing after each screen.
-
-        ls -l / | more
-               Pages through a long directory listing.`;
-
-    CommandRegistry.register("more", moreCommandDefinition, moreDescription, moreHelpText);
-})();
+window.CommandRegistry.register(new MoreCommand());

@@ -1,187 +1,160 @@
-// scripts/commands/upload.js
-(() => {
-    "use strict";
+// gem/scripts/commands/upload.js
 
-    const uploadCommandDefinition = {
-        commandName: "upload",
-        flagDefinitions: [
-            { name: "force", short: "-f", long: "--force" },
-            { name: "recursive", short: "-r", long: "--recursive" },
-        ],
-        argValidation: {
-            max: 1,
-        },
-        coreLogic: async (context) => {
-            const { args, flags, currentUser, options } = context;
-
-            try {
-                if (!options.isInteractive)
-                    return { success: false, error: "upload: Can only be run in interactive mode." };
-
-                let targetDirPath = FileSystemManager.getCurrentPath();
-                const nowISO = new Date().toISOString();
-                const operationMessages = [];
-                let allFilesSuccess = true;
-                let anyChangeMade = false;
-
-                if (args.length === 1) {
-                    const pathValidation = FileSystemManager.validatePath(args[0], { expectedType: 'directory', permissions: ['write'] });
-                    if (pathValidation.error) {
-                        return { success: false, error: `upload: ${pathValidation.error}` };
-                    }
-                    targetDirPath = pathValidation.resolvedPath;
-                } else {
-                    const pathValidation = FileSystemManager.validatePath(targetDirPath, { expectedType: 'directory', permissions: ['write'] });
-                    if (pathValidation.error) {
-                        return { success: false, error: `upload: cannot write to current directory: ${pathValidation.error}` };
-                    }
+window.UploadCommand = class UploadCommand extends Command {
+    constructor() {
+        super({
+            commandName: "upload",
+            description: "Uploads one or more files from your local machine to the current OopisOS directory.",
+            helpText: `Usage: upload
+      Initiate a file upload from your local machine.
+      DESCRIPTION
+      The upload command opens your computer's native file selection
+      dialog, allowing you to choose one or more files to upload into
+      the OopisOS virtual file system.
+      Selected files will be placed in the current working directory.
+      If a file with the same name already exists, you will be prompted
+      to confirm the overwrite for that specific file.
+      NOTE: This command is only available in interactive sessions.`,
+            validations: {
+                args: {
+                    exact: 0
                 }
+            },
+        });
+    }
 
+    async coreLogic(context) {
+        const { options, currentUser, dependencies } = context;
+        const {
+            FileSystemManager,
+            UserManager,
+            OutputManager,
+            Config,
+            ErrorHandler,
+            Utils,
+            ModalManager,
+        } = dependencies;
 
-                const input = Utils.createElement("input", { type: "file" });
-                if (flags.recursive) {
-                    input.webkitdirectory = true;
-                } else {
-                    input.multiple = true;
-                }
-                input.style.display = "none";
-                document.body.appendChild(input);
+        if (!options.isInteractive) {
+            return ErrorHandler.createError(
+                "upload: Can only be run in interactive mode."
+            );
+        }
 
-                const fileResult = await new Promise((resolve) => {
-                    input.onchange = (e) => {
-                        if (e.target.files?.length > 0) {
-                            resolve({ success: true, files: e.target.files });
-                        } else {
-                            resolve({ success: false, error: Config.MESSAGES.UPLOAD_NO_FILE });
-                        }
-                    };
-                    input.addEventListener('cancel', () => {
-                        resolve({ success: false, error: Config.MESSAGES.UPLOAD_NO_FILE });
-                    });
-                    input.click();
-                });
+        const input = Utils.createElement("input", { type: "file", multiple: true });
+        input.style.display = 'none';
+        document.body.appendChild(input);
 
-                if (!fileResult.success) {
+        return new Promise((resolve) => {
+            let fileSelected = false;
+
+            const cleanup = () => {
+                window.removeEventListener('focus', handleFocus);
+                if (document.body.contains(input)) {
                     document.body.removeChild(input);
-                    return { success: true, output: `upload: ${fileResult.error}` };
                 }
+            };
 
-                const filesToUpload = fileResult.files;
-                const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-                const ALLOWED_EXTENSIONS = new Set(['txt', 'md', 'html', 'sh', 'js', 'css', 'json', 'oopic', 'bas']);
-
-                if (!primaryGroup) {
-                    return { success: false, error: "upload: Could not determine primary group for user." };
-                }
-
-                for (const file of Array.from(filesToUpload)) {
-                    try {
-                        const fileExtension = Utils.getFileExtension(file.name);
-                        if (!ALLOWED_EXTENSIONS.has(fileExtension) && file.name.includes('.')) {
-                            operationMessages.push(`${Config.MESSAGES.UPLOAD_INVALID_TYPE_PREFIX}'${fileExtension}'${Config.MESSAGES.UPLOAD_INVALID_TYPE_SUFFIX}`);
-                            continue;
-                        }
-
-                        const content = await file.text();
-                        const relativePath = (flags.recursive && file.webkitRelativePath) ? file.webkitRelativePath : file.name;
-                        const fullDestPath = FileSystemManager.getAbsolutePath(relativePath, targetDirPath);
-
-                        const parentDirResult = FileSystemManager.createParentDirectoriesIfNeeded(fullDestPath);
-                        if (parentDirResult.error) {
-                            operationMessages.push(`Error: ${parentDirResult.error}`);
-                            allFilesSuccess = false;
-                            continue;
-                        }
-                        const finalTargetNode = parentDirResult.parentNode;
-                        const finalFileName = fullDestPath.substring(fullDestPath.lastIndexOf('/') + 1);
-
-                        if (!FileSystemManager.hasPermission(finalTargetNode, currentUser, "write")) {
-                            operationMessages.push(`upload: cannot write to destination directory for '${finalFileName}': Permission denied`);
-                            allFilesSuccess = false;
-                            continue;
-                        }
-
-                        const existingFileNode = finalTargetNode.children[finalFileName];
-                        if (existingFileNode) {
-                            if (existingFileNode.type !== 'file') {
-                                operationMessages.push(`upload: cannot overwrite non-file '${finalFileName}'`);
-                                allFilesSuccess = false;
-                                continue;
-                            }
-                            if (!flags.force) {
-                                const confirmed = await new Promise((r) =>
-                                    ModalManager.request({
-                                        context: "terminal",
-                                        messageLines: [`'${relativePath}' already exists. Overwrite?`],
-                                        onConfirm: () => r(true),
-                                        onCancel: () => r(false),
-                                        options,
-                                    })
-                                );
-                                if (!confirmed) {
-                                    operationMessages.push(`Skipped '${relativePath}'.`);
-                                    continue;
-                                }
-                            }
-                        }
-
-                        const explicitMode = finalFileName.endsWith(".sh") ? Config.FILESYSTEM.DEFAULT_SH_MODE : null;
-                        finalTargetNode.children[finalFileName] = FileSystemManager._createNewFileNode(finalFileName, content, currentUser, primaryGroup, explicitMode);
-                        finalTargetNode.mtime = nowISO;
-                        operationMessages.push(`${Config.MESSAGES.UPLOAD_SUCCESS_PREFIX}'${relativePath}'${Config.MESSAGES.UPLOAD_SUCCESS_MIDDLE}'${targetDirPath}'${Config.MESSAGES.UPLOAD_SUCCESS_SUFFIX}`);
-                        anyChangeMade = true;
-
-                    } catch (fileError) {
-                        operationMessages.push(`${Config.MESSAGES.UPLOAD_READ_ERROR_PREFIX}'${file.name}'${Config.MESSAGES.UPLOAD_READ_ERROR_SUFFIX}: ${fileError.message}`);
-                        allFilesSuccess = false;
+            const handleFocus = () => {
+                setTimeout(() => {
+                    if (!fileSelected) {
+                        cleanup();
+                        resolve(ErrorHandler.createSuccess(Config.MESSAGES.UPLOAD_NO_FILE));
                     }
+                }, 500);
+            };
+
+            window.addEventListener('focus', handleFocus, { once: true });
+
+            input.onchange = async (e) => {
+                fileSelected = true;
+                const files = e.target.files;
+
+                if (!files || files.length === 0) {
+                    cleanup();
+                    resolve(ErrorHandler.createSuccess(Config.MESSAGES.UPLOAD_CANCELLED));
+                    return;
                 }
 
-                if (anyChangeMade && !(await FileSystemManager.save())) {
-                    operationMessages.push("Critical: Failed to save file system changes after uploads.");
-                    allFilesSuccess = false;
+                let anyFileUploaded = false;
+                let errorOccurred = false;
+
+                for (const file of files) {
+                    const currentPath = FileSystemManager.getCurrentPath();
+                    const newFilePath = `${currentPath === "/" ? "" : currentPath}/${file.name}`;
+                    const existingNode = FileSystemManager.getNodeByPath(newFilePath);
+
+                    if (existingNode) {
+                        const confirmed = await new Promise((confirmResolve) => {
+                            ModalManager.request({
+                                context: "terminal",
+                                type: "confirm",
+                                messageLines: [`'${file.name}' already exists. Overwrite it?`],
+                                onConfirm: () => confirmResolve(true),
+                                onCancel: () => confirmResolve(false),
+                                options,
+                            });
+                        });
+
+                        if (!confirmed) {
+                            await OutputManager.appendToOutput(`Skipping '${file.name}'.`);
+                            continue;
+                        }
+                    }
+
+                    const uploadPromise = new Promise((fileResolve) => {
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                            const content = event.target.result;
+                            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+
+                            const saveResult = await FileSystemManager.createOrUpdateFile(
+                                newFilePath,
+                                content,
+                                { currentUser, primaryGroup }
+                            );
+
+                            if (saveResult.success) {
+                                await OutputManager.appendToOutput(
+                                    `${Config.MESSAGES.UPLOAD_SUCCESS_PREFIX}${file.name}${Config.MESSAGES.UPLOAD_SUCCESS_MIDDLE}${newFilePath}${Config.MESSAGES.UPLOAD_SUCCESS_SUFFIX}`
+                                );
+                                anyFileUploaded = true;
+                                fileResolve(true);
+                            } else {
+                                await OutputManager.appendToOutput(`Error uploading '${file.name}': ${saveResult.error}`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                                errorOccurred = true;
+                                fileResolve(false);
+                            }
+                        };
+                        reader.onerror = () => {
+                            OutputManager.appendToOutput(`Error reading file '${file.name}'.`, { typeClass: Config.CSS_CLASSES.ERROR_MSG });
+                            errorOccurred = true;
+                            fileResolve(false);
+                        };
+
+                        const binaryExtensions = ['mxl'];
+                        const extension = file.name.split('.').pop().toLowerCase();
+                        if (binaryExtensions.includes(extension)) {
+                            reader.readAsArrayBuffer(file);
+                        } else {
+                            reader.readAsText(file);
+                        }
+
+                    });
+
+                    await uploadPromise;
                 }
 
-                document.body.removeChild(input);
-                const outputMessage = operationMessages.join("\\n");
-                return {
-                    success: allFilesSuccess,
-                    [allFilesSuccess ? 'output' : 'error']: outputMessage || "Upload process completed with some issues."
-                };
-
-            } catch (e) {
-                if (document.getElementById('file-upload-input')) {
-                    document.body.removeChild(document.getElementById('file-upload-input'));
+                cleanup();
+                if (errorOccurred) {
+                    resolve(ErrorHandler.createError("One or more files failed to upload."));
+                } else {
+                    resolve(ErrorHandler.createSuccess("", { stateModified: anyFileUploaded }));
                 }
-                return { success: false, error: `upload: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
+            };
+            input.click();
+        });
+    }
+}
 
-    const uploadDescription = "Uploads files or folders from your local machine to OopisOS.";
-    const uploadHelpText = `Usage: upload [-f] [-r] [destination_directory]
-
-Upload one or more files from your local machine to OopisOS.
-
-DESCRIPTION
-       The upload command opens your browser's file selection dialog,
-       allowing you to choose one or more files from your actual computer
-       to upload into the OopisOS virtual file system.
-
-       If a <destination_directory> is specified, the files will be
-       uploaded there. Otherwise, they will be uploaded to the current
-       working directory.
-
-       If a file with the same name already exists in the destination,
-       you will be prompted to confirm before overwriting it.
-
-OPTIONS
-       -f, --force
-              Do not prompt for confirmation; automatically overwrite any
-              existing files with the same name.
-       -r, --recursive
-              Allows uploading of an entire directory. The directory
-              structure will be recreated in OopisOS.`;
-
-    CommandRegistry.register("upload", uploadCommandDefinition, uploadDescription, uploadHelpText);
-})();
+window.CommandRegistry.register(new UploadCommand());

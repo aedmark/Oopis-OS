@@ -1,62 +1,51 @@
 // scripts/commands/ps.js
-(() => {
-    "use strict";
 
-    const psCommandDefinition = {
-        commandName: "ps",
-        argValidation: {
-            exact: 0,
-        },
-
-        coreLogic: async () => {
-            try {
-                const jobs = CommandExecutor.getActiveJobs();
-                const jobIds = Object.keys(jobs);
-
-                if (jobIds.length === 0) {
-                    return {
-                        success: true,
-                        output: "No active background jobs.",
-                    };
+window.PsCommand = class PsCommand extends Command {
+    constructor() {
+        super({
+            commandName: "ps",
+            description: "Reports a snapshot of the current background processes.",
+            helpText: `Usage: ps
+      Report a snapshot of current background processes.
+      DESCRIPTION
+      The ps command displays information about active background jobs
+      started with the '&' operator.
+      The output includes:
+      PID     The unique process ID for the job.
+      STAT    The current status of the job (R for running, T for stopped).
+      COMMAND The command that was executed.
+      Use 'kill <PID>' to terminate a background job.`,
+            validations: {
+                args: {
+                    exact: 0
                 }
+            },
+        });
+    }
 
-                let outputLines = ["  PID   COMMAND"];
+    async coreLogic(context) {
+        const { dependencies } = context;
+        const { CommandExecutor, ErrorHandler } = dependencies;
+        const jobs = CommandExecutor.getActiveJobs();
 
-                jobIds.forEach((id) => {
-                    const job = jobs[id];
-                    outputLines.push(`  ${String(id).padEnd(5)} ${job.command}`);
-                });
+        if (Object.keys(jobs).length === 0) {
+            return ErrorHandler.createSuccess("");
+        }
 
-                return {
-                    success: true,
-                    output: outputLines.join("\\n"),
-                };
-            } catch (e) {
-                return { success: false, error: `ps: An unexpected error occurred: ${e.message}` };
+        let output = "  PID  STAT  COMMAND\n";
+        for (const pid in jobs) {
+            const job = jobs[pid];
+            const command = job.command;
+            let status = 'R';
+            if (job.status === 'paused') {
+                status = 'T';
             }
-        },
-    };
 
-    const psDescription = "Reports a snapshot of current background jobs.";
+            output += `  ${String(pid).padEnd(4)} ${status.padEnd(5)} ${command}\n`;
+        }
 
-    const psHelpText = `Usage: ps
+        return ErrorHandler.createSuccess(output.trim());
+    }
+}
 
-Report a snapshot of the current background processes.
-
-DESCRIPTION
-       The ps command displays information about active background jobs
-       running in the current session.
-
-       To start a background job, append an ampersand (&) to your command.
-       Each job is assigned a unique Process ID (PID) which can be used
-       by the 'kill' command to terminate the process.
-
-EXAMPLES
-       delay 10000 &
-              [1] Backgrounded.
-       ps
-                PID   COMMAND
-                1     delay 10000`;
-
-    CommandRegistry.register("ps", psCommandDefinition, psDescription, psHelpText);
-})();
+window.CommandRegistry.register(new PsCommand());

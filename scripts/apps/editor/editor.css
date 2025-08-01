@@ -1,24 +1,21 @@
-/* OopisOS v4.0 Editor Style Sheet */
-/* ========================================================================== */
+/* Oopis Editor Style Sheet */
 
-.editor-container {
+#text-editor-app-container > .app-main {
     display: flex;
-    flex-direction: column;
-    width: 95%;
-    max-width: 1200px;
-    height: 95%;
-    background-color: var(--color-background-medium);
-    border: var(--border-width-thick) solid var(--color-border-secondary);
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-md);
-    box-shadow: var(--shadow-inset-dark), var(--shadow-drop-medium);
-    font-family: var(--font-family-sans), sans-serif;
-    color: var(--color-text-secondary);
+    flex-direction: column !important;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
 }
 
 .editor-header {
     flex-shrink: 0;
-    margin-bottom: var(--spacing-sm);
+}
+
+.editor-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    height: 100%;
 }
 
 .editor-title-input {
@@ -42,42 +39,41 @@
 .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
     gap: var(--spacing-sm);
+    flex-shrink: 0;
 }
 
 .editor-toolbar-group {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: var(--spacing-xs);
 }
 
-.editor-main {
+.editor-main-content {
     flex-grow: 1;
     display: flex;
     min-height: 0;
     gap: var(--spacing-md);
 }
 
-/* Corrected CSS for view modes */
 .editor-main--split .editor-textarea,
 .editor-main--split .editor-preview {
-    flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: 0;
-    /* width: 50%; /* This is now redundant and can be removed for a pure flex solution */
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .editor-main--full .editor-textarea,
 .editor-main--full .editor-preview {
-    flex: 1;
-    width: 100%;
+    flex: 1 1 100%;
+}
+
+.editor-main-content .hidden {
+    display: none;
 }
 
 .editor-textarea, .editor-preview {
-    height: 100%;
     padding: var(--spacing-md);
     border: 1px solid var(--color-border-primary);
     border-radius: var(--border-radius-sm);
@@ -91,15 +87,17 @@
 }
 
 .editor-textarea {
-    resize: none;
+    font-family: var(--font-family-mono), monospace;
+    white-space: pre;
+    word-wrap: normal;
+    caret-color: var(--color-text-primary);
 }
 
-.editor-textarea:focus, .editor-preview:focus {
-    border-color: var(--color-info);
-    box-shadow: 0 0 5px var(--color-info);
+.editor-textarea.word-wrap-enabled {
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
-/* Preview pane specific styles */
 .editor-preview h1,
 .editor-preview h2,
 .editor-preview h3 {
@@ -126,7 +124,7 @@
     padding: 1em;
     border-radius: 4px;
     overflow-x: auto;
-    color: #fff; /* Ensure code in pre is visible on black background */
+    color: #fff;
 }
 
 .editor-preview blockquote {
@@ -142,13 +140,18 @@
     margin-bottom: 1em;
 }
 
-.editor-footer {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: var(--spacing-sm);
-    padding-top: var(--spacing-sm);
-    border-top: 1px solid var(--color-border-secondary);
-    font-size: var(--font-size-sm);
+.editor-textarea em {
+    color: #9cdcfe;
+    font-style: italic;
+}
+
+.editor-textarea strong {
+    color: #c586c0;
+    font-weight: normal;
+}
+
+.editor-textarea em strong,
+.editor-textarea strong em {
+    color: #ce9178;
+    font-style: italic;
 }

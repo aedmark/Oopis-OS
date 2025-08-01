@@ -1,78 +1,83 @@
 // scripts/commands/chown.js
-(() => {
-    "use strict";
 
-    const chownCommandDefinition = {
-        commandName: "chown",
-        completionType: "users", // Preserved for tab completion
-        argValidation: {
-            exact: 2,
-            error: "Usage: chown <new_owner> <path>",
-        },
-        coreLogic: async (context) => {
-            const { args, currentUser } = context;
-            const newOwnerArg = args[0];
-            const pathArg = args[1];
-            const nowISO = new Date().toISOString();
+window.ChownCommand = class ChownCommand extends Command {
+    constructor() {
+        super({
+            commandName: "chown",
+            description: "Changes the user ownership of a file or directory.",
+            helpText: `Usage: chown [-R] <owner> <path>...
+      Change the user ownership of files or directories.
+      DESCRIPTION
+      The chown command changes the user ownership of the file or
+      directory specified by <path> to <owner>. The <owner> must be a
+      valid, existing user on the system.
+      Use the 'ls -l' command to view the current owner of a file.
+      OPTIONS
+      -R, -r, --recursive
+            Change the owner of directories and their contents recursively.
+      EXAMPLES
+      chown Guest /home/root/somefile
+      Changes the owner of 'somefile' from 'root' to 'Guest'.
+      chown -R Guest /home/root/project_folder
+      Recursively changes the owner of 'project_folder' and all
+      its contents to 'Guest'.
+      PERMISSIONS
+      Only the superuser (root) can change the ownership of a file.`,
+            completionType: "users",
+            flagDefinitions: [
+                { name: "recursive", short: "-R", long: "--recursive", aliases: ["-r"] }
+            ],
+            validations: {
+                args: { min: 2, error: "Usage: chown [-R] <new_owner> <path>..." },
+            },
+        });
+    }
 
-            try {
-                if (!await UserManager.userExists(newOwnerArg) && newOwnerArg !== Config.USER.DEFAULT_NAME) {
-                    return {
-                        success: false,
-                        error: `chown: user '${newOwnerArg}' does not exist.`,
-                    };
-                }
+    async _recursiveChown(node, newOwner) {
+        const nowISO = new Date().toISOString();
+        node.owner = newOwner;
+        node.mtime = nowISO;
 
-                const pathValidation = FileSystemManager.validatePath(pathArg);
-                if (pathValidation.error) {
-                    return { success: false, error: `chown: cannot access '${pathArg}': ${pathValidation.error}` };
-                }
-                const node = pathValidation.node;
-
-                if (!FileSystemManager.canUserModifyNode(node, currentUser)) {
-                    return {
-                        success: false,
-                        error: `chown: changing ownership of '${pathArg}': Operation not permitted`,
-                    };
-                }
-
-                node.owner = newOwnerArg;
-                node.mtime = nowISO;
-
-                if (!(await FileSystemManager.save(currentUser))) {
-                    return {
-                        success: false,
-                        error: "chown: Failed to save file system changes.",
-                    };
-                }
-                return {
-                    success: true,
-                    output: "", // No output on success
-                };
-            } catch (e) {
-                return { success: false, error: `chown: An unexpected error occurred: ${e.message}` };
+        if (node.type === 'directory' && node.children) {
+            for (const childName in node.children) {
+                await this._recursiveChown(node.children[childName], newOwner);
             }
-        },
-    };
+        }
+    }
 
-    const chownDescription = "Changes the user ownership of a file or directory.";
-    const chownHelpText = `Usage: chown <owner> <path>
+    async coreLogic(context) {
+        const { args, flags, currentUser, dependencies } = context;
+        const { UserManager, FileSystemManager, Config, ErrorHandler } = dependencies;
 
-Change the user ownership of a file or directory.
+        const newOwnerArg = args[0];
+        const paths = args.slice(1);
+        let changesMade = false;
 
-DESCRIPTION
-       The chown command changes the user ownership of the file or
-       directory specified by <path> to <owner>. The <owner> must be a
-       valid, existing user on the system.
+        if (currentUser !== "root") {
+            return ErrorHandler.createError("chown: you must be root to change ownership.");
+        }
 
-       Use the 'ls -l' command to view the current owner of a file.
+        if (!(await UserManager.userExists(newOwnerArg)) && newOwnerArg !== Config.USER.DEFAULT_NAME) {
+            return ErrorHandler.createError(`chown: user '${newOwnerArg}' does not exist.`);
+        }
 
-EXAMPLES
-       chown Guest /home/root/somefile
-              Changes the owner of 'somefile' from 'root' to 'Guest'.
+        for (const pathArg of paths) {
+            const pathDataResult = FileSystemManager.validatePath(pathArg, { allowMissing: false });
+            if (!pathDataResult.success) {
+                return ErrorHandler.createError(`chown: cannot access '${pathArg}': ${pathDataResult.error}`);
+            }
+            const { node } = pathDataResult.data;
+            if (node.type === 'directory' && flags.recursive) {
+                await this._recursiveChown(node, newOwnerArg);
+            } else {
+                node.owner = newOwnerArg;
+                node.mtime = new Date().toISOString();
+            }
+            changesMade = true;
+        }
 
-PERMISSIONS
-       Only the superuser (root) can change the ownership of a file.`;
+        return ErrorHandler.createSuccess("", { stateModified: changesMade });
+    }
+}
 
-    CommandRegistry.register("chown", chownCommandDefinition, chownDescription, chownHelpText);
-})();
+window.CommandRegistry.register(new ChownCommand());

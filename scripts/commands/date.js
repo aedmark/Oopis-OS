@@ -1,34 +1,27 @@
 // scripts/commands/date.js
-(() => {
-    "use strict";
 
-    const dateCommandDefinition = {
-        commandName: "date",
-        argValidation: {
-            exact: 0,
-        },
+window.DateCommand = class DateCommand extends Command {
+  constructor() {
+    super({
+      commandName: "date",
+      description: "Display the current system date and time.",
+      helpText: `Usage: date
+      Display the current system date and time.
+      DESCRIPTION
+      The date command prints the current date and time as determined
+      by the user's browser, including timezone information.`,
+      validations: {
+        args: {
+          exact: 0
+        }
+      },
+    });
+  }
 
-        coreLogic: async () => {
-            try {
-                return {
-                    success: true,
-                    output: new Date().toString(),
-                };
-            } catch (e) {
-                return { success: false, error: `date: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
+  async coreLogic(context) {
+    const { ErrorHandler } = context.dependencies;
+    return ErrorHandler.createSuccess(new Date().toString());
+  }
+}
 
-    const dateDescription = "Display the current system date and time.";
-
-    const dateHelpText = `Usage: date
-
-Display the current system date and time.
-
-DESCRIPTION
-       The date command prints the current date and time as determined
-       by the user's browser, including timezone information.`;
-
-    CommandRegistry.register("date", dateCommandDefinition, dateDescription, dateHelpText);
-})();
+window.CommandRegistry.register(new DateCommand());

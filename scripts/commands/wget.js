@@ -1,139 +1,138 @@
 // scripts/commands/wget.js
-(() => {
-    "use strict";
 
-    const wgetCommandDefinition = {
-        commandName: "wget",
-        completionType: "paths", // Preserved for tab completion
-        flagDefinitions: [{
-            name: "outputFile",
-            short: "-O",
-            takesValue: true,
-        }, ],
-        argValidation: {
-            min: 1,
-            error: "Usage: wget [-O <file>] <URL>"
+window.WgetCommand = class WgetCommand extends Command {
+  constructor() {
+    super({
+      commandName: "wget",
+      description: "The non-interactive network downloader.",
+      helpText: `Usage: wget [-O <file>] <URL>
+      The non-interactive network downloader.
+      DESCRIPTION
+      wget is a utility for downloading files from the Web. It will
+      automatically determine the filename from the URL unless a
+      different name is specified with the -O option.
+      Note: Due to browser security restrictions, wget is subject to
+      Cross-Origin Resource Sharing (CORS) policies and may not be able
+      to fetch content from all URLs.
+      OPTIONS
+      -O <file>
+      Write documents to <file>.
+      EXAMPLES
+      wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt
+      Downloads the license file and saves it as 'LICENSE.txt'
+      in the current directory.`,
+      completionType: "paths",
+      flagDefinitions: [
+        {
+          name: "outputFile",
+          short: "-O",
+          takesValue: true,
         },
-        coreLogic: async (context) => {
-            const {
-                args,
-                flags,
-                currentUser
-            } = context;
-            const url = args[0];
-            let outputFileName = flags.outputFile;
+      ],
+      argValidation: {
+        min: 1,
+        error: "Usage: wget [-O <file>] <URL>",
+      },
+    });
+  }
 
-            try {
-                if (!outputFileName) {
-                    try {
-                        const urlObj = new URL(url);
-                        const segments = urlObj.pathname.split('/');
-                        outputFileName = segments.pop() || "index.html";
-                    } catch (e) {
-                        return {
-                            success: false,
-                            error: `wget: Invalid URL '${url}'`
-                        };
-                    }
-                }
+  async coreLogic(context) {
+    const { args, flags, currentUser, dependencies } = context;
+    const { ErrorHandler, FileSystemManager, UserManager, OutputManager, Utils } = dependencies;
+    const url = args[0];
+    let outputFileName = flags.outputFile;
 
-                const pathValidation = FileSystemManager.validatePath(outputFileName, {
-                    allowMissing: true,
-                    disallowRoot: true
-                });
+    try {
+      if (!outputFileName) {
+        try {
+          const urlObj = new URL(url);
+          const segments = urlObj.pathname.split("/");
+          outputFileName = segments.pop() || "index.html";
+        } catch (e) {
+          return ErrorHandler.createError(`wget: Invalid URL '${url}'`);
+        }
+      }
 
-                if (pathValidation.error) {
-                    return { success: false, error: `wget: ${pathValidation.error}` };
-                }
-                if(pathValidation.node && pathValidation.node.type === 'directory') {
-                    return { success: false, error: `wget: '${outputFileName}' is a directory` };
-                }
+      const pathValidationResult = FileSystemManager.validatePath(
+          outputFileName,
+          {
+            allowMissing: true,
+            disallowRoot: true,
+          }
+      );
 
-                await OutputManager.appendToOutput(`--OopisOS WGET--\\nResolving ${url}...`);
+      if (!pathValidationResult.success) {
+        return ErrorHandler.createError(
+            `wget: ${pathValidationResult.error}`
+        );
+      }
+      const pathValidation = pathValidationResult.data;
+      if (pathValidation.node && pathValidation.node.type === "directory") {
+        return ErrorHandler.createError(
+            `wget: '${outputFileName}' is a directory`
+        );
+      }
 
-                const response = await fetch(url);
-                await OutputManager.appendToOutput(`Connecting to ${new URL(url).hostname}... connected.`);
-                await OutputManager.appendToOutput(`HTTP request sent, awaiting response... ${response.status} ${response.statusText}`);
+      await OutputManager.appendToOutput(
+          `--OopisOS WGET--\\nResolving ${url}...`
+      );
 
-                if (!response.ok) {
-                    return {
-                        success: false,
-                        error: `wget: Server responded with status ${response.status} ${response.statusText}`
-                    };
-                }
+      const response = await fetch(url);
+      await OutputManager.appendToOutput(
+          `Connecting to ${new URL(url).hostname}... connected.`
+      );
+      await OutputManager.appendToOutput(
+          `HTTP request sent, awaiting response... ${response.status} ${response.statusText}`
+      );
 
-                const contentLength = response.headers.get('content-length');
-                const sizeStr = contentLength ? Utils.formatBytes(parseInt(contentLength, 10)) : 'unknown size';
-                await OutputManager.appendToOutput(`Length: ${sizeStr}`);
+      if (!response.ok) {
+        return ErrorHandler.createError(
+            `wget: Server responded with status ${response.status} ${response.statusText}`
+        );
+      }
 
-                const content = await response.text();
+      const contentLength = response.headers.get("content-length");
+      const sizeStr = contentLength
+          ? Utils.formatBytes(parseInt(contentLength, 10))
+          : "unknown size";
+      await OutputManager.appendToOutput(`Length: ${sizeStr}`);
 
-                const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
-                if (!primaryGroup) {
-                    return {
-                        success: false,
-                        error: "wget: critical - could not determine primary group for user."
-                    };
-                }
+      const content = await response.text();
 
-                const saveResult = await FileSystemManager.createOrUpdateFile(
-                    pathValidation.resolvedPath,
-                    content, {
-                        currentUser,
-                        primaryGroup
-                    }
-                );
+      const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+      if (!primaryGroup) {
+        return ErrorHandler.createError(
+            "wget: critical - could not determine primary group for user."
+        );
+      }
 
-                if (!saveResult.success) {
-                    return {
-                        success: false,
-                        error: `wget: ${saveResult.error}`
-                    };
-                }
+      const saveResult = await FileSystemManager.createOrUpdateFile(
+          pathValidation.resolvedPath,
+          content,
+          {
+            currentUser,
+            primaryGroup,
+          }
+      );
 
-                await OutputManager.appendToOutput(`Saving to: ‘${outputFileName}’`);
-                await FileSystemManager.save();
+      if (!saveResult.success) {
+        return ErrorHandler.createError(`wget: ${saveResult.error}`);
+      }
 
-                return {
-                    success: true,
-                    output: `‘${outputFileName}’ saved [${content.length} bytes]`,
-                };
+      await OutputManager.appendToOutput(`Saving to: ‘${outputFileName}’`);
 
-            } catch (e) {
-                let errorMsg = `wget: An error occurred. This is often due to a network issue or a CORS policy preventing access.`;
-                if (e instanceof TypeError && e.message.includes('Failed to fetch')) {
-                    errorMsg = `wget: Network request failed. The server may be down, or a CORS policy is blocking the request from the browser.`;
-                }
-                return {
-                    success: false,
-                    error: errorMsg
-                };
-            }
-        },
-    };
+      return ErrorHandler.createSuccess(
+          `‘${outputFileName}’ saved [${content.length} bytes]`,
+          { stateModified: true }
+      );
+    } catch (e) {
+      let errorMsg = `wget: An error occurred. This is often due to a network issue or a CORS policy preventing access.`;
+      if (e instanceof TypeError && e.message.includes("Failed to fetch")) {
+        errorMsg = `wget: Network request failed. The server may be down, or a CORS policy is blocking the request from the browser.`;
+      }
+      return ErrorHandler.createError(errorMsg);
+    }
+  }
+}
 
-    const wgetDescription = "The non-interactive network downloader.";
-    const wgetHelpText = `Usage: wget [-O <file>] <URL>
-
-The non-interactive network downloader.
-
-DESCRIPTION
-       wget is a utility for downloading files from the Web. It will
-       automatically determine the filename from the URL unless a
-       different name is specified with the -O option.
-
-       Note: Due to browser security restrictions, wget is subject to
-       Cross-Origin Resource Sharing (CORS) policies and may not be able
-       to fetch content from all URLs.
-
-OPTIONS
-       -O <file>
-              Write documents to <file>.
-
-EXAMPLES
-       wget https://raw.githubusercontent.com/aedmark/Oopis-OS/master/LICENSE.txt
-              Downloads the license file and saves it as 'LICENSE.txt'
-              in the current directory.`;
-
-    CommandRegistry.register("wget", wgetCommandDefinition, wgetDescription, wgetHelpText);
-})();
+window.CommandRegistry.register(new WgetCommand());

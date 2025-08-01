@@ -1,20 +1,9 @@
-/* scripts/apps/paint/paint.css */
+/* Oopis Paint Style Sheet */
 
-/* OopisOS v4.0 Paint Style Sheet */
-/* ========================================================================== */
-
-.paint-container {
+#oopis-paint-app-container .app-main {
     display: flex;
     flex-direction: column;
-    width: 95%;
-    height: 95%;
-    max-width: 1400px;
-    background-color: var(--color-background-dark);
-    border: var(--border-width-thick) solid var(--color-border-primary);
-    border-radius: var(--border-radius-md);
-    font-family: var(--font-family-mono), monospace;
-    color: var(--color-text-secondary);
-    box-shadow: var(--shadow-drop-medium);
+    padding: 0;
     overflow: hidden;
     user-select: none;
 }
@@ -92,7 +81,7 @@
     font-size: var(--font-size-lg);
 }
 
-.paint-main {
+.paint-main-drawing-area {
     flex-grow: 1;
     display: flex;
     justify-content: center;
@@ -110,7 +99,7 @@
 .paint-canvas, .paint-preview-canvas {
     display: grid;
     font-family: 'VT323', monospace;
-    font-size: 20px; /* This determines the cell size */
+    font-size: 20px;
     line-height: 1;
     cursor: crosshair;
     width: fit-content;
@@ -129,7 +118,7 @@
     background-image:
             linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 1ch 1em; /* Align grid to character size */
+    background-size: 1ch 1em;
 }
 
 .paint-canvas-cell {
@@ -140,11 +129,10 @@
     color: #fff;
 }
 
-/* Styles for selection rectangle */
 .paint-selection-rect {
     position: absolute;
     border: 1px dashed #FFFFFF;
-    pointer-events: none; /* Allows clicks to pass through to the canvas */
+    pointer-events: none;
     z-index: 10;
     box-sizing: border-box;
 }
@@ -153,9 +141,7 @@
     display: none;
 }
 
-
-.paint-statusbar {
-    flex-shrink: 0;
+#oopis-paint-app-container .app-footer {
     display: flex;
     justify-content: space-between;
     padding: var(--spacing-xs) var(--spacing-md);

@@ -1,91 +1,130 @@
-const LOG_DIR = "/home/Guest/.journal";
+// scripts/apps/log/log_ui.js
 
-const LogUI = (() => {
-    "use strict";
-    let elements = {};
-    let callbacks = {};
+window.LogUI = class LogUI {
+  constructor(callbacks, dependencies) {
+    this.elements = {};
+    this.callbacks = callbacks;
+    this.dependencies = dependencies;
+    this._buildLayout();
+  }
 
-    function buildLayout(cb) {
-        callbacks = cb;
-        elements.entryList = Utils.createElement('div', { id: 'log-entry-list', className: 'log-app__list-pane' });
+  getContainer() {
+    return this.elements.container;
+  }
 
-        elements.contentView = Utils.createElement('textarea', {
-            id: 'log-content-view',
-            className: 'log-app__content-pane log-app__content-pane--editable',
-            placeholder: 'Select an entry to view or edit...'
-        });
+  _buildLayout() {
+    const { Utils, UIComponents } = this.dependencies;
 
-        elements.searchBar = Utils.createElement('input', { id: 'log-search-bar', type: 'text', placeholder: 'Search entries...', className: 'log-app__search' });
-        elements.newBtn = Utils.createElement('button', { id: 'log-new-btn', textContent: 'New Entry', className: 'log-app__btn' });
+    const appWindow = UIComponents.createAppWindow("Captain's Log", this.callbacks.onExit);
+    this.elements.container = appWindow.container;
+    this.elements.header = appWindow.header;
+    this.elements.main = appWindow.main;
 
-        elements.saveBtn = Utils.createElement('button', { id: 'log-save-btn', textContent: 'Save Changes', className: 'log-app__btn hidden' });
+    this.elements.searchBar = Utils.createElement("input", {
+      id: "log-search-bar",
+      type: "text",
+      placeholder: "Search entries...",
+      className: "log-app__search",
+    });
 
-        elements.exitBtn = Utils.createElement('button', { id: 'log-exit-btn', textContent: 'Exit', className: 'log-app__btn log-app__btn--exit' });
+    this.elements.newBtn = Utils.createElement("button", {
+      id: "log-new-btn",
+      textContent: "New Entry",
+      className: "btn",
+    });
+    this.elements.saveBtn = Utils.createElement("button", {
+      id: "log-save-btn",
+      textContent: "Save Changes",
+      className: "btn hidden",
+    });
 
-        elements.searchBar.addEventListener('input', () => callbacks.onSearch(elements.searchBar.value));
-        elements.newBtn.addEventListener('click', () => callbacks.onNew());
-        elements.saveBtn.addEventListener('click', () => callbacks.onSave());
-        elements.exitBtn.addEventListener('click', () => callbacks.onExit());
-        elements.contentView.addEventListener('input', () => callbacks.onContentChange());
+    const actionButtons = Utils.createElement("div", { className: "log-app__actions" }, [
+      this.elements.newBtn,
+      this.elements.saveBtn,
+    ]);
 
-        const header = Utils.createElement('header', { className: 'log-app__header' },
-            Utils.createElement('h2', { textContent: 'Captain\'s Log' }),
-            elements.searchBar,
-            Utils.createElement('div', { className: 'log-app__actions'}, elements.newBtn, elements.saveBtn, elements.exitBtn)
-        );
+    this.elements.header.append(this.elements.searchBar, actionButtons);
 
-        const main = Utils.createElement('main', { className: 'log-app__main' }, elements.entryList, elements.contentView);
-        elements.container = Utils.createElement('div', { id: 'log-app-container', className: 'log-app__container' }, header, main);
+    this.elements.entryList = Utils.createElement("div", {
+      id: "log-entry-list",
+      className: "log-app__list-pane",
+    });
+    this.elements.contentView = Utils.createElement("textarea", {
+      id: "log-content-view",
+      className: "log-app__content-pane",
+      placeholder: "Select an entry to view or edit...",
+    });
 
-        return elements.container;
+    this.elements.main.append(this.elements.entryList, this.elements.contentView);
+
+    this.elements.searchBar.addEventListener("input", () =>
+        this.callbacks.onSearch(this.elements.searchBar.value)
+    );
+    this.elements.newBtn.addEventListener("click", () => this.callbacks.onNew());
+    this.elements.saveBtn.addEventListener("click", () => this.callbacks.onSave());
+    this.elements.contentView.addEventListener("input", () =>
+        this.callbacks.onContentChange(this.elements.contentView.value)
+    );
+  }
+
+  renderEntries(entries, selectedPath) {
+    if (!this.elements.entryList) return;
+    const { Utils } = this.dependencies;
+    this.elements.entryList.innerHTML = "";
+    if (entries.length === 0) {
+      this.elements.entryList.textContent = "No entries found.";
+      return;
     }
+    entries.forEach((entry) => {
+      const date = new Date(entry.timestamp);
+      const title =
+          entry.content
+              .split("\n")[0]
+              .replace(/^#+\s*/, "")
+              .substring(0, 40) || "(Untitled)";
+      const item = Utils.createElement(
+          "div",
+          {
+            className: "log-app__list-item",
+            "data-path": entry.path,
+          },
+          [
+            Utils.createElement("strong", { textContent: date.toLocaleString() }),
+            Utils.createElement("span", { textContent: title }),
+          ]
+      );
+      if (entry.path === selectedPath) {
+        item.classList.add("selected");
+      }
+      item.addEventListener("click", () => this.callbacks.onSelect(entry.path));
+      this.elements.entryList.appendChild(item);
+    });
+  }
 
-    function renderEntries(entries, selectedPath) {
-        elements.entryList.innerHTML = '';
-        if (entries.length === 0) {
-            elements.entryList.textContent = 'No entries found.';
-            return;
-        }
-        entries.forEach((entry) => {
-            const date = new Date(entry.timestamp);
-            const title = entry.content.split('\n')[0].replace(/^#+\s*/, '').substring(0, 40) || '(Untitled)';
-            const item = Utils.createElement('div', {
-                className: 'log-app__list-item',
-                'data-path': entry.path
-            }, [
-                Utils.createElement('strong', { textContent: date.toLocaleString() }),
-                Utils.createElement('span', { textContent: title })
-            ]);
-            if (entry.path === selectedPath) {
-                item.classList.add('selected');
-            }
-            item.addEventListener('click', () => callbacks.onSelect(entry.path));
-            elements.entryList.appendChild(item);
-        });
+  renderContent(entry) {
+    if (!this.elements.contentView) return;
+    if (!entry) {
+      this.elements.contentView.value = "";
+      this.elements.contentView.placeholder = "Select an entry to view or edit...";
+      this.elements.saveBtn.classList.add("hidden");
+      return;
     }
+    this.elements.contentView.value = entry.content;
+  }
 
-    function renderContent(entry) {
-        if (!entry) {
-            elements.contentView.value = '';
-            elements.contentView.placeholder = 'Select an entry to view or edit...';
-            elements.saveBtn.classList.add('hidden');
-            return;
-        }
-        elements.contentView.value = entry.content;
+  updateSaveButton(isDirty) {
+    if (this.elements.saveBtn) {
+      this.elements.saveBtn.classList.toggle("hidden", !isDirty);
     }
+  }
 
-    function updateSaveButton(isDirty) {
-        elements.saveBtn.classList.toggle('hidden', !isDirty);
-    }
+  getContent() {
+    return this.elements.contentView ? this.elements.contentView.value : "";
+  }
 
-    function getContent() {
-        return elements.contentView.value;
-    }
-
-    function reset() {
-        elements = {};
-        callbacks = {};
-    }
-
-    return { buildLayout, renderEntries, renderContent, reset, getContent, updateSaveButton };
-})();
+  reset() {
+    this.elements = {};
+    this.callbacks = {};
+    this.dependencies = {};
+  }
+}

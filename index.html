@@ -3,20 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OopisOS v4.0</title>
+  <title>OopisOS v5.0</title>
   <script src="marked.min.js"></script>
   <script src="purify.min.js"></script>
+  <script src="jszip.min.js"></script>
+  <script src="tone.js"></script>
   <link rel="stylesheet" href="./main.css">
+  <link rel="stylesheet" href="./scripts/apps/apps.css">
   <link rel="stylesheet" href="./scripts/apps/explorer/explorer.css">
   <link rel="stylesheet" href="./scripts/apps/editor/editor.css">
-  <link rel="stylesheet" href="./scripts/apps/code/code.css">
   <link rel="stylesheet" href="./scripts/apps/chidi/chidi.css">
   <link rel="stylesheet" href="./scripts/apps/gemini_chat/gemini_chat.css">
   <link rel="stylesheet" href="./scripts/apps/adventure/adventure.css">
+  <link rel="stylesheet" href="./scripts/apps/desktop/desktop.css">
   <link rel="stylesheet" href="./scripts/apps/log/log.css">
   <link rel="stylesheet" href="./scripts/apps/paint/paint.css">
   <link rel="stylesheet" href="./scripts/apps/basic/basic.css">
-  <meta name="theme-color" content="#34d399">
+  <link rel="stylesheet" href="./scripts/apps/top/top.css">
+
 </head>
 <body>
 
@@ -37,12 +41,17 @@
         </div>
       </div>
     </div>
-    <h1 id="main-footer">| COPYRIGHT ©2025 | <a href="mailto:oopismcgoopis@gmail.com">EDMARK</a> & <a href="https://gemini.google.com">GEMINI</a> | <a target="_blank" href="https://github.com/aedmark/oopis-os">GIT</a> | <a target="_blank" href="https://aedmark.itch.io/oopisos">ITCH.IO</a> | <a target="_blank" href="https://oopisos.com">GUIDE</a> |</h1>
+    <h1 id="main-footer">| COPYRIGHT ©2025 | <a href="mailto:oopismcgoopis@gmail.com">EDMARK</a> & <a href="https://gemini.google.com">GEMINI</a> | <a target="_blank" href="https://github.com/aedmark/oopisos">GIT</a> | <a target="_blank" href="https://oopisos.com">HOME</a> | <a target="_blank" href="https://github.com/aedmark/oopis-dev/wiki">GUIDE</a> |</h1>
   </div>
 </div>
 
 <script src="./scripts/utils.js"></script>
+<script src="./scripts/comm_utils.js"></script>
+<script src="./scripts/pager.js"></script>
+<script src="./scripts/ui_components.js"></script>
 <script src="./scripts/config.js"></script>
+<script src="./scripts/ai_manager.js"></script>
+<script src="./scripts/error_handler.js"></script>
 <script src="./scripts/storage.js"></script>
 <script src="./scripts/output_manager.js"></script>
 <script src="./scripts/group_manager.js"></script>
@@ -51,30 +60,17 @@
 <script src="./scripts/sudo_manager.js"></script>
 <script src="./scripts/session_manager.js"></script>
 <script src="./scripts/terminal_ui.js"></script>
+<script src="./scripts/modal_manager.js"></script>
+<script src="./scripts/sound_manager.js"></script>
 <script src="./scripts/message_bus_manager.js"></script>
-<script src="./scripts/apps/code/code_manager.js"></script>
-<script src="./scripts/apps/code/code_ui.js"></script>
-<script src="./scripts/apps/editor/editor_ui.js"></script>
-<script src="./scripts/apps/editor/editor_manager.js"></script>
-<script src="./scripts/apps/explorer/explorer_ui.js"></script>
-<script src="./scripts/apps/explorer/explorer_manager.js"></script>
-<script src="./scripts/apps/paint/paint_ui.js"></script>
-<script src="./scripts/apps/paint/paint_manager.js"></script>
-<script src="./scripts/apps/gemini_chat/gemini_chat_ui.js"></script>
-<script src="./scripts/apps/gemini_chat/gemini_chat_manager.js"></script>
-<script src="./scripts/apps/chidi/chidi_ui.js"></script>
-<script src="./scripts/apps/chidi/chidi_manager.js"></script>
-<script src="./scripts/apps/adventure/adventure_ui.js"></script>
-<script src="./scripts/apps/adventure/adventure_engine.js"></script>
-<script src="scripts/apps/adventure/adventure_create.js"></script>
-<script src="./scripts/apps/log/log_ui.js"></script>
-<script src="./scripts/apps/log/log_manager.js"></script>
-<script src="scripts/apps/basic/basic_interp.js"></script>
-<script src="./scripts/apps/basic/basic_ui.js"></script>
+<script src="./scripts/apps/app.js"></script>
 <script src="./scripts/lexpar.js"></script>
+<script src="./scripts/commands/command_base.js"></script>
+<script src="./scripts/command_registry.js"></script>
 <script src="./scripts/commexec.js"></script>
-<script src="./scripts/commands/registry.js"></script>
-<script src="./scripts/main.js"></script>
+<script src="./scripts/storage_hal.js"></script>
+<script src="./scripts/network_manager.js"></script>
+<script src="./main.js"></script>
 
 </body>
 </html>

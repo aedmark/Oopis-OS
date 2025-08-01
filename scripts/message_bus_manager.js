@@ -1,48 +1,39 @@
 // /scripts/message_bus_manager.js
 
-const MessageBusManager = (() => {
-    "use strict";
+class MessageBusManager {
+  constructor() {
+    this.jobQueues = new Map();
+  }
 
-    // A simple in-memory store for message queues.
-    const jobQueues = new Map();
-
-    function registerJob(jobId) {
-        if (!jobQueues.has(jobId)) {
-            jobQueues.set(jobId, []);
-        }
+  registerJob(jobId) {
+    if (!this.jobQueues.has(jobId)) {
+      this.jobQueues.set(jobId, []);
     }
+  }
 
-    function unregisterJob(jobId) {
-        jobQueues.delete(jobId);
+  unregisterJob(jobId) {
+    this.jobQueues.delete(jobId);
+  }
+
+  hasJob(jobId) {
+    return this.jobQueues.has(jobId);
+  }
+
+  postMessage(jobId, message) {
+    if (!this.jobQueues.has(jobId)) {
+      return { success: false, error: "No such job ID registered." };
     }
+    const queue = this.jobQueues.get(jobId);
+    queue.push(message);
+    return { success: true };
+  }
 
-    function hasJob(jobId) {
-        return jobQueues.has(jobId);
+  getMessages(jobId) {
+    if (!this.jobQueues.has(jobId)) {
+      return [];
     }
-
-    function postMessage(jobId, message) {
-        if (!jobQueues.has(jobId)) {
-            return { success: false, error: "No such job ID registered." };
-        }
-        const queue = jobQueues.get(jobId);
-        queue.push(message);
-        return { success: true };
-    }
-
-    function getMessages(jobId) {
-        if (!jobQueues.has(jobId)) {
-            return [];
-        }
-        const messages = jobQueues.get(jobId);
-        jobQueues.set(jobId, []); // Clear the queue after reading
-        return messages;
-    }
-
-    return {
-        registerJob,
-        unregisterJob,
-        hasJob,
-        postMessage,
-        getMessages,
-    };
-})();
+    const messages = this.jobQueues.get(jobId);
+    this.jobQueues.set(jobId, []); // Clear the queue after reading
+    return messages;
+  }
+}

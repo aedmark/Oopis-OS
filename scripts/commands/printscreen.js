@@ -1,85 +1,106 @@
 // scripts/commands/printscreen.js
-(() => {
-    "use strict";
 
-    const printscreenCommandDefinition = {
-        commandName: "printscreen",
-        completionType: "paths", // Preserved for tab completion
-        argValidation: {
-            exact: 1,
-            error: "Usage: printscreen <filepath>",
-        },
-        coreLogic: async (context) => {
-            const { args, currentUser } = context;
-            const filePathArg = args[0];
-            const nowISO = new Date().toISOString();
-
-            try {
-                const pathValidation = FileSystemManager.validatePath(filePathArg, {
-                    allowMissing: true,
-                    expectedType: 'file',
-                    disallowRoot: true
-                });
-
-                if (pathValidation.error && !pathValidation.optionsUsed.allowMissing) {
-                    return { success: false, error: `printscreen: ${pathValidation.error}` };
+window.PrintscreenCommand = class PrintscreenCommand extends Command {
+    constructor() {
+        super({
+            commandName: "printscreen",
+            description: "Captures the screen content as an image or text.",
+            helpText: `Usage: printscreen [output_file]
+      Capture a screenshot of the current OopisOS screen.
+      DESCRIPTION
+      The printscreen command captures the visible content of the terminal.
+      It has two modes:
+      - Image Mode (default, interactive): Generates a PNG image of the
+        terminal and initiates a browser download. This uses the html2canvas
+        library to render the DOM.
+      - Text Dump Mode (non-interactive): If an [output_file] is specified,
+        it dumps the visible text content of the terminal to that file. This
+        is primarily used for automated testing.
+      NOTE: Image capture may not work on all browsers due to varying
+      support for the necessary rendering technologies.`,
+            validations: {
+                args: {
+                    max: 1
                 }
+            },
+        });
+    }
 
-                if (pathValidation.node && pathValidation.node.type === 'directory') {
-                    return { success: false, error: `printscreen: cannot overwrite directory '${filePathArg}' with a file.` };
-                }
+    async coreLogic(context) {
+        const { args, options, currentUser, dependencies } = context;
+        const { Utils, OutputManager, ErrorHandler, Config, FileSystemManager, UserManager } = dependencies;
+        const outputFilename = args[0];
 
-                if (pathValidation.node && !FileSystemManager.hasPermission(pathValidation.node, currentUser, "write")) {
-                    return { success: false, error: `printscreen: '${filePathArg}': Permission denied` };
-                }
-
-                const outputContent = DOM.outputDiv ? DOM.outputDiv.innerText : "";
-
-                const saveResult = await FileSystemManager.createOrUpdateFile(
-                    pathValidation.resolvedPath,
-                    outputContent,
-                    { currentUser, primaryGroup: UserManager.getPrimaryGroupForUser(currentUser) }
-                );
-
-                if (!saveResult.success) {
-                    return { success: false, error: `printscreen: ${saveResult.error}`};
-                }
-
-                if (!(await FileSystemManager.save(currentUser))) {
-                    return {
-                        success: false,
-                        error: "printscreen: Failed to save file system changes.",
-                    };
-                }
-
-                return {
-                    success: true,
-                    output: `Terminal output saved to '${pathValidation.resolvedPath}'`,
-                };
-            } catch (e) {
-                return { success: false, error: `printscreen: An unexpected error occurred: ${e.message}` };
+        if (!options.isInteractive || outputFilename) {
+            if (!outputFilename) {
+                return ErrorHandler.createError("printscreen: output file is required in non-interactive mode.");
             }
-        },
-    };
+            const terminalElement = document.getElementById("terminal");
+            const screenText = terminalElement ? terminalElement.innerText || "" : "Error: Could not find terminal element.";
 
-    const printscreenDescription = "Saves the visible terminal output to a file.";
-    const printscreenHelpText = `Usage: printscreen <filepath>
+            const absolutePath = FileSystemManager.getAbsolutePath(outputFilename);
 
-Save the visible terminal output to a file.
+            const saveResult = await FileSystemManager.createOrUpdateFile(
+                absolutePath,
+                screenText,
+                {
+                    currentUser: currentUser,
+                    primaryGroup: UserManager.getPrimaryGroupForUser(currentUser),
+                }
+            );
 
-DESCRIPTION
-       The printscreen command captures all text currently visible in the
-       terminal's output area and saves it as plain text to the specified
-       <filepath>.
+            if (saveResult.success) {
+                await FileSystemManager.save();
+                return ErrorHandler.createSuccess(`Screen content saved to '${absolutePath}'`, { stateModified: true });
+            } else {
+                return ErrorHandler.createError(`printscreen: ${saveResult.error}`);
+            }
+        }
 
-       This is useful for creating logs or saving the results of a series
-       of commands for later review. If the file already exists, it will be
-       overwritten.
+        try {
+            const terminalElement = document.getElementById("terminal");
+            if (terminalElement) {
+                terminalElement.classList.add("no-cursor");
+            }
 
-EXAMPLES
-       ls -la /
-       printscreen /home/Guest/root_listing.txt
-              Saves the output of the 'ls -la /' command into a new file.`;
+            await OutputManager.appendToOutput("Generating screenshot...");
+            await new Promise((resolve) => setTimeout(resolve, 50));
 
-    CommandRegistry.register("printscreen", printscreenCommandDefinition, printscreenDescription, printscreenHelpText);
-})();
+            const { html2canvas } = window;
+            if (typeof html2canvas === "undefined") {
+                if (terminalElement) terminalElement.classList.remove("no-cursor");
+                return ErrorHandler.createError("printscreen: html2canvas library not loaded.");
+            }
+
+            const canvas = await html2canvas(terminalElement, {
+                backgroundColor: "#000",
+                logging: false,
+                useCORS: true,
+                allowTaint: true,
+            });
+
+            const fileName = `OopisOS_Screenshot_${new Date().toISOString().replace(/:/g, "-")}.png`;
+            const a = Utils.createElement("a", {
+                href: canvas.toDataURL("image/png"),
+                download: fileName,
+            });
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            if (terminalElement) {
+                terminalElement.classList.remove("no-cursor");
+            }
+
+            return ErrorHandler.createSuccess(`Screenshot saved as '${fileName}'`);
+        } catch (e) {
+            if (document.getElementById("terminal")) {
+                document.getElementById("terminal").classList.remove("no-cursor");
+            }
+            return ErrorHandler.createError(`printscreen: Failed to capture screen. ${e.message}`);
+        }
+    }
+}
+
+window.CommandRegistry.register(new PrintscreenCommand());

@@ -1,53 +1,4 @@
-/* OopisOS v4.0: Explorer Style Sheet */
-/* ========================================================================== */
-
-.explorer-container {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--color-background-medium);
-    border: var(--border-width-thick) solid var(--color-border-secondary);
-    border-radius: var(--border-radius-md);
-    color: var(--color-text-secondary);
-    font-family: var(--font-family-mono), monospace;
-    overflow: hidden;
-    width: 95%;
-    height: 95%;
-    max-height: 95%;
-    max-width: 1200px;
-}
-
-.explorer__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-sm);
-    border-bottom: var(--border-width) solid var(--color-border-primary);
-    flex-shrink: 0;
-}
-
-.explorer__title {
-    font-size: var(--font-size-lg);
-    color: var(--color-info);
-}
-
-.explorer__exit-btn {
-    font-size: var(--font-size-lg);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    transition: color 0.2s ease-in-out;
-}
-
-.explorer__exit-btn:hover {
-    color: var(--color-error);
-}
-
-.explorer__main {
-    display: flex;
-    flex-grow: 1;
-    min-height: 0;
-}
+/* Explorer Style Sheet */
 
 .explorer__tree-pane,
 .explorer__main-pane {
@@ -64,17 +15,6 @@
     width: 66.666667%;
 }
 
-.explorer__status-bar {
-    font-size: var(--font-size-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-top: var(--border-width) solid var(--color-border-primary);
-    color: var(--color-text-secondary);
-    flex-shrink: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .explorer-tree,
 .explorer-file-list {
     list-style: none;
@@ -83,6 +23,7 @@
 .explorer-tree-item summary {
     cursor: pointer;
     user-select: none;
+    -webkit-user-select: none;
     padding: var(--spacing-xs);
     border-radius: var(--border-radius-sm);
 }
@@ -131,7 +72,6 @@
     text-align: right;
 }
 
-/* --- NEW CONTEXT MENU STYLES --- */
 .context-menu {
     position: fixed;
     z-index: 1000;

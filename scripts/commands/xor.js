@@ -1,88 +1,69 @@
 // scripts/commands/xor.js
-(() => {
-    "use strict";
 
-    function xorCipher(data, key) {
-        let output = '';
-        for (let i = 0; i < data.length; i++) {
-            const charCode = data.charCodeAt(i) ^ key.charCodeAt(i % key.length);
-            output += String.fromCharCode(charCode);
-        }
-        return output;
+window.XorCommand = class XorCommand extends Command {
+    constructor() {
+        super({
+            commandName: "xor",
+            description: "Applies a simple XOR cipher to a file.",
+            helpText: `Usage: xor <key> <inputfile> [outputfile]
+      Apply a simple XOR cipher to a file.
+      DESCRIPTION
+      xor is a simple symmetric encryption utility that uses a repeating
+      key XOR cipher. It is intended for educational/demonstration
+      purposes and is NOT cryptographically secure.
+      The same command and key are used for both encryption and decryption.
+      If [outputfile] is not specified, the result is printed to standard output.
+      WARNING
+      This tool is for educational purposes ONLY. It is NOT
+      cryptographically secure and should not be used to protect
+      sensitive data.`,
+            validations: {
+                args: {
+                    min: 2,
+                    max: 3,
+                    error: "Usage: xor <key> <inputfile> [outputfile]"
+                },
+                paths: [{
+                    argIndex: 1,
+                    options: { expectedType: 'file', permissions: ['read'] }
+                }]
+            },
+        });
     }
 
-    const xorCommandDefinition = {
-        commandName: "xor",
-        isInputStream: true,
-        completionType: "paths", // Preserved for tab completion
-        firstFileArgIndex: 1, // The first arg is the password
-        coreLogic: async (context) => {
-            const { args, options, inputItems, inputError } = context;
+    async coreLogic(context) {
+        const { args, currentUser, validatedPaths, dependencies } = context;
+        const { FileSystemManager, UserManager, ErrorHandler } = dependencies;
 
-            try {
-                if (inputError) {
-                    return { success: false, error: "xor: No readable input provided or permission denied." };
-                }
+        const key = args[0];
+        const inputFileNode = validatedPaths[0].node;
+        const outputFile = args.length === 3 ? args[2] : null;
 
-                if (!inputItems || inputItems.length === 0) {
-                    return { success: true, output: "" };
-                }
+        const inputContent = inputFileNode.content || "";
+        let outputContent = "";
 
-                const inputData = inputItems.map(item => item.content).join('\\n');
-
-                let password = args[0];
-
-                if (password === null || password === undefined) {
-                    if (!options.isInteractive) {
-                        return { success: false, error: "xor: password must be provided as an argument in non-interactive mode." };
-                    }
-                    password = await new Promise(resolve => {
-                        ModalInputManager.requestInput(
-                            "Enter password for xor:",
-                            (pw) => resolve(pw),
-                            () => resolve(null),
-                            true // Obscured input
-                        );
-                    });
-
-                    if (password === null) {
-                        return { success: true, output: "Operation cancelled." };
-                    }
-                }
-
-                if (!password) {
-                    return { success: false, error: "xor: password cannot be empty." };
-                }
-
-                const processedData = xorCipher(inputData, password);
-                return { success: true, output: processedData };
-            } catch (e) {
-                return { success: false, error: `xor: An unexpected error occurred: ${e.message}` };
-            }
+        for (let i = 0; i < inputContent.length; i++) {
+            const charCode = inputContent.charCodeAt(i);
+            const keyCode = key.charCodeAt(i % key.length);
+            outputContent += String.fromCharCode(charCode ^ keyCode);
         }
-    };
 
-    const xorDescription = "Simple symmetric XOR cipher for data obfuscation (educational).";
-    const xorHelpText = `Usage: xor [password] [FILE]
-       cat [FILE] | xor [password]
+        if (outputFile) {
+            const primaryGroup = UserManager.getPrimaryGroupForUser(currentUser);
+            const saveResult = await FileSystemManager.createOrUpdateFile(
+                outputFile,
+                outputContent,
+                { currentUser, primaryGroup }
+            );
 
-Obfuscate data using a simple password-based XOR cipher.
+            if (!saveResult.success) {
+                return ErrorHandler.createError(`xor: ${saveResult.error}`);
+            }
+            return ErrorHandler.createSuccess("", { stateModified: true });
+        } else {
+            return ErrorHandler.createSuccess(outputContent);
+        }
+    }
+}
 
-DESCRIPTION
-       xor transforms data from a FILE or standard input using a symmetric
-       XOR cipher. The same command and password are used for both obfuscation
-       and reversal.
-
-       WARNING: This utility is for educational purposes only. It provides
-       NO REAL SECURITY and should not be used to protect sensitive data.
-
-PIPELINE SECURITY
-       For enhanced security, use the new 'ocrypt' command which implements
-       strong, modern encryption. 'xor' can be combined with 'base64' to make
-       its binary output safe for text-based storage.
-
-       Obfuscate: cat secret.txt | xor "my-pass" | base64 > safe.txt
-       De-obfuscate: cat safe.txt | base64 -d | xor "my-pass" > secret.txt`;
-
-    CommandRegistry.register(xorCommandDefinition.commandName, xorCommandDefinition, xorDescription, xorHelpText);
-})();
+window.CommandRegistry.register(new XorCommand());

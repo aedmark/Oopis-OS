@@ -1,70 +1,85 @@
 // scripts/commands/log.js
-(() => {
-    "use strict";
 
-    const logCommandDefinition = {
-        commandName: "log",
-        argValidation: {
-            max: 1,
-            error: "Usage: log [\"quick entry text\"]"
-        },
-        coreLogic: async (context) => {
-            const { args, currentUser, options } = context;
+window.LogCommand = class LogCommand extends Command {
+  constructor() {
+    super({
+      commandName: "log",
+      dependencies: ["apps/log/log_ui.js", "apps/log/log_manager.js"],
+      applicationModules: ["LogManager", "LogUI", "App"],
+      description: "A personal, timestamped journal and log application.",
+      helpText: `Usage: log ["entry text"]
+      A personal journal for OopisOS.
+      DESCRIPTION
+      The 'log' command serves as your personal, timestamped journal.
+      It has two modes of operation:
+      1. Quick Add Mode:
+      Running 'log' with a quoted string as an argument will instantly
+      create a new, timestamped journal entry in /home/Guest/.journal/
+      without opening the full application.
+      2. Application Mode:
+      Running 'log' with no arguments launches the full-screen graphical
+      application, which allows you to view, search, edit, and manage
+      all of your journal entries.
+      EXAMPLES
+      log "Finished the first draft of the proposal."
+      Creates a new entry with the specified text.
+      log
+      Opens the main journal application.`,
+      argValidation: {
+        max: 1,
+        error: 'Usage: log ["quick entry text"]',
+      },
+    });
+  }
 
-            try {
-                if (!options.isInteractive) {
-                    return {
-                        success: false,
-                        error: "log: Can only be run in interactive mode."
-                    };
-                }
+  async coreLogic(context) {
 
-                if (typeof LogManager === 'undefined' || typeof LogUI === 'undefined') {
-                    return {
-                        success: false,
-                        error: "log: The Log application module is not loaded."
-                    };
-                }
+    const { args, currentUser, options, dependencies } = context;
+    const { ErrorHandler, LogManager, LogUI, App, AppLayerManager, Config } = dependencies;
 
-                if (args.length === 1) {
-                    const entryText = args[0];
-                    const result = await LogManager.quickAdd(entryText, currentUser);
-                    if (result.success) {
-                        await OutputManager.appendToOutput(result.message, { typeClass: Config.CSS_CLASSES.SUCCESS_MSG });
-                        return { success: true, output: "" };
-                    } else {
-                        return { success: false, error: result.error };
-                    }
-                }
+    try {
+      if (!options.isInteractive) {
+        return ErrorHandler.createError(
+            "log: Can only be run in interactive mode."
+        );
+      }
 
-                await LogManager.enter();
-                return { success: true, output: "" };
-            } catch (e) {
-                return { success: false, error: `log: An unexpected error occurred: ${e.message}` };
-            }
+      if (
+          typeof LogManager === "undefined" ||
+          typeof LogUI === "undefined" ||
+          typeof App === "undefined"
+      ) {
+        return ErrorHandler.createError(
+            "log: The Log application module is not loaded."
+        );
+      }
+
+      const logManager = new LogManager();
+      logManager.dependencies = dependencies;
+
+      if (args.length > 0) {
+        const entryText = args.join(" ");
+        const result = await logManager.quickAdd(entryText, currentUser);
+        if (result.success) {
+          return ErrorHandler.createSuccess(result.message, {
+            messageType: Config.CSS_CLASSES.SUCCESS_MSG,
+            stateModified: true
+          });
+        } else {
+          return ErrorHandler.createError(result.error);
         }
-    };
+      }
 
-    const description = "A personal, timestamped journal and log application.";
-    const helpText = `
-Usage: log ["entry text"]
+      AppLayerManager.show(logManager, { dependencies });
 
-DESCRIPTION
-    The 'log' command is your personal journal within OopisOS.
+      return ErrorHandler.createSuccess("");
+    } catch (e) {
+      return ErrorHandler.createError(
+          `log: An unexpected error occurred: ${e.message}`
+      );
+    }
 
-    Running 'log' with a quoted string as an argument will instantly
-    create a new, timestamped journal entry without opening the app.
+  }
+}
 
-    Running 'log' with no arguments launches the full-screen application,
-    allowing you to view, search, and manage all your entries.
-
-EXAMPLES
-    log "Finished the first draft of the proposal."
-        Creates a new entry with the specified text.
-
-    log
-        Opens the main journal application.
-`;
-
-    CommandRegistry.register("log", logCommandDefinition, description, helpText);
-})();
+window.CommandRegistry.register(new LogCommand());

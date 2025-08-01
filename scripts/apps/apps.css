@@ -1,0 +1,60 @@
+/* Apps.js Style Sheet */
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-background-medium);
+    border: var(--border-width-thick) solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-mono), monospace;
+    overflow: hidden;
+    width: 95%;
+    height: 95%;
+    max-height: 95%;
+    max-width: 1200px;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    border-bottom: var(--border-width) solid var(--color-border-primary);
+    flex-shrink: 0;
+}
+
+.app-header__title {
+    font-size: var(--font-size-lg);
+    color: var(--color-info);
+}
+
+.app-header__exit-btn {
+    font-size: var(--font-size-lg);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: color 0.2s ease-in-out;
+}
+
+.app-header__exit-btn:hover {
+    color: var(--color-error);
+}
+
+.app-main {
+    display: flex;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.app-footer {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-top: var(--border-width) solid var(--color-border-primary);
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

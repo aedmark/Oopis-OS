@@ -1,107 +1,87 @@
 // scripts/commands/visudo.js
-(() => {
-    "use strict";
 
-    const visudoCommandDefinition = {
-        commandName: "visudo",
-        argValidation: {
-            exact: 0
-        },
-        coreLogic: async (context) => {
-            const { currentUser, options } = context;
-
-            try {
-                if (currentUser !== 'root') {
-                    return { success: false, error: "visudo: only root can run this command." };
+window.VisudoCommand = class VisudoCommand extends Command {
+    constructor() {
+        super({
+            commandName: "visudo",
+            description: "Edits the sudoers file with syntax checking.",
+            helpText: `Usage: visudo
+      Edit the sudoers file.
+      DESCRIPTION
+      visudo edits the sudoers file in a safe fashion. It opens the
+      /etc/sudoers file in the 'edit' application. Upon saving, visudo
+      parses the file to check for syntax errors before installing it.
+      If errors are found, the changes are not saved, and the user is
+      prompted to re-edit or quit.
+      This prevents syntax errors in the sudoers file from locking users
+      out of the 'sudo' command.
+      PERMISSIONS
+      Only the superuser (root) can run this command.`,
+            dependencies: [
+                "apps/editor/editor_ui.js",
+                "apps/editor/editor_manager.js",
+            ],
+            applicationModules: ["EditorManager", "EditorUI", "App"],
+            validations: {
+                args: {
+                    exact: 0
                 }
+            },
+        });
+    }
 
-                if (!options.isInteractive) {
-                    return { success: false, error: "visudo: can only be run in interactive mode." };
-                }
+    async coreLogic(context) {
+        const { currentUser, options, dependencies } = context;
+        const {
+            FileSystemManager,
+            SudoManager,
+            CommandExecutor,
+            ErrorHandler,
+        } = dependencies;
 
-                const sudoersPath = Config.SUDO.SUDOERS_PATH;
-                let sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
+        if (currentUser !== "root") {
+            return ErrorHandler.createError(
+                "visudo: sorry, you must be root to run this command."
+            );
+        }
 
-                if (!sudoersNode) {
-                    const primaryGroup = UserManager.getPrimaryGroupForUser('root');
-                    const content = "# /etc/sudoers\\n#\\n# This file controls who can run what as root.\\n\\nroot    ALL\\n%root   ALL\\nDefaults timestamp_timeout=15\\n";
-                    const saveResult = await FileSystemManager.createOrUpdateFile(
-                        sudoersPath,
-                        content,
-                        { currentUser: 'root', primaryGroup }
+        if (!options.isInteractive) {
+            return ErrorHandler.createError(
+                "visudo: Can only be run in interactive mode."
+            );
+        }
+
+        const sudoersPath = SudoManager.config.SUDO.SUDOERS_PATH;
+        let originalContent = "";
+        const sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
+        if (sudoersNode) {
+            originalContent = sudoersNode.content || "";
+        }
+
+        options.postSaveHook = async (newContent) => {
+            const { isValid, error } = SudoManager.parseSudoers(newContent);
+            if (isValid) {
+                return { success: true, message: "sudoers file updated." };
+            } else {
+                const reEditCallback = async (editorInstance) => {
+                    editorInstance.setContent(originalContent);
+                    editorInstance.ui.showToast(
+                        `Syntax error: ${error}. Reverting changes.`,
+                        "error"
                     );
-                    if (!saveResult.success || !(await FileSystemManager.save())) {
-                        return { success: false, error: "visudo: failed to create /etc/sudoers file." };
-                    }
-                    sudoersNode = FileSystemManager.getNodeByPath(sudoersPath);
-                }
-
-                const onSudoersSave = async (filePath) => {
-                    const node = FileSystemManager.getNodeByPath(filePath);
-                    if (node) {
-                        node.mode = 0o440;
-                        node.owner = 'root';
-                        node.group = 'root';
-                        await FileSystemManager.save();
-                        SudoManager.invalidateSudoersCache();
-                        await OutputManager.appendToOutput("visudo: /etc/sudoers secured and cache invalidated.", {typeClass: Config.CSS_CLASSES.SUCCESS_MSG});
-                    } else {
-                        await OutputManager.appendToOutput("visudo: CRITICAL - Could not find sudoers file after save to apply security.", {typeClass: Config.CSS_CLASSES.ERROR_MSG});
-                    }
                 };
-
-                EditorManager.enter(sudoersPath, sudoersNode.content, onSudoersSave);
 
                 return {
-                    success: true,
-                    output: `Opening /etc/sudoers. Please be careful.`,
+                    success: false,
+                    message: `visudo: >>> sudoers file syntax error <<<`,
+                    error: `${error}\nChanges not saved.`,
+                    reEditCallback,
                 };
-            } catch (e) {
-                return { success: false, error: `visudo: An unexpected error occurred: ${e.message}` };
             }
-        }
-    };
+        };
 
-    const visudoDescription = "Safely edits the /etc/sudoers file.";
-    const visudoHelpText = `Usage: visudo
+        return CommandExecutor.processSingleCommand(`edit ${sudoersPath}`, options);
+    }
+}
 
-Edit the sudoers file with a lock to prevent simultaneous edits.
-
-DESCRIPTION
-       visudo edits the sudoers file in a safe fashion. It sets an edit lock
-       on the sudoers file to prevent multiple simultaneous edits.
-
-       The sudoers file controls which users can run commands as root.
-       Incorrect syntax in this file can lock all users out of sudo.
-
-SYNTAX
-       The /etc/sudoers file uses a simple, space-separated format.
-       Lines starting with '#' are comments.
-
-       RULE FORMAT:
-       <who>    <permission>
-
-       <who>:
-           A username (e.g., guest)
-           A group name, prefixed with '%' (e.g., %developers)
-
-       <permission>:
-           ALL             - The user/group can run all commands.
-           (command_name)  - The user/group can only run the specified command.
-
-       EXAMPLES
-           # Give the user 'admin' full root privileges
-           admin    ALL
-
-           # Allow anyone in the 'testers' group to run the 'reboot' command
-           %testers reboot
-
-           # Set the password timeout to 30 minutes (0 to always ask)
-           Defaults timestamp_timeout=30
-
-PERMISSIONS
-       Only the superuser (root) can run visudo.`;
-
-    CommandRegistry.register("visudo", visudoCommandDefinition, visudoDescription, visudoHelpText);
-
-})();
+window.CommandRegistry.register(new VisudoCommand());

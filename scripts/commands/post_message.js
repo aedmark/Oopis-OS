@@ -1,41 +1,63 @@
-// /scripts/commands/post_message.js
+// scripts/commands/post_message.js
 
-(() => {
-    "use strict";
+window.PostMessageCommand = class PostMessageCommand extends Command {
+    constructor() {
+        super({
+            commandName: "post_message",
+            description: "Sends a message to a background job.",
+            helpText: `Usage: post_message <job_id> "<message>"
+      Send a message to a background job's message queue.
+      DESCRIPTION
+      The post_message command allows for inter-process communication
+      by sending a string <message> to the specified <job_id>.
+      Background jobs can check for and read these messages using the
+      'read_messages' command. This enables dynamic control over
+      long-running background tasks.
+      The <message> must be enclosed in quotes.
+      EXAMPLES
+      post_message 1 "stop"
+      Sends the message "stop" to the job with ID 1.`,
+            validations: {
+                args: {
+                    exact: 2
+                }
+            },
+        });
+    }
 
-    const postMessageCommandDefinition = {
-        commandName: "post_message",
-        argValidation: {
-            exact: 2,
-            error: "Usage: post_message <job_id> <message>",
-        },
-        coreLogic: async (context) => {
-            const { args } = context;
+    async coreLogic(context) {
+        const { args, dependencies } = context;
+        const { MessageBusManager, ErrorHandler } = dependencies;
+
+        try {
             const jobId = parseInt(args[0], 10);
             const message = args[1];
 
             if (isNaN(jobId)) {
-                return { success: false, error: `Invalid job ID: '${args[0]}'` };
+                return ErrorHandler.createError(
+                    `post_message: invalid job ID: ${args[0]}`
+                );
             }
 
-            if (!MessageBusManager.hasJob(jobId)) {
-                return { success: false, error: `No active job with ID: ${jobId}` };
+            if (typeof message !== "string") {
+                return ErrorHandler.createError("post_message: message must be a string");
             }
 
             const result = MessageBusManager.postMessage(jobId, message);
 
             if (result.success) {
-                return { success: true, output: `Message sent to job ${jobId}.` };
+                return ErrorHandler.createSuccess("");
             } else {
-                return { success: false, error: result.error };
+                return ErrorHandler.createError(
+                    result.error || `Failed to post message to job ${jobId}.`
+                );
             }
-        },
-    };
+        } catch (e) {
+            return ErrorHandler.createError(
+                `post_message: An unexpected error occurred: ${e.message}`
+            );
+        }
+    }
+}
 
-    CommandRegistry.register(
-        "post_message",
-        postMessageCommandDefinition,
-        "Sends a message to a background job.",
-        "Usage: post_message <job_id> <message>"
-    );
-})();
+window.CommandRegistry.register(new PostMessageCommand());

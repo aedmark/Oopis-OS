@@ -1,56 +1,49 @@
 // scripts/commands/groups.js
-(() => {
-    "use strict";
 
-    const groupsCommandDefinition = {
-        commandName: "groups",
-        completionType: "users", // For tab-completing usernames
-        argValidation: {
-            max: 1,
-        },
-        coreLogic: async (context) => {
-            const { args, currentUser } = context;
-            const targetUser = args.length > 0 ? args[0] : currentUser;
+window.GroupsCommand = class GroupsCommand extends Command {
+    constructor() {
+        super({
+            commandName: "groups",
+            description: "Prints the groups a user is in.",
+            helpText: `Usage: groups [username]
+      Print group memberships for a user.
+      DESCRIPTION
+      The groups command prints the names of the primary and supplementary
+      groups for each given username, or the current process if none are
+      given.
+      EXAMPLES
+      groups
+      Displays the groups for the current user.
+      groups root
+      Displays the groups for the 'root' user.`,
+            completionType: "users",
+            argValidation: {
+                max: 1,
+            },
+        });
+    }
 
-            try {
-                // Check if the user exists
-                if (!await UserManager.userExists(targetUser)) {
-                    return { success: false, error: `groups: user '${targetUser}' does not exist` };
-                }
+    async coreLogic(context) {
+        const { args, currentUser, dependencies } = context;
+        const { UserManager, GroupManager, ErrorHandler } = dependencies;
+        const targetUser = args.length > 0 ? args[0] : currentUser;
 
-                const userGroups = GroupManager.getGroupsForUser(targetUser);
+        if (!(await UserManager.userExists(targetUser))) {
+            return ErrorHandler.createError(
+                `groups: user '${targetUser}' does not exist`
+            );
+        }
 
-                if (userGroups.length === 0) {
-                    return { success: true, output: `groups: user '${targetUser}' is not a member of any group` };
-                }
+        const userGroups = GroupManager.getGroupsForUser(targetUser);
 
-                return {
-                    success: true,
-                    output: userGroups.join(' '),
-                };
-            } catch (e) {
-                return { success: false, error: `groups: An unexpected error occurred: ${e.message}` };
-            }
-        },
-    };
+        if (userGroups.length === 0) {
+            return ErrorHandler.createSuccess(
+                `groups: user '${targetUser}' is not a member of any group`
+            );
+        }
 
-    const groupsDescription = "Prints the groups a user is in.";
-    const groupsHelpText = `Usage: groups [username]
+        return ErrorHandler.createSuccess(userGroups.join(" "));
+    }
+}
 
-Print group memberships for a user.
-
-DESCRIPTION
-       The groups command prints the names of the primary and supplementary
-       groups for each given username, or the current process if none are
-       given.
-
-EXAMPLES
-       groups
-              Displays the groups for the current user.
-
-       groups root
-              Displays the groups for the 'root' user.`;
-
-    // Correctly register the 'groups' command
-    CommandRegistry.register("groups", groupsCommandDefinition, groupsDescription, groupsHelpText);
-})();
+window.CommandRegistry.register(new GroupsCommand());
